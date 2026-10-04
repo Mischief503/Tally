@@ -26,6 +26,6 @@ for ed in artifact supabase; do
 done
 for s in hosted confirm-hosted dist shop osm testpack nav pwa-check; do run node tests/ui/$s.js; done
 run deno run -A tests/function/test.ts
-if [ "$(id -u)" = 0 ]; then echo "== sql: skipped as root (initdb refuses root); runs in GitHub"; else run bash tests/sql/run.sh; fi
+if [ "$(id -u)" = 0 ]; then echo "== sql: skipped as root (initdb refuses root); runs in GitHub"; else run bash tests/sql/run.sh; run bash tests/sql/schema.sh; fi
 echo; [ $fail -eq 0 ] && echo "ALL PASSED" || echo "SOMETHING FAILED"
 exit $fail
