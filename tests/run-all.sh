@@ -4,7 +4,23 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 python3 scripts/build.py
 fail=0
-run() { echo; echo "== $*"; "$@" 2>&1 | grep -v '^PASS' ; [ "${PIPESTATUS[0]}" -eq 0 ] || fail=1; }
+# On GitHub, each failure also becomes an error note on the build, so it shows on the run page.
+run() {
+  echo; echo "== $*"
+  local out code
+  out=$("$@" 2>&1); code=$?
+  echo "$out" | grep -v '^PASS'
+  if [ $code -ne 0 ]; then
+    fail=1
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+      local name="${*: -1}"
+      local lines
+      lines=$(echo "$out" | grep -E '^FAIL|Error|error:' | head -n 8)
+      [ -n "$lines" ] || lines=$(echo "$out" | tail -n 6)
+      echo "$lines" | while IFS= read -r l; do echo "::error title=$name::${l:0:400}"; done
+    fi
+  fi
+}
 for ed in artifact supabase; do
   for s in regress field confirm minpay; do run node tests/ui/$s.js build/tally-$ed.html $s-$ed; done
 done
