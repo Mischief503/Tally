@@ -28,3 +28,7 @@ jobs:
 
       - name: Run every Tally check
         run: bash tests/run-all.sh
+
+      - name: Check the free map services answer (for information)
+        continue-on-error: true
+        run: node tests/live/map-services.mjs

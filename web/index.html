@@ -2727,12 +2727,12 @@ function distKey(a,b){return String(a||'').trim().toLowerCase().replace(/\s+/g,'
 function mapsDirUrl(a,b){return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(a)+'&destination='+encodeURIComponent(b)+'&travelmode=driving'}
 function distLookup(){
   var d=state.draft,a=(d.from||'').trim(),b=(d.to||'').trim();
-  if(!a||!b||!window.tallyMaps){renderDistNote();return}
+  if(!a||!b||!canLookup()){renderDistNote();return}
   var k=distKey(a,b);
   if(dist.cache[k]){applyDist(dist.cache[k]);return}
   if(dist.busy===k)return;
   dist.busy=k;dist.err='';renderDistNote();
-  window.tallyMaps.distance(a,b).then(function(r){
+  mapsDistance(a,b).then(function(r){
     if(dist.busy!==k)return;dist.busy='';
     if(r&&r.ok&&r.miles>=0){r.key=k;dist.cache[k]=r;if(distKey(state.draft.from,state.draft.to)===k)applyDist(r);else renderDistNote()}
     else{dist.err=(r&&r.message)||'Could not look up the drive.';dist.errKey=k;renderDistNote()}
@@ -2751,10 +2751,10 @@ function renderDistNote(){
   var d=state.draft,a=(d.from||'').trim(),b=(d.to||'').trim(),k=distKey(a,b),r=dist.cache[k];
   var link=a&&b?' <a href="'+esc(mapsDirUrl(a,b))+'" target="_blank" rel="noopener">See the drive on Google Maps</a>':'';
   var h;
-  var btn=window.tallyMaps&&dist.busy!==k?' <button class="btn sm" data-act="q:dist">'+(r&&String(d.miles||'').trim()===String(r.miles)?'Look up again':'Look up distance')+'</button>':'';
-  if(!window.tallyMaps&&a&&b)link=' <a class="btn sm" href="'+esc(mapsDirUrl(a,b))+'" target="_blank" rel="noopener">Open the drive in Google Maps</a>';
-  if(!a||!b)h=window.tallyMaps?'Enter both addresses and the distance fills itself in. <button class="btn sm" data-act="q:dist">Look up distance</button>':'Enter both addresses, then check the drive on Google Maps.';
-  else if(!window.tallyMaps)h='Type the miles from the map. This copy of Tally can’t reach Google Maps itself; the installed app does it for you.'+link;
+  var btn=canLookup()&&dist.busy!==k?' <button class="btn sm" data-act="q:dist">'+(r&&String(d.miles||'').trim()===String(r.miles)?'Look up again':'Look up distance')+'</button>':'';
+  if(!canLookup()&&a&&b)link=' <a class="btn sm" href="'+esc(shopTripUrl()||mapsDirUrl(a,b))+'" target="_blank" rel="noopener">'+(shopTripUrl()?'Open the whole trip in Google Maps':'Open the drive in Google Maps')+'</a>';
+  if(!a||!b)h=canLookup()?'Enter both addresses and the distance fills itself in. <button class="btn sm" data-act="q:dist">Look up distance</button>':'Enter both addresses, then check the drive on Google Maps.';
+  else if(!canLookup())h='Type the miles from the map. This copy of Tally can’t look distances up itself; the Tally app on your phone does it for you.'+link;
   else if(dist.busy===k)h='Looking up the drive…';
   else if(r){
     var same=String(d.miles||'').trim()===String(r.miles);
@@ -2764,7 +2764,52 @@ function renderDistNote(){
   else if(dist.err&&dist.errKey===k)h=esc(dist.err)+' Type the miles instead.'+btn+link;
   else h='Leave the address field and the distance fills itself in.'+btn;
   if(r&&dist.busy!==k&&String(d.miles||'').trim()===String(r.miles))h+=btn;
+  if(r&&r.src==='osm')h+='<br><small>Distances from OpenStreetMap (© OpenStreetMap contributors).</small>';
   el.innerHTML=h;
+}
+
+/* ---------- where distances come from ----------
+   1. Google, through the Edge Function, once the Google key is set up (most accurate).
+   2. Otherwise OpenStreetMap, free and with no setup: Photon (or Nominatim) finds each
+      address, OSRM measures the drive. Addresses are looked up one at a time, a second
+      apart, which is what those free services ask for.
+   The claude.ai artifact can't reach any outside service, so it keeps the map link. */
+function canFree(){return !window.TALLY_ARTIFACT&&typeof fetch==='function'}
+function canLookup(){return !!window.tallyMaps||canFree()}
+function mapsDistance(a,b){
+  if(window.tallyMaps&&window.tallyMaps.distance)return window.tallyMaps.distance(a,b).then(function(r){return r&&r.setup&&canFree()?freeDistance(a,b):r},function(){return canFree()?freeDistance(a,b):{ok:false,message:'Could not look up the drive.'}});
+  return freeDistance(a,b);
+}
+var osm={geo:{},next:0};
+function osmJson(url){return fetch(url,{headers:{'Accept':'application/json'}}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
+function osmSlot(){var now=Date.now(),at=Math.max(now,osm.next);osm.next=at+1100;return new Promise(function(res){setTimeout(res,at-now)})}
+function geocode(addr){
+  var k=String(addr).trim().toLowerCase().replace(/\s+/g,' ');
+  if(osm.geo[k])return osm.geo[k];
+  var p=osmSlot().then(function(){return osmJson('https://photon.komoot.io/api/?limit=1&q='+encodeURIComponent(addr))}).then(function(j){
+    var f=j&&j.features&&j.features[0];if(!f)throw new Error('none');
+    return {lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]};
+  }).catch(function(){
+    return osmSlot().then(function(){return osmJson('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us,ca&q='+encodeURIComponent(addr))}).then(function(j){
+      if(!j||!j[0])throw new Error('none');return {lat:+j[0].lat,lon:+j[0].lon};
+    });
+  });
+  osm.geo[k]=p;p.catch(function(){delete osm.geo[k]});
+  return p;
+}
+function freeDistance(a,b){
+  if(!canFree())return Promise.resolve({ok:false,message:'Distance lookup is not available here.'});
+  var ga,gb;
+  return geocode(a).then(function(x){ga=x;return geocode(b)},function(){throw {where:a}}).then(function(y){gb=y},function(e){throw e&&e.where?e:{where:b}}).then(function(){
+    return osmJson('https://router.project-osrm.org/route/v1/driving/'+ga.lon+','+ga.lat+';'+gb.lon+','+gb.lat+'?overview=false');
+  }).then(function(j){
+    var rt=j&&j.code==='Ok'&&j.routes&&j.routes[0];
+    if(!rt)return {ok:false,message:'No driving route between those addresses. Check them.'};
+    return {ok:true,src:'osm',miles:Math.round(rt.distance/1609.344*10)/10,minutes:Math.round(rt.duration/60)};
+  }).catch(function(e){
+    if(e&&e.where)return {ok:false,message:'Couldn’t find “'+e.where+'” on the map. Add the city and state.'};
+    return {ok:false,message:'The map service didn’t answer. Check your connection.'};
+  });
 }
 
 /* ---------- quote: the drive from the shop and back ----------
@@ -2780,7 +2825,7 @@ function shopLegs(){
 }
 dist.shopBusy={};
 function shopLookup(force){
-  if(!window.tallyMaps){renderShopNote();return}
+  if(!canLookup()){renderShopNote();return}
   shopLegs().forEach(function(l){
     var k=distKey(l.a,l.b);
     if(force&&dist.cache[k]&&!(state.draft.shopManual||{})[l.k])delete dist.cache[k];
@@ -2788,7 +2833,7 @@ function shopLookup(force){
     if(dist.cache[k]){applyShop(l,dist.cache[k]);return}
     if(dist.shopBusy[k])return;
     dist.shopBusy[k]=1;renderShopNote();
-    window.tallyMaps.distance(l.a,l.b).then(function(r){
+    mapsDistance(l.a,l.b).then(function(r){
       delete dist.shopBusy[k];
       if(r&&r.ok&&r.miles>=0){r.key=k;dist.cache[k]=r;var now=shopLegs().find(function(x){return x.k===l.k&&distKey(x.a,x.b)===k});if(now)applyShop(now,r);else renderShopNote()}
       else{dist.shopErr=(r&&r.message)||'Could not look up the drive.';renderShopNote()}
@@ -2823,7 +2868,7 @@ function renderShopNote(){
   var total=num(d.milesOut)+num(d.miles)+num(d.milesBack);
   var url=shopTripUrl();
   var h=rows.join('<br>');
-  if(!window.tallyMaps)h='Type the miles from the map.'+(url?' <a class="btn sm" href="'+esc(url)+'" target="_blank" rel="noopener">Open the whole trip in Google Maps</a>':'');
+  if(!canLookup())h='Type the miles from the map.'+(url?' <a class="btn sm" href="'+esc(url)+'" target="_blank" rel="noopener">Open the whole trip in Google Maps</a>':'');
   else if(!rows.length&&dist.shopErr)h=esc(dist.shopErr)+' Type the miles instead.'+(url?' <a href="'+esc(url)+'" target="_blank" rel="noopener">See the whole trip on Google Maps</a>':'');
   if(total>0&&(num(d.milesOut)||num(d.milesBack)))h+=(h?'<br>':'')+'Round trip from the shop: <b>'+fmtMi(total)+' mi</b>'+(S.shopTravel===false?' (not counted in the price; see Setup › Rate card)':'');
   el.innerHTML=h;

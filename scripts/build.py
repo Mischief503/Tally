@@ -11,5 +11,8 @@ shutil.copytree(os.path.join(ROOT, 'web'), os.path.join(B, 'site'))
 src = open(os.path.join(ROOT, 'web', 'index.html'), encoding='utf-8').read()
 open(os.path.join(B, 'tally-supabase.html'), 'w', encoding='utf-8').write(src)
 a = src.index('<!-- ===== Supabase back end'); b = src.index('</head>', a)
-open(os.path.join(B, 'tally-artifact.html'), 'w', encoding='utf-8').write(src[:a] + src[b:])
+art = src[:a] + src[b:]
+# the artifact can't reach outside services; this tells the app not to try
+art = art.replace('<head>', '<head>\n<script>window.TALLY_ARTIFACT=true;</script>', 1)
+open(os.path.join(B, 'tally-artifact.html'), 'w', encoding='utf-8').write(art)
 print('built build/tally-supabase.html, build/tally-artifact.html, build/site/')

@@ -84,12 +84,14 @@ async function load(file, opts = {}) {
       if (opts.db) {
         w.supabase = { createClient: () => (w.__sb = makeSupabase(opts.db, opts.me, calls)) };
         w.fetch = async (url, init) => {
+          if (opts.net && !/\/functions\/v1\//.test(String(url))) return opts.net(String(url), init);
           const body = JSON.parse(init.body);
           calls.fn.push({ url, init, body });
           const reply = (opts.fnReply || (() => ({ ok: true, sent: 0 })))(body);
           return { json: async () => reply };
         };
       }
+      if (!opts.db && opts.net) w.fetch = async (url, init) => opts.net(String(url), init);
       w.addEventListener('error', (e) => errors.push('window: ' + (e.message || e.error)));
     },
   });

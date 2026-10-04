@@ -68,8 +68,8 @@ const type = (P, sel, v, blur) => { const e = P.$(sel); e.value = v; e.dispatchE
   // not set up / bad address
   mode = 'bad'; type(B, '[data-d="to"]', 'zzzz', true); await sleep(60);
   ok(/could not find one of those addresses\. Type the miles instead\./.test(B.$('#distNote').textContent) && !!B.$('#distNote a'), 'bad address: says so and links the map');
-  mode = 'setup'; type(B, '[data-d="to"]', '12 Lakeview Dr', true); await sleep(60);
-  ok(/not set up yet\. Type the miles instead\./.test(B.$('#distNote').textContent), 'no Google key yet: says so, still usable');
+  mode = 'setup'; type(B, '[data-d="to"]', '12 Lakeview Dr', true); await sleep(3500);
+  ok(/map service didn.t answer|Couldn.t find/.test(B.$('#distNote').textContent), 'no Google key yet: it tries OpenStreetMap instead (unreachable in this test)');
   ok(A.errors.length === 0 && B.errors.length === 0, 'no errors (' + A.errors.concat(B.errors).slice(0, 3).join(' | ') + ')');
   process.exit(summary('distance') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
