@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="tally_navy">#141B2D</color>
+    <color name="tally_icon_bg">#141B2D</color>
+    <style name="Theme.Tally" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/tally_navy</item>
+        <item name="android:statusBarColor">@color/tally_navy</item>
+        <item name="android:navigationBarColor">@color/tally_navy</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

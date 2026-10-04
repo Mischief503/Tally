@@ -1,0 +1,98 @@
+name: Android app
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Put Tally into the app
+        env:
+          TALLY_SUPABASE_URL: ${{ vars.TALLY_SUPABASE_URL }}
+          TALLY_SUPABASE_ANON_KEY: ${{ vars.TALLY_SUPABASE_ANON_KEY }}
+        run: python3 scripts/prepare_android.py
+
+      - name: Use your own signing key, if you have added one
+        env:
+          KS: ${{ secrets.TALLY_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.TALLY_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.TALLY_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.TALLY_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/tally.keystore"
+            {
+              echo "TALLY_KEYSTORE_FILE=$RUNNER_TEMP/tally.keystore"
+              echo "TALLY_KEYSTORE_PASSWORD=$KS_PASS"
+              echo "TALLY_KEY_ALIAS=$KEY_ALIAS"
+              echo "TALLY_KEY_PASSWORD=$KEY_PASS"
+            } >> "$GITHUB_ENV"
+            echo "Signing with your own key."
+          else
+            echo "Signing with the test key in the repo."
+          fi
+
+      - name: Build the APK
+        working-directory: android
+        run: gradle --no-daemon assembleRelease
+
+      - name: Let the emulator use hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Open Tally on an Android phone (emulator)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-snapshot -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: bash scripts/smoke-android.sh
+
+      - name: Keep the APK and the emulator screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tally-android-${{ github.run_number }}
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            smoke/
+          if-no-files-found: ignore
+
+      - name: Publish Tally.apk for phones
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk Tally.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest Tally.apk \
+            --title "Tally (latest build)" \
+            --notes "Build ${{ github.run_number }}. On your phone, tap Tally.apk below to install or update. It passed the emulator check before it was published." \
+            --latest

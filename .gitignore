@@ -1,0 +1,11 @@
+build/
+smoke/
+node_modules/
+tests/ui/node_modules
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/
+*.apk
+*.aab
