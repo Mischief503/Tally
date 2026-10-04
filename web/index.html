@@ -456,7 +456,7 @@ window.TALLY_SUPABASE = {
 (function(){
 'use strict';
 var CFG=window.TALLY_SUPABASE||{};
-if(!CFG.url||!CFG.anonKey||!window.supabase||!window.supabase.createClient)return;   // not configured: app stays on-device
+if(!/^https:\/\/\S+$/.test(CFG.url||'')||!CFG.anonKey||/PASTE_YOUR/.test(CFG.anonKey)||!window.supabase||!window.supabase.createClient)return;   // not configured (or still the placeholders): app stays on-device
 
 function reload(){if(window.__tallyReload)window.__tallyReload();else location.reload()}
 var ORG_KEY='tally.org';
