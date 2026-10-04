@@ -24,7 +24,7 @@ run() {
 for ed in artifact supabase; do
   for s in regress field confirm minpay; do run node tests/ui/$s.js build/tally-$ed.html $s-$ed; done
 done
-for s in hosted confirm-hosted dist nav pwa-check; do run node tests/ui/$s.js; done
+for s in hosted confirm-hosted dist shop nav pwa-check; do run node tests/ui/$s.js; done
 run deno run -A tests/function/test.ts
 if [ "$(id -u)" = 0 ]; then echo "== sql: skipped as root (initdb refuses root); runs in GitHub"; else run bash tests/sql/run.sh; fi
 echo; [ $fail -eq 0 ] && echo "ALL PASSED" || echo "SOMETHING FAILED"
