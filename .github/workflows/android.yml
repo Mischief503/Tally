@@ -92,7 +92,8 @@ jobs:
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk Tally.apk
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Tally.apk \
+          cp smoke/screenshot.png emulator-screenshot.png 2>/dev/null || true
+          gh release create latest Tally.apk $( [ -s emulator-screenshot.png ] && echo emulator-screenshot.png ) \
             --title "Tally (latest build)" \
             --notes "Build ${{ github.run_number }}. On your phone, tap Tally.apk below to install or update. It passed the emulator check before it was published." \
             --latest
