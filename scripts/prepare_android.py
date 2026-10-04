@@ -20,6 +20,16 @@ html = open(SRC, encoding='utf-8').read()
 os.makedirs(OUT_DIR, exist_ok=True)
 
 url, key = os.environ.get('TALLY_SUPABASE_URL', '').strip(), os.environ.get('TALLY_SUPABASE_ANON_KEY', '').strip()
+if not (url and key):
+    # no repo variables set: use the project recorded in supabase/project.json (public anon key only)
+    try:
+        import json
+        pj = json.load(open(os.path.join(ROOT, 'supabase', 'project.json'), encoding='utf-8'))
+        url, key = pj.get('url', '').strip(), pj.get('anonKey', '').strip()
+    except Exception:
+        pass
+if key and ('service_role' in key or key.startswith('sb_secret_')):
+    sys.exit('That is the secret service key. Only the anon public key goes in the app.')
 if url and key:
     if not re.match(r'^https://[a-z0-9-]+\.supabase\.co/?$', url):
         sys.exit('TALLY_SUPABASE_URL should look like https://abcdefgh.supabase.co (got %r)' % url)

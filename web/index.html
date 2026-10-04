@@ -629,7 +629,7 @@ function render(){
       '<label for="lgEmail">Work email</label><input id="lgEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" value="'+(state.email||'')+'">'+
       '<button id="lgSend"'+(b?' disabled':'')+'>'+(b?'Sending…':'Send my code')+'</button>'
     : '<p>We sent a code to <b>'+state.email.replace(/[<>&]/g,'')+'</b>. It is good for a few minutes.</p>'+
-      '<label for="lgCode">6-digit code</label><input id="lgCode" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6">'+
+      '<label for="lgCode">Code from the email</label><input id="lgCode" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10">'+
       '<button id="lgVerify"'+(b?' disabled':'')+'>'+(b?'Checking…':'Sign in')+'</button>'+
       '<button class="link" id="lgBack">Use a different email</button>')+
     '<div class="msg '+(state.msgKind||'')+'">'+(state.msg||'')+'</div></div>';
@@ -652,7 +652,7 @@ function sendCode(){
 }
 function verify(){
   var code=(el.querySelector('#lgCode').value||'').replace(/\D/g,'');
-  if(code.length!==6)return msg('Enter the 6 digits from the email.','bad');
+  if(code.length<6||code.length>10)return msg('Enter the code from the email.','bad');
   state.busy=true;state.msg='';render();
   sb.auth.verifyOtp({email:state.email,token:code,type:'email'}).then(function(r){
     if(r.error)return msg('That code did not work. Check it, or send a new one.','bad');

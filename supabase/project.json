@@ -1,0 +1,5 @@
+{
+  "_note": "The live Supabase project the Android app signs in to. Only the public anon key belongs here; it is safe in the app. Never put the service role key, the Twilio token or a Google key in this repository.",
+  "url": "https://jgajcfvrzxafoqekzcug.supabase.co",
+  "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnYWpjZnZyenhhZm9xZWt6Y3VnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwODY0NzEsImV4cCI6MjEwNjY2MjQ3MX0.0CjDYPVeXhCIXq7P9pl8zLJBZp5GcdyeAmhqynwA_20"
+}
