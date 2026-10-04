@@ -2770,7 +2770,7 @@ function renderDistNote(){
 
 /* ---------- where distances come from ----------
    1. Google, through the Edge Function, once the Google key is set up (most accurate).
-   2. Otherwise OpenStreetMap, free and with no setup: Photon (or Nominatim) finds each
+   2. Otherwise OpenStreetMap, free and with no setup: Nominatim (or Photon) finds each
       address, OSRM measures the drive. Addresses are looked up one at a time, a second
       apart, which is what those free services ask for.
    The claude.ai artifact can't reach any outside service, so it keeps the map link. */
@@ -2786,12 +2786,12 @@ function osmSlot(){var now=Date.now(),at=Math.max(now,osm.next);osm.next=at+1100
 function geocode(addr){
   var k=String(addr).trim().toLowerCase().replace(/\s+/g,' ');
   if(osm.geo[k])return osm.geo[k];
-  var p=osmSlot().then(function(){return osmJson('https://photon.komoot.io/api/?limit=1&q='+encodeURIComponent(addr))}).then(function(j){
-    var f=j&&j.features&&j.features[0];if(!f)throw new Error('none');
-    return {lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]};
+  var p=osmSlot().then(function(){return osmJson('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us,ca&q='+encodeURIComponent(addr))}).then(function(j){
+    if(!j||!j[0])throw new Error('none');return {lat:+j[0].lat,lon:+j[0].lon};
   }).catch(function(){
-    return osmSlot().then(function(){return osmJson('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us,ca&q='+encodeURIComponent(addr))}).then(function(j){
-      if(!j||!j[0])throw new Error('none');return {lat:+j[0].lat,lon:+j[0].lon};
+    return osmSlot().then(function(){return osmJson('https://photon.komoot.io/api/?limit=1&q='+encodeURIComponent(addr))}).then(function(j){
+      var f=j&&j.features&&j.features[0];if(!f)throw new Error('none');
+      return {lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]};
     });
   });
   osm.geo[k]=p;p.catch(function(){delete osm.geo[k]});

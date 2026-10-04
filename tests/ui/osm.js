@@ -1,5 +1,5 @@
 // The free lookup, as it runs in the APK with nothing set up: OpenStreetMap finds the
-// addresses (Photon, then Nominatim) and OSRM measures the drive.
+// addresses (Nominatim, then Photon) and OSRM measures the drive.
 const { load, ok, sleep, summary } = require('./lib');
 const SHOP = '1200 Industrial Blvd, Austin, TX', A = '418 Oak St, Austin, TX', B = '77 Ridge Rd, Round Rock, TX';
 const PTS = { [SHOP]: [-97.70, 30.33], [A]: [-97.75, 30.27], [B]: [-97.68, 30.51] };
@@ -8,16 +8,16 @@ const nameOf = (lon, lat) => Object.keys(PTS).find((k) => Math.abs(PTS[k][0] - l
 const tag = (n) => (n === SHOP ? 'S' : n === A ? 'A' : 'B');
 (async () => {
   const log = [], times = [];
-  let photonDown = false;
+  let nominatimDown = false;
   const net = async (url) => {
     log.push(url); times.push(Date.now());
     const res = (o, st) => ({ ok: (st || 200) < 400, status: st || 200, json: async () => o });
     if (url.startsWith('https://photon.komoot.io/api/')) {
-      if (photonDown) return res({}, 503);
       const q = decodeURIComponent(url.split('q=')[1]);
       return res({ features: PTS[q] ? [{ geometry: { coordinates: PTS[q] }, properties: {} }] : [] });
     }
     if (url.startsWith('https://nominatim.openstreetmap.org/search')) {
+      if (nominatimDown) return res({}, 503);
       const q = decodeURIComponent(url.split('q=')[1]);
       return res(PTS[q] ? [{ lat: String(PTS[q][1]), lon: String(PTS[q][0]) }] : []);
     }
@@ -44,8 +44,8 @@ const tag = (n) => (n === SHOP ? 'S' : n === A ? 'A' : 'B');
   ok(geo.length === 3, 'each address looked up once (shop reused): ' + geo.length);
   const gt = times.filter((t, i) => /photon|nominatim/.test(log[i]));
   ok(gt.every((t, i) => i === 0 || t - gt[i - 1] >= 1050), 'address lookups spaced a second apart, as the free service asks');
-  // Photon down: Nominatim picks up
-  photonDown = true; log.length = 0; times.length = 0;
+  // Nominatim down: Photon picks up
+  nominatimDown = true; log.length = 0; times.length = 0;
   type('[data-d="to"]', 'nowhere at all', true); await sleep(3500);
   ok(/Couldn.t find .nowhere at all. on the map\. Add the city and state\./.test(P.$('#distNote').textContent), 'unknown address: clear message: ' + P.$('#distNote').textContent.slice(0, 90));
   ok(log.some((u) => u.includes('photon')) && log.some((u) => u.includes('nominatim')), 'when the first address service fails, the second is tried');

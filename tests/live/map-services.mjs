@@ -9,14 +9,14 @@ async function nominatim(q) { const x = await j('https://nominatim.openstreetmap
 const pause = () => new Promise((r) => setTimeout(r, 1100));
 (async () => {
   const pts = {};
-  for (const [name, fn] of [['photon', photon], ['nominatim', nominatim]]) {
+  for (const [name, fn] of [['nominatim', nominatim], ['photon', photon]]) {
     try { pts[name] = [await fn(A)]; await pause(); pts[name].push(await fn(B)); await pause(); note(name + ' found both addresses: ' + JSON.stringify(pts[name])); }
     catch (e) { warn(name + ' failed: ' + e.message); delete pts[name]; }
   }
-  const use = pts.photon || pts.nominatim;
+  const use = pts.nominatim || pts.photon;
   if (!use) { warn('No address service answered.'); return; }
   try {
     const r = await j('https://router.project-osrm.org/route/v1/driving/' + use[0].join(',') + ';' + use[1].join(',') + '?overview=false');
-    note('OSRM: ' + (r.routes[0].distance / 1609.344).toFixed(1) + ' mi, ' + Math.round(r.routes[0].duration / 60) + ' min (Google Maps shows about 7 mi for this drive)');
+    note('OSRM: ' + (r.routes[0].distance / 1609.344).toFixed(1) + ' mi, ' + Math.round(r.routes[0].duration / 60) + ' min');
   } catch (e) { warn('OSRM failed: ' + e.message); }
 })();
