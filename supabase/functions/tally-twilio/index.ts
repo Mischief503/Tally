@@ -309,6 +309,7 @@ export async function checkJob(org: string, jobId: string, origin?: string | nul
   if (!line) return { ok: false, reason: "no-line" };
   const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
   if (!job) return { ok: false, reason: "no-job" };
+  if (job.test) return { ok: true, sent: 0, skipped: "test" };
   const d = job.d || {};
   const crew: string[] = ((job.assign && job.assign.crew) || []).slice().sort();
   const prev = await stateOf(org, jobId);
@@ -366,6 +367,7 @@ export async function checkForms(org: string, jobId: string): Promise<J> {
   if (!line) return { ok: false, reason: "no-line" };
   const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
   if (!job) return { ok: false, reason: "no-job" };
+  if (job.test) return { ok: true, sent: 0, skipped: "test" };
   if (!alertOn(S, "forms")) return { ok: true, sent: 0, skipped: "off" };
   const unloaded = job.status === "active" && !!(job.phases && job.phases.unloadEnd);
   if (job.status !== "done" && !unloaded) return { ok: true, sent: 0, skipped: "not-finished" };
@@ -406,6 +408,7 @@ async function sendEta(org: string, me: J, jobId: string, minutes: unknown): Pro
   if (!line) return { ok: false, message: "The company line is not set up yet, so the arrival text did not go out." };
   const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
   if (!job) return { ok: false, message: "That job is not available." };
+  if (job.test) return { ok: false, message: "Test job: its phone numbers are made up, so nothing is sent." };
   const office = me.role === "owner" || me.role === "dispatch";
   const onJob = ((job.assign && job.assign.crew) || []).indexOf(me.staff) >= 0;
   if (!office && !onJob) return { ok: false, message: "You can only text customers on your own jobs." };
@@ -429,6 +432,7 @@ async function remindJob(org: string, jobId: string, origin?: string | null): Pr
   if (!line) return { ok: false, message: "The company line is not set up yet." };
   const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
   if (!job) return { ok: false, message: "That job is not available." };
+  if (job.test) return { ok: false, message: "Test job: its phone numbers are made up, so nothing is sent." };
   const d = job.d || {};
   if (job.status !== "booked" || !d.moveDate || d.moveDate < today()) return { ok: false, message: "Only upcoming booked jobs need confirming." };
   const crew: string[] = (job.assign && job.assign.crew) || [];
@@ -461,7 +465,7 @@ export async function runTomorrow(): Promise<J> {
     const S = await getDoc(org, "org/settings");
     if (!alertOn(S, "tomorrow")) { report.push({ org, skipped: "off" }); continue; }
     const rows = await rest("GET", "docs?select=doc_id,data&org_id=eq." + q(org) + "&collection=eq.jobs&" + q("data->d->>moveDate") + "=eq." + q(day));
-    const jobs = (rows || []).map((r: J) => ({ id: r.doc_id, job: r.data })).filter((x: J) => x.job && x.job.status === "booked")
+    const jobs = (rows || []).map((r: J) => ({ id: r.doc_id, job: r.data })).filter((x: J) => x.job && x.job.status === "booked" && !x.job.test)
       .sort((a: J, b: J) => String((a.job.d || {}).time || "") < String((b.job.d || {}).time || "") ? -1 : 1);
     if (!jobs.length) { report.push({ org, jobs: 0 }); continue; }
     const C = contacts(S), co = company(S), link = appLink(S);
@@ -523,6 +527,7 @@ async function startCall(org: string, me: J, jobId: string): Promise<J> {
   if (!line) return { ok: false, message: "The company line is not set up yet." };
   const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
   if (!job) return { ok: false, message: "That job is not available." };
+  if (job.test) return { ok: false, message: "Test job: its phone numbers are made up, so nothing is sent." };
   const office = me.role === "owner" || me.role === "dispatch";
   const onJob = ((job.assign && job.assign.crew) || []).indexOf(me.staff) >= 0;
   if (!office && !onJob) return { ok: false, message: "You can only call customers on your own jobs." };

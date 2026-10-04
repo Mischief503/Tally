@@ -11,7 +11,11 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.ViewGroup;
+import android.content.pm.PackageInfo;
+import android.content.pm.Signature;
+import android.os.Build;
 import android.webkit.ConsoleMessage;
+import android.webkit.JavascriptInterface;
 import android.webkit.GeolocationPermissions;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -28,7 +32,17 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.webkit.WebViewAssetLoader;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -129,8 +143,113 @@ public class MainActivity extends Activity {
             }
         });
 
+        web.addJavascriptInterface(new NativeBridge(), "TallyNative");
+
         if (saved != null) web.restoreState(saved);
         else web.loadUrl(START);
+    }
+
+    /* ---------- Google Maps distances ----------
+       The Google key comes from the TALLY_GOOGLE_MAPS_KEY repository secret at build time.
+       Each request names this app and its signing key, so a key restricted to
+       "Android apps: com.tally.movers + this SHA-1" works here and nowhere else. */
+    private class NativeBridge {
+        @JavascriptInterface
+        public boolean hasGoogle() {
+            return BuildConfig.MAPS_KEY != null && !BuildConfig.MAPS_KEY.isEmpty();
+        }
+
+        @JavascriptInterface
+        public void routeDistance(final String id, final String from, final String to) {
+            new Thread(() -> {
+                final String result = googleRoute(from, to);
+                runOnUiThread(() -> {
+                    if (web != null) web.evaluateJavascript("window.__tallyNativeDone&&window.__tallyNativeDone(" + JSONObject.quote(id) + "," + result + ")", null);
+                });
+            }).start();
+        }
+    }
+
+    private String googleRoute(String from, String to) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("origin", new JSONObject().put("address", from));
+            body.put("destination", new JSONObject().put("address", to));
+            body.put("travelMode", "DRIVE");
+            HttpURLConnection c = (HttpURLConnection) new URL("https://routes.googleapis.com/directions/v2:computeRoutes").openConnection();
+            c.setConnectTimeout(15000);
+            c.setReadTimeout(20000);
+            c.setRequestMethod("POST");
+            c.setDoOutput(true);
+            c.setRequestProperty("Content-Type", "application/json");
+            c.setRequestProperty("X-Goog-Api-Key", BuildConfig.MAPS_KEY);
+            c.setRequestProperty("X-Goog-FieldMask", "routes.distanceMeters,routes.duration");
+            c.setRequestProperty("X-Android-Package", getPackageName());
+            c.setRequestProperty("X-Android-Cert", signingSha1());
+            try (OutputStream o = c.getOutputStream()) {
+                o.write(body.toString().getBytes(StandardCharsets.UTF_8));
+            }
+            int code = c.getResponseCode();
+            String text = readAll(code >= 400 ? c.getErrorStream() : c.getInputStream());
+            JSONObject out = new JSONObject();
+            if (code == 200) {
+                JSONObject res = new JSONObject(text.isEmpty() ? "{}" : text);
+                JSONArray routes = res.optJSONArray("routes");
+                if (routes == null || routes.length() == 0 || !routes.getJSONObject(0).has("distanceMeters")) {
+                    return out.put("ok", false).put("message", "No driving route between those addresses. Check them.").toString();
+                }
+                JSONObject r = routes.getJSONObject(0);
+                double miles = Math.round(r.getDouble("distanceMeters") / 1609.344 * 10) / 10.0;
+                long secs = Long.parseLong(r.optString("duration", "0s").replace("s", "").trim().isEmpty() ? "0" : r.optString("duration", "0s").replace("s", "").trim());
+                return out.put("ok", true).put("src", "google").put("miles", miles).put("minutes", Math.round(secs / 60.0)).toString();
+            }
+            Log.w(TAG, "Google Routes " + code + ": " + text);
+            if (code == 400 && text.toLowerCase().matches("(?s).*(address|geocod|location).*")) {
+                return out.put("ok", false).put("message", "Google Maps could not find one of those addresses.").toString();
+            }
+            if (code == 401 || code == 403) {
+                return out.put("ok", false).put("keyProblem", true).put("message", "Google Maps turned the key down (" + code + "). Check the key's app restriction and that Routes API is on.").toString();
+            }
+            return out.put("ok", false).put("keyProblem", true).put("message", "Google Maps did not answer (" + code + ").").toString();
+        } catch (Exception e) {
+            Log.w(TAG, "Google Routes failed: " + e);
+            try {
+                return new JSONObject().put("ok", false).put("keyProblem", true).put("message", "Could not reach Google Maps. Check the phone's connection.").toString();
+            } catch (Exception ignored) {
+                return "{\"ok\":false}";
+            }
+        }
+    }
+
+    private static String readAll(InputStream in) throws java.io.IOException {
+        if (in == null) return "";
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        byte[] buf = new byte[8192];
+        int n;
+        while ((n = in.read(buf)) > 0) b.write(buf, 0, n);
+        in.close();
+        return b.toString("UTF-8");
+    }
+
+    /* The SHA-1 of the key this APK is signed with: what Google checks against the key's restriction. */
+    @SuppressWarnings("deprecation")
+    private String signingSha1() {
+        try {
+            Signature[] sigs;
+            if (Build.VERSION.SDK_INT >= 28) {
+                PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
+                sigs = pi.signingInfo.getApkContentsSigners();
+            } else {
+                PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), PackageManager.GET_SIGNATURES);
+                sigs = pi.signatures;
+            }
+            byte[] d = MessageDigest.getInstance("SHA-1").digest(sigs[0].toByteArray());
+            StringBuilder sb = new StringBuilder();
+            for (byte x : d) sb.append(String.format("%02X", x));
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /* Calls, texts, maps and websites open in the phone's own apps. */

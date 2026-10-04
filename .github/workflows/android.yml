@@ -56,7 +56,11 @@ jobs:
 
       - name: Build the APK
         working-directory: android
-        run: gradle --no-daemon assembleRelease
+        env:
+          TALLY_GOOGLE_MAPS_KEY: ${{ secrets.TALLY_GOOGLE_MAPS_KEY }}
+        run: |
+          if [ -n "$TALLY_GOOGLE_MAPS_KEY" ]; then echo "::notice title=Google Maps::Key is set; quote distances use Google."; else echo "::notice title=Google Maps::No key yet; quote distances use OpenStreetMap."; fi
+          gradle --no-daemon assembleRelease
 
       - name: Let the emulator use hardware acceleration
         run: |

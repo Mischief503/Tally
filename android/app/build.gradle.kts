@@ -15,6 +15,8 @@ android {
         targetSdk = 35
         versionCode = run
         versionName = "1.0.$run"
+        // Google Maps key for quote distances (repository secret TALLY_GOOGLE_MAPS_KEY). Empty = not used.
+        buildConfigField("String", "MAPS_KEY", "\"" + (System.getenv("TALLY_GOOGLE_MAPS_KEY") ?: "").replace("\"", "") + "\"")
     }
 
     // One signing key for every build, so updates install over each other.

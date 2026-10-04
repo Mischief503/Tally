@@ -3,7 +3,7 @@
 const { load, ok, sleep, summary } = require('./lib');
 const SHOP = '1200 Industrial Blvd, Austin, TX', A = '418 Oak St, Austin, TX', B = '77 Ridge Rd, Round Rock, TX';
 const PTS = { [SHOP]: [-97.70, 30.33], [A]: [-97.75, 30.27], [B]: [-97.68, 30.51] };
-const ROUTE = { 'S>A': [19795, 1320], 'A>B': [36049, 1862], 'B>S': [29129, 1500] };
+const ROUTE = { 'S>A': [19795, 1320], 'A>S': [19800, 1310], 'A>B': [36049, 1862], 'B>S': [29129, 1500] };
 const nameOf = (lon, lat) => Object.keys(PTS).find((k) => Math.abs(PTS[k][0] - lon) < 1e-6 && Math.abs(PTS[k][1] - lat) < 1e-6);
 const tag = (n) => (n === SHOP ? 'S' : n === A ? 'A' : 'B');
 (async () => {
@@ -51,12 +51,26 @@ const tag = (n) => (n === SHOP ? 'S' : n === A ? 'A' : 'B');
   ok(log.some((u) => u.includes('photon')) && log.some((u) => u.includes('nominatim')), 'when the first address service fails, the second is tried');
   type('[data-d="to"]', B, true); await sleep(2500);
   ok(P.$('[data-d="miles"]').value === '22.4', 'back to a known address: cached, filled straight away');
+  // ---- the Android app with a Google key: Google first
+  const G = await load(__dirname + '/../../build/tally-supabase.html', { net });
+  let gcalls = [], mode = 'ok';
+  G.w.TallyNative = { hasGoogle: () => true, routeDistance: (id, a, b) => { gcalls.push(a + '|' + b); setTimeout(() => G.w.__tallyNativeDone(id, mode === 'ok' ? { ok: true, src: 'google', miles: 22.9, minutes: 30 } : { ok: false, keyProblem: true, message: 'Google Maps turned the key down (403).' }), 20); } };
+  G.T.state().settings.shopAddress = '';
+  G.click('#fab'); await sleep(15);
+  const gType = (sel, v) => { const e = G.$(sel); e.value = v; e.dispatchEvent(new G.w.Event('input', { bubbles: true })); e.dispatchEvent(new G.w.Event('change', { bubbles: true })); };
+  log.length = 0;
+  gType('[data-d="from"]', A); gType('[data-d="to"]', B); await sleep(200);
+  ok(gcalls.length === 1 && G.$('[data-d="miles"]').value === '22.9' && log.length === 0, 'with a Google key the app asks Google, not OpenStreetMap');
+  ok(/Distances from Google Maps/.test(G.$('#distNote').textContent), 'note says Google Maps');
+  mode = 'refused';
+  gType('[data-d="to"]', SHOP); await sleep(4000);
+  ok(log.some((u) => u.includes('router.project-osrm.org')) && /turned the key down/.test(G.$('#distNote').textContent), 'if Google refuses the key, OpenStreetMap fills in and the note says why');
   // the artifact never tries
   const Ar = await load(__dirname + '/../../build/tally-artifact.html', { net: async (u) => { throw new Error('artifact fetched ' + u); } });
   Ar.click('#fab'); await sleep(15);
   const t2 = (sel, v) => { const e = Ar.$(sel); e.value = v; e.dispatchEvent(new Ar.w.Event('input', { bubbles: true })); e.dispatchEvent(new Ar.w.Event('change', { bubbles: true })); };
   t2('[data-d="from"]', A); t2('[data-d="to"]', B); await sleep(50);
   ok(/Type the miles from the map/.test(Ar.$('#distNote').textContent) && !!Ar.$('#distNote a'), 'artifact: still the map link, no outside calls');
-  ok(P.errors.length === 0 && Ar.errors.length === 0, 'no errors (' + P.errors.concat(Ar.errors).slice(0, 3).join(' | ') + ')');
+  ok(P.errors.length === 0 && G.errors.length === 0 && Ar.errors.length === 0, 'no errors (' + P.errors.concat(G.errors, Ar.errors).slice(0, 3).join(' | ') + ')');
   process.exit(summary('free lookup') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

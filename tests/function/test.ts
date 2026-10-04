@@ -416,7 +416,8 @@ t1.confirm = { Marcus: { ts: 1, for: tmw + " 08:00" } };
 const t2 = job("t2", { assign: { truckId: "t26", crew: ["Marcus"] }, d: { ...job("t2").d, name: "Nadia Farouk", moveDate: tmw, time: "13:00", from: "1502 E 6th" } });
 const t3 = job("t3", { status: "quoted", assign: { truckId: "", crew: ["Kim"] }, d: { ...job("t3").d, moveDate: tmw } });
 const t4 = job("t4", { assign: { truckId: "", crew: [] }, d: { ...job("t4").d, name: "Sam K", moveDate: tmw } });
-[t1, t2, t3, t4].forEach((x) => putDoc(ORG, "jobs/" + x.id, x));
+const t5 = job("t5", { test: true, assign: { truckId: "", crew: ["Kim"] }, d: { ...job("t5").d, moveDate: tmw } });
+[t1, t2, t3, t4, t5].forEach((x) => putDoc(ORG, "jobs/" + x.id, x));
 const cron = (h?: string) => fn.handle(new Request(BASE + "/cron/tomorrow", { method: "POST", headers: h ? { "x-tally-cron": h } : {} }));
 let cr = await cron("guess");
 ok(cr.status === 403, "evening run refuses without the secret (none set)");
@@ -466,6 +467,22 @@ Deno.env.set("GOOGLE_MAPS_KEY", "bad");
 r = await app("tok-dispatch", { action: "distance", org: ORG, from: "418 Oak St", to: "77 Ridge" });
 ok(!r.body.ok && /did not answer \(403\)/.test(r.body.message) && !/bad|key/i.test(r.body.message), "a bad key fails without exposing it");
 Deno.env.set("GOOGLE_MAPS_KEY", "gkey");
+
+/* ---------- test jobs never text or call ---------- */
+putDoc(ORG, "org/settings", settings);
+putDoc(ORG, "jobs/tj", job("tj", { test: true, assign: { truckId: "t26", crew: ["Marcus", "Dee"] } }));
+n0 = sent.length;
+r = await app("tok-dispatch", { action: "job", org: ORG, jobId: "tj" });
+ok(r.body.skipped === "test" && sent.length === n0, "assigning crew to a test job texts nobody");
+r = await app("tok-marcus", { action: "eta", org: ORG, jobId: "tj", minutes: 20 });
+ok(!r.body.ok && /Test job/.test(r.body.message) && sent.length === n0, "no arrival text for a test job");
+r = await app("tok-marcus", { action: "call", org: ORG, jobId: "tj" });
+ok(!r.body.ok && /Test job/.test(r.body.message) && sent.length === n0, "no masked call for a test job");
+r = await app("tok-dispatch", { action: "remind", org: ORG, jobId: "tj" });
+ok(!r.body.ok && /Test job/.test(r.body.message) && sent.length === n0, "no reminder for a test job");
+putDoc(ORG, "jobs/tj2", job("tj2", { test: true, status: "done" }));
+r = await app("tok-marcus", { action: "forms", org: ORG, jobId: "tj2" });
+ok(r.body.skipped === "test" && sent.length === n0, "no forms text for a test job");
 
 /* ---------- CORS and routing ---------- */
 const pre = await fn.handle(new Request(BASE + "/app", { method: "OPTIONS" }));

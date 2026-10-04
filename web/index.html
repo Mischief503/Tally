@@ -1354,6 +1354,7 @@ function renderJobs(){
     if(cf.length)badges+=' <span class="pill bad">Double-booked</span>';
     if((j.crewNotes||[]).length)badges+=' <span class="pill">'+j.crewNotes.length+' crew note'+(j.crewNotes.length===1?'':'s')+'</span>';
     if(needsSched(j))badges+=' <span class="pill warn">Needs scheduling</span>';
+    if(j.test)badges+=' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>';
     if(j.status==='done'&&bal>0)badges+=' <span class="pill due">'+money(bal)+' due</span>';
     return '<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><div class="t">'+esc(j.d.name||'Unnamed')+'</div><div class="r">'+(j.quote.cf?money(totalOf(j)):'')+'</div></div><div class="route">'+esc(fmtDate(j.d.moveDate))+(j.d.time&&j.d.moveDate?' · '+fmtTime(j.d.time):'')+' · '+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</div><div>'+pill(j.status)+badges+'</div></button>';
   }).join('');
@@ -1403,7 +1404,7 @@ function renderSheet(){
   if(j.status==='booked'&&needsSched(j))nowIx=0;
   var rail=j.status==='lost'?'':'<div class="rail">'+steps.map(function(st,i){return '<span class="st '+(i<nowIx?'done':i===nowIx?'now':'')+'"><i></i><span>'+st[0]+'</span></span>'}).join('')+'</div>';
   el.innerHTML='<div class="scrim" data-act="sheet:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Job details">'+
-   '<div class="sheet-head"><div><h2>'+esc(j.d.name||'Unnamed')+'</h2><div style="margin-top:4px">'+pill(j.status)+' <small>'+fmtInt(q.cf)+' cu ft · '+q.crew+' movers · '+q.hours+' h</small></div></div><button class="btn sm" data-act="sheet:close" id="sheetClose">Close</button></div>'+
+   '<div class="sheet-head"><div><h2>'+esc(j.d.name||'Unnamed')+'</h2><div style="margin-top:4px">'+pill(j.status)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+' <small>'+fmtInt(q.cf)+' cu ft · '+q.crew+' movers · '+q.hours+' h</small></div></div><button class="btn sm" data-act="sheet:close" id="sheetClose">Close</button></div>'+
    '<div class="sheet-body">'+rail+
    '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paid>0?' paid':'')+'"><b>'+money(paid)+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>'+(bal>0?'Balance':'Paid in full')+'</span></div></div>'+
    '<div class="row sec">'+(na?'<button class="btn primary grow" data-act="'+na.act+'">'+na.label+'</button>':'')+'<button class="btn grow" data-act="sh:requote">Edit quote</button></div>'+
@@ -1464,7 +1465,7 @@ function renderDispatch(){
   var jobs=onDay(ui.day).sort(function(a,b){return startMin(a)-startMin(b)});
   var block=function(j){
     var cf=conflictsFor(j).length;
-    return '<button class="block'+(j.status==='quoted'?' tent':'')+(cf?' clash':'')+'" data-act="job:open" data-id="'+j.id+'"><span class="tm">'+fmtTime(j.d.time)+' · '+esc(j.d.name)+'</span><small>'+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</small><small>'+(j.assign.crew.length?esc(j.assign.crew.join(', ')):'No crew')+' · '+(j.quote.hours||3)+' h'+(needsConfirm(j)&&j.assign.crew.length?' · '+j.assign.crew.filter(function(c){return isConfirmed(j,c)}).length+'/'+j.assign.crew.length+' confirmed':'')+'</small><span>'+pill(j.status)+(cf?' <span class="pill bad">Double-booked</span>':'')+'</span></button>'};
+    return '<button class="block'+(j.status==='quoted'?' tent':'')+(cf?' clash':'')+'" data-act="job:open" data-id="'+j.id+'"><span class="tm">'+fmtTime(j.d.time)+' · '+esc(j.d.name)+(j.test?' · test':'')+'</span><small>'+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</small><small>'+(j.assign.crew.length?esc(j.assign.crew.join(', ')):'No crew')+' · '+(j.quote.hours||3)+' h'+(needsConfirm(j)&&j.assign.crew.length?' · '+j.assign.crew.filter(function(c){return isConfirmed(j,c)}).length+'/'+j.assign.crew.length+' confirmed':'')+'</small><span>'+pill(j.status)+(cf?' <span class="pill bad">Double-booked</span>':'')+'</span></button>'};
   var used={},crewUsed={};
   jobs.forEach(function(j){if(j.assign.truckId)used[j.assign.truckId]=1;j.assign.crew.forEach(function(c){crewUsed[c]=1})});
   var lanes=S.trucks.map(function(tr){
@@ -1551,7 +1552,7 @@ function renderCrew(){
       (['done','paid'].indexOf(j.status)>=0?'':'<div style="margin-top:12px"><small>Send an update to the office and crew</small><div class="scrollx" style="margin-top:6px">'+UPDATES.map(function(u,i){return '<button class="chip" data-act="cr:update" data-id="'+j.id+'" data-u="'+i+'" data-who="'+esc(me)+'">'+u+'</button>'}).join('')+'</div></div>');
     var nItems=(j.materials||[]).length+(j.costs||[]).length;
     var billIn=asLead&&(j.status==='active'||j.status==='done');
-    return '<section class="card crewcard"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+'</h3><div class="cc-sub">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</div><div class="cc-sub">Crew: '+(crewLine||'none')+'</div>'+(j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+'</div>'+pill(j.status)+'</div>'+
+    return '<section class="card crewcard"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+'</h3><div class="cc-sub">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</div><div class="cc-sub">Crew: '+(crewLine||'none')+'</div>'+(j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+'</div>'+pill(j.status)+'</div>'+
       '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+
       '<div class="cc-actions">'+main+(j.d.phone?'<button class="btn" data-act="call:cust" data-id="'+j.id+'">Call</button>':'')+'</div>'+
       (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+(asLead&&j.status==='active'&&phaseNext(j)>0?'<button class="btn sm ghost" data-act="cr:phaseundo" data-id="'+j.id+'" data-who="'+esc(me)+'">Undo “'+PHASES[phaseNext(j)-1][1]+'”</button>':'')+'</div>':'')+
@@ -1702,7 +1703,7 @@ function renderSettingsRaw(){
    '<section class="card"><h2>Saved payment methods</h2><p class="sub">Only the last four digits are kept. Customers find their saved cards and bank accounts when they pay.</p>'+vaultList+'</section>'+
    '<section class="card"><h2>Bid accuracy</h2>'+nf('A job counts as accurate when actual hours land within this % of the bid','bidTol','1')+'</section>'+
    '<section class="card"><h2>Your data</h2><p class="sub">'+(sync.mode==='shared'?'This workspace is shared, so these actions change data for everyone.':'Stored on this device. Copy an export to back it up or move it.')+'</p><div class="row"><button class="btn" data-act="st:export">Export data</button><label class="check" style="min-height:44px"><input type="checkbox" id="expPhotos"> Include photos</label></div><textarea class="code" id="dataBox" placeholder="Export appears here. Paste an export here to import." aria-label="Data export or import">'+esc(ui.exportText||'')+'</textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="st:copy">Copy</button><button class="btn primary" data-act="st:import">Import</button></div>'+
-   '<div class="row" style="margin-top:14px">'+arm('st:demo','Load sample data')+arm('st:clearjobs','Delete all jobs')+arm('st:reset','Reset everything')+'</div></section>';
+   '<div class="row" style="margin-top:14px">'+arm('st:testpack','Add 3 weeks of test jobs')+(state.jobs.some(function(j){return j.test})?arm('st:rmtest','Remove the '+state.jobs.filter(function(j){return j.test}).length+' test jobs'):'')+'</div>'+'<p class="hint">Test jobs are made up: last week through three weeks out, in every stage, using your crew and trucks. They are tagged “Test”, never send a text or call, and Remove takes out only them.</p>'+'<div class="row" style="margin-top:14px">'+arm('st:demo','Load sample data')+arm('st:clearjobs','Delete all jobs')+arm('st:reset','Reset everything')+'</div></section>';
 }
 
 /* ---------- render core ---------- */
@@ -1938,7 +1939,7 @@ function jobDoc(j){
   var dd=Object.assign({},j.d);
   dd.items=Object.keys(j.d.items||{}).map(function(k){return {id:k,q:j.d.items[k]}});
   var o={id:j.id,status:j.status,createdAt:j.createdAt,d:dd,quote:j.quote,items:j.items||[],assign:j.assign||{truckId:'',crew:[]},tally:j.tally||{}};
-  ['startedAt','finishedAt','actualHours','phases','minPaid'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
   o.payments=toMap(j.payments,function(x){return x.id});
   o.signed=toMap(j.signed,function(x){return x.id});
   o.extras=toMap(j.extras,function(x){return x.id});
@@ -1961,7 +1962,7 @@ function docToJob(v){
     photos:mapArr(v.photos,'ts').map(function(p){return {id:p.id,kind:p.kind,ts:p.ts,data:sync.photoCache[p.id]}}),
     materials:mapArr(v.materials,'ts'),costs:mapArr(v.costs,'ts'),confirm:(v.confirm&&typeof v.confirm==='object')?v.confirm:{},
     log:mapArr(v.log,'ts').slice(-60)};
-  ['startedAt','finishedAt','actualHours','phases','minPaid'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
   return j;
 }
 function jobDiff(prev,cur){
@@ -2636,7 +2637,7 @@ function commsWatch(){
   state.jobs.forEach(function(j){
     var s=commSig(j);if(comms.seen[j.id]===s)return;
     var had=comms.seen[j.id]!=null;comms.seen[j.id]=s;
-    if(live&&had)commsSchedule(j.id);
+    if(live&&had&&!j.test)commsSchedule(j.id);
   });
 }
 function commsSchedule(id){clearTimeout(comms.timers[id]);comms.timers[id]=setTimeout(function(){commsPing(id)},comms.SETTLE)}
@@ -2652,7 +2653,7 @@ function commsPing(id){
 }
 function commsFlush(){Object.keys(comms.timers).forEach(function(id){clearTimeout(comms.timers[id]);delete comms.timers[id];if(commsReady())window.tallyComms.job(id)})}
 function commsFormsCheck(j){
-  if(!commsReady()||!(j.status==='done'||(j.status==='active'&&j.phases&&j.phases.unloadEnd))||!formsPending(j).length)return;
+  if(j.test||!commsReady()||!(j.status==='done'||(j.status==='active'&&j.phases&&j.phases.unloadEnd))||!formsPending(j).length)return;
   setTimeout(function(){window.tallyComms.forms(j.id).then(function(r){if(r&&r.sent>0)toast('The office has been texted that forms are still waiting.')})},sync.inflight['jobs/'+j.id]?2500:300);
 }
 function commsLoadLog(id,loud){
@@ -2764,7 +2765,8 @@ function renderDistNote(){
   else if(dist.err&&dist.errKey===k)h=esc(dist.err)+' Type the miles instead.'+btn+link;
   else h='Leave the address field and the distance fills itself in.'+btn;
   if(r&&dist.busy!==k&&String(d.miles||'').trim()===String(r.miles))h+=btn;
-  if(r&&r.src==='osm')h+='<br><small>Distances from OpenStreetMap (© OpenStreetMap contributors).</small>';
+  if(r&&r.src==='osm')h+='<br><small>Distances from OpenStreetMap (© OpenStreetMap contributors).'+(r.note?' Google Maps: '+esc(r.note):'')+'</small>';
+  if(r&&r.src==='google')h+='<br><small>Distances from Google Maps.</small>';
   el.innerHTML=h;
 }
 
@@ -2775,8 +2777,23 @@ function renderDistNote(){
       apart, which is what those free services ask for.
    The claude.ai artifact can't reach any outside service, so it keeps the map link. */
 function canFree(){return !window.TALLY_ARTIFACT&&typeof fetch==='function'}
-function canLookup(){return !!window.tallyMaps||canFree()}
+function hasNativeGoogle(){try{return !!(window.TallyNative&&window.TallyNative.hasGoogle&&window.TallyNative.hasGoogle())}catch(e){return false}}
+function canLookup(){return hasNativeGoogle()||!!window.tallyMaps||canFree()}
+/* the Android app asks Google itself, with the key locked to this app */
+var nativeWait={};
+window.__tallyNativeDone=function(id,r){var f=nativeWait[id];if(f){delete nativeWait[id];f(r||{ok:false})}};
+function nativeDistance(a,b){
+  return new Promise(function(res){
+    var id=uid();nativeWait[id]=res;
+    setTimeout(function(){if(nativeWait[id]){delete nativeWait[id];res({ok:false,keyProblem:true,message:'Google Maps did not answer.'})}},25000);
+    try{window.TallyNative.routeDistance(id,a,b)}catch(e){delete nativeWait[id];res({ok:false,keyProblem:true,message:'Google Maps is not available in this app.'})}
+  });
+}
 function mapsDistance(a,b){
+  if(hasNativeGoogle())return nativeDistance(a,b).then(function(r){
+    if(r&&r.keyProblem){console.warn('Google Maps: '+r.message);return canFree()?freeDistance(a,b).then(function(x){if(x&&x.ok)x.note=r.message;return x}):r}
+    return r;
+  });
   if(window.tallyMaps&&window.tallyMaps.distance)return window.tallyMaps.distance(a,b).then(function(r){return r&&r.setup&&canFree()?freeDistance(a,b):r},function(){return canFree()?freeDistance(a,b):{ok:false,message:'Could not look up the drive.'}});
   return freeDistance(a,b);
 }
@@ -2942,6 +2959,72 @@ function phaseRows(j){
     return '<div class="ps '+st+'"><span><i></i>'+s[0]+'</span><span>'+right+'</span></div>';
   }).join('');
 }
+/* ---------- test pack ----------
+   Made-up jobs for trying every part of Tally. Same crew and trucks as the company, two
+   time slots per truck so nobody is double-booked, a fixed seed so every load looks alike. */
+var TP_FIRST=['Harper','Diego','Priya','Owen','Mai','Grace','Leo','Sofia','Caleb','Nora','Isaac','Ruby','Hannah','Theo','Ava','Elijah','Zoe','Samuel','Lily','Jonah','Maya','Felix','Chloe','Ezra','Ivy','Rowan','Nadia','Silas','Wren','Jasper'];
+var TP_LAST=['Lane','Morales','Shah','Fitzgerald','Tran','Okafor','Brennan','Reyes','Wright','Lindqvist','Patel','Chen','Kim','Novak','Robinson','Brooks','Fischer','Ortiz','Nakamura','Weiss','Johnson','Andersen','Dubois','Cohen','Martinez','Clarke','Haddad','Grant','Takahashi','Moreau'];
+var TP_ADDR=['2310 SE Hawthorne Blvd, Portland, OR','8125 N Lombard St, Portland, OR','1450 NW Everett St, Portland, OR','3922 NE Sandy Blvd, Portland, OR','11850 SW Canyon Rd, Beaverton, OR','4400 SE Division St, Portland, OR','17200 SE Stark St, Portland, OR','5200 SE Foster Rd, Portland, OR','1820 NE Alberta St, Portland, OR','16100 SW Boones Ferry Rd, Lake Oswego, OR','12000 SW Pacific Hwy, Tigard, OR','650 NE Cornell Rd, Hillsboro, OR','10700 SE Main St, Milwaukie, OR','2400 NE 162nd Ave, Portland, OR','3600 N Williams Ave, Portland, OR','7300 SW Macadam Ave, Portland, OR','900 NE Burnside Rd, Gresham, OR','2200 Main St, Vancouver, WA','6100 NE Fremont St, Portland, OR','4100 SW Beaverton Hillsdale Hwy, Portland, OR'];
+var TP_NOTES=['Gate code 4411.','Third floor walk-up, no elevator.','Piano on the ground floor.','Parking permit is on the dash.','Customer works nights; call after 9 AM.','Two cats; keep the back door shut.','Long carry from the street, about 75 ft.',''];
+function tpRand(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function testPack(S){
+  var rnd=tpRand(20261004),r=function(k){return Math.floor(rnd()*k)},t=todayISO(),out=[],ni=0;
+  var SIZES=[{sofa3:1,bedq:1,dresser:1,tv:1,boxm:10,boxs:6},{sofa3:1,chair:2,coffee:1,tvstand:1,tv:1,bedq:1,dresser:1,nightstand:2,dintable:1,dinchair:4,boxs:8,boxm:14,boxl:6},
+    {sofa3:1,loveseat:1,recliner:1,bedk:1,bedq:1,dresser:2,nightstand:3,dintable:1,dinchair:6,fridge:1,washer:1,dryer:1,boxs:12,boxm:24,boxl:10,boxw:3},
+    {desk:4,ochair:4,filecab:3,bookcase:2,boxm:18,boxl:8},{piano:1,sofa3:1,bedq:1,dresser:1,boxm:10,boxs:4}];
+  var leads=(S.leads||[]).filter(function(x){return S.crew.indexOf(x)>=0}),base=S.crew.filter(function(x){return leads.indexOf(x)<0});
+  if(!leads.length)leads=(S.office||[]).map(function(o){return o.name}).slice(0,1);
+  var trucks=(S.trucks||[]).slice(0,3),slots=['08:00','13:00'];
+  var form=formsRequired()[0];
+  function nextName(){var f=TP_FIRST[ni%TP_FIRST.length],l=TP_LAST[(ni*7+Math.floor(ni/TP_FIRST.length))%TP_LAST.length];ni++;return f+' '+l}
+  function at(day,time,minsLater){var p=parseISO(day),hm=time.split(':');p.setHours(+hm[0],+hm[1]+(minsLater||0),0,0);return p.getTime()}
+  function mk(day,time,status){
+    var a=r(TP_ADDR.length),b=(a+1+r(TP_ADDR.length-1))%TP_ADDR.length;
+    var d=Object.assign(blankDraft(),{name:nextName(),phone:'503-555-01'+String(r(100)).padStart(2,'0'),source:['Google','Referral','Yelp','Facebook','Repeat customer'][r(5)],
+      moveDate:day||'',time:time||'08:00',from:TP_ADDR[a],to:TP_ADDR[b],miles:String(4+r(25)),flights:String(r(4)),pack:rnd()<0.3,items:clone(SIZES[r(SIZES.length)]),notes:TP_NOTES[r(TP_NOTES.length)]});
+    var j=newJob(d,S,status);j.test=true;j.confirm={};j.createdAt=Date.now()-(3+r(20))*864e5;j.log.push({ts:j.createdAt,ev:'Test job'});
+    out.push(j);return j;
+  }
+  function staff(j,busy,truck){
+    var need=j.quote.crew||2,lead=leads.filter(function(x){return !busy[x]})[0];
+    var crew=[];if(lead){crew.push(lead);busy[lead]=1}
+    base.forEach(function(x){if(crew.length<need&&!busy[x]){crew.push(x);busy[x]=1}});
+    j.assign={truckId:truck?truck.id:'',crew:crew};
+  }
+  function deposit(j,day){var amt=j.quote.deposit||Math.round(j.quote.total*0.25);j.payments.push({id:uid(),amt:amt,method:'Card',date:addDays(day,-5),ts:at(addDays(day,-5),'10:00')})}
+  for(var off=-7;off<=20;off++){
+    var day=addDays(t,off),dow=parseISO(day).getDay();if(dow===0&&off!==0)continue;   /* Sundays off, except today, so there is always something to try */
+    var count=Math.min(trucks.length*2,off<0?3+r(2):3+r(3)),busy={'08:00':{},'13:00':{}};
+    for(var k=0;k<count;k++){
+      var truck=trucks[k%trucks.length],time=slots[Math.floor(k/trucks.length)]||'13:00',roll=rnd(),j;
+      if(off<0){
+        j=mk(day,time,'booked');staff(j,busy[time],truck);deposit(j,day);
+        var short=rnd()<0.15;j.actualHours=short?1.2:Math.round(j.quote.hours*(0.8+rnd()*0.45)*10)/10;
+        j.startedAt=at(day,time,20);j.finishedAt=j.startedAt+j.actualHours*36e5;j.phases=demoPhases(j);j.minPaid=num(S.minHours);
+        var signed=roll<0.85;
+        if(signed&&form)j.signed.push({id:uid(),formId:form.id,title:form.title,name:j.d.name,sig:'',ts:j.finishedAt,by:j.assign.crew[0]||''});
+        if(roll<0.55){j.status='paid';j.payments.push({id:uid(),amt:round2(totalOf(j)-paidOf(j)),method:['Card','Cash','Check'][r(3)],date:day,ts:j.finishedAt+6e5})}
+        else j.status='done';
+      }else if(off===0){
+        j=mk(day,time,'booked');staff(j,busy[time],truck);deposit(j,day);
+        if(k===0){j.status='active';j.startedAt=Date.now()-50*60000;j.phases={loadStart:Date.now()-25*60000}}
+        else j.assign.crew.forEach(function(c){j.confirm[c]={ts:Date.now()-864e5,for:slotOf(j)}});
+      }else if(off<=7){
+        j=mk(day,time,'booked');staff(j,busy[time],truck);if(rnd()<0.7)deposit(j,day);
+        j.assign.crew.forEach(function(c,ci){if(off<=2?ci>0||k>0:rnd()<0.5)j.confirm[c]={ts:Date.now()-r(48)*36e5,for:slotOf(j)}});
+      }else if(roll<0.6){
+        j=mk(day,time,'booked');staff(j,busy[time],truck);if(rnd()<0.5)deposit(j,day);
+      }else if(roll<0.8){
+        j=mk(day,time,'booked');if(rnd()<0.5)staff(j,busy[time],null);
+      }else j=mk(day,time,'quoted');
+      if(!j.confirm)j.confirm={};
+    }
+  }
+  for(var i=0;i<5;i++){var ld=mk('','08:00','lead');ld.d.items={};ld.quote=calc(ld.d,S);ld.items=[];ld.d.notes='Asked for a call back about a '+(2+r(3))+'-bedroom move.'}
+  for(var q=0;q<2;q++)mk(addDays(t,3+r(10)),'08:00','lost');
+  out.forEach(function(j){if(!j.confirm)j.confirm={}});
+  return out;
+}
 function demoPhases(j){
   var s=j.startedAt,T=j.finishedAt-s,k=((String(j.d.name).length%5)-2)*0.02,p={},t=s;
   [.11+k,.36-k,.13,.30+k/2].forEach(function(f,i){t+=Math.round(T*f);p[PHASES[i][0]]=t});
@@ -2977,7 +3060,7 @@ function renderStart(){
   var el=$('#start');if(!el)return;
   var s=ui.start,j=s&&byId(s.jobId);
   if(!j){ui.start=null;el.hidden=true;el.innerHTML='';syncLock();return}
-  var has=!!j.d.phone,on=has&&s.text,co=commsReady(),msg=etaText(j,s.mins);
+  var has=!!j.d.phone,on=has&&s.text,co=commsReady()&&!j.test,msg=etaText(j,s.mins);
   var chips=[15,20,30,45,60,90].map(function(m){return '<button class="chip'+(s.mins===m?' on':'')+'" data-act="go:set" data-m="'+m+'" aria-pressed="'+(s.mins===m)+'">'+m+' min</button>'}).join('');
   var box=on?'<div class="row" style="justify-content:center;gap:16px;margin:10px 0 8px"><button class="btn" data-act="go:mins" data-d="-5" aria-label="5 minutes sooner">−5</button><output class="eta-out" id="etaOut">'+s.mins+'<small>min</small></output><button class="btn" data-act="go:mins" data-d="5" aria-label="5 minutes later">+5</button></div>'+
     '<div class="chips" style="justify-content:center">'+chips+'</div>'+
@@ -2985,7 +3068,8 @@ function renderStart(){
     '<p class="hint">'+(co?'Sent from the company line '+esc(fmtPhone(window.tallyComms.number()))+' to '+esc(j.d.phone)+'. If they reply, it goes to the office.'
       :'Opens your texting app with this message, sent from your own number to '+esc(j.d.phone)+'. <button class="btn sm ghost" data-act="go:copy">Copy text</button>')+'</p>':'';
   var label=on?'Start job and text '+esc(j.d.name):'Start job';
-  var go=on&&!co?'<a class="btn primary bigbtn" data-act="go:start" href="'+esc(smsHref(j.d.phone,msg))+'">'+label+'</a>':'<button class="btn primary bigbtn" data-act="go:start">'+label+'</button>';
+  if(on&&j.test)box=box.replace(/<p class="hint">[\s\S]*<\/p>$/,'<p class="hint">Test job: this is what the customer would get. Nothing is sent.</p>');
+  var go=on&&!co&&!j.test?'<a class="btn primary bigbtn" data-act="go:start" href="'+esc(smsHref(j.d.phone,msg))+'">'+label+'</a>':'<button class="btn primary bigbtn" data-act="go:start">'+label+'</button>';
   el.innerHTML='<div class="scrim" data-act="go:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Start the job">'+
     '<div class="row between"><h2>Start '+esc(j.d.name)+'</h2><button class="btn sm" data-act="go:close">Cancel</button></div>'+
     '<p class="hint" style="margin:2px 0 6px">Pickup: '+esc(j.d.from||'not set')+'</p>'+
@@ -3184,7 +3268,7 @@ document.addEventListener('click',function(e){
     case 'go:copy':{var em=$('#etaMsg');if(!em)break;var etx=em.textContent;var selIt=function(){try{var rg=document.createRange();rg.selectNodeContents(em);var sl=window.getSelection();sl.removeAllRanges();sl.addRange(rg)}catch(x){}toast('Text selected. Copy it from here.')};
       try{navigator.clipboard.writeText(etx).then(function(){toast('Copied.')},selIt)}catch(x){selIt()}break}
     case 'go:start':{var gs=ui.start,sj=gs&&byId(gs.jobId);if(!sj)break;
-      var send=!!(sj.d.phone&&gs.text),viaCo=send&&commsReady(),isLink=t.tagName==='A';
+      var send=!!(sj.d.phone&&gs.text)&&!sj.test,viaCo=send&&commsReady(),isLink=t.tagName==='A';
       state.ui.etaMins=gs.mins;
       if(sj.status==='booked'||sj.status==='quoted')setStatus(sj,'active');
       if(send)logEv(sj,viaCo?'Arrival text sent: about '+gs.mins+' min':'Arrival text opened on '+(gs.who||'the')+(gs.who?'’s':'')+' phone: about '+gs.mins+' min');
@@ -3241,8 +3325,8 @@ document.addEventListener('click',function(e){
       if(lk0&&lk0!==cw)break;
       j.confirm=Object.assign({},j.confirm||{});j.confirm[cw]={ts:Date.now(),for:slotOf(j)};logEv(j,cw+' confirmed for '+fmtDate(j.d.moveDate)+' '+fmtTime(j.d.time));save();renderTab();renderTabs();
       toast('Confirmed. See you '+relDay(j.d.moveDate)+'.');break}
-    case 'jm:remind':{j=byId(ui.jobId);if(!j||!commsReady())break;toast('Texting a reminder…');window.tallyComms.remind(j.id).then(function(r){toast((r&&r.message)||'The reminder did not go out.');if(ui.jobId===j.id)commsLoadLog(j.id)});break}
-    case 'call:company':{var cc=ui.call;if(!cc)break;setCallPref(cc.key,'company');ui.call=null;renderCall();
+    case 'jm:remind':{j=byId(ui.jobId);if(!j||!commsReady())break;if(j.test){toast('Test job: no reminder sent.');break}toast('Texting a reminder…');window.tallyComms.remind(j.id).then(function(r){toast((r&&r.message)||'The reminder did not go out.');if(ui.jobId===j.id)commsLoadLog(j.id)});break}
+    case 'call:company':{var cc=ui.call;if(!cc)break;if((byId(cc.jobId)||{}).test){ui.call=null;renderCall();toast('Test job: the customer’s number is made up, so no call.');break}setCallPref(cc.key,'company');ui.call=null;renderCall();
       if(!commsReady()){toast('The company line is not set up yet.');break}
       toast('Calling your phone from the company line…');
       window.tallyComms.call(cc.jobId).then(function(r){toast((r&&r.message)||'Could not start the call.');if(ui.jobId===cc.jobId)commsLoadLog(cc.jobId)});break}
@@ -3343,6 +3427,8 @@ document.addEventListener('click',function(e){
     case 'st:export':var ex=clone(state);ex.draft=blankDraft();if(!$('#expPhotos').checked)ex.jobs.forEach(function(x){x.photos=[]});ui.exportText=JSON.stringify(ex);renderSettings();break;
     case 'st:copy':var box=$('#dataBox');box.select();try{document.execCommand('copy');toast('Copied.')}catch(er){toast('Select the text and copy it.')}break;
     case 'st:import':try{var p=JSON.parse($('#dataBox').value);if(!p.settings||!Array.isArray(p.jobs))throw 0;p.draft=blankDraft();p.shifts=p.shifts||[];p.vault=p.vault||[];p.chatMsgs=p.chatMsgs||[];p.locs=p.locs||{};p.ui=p.ui||{role:'owner',me:''};p.ui.reads=p.ui.reads||{};p.ui.who=p.ui.who||'';p.ui.theme=state.ui.theme;p.ui.mode=state.ui.mode;var DS=defaultSettings();p.settings.office=p.settings.office||DS.office;p.settings.contacts=p.settings.contacts||{};p.settings.leads=p.settings.leads||[];p.settings.forms=p.settings.forms||DS.forms;p.settings.activities=p.settings.activities||DS.activities;state=p;chat.msgs=state.chatMsgs;chat.locs=state.locs;save();ui.exportText='';render();toast('Imported '+state.jobs.length+' jobs.')}catch(er){toast('That does not look like a Tally export.')}break;
+    case 'st:testpack':if(armed(a)){var tp=testPack(S);state.jobs=state.jobs.concat(tp);save();renderSettings();toast('Added '+tp.length+' test jobs, from last week through three weeks out.')}break;
+    case 'st:rmtest':if(armed(a)){var nt0=state.jobs.length;state.jobs=state.jobs.filter(function(x){return !x.test});save();renderSettings();toast('Removed '+(nt0-state.jobs.length)+' test jobs. Your real jobs are untouched.')}break;
     case 'st:demo':if(armed(a)){state.jobs=demoJobs(S);state.shifts=demoShifts();state.demo=true;save();renderSettings();toast('Sample data loaded.')}break;
     case 'st:clearjobs':if(armed(a)){state.jobs=[];if(state.demo)state.shifts=[];state.demo=false;save();renderSettings();toast('All jobs deleted.')}break;
     case 'st:reset':if(armed(a)){state=freshState(false);save();ui.exportText='';render();toast('Reset.')}break;
