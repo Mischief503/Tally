@@ -454,6 +454,7 @@ Deno.env.set("GOOGLE_MAPS_KEY", "gkey");
 r = await app("tok-owner", { action: "distance", org: ORG, from: "418 Oak St, Austin", to: "77 Ridge Rd, Round Rock" });
 const rc = routesCalls[routesCalls.length - 1];
 ok(r.body.ok && r.body.miles === 22.4 && r.body.minutes === 31, "36,049 m and 1,862 s come back as 22.4 mi and 31 min");
+ok(r.body.src === "google", "the answer says it came from Google, so the quote can say so");
 ok(rc.h["X-Goog-FieldMask"] === "routes.distanceMeters,routes.duration" && rc.bd.travelMode === "DRIVE" && rc.bd.origin.address === "418 Oak St, Austin" && !rc.bd.routingPreference, "asks Google for driving distance only (the cheapest tier)");
 r = await app("tok-kim", { action: "distance", org: ORG, from: "a", to: "b" });
 ok(r.status === 403, "crew cannot use the lookup");

@@ -1,50 +1,68 @@
-# Google Maps distances in the Tally app
+# Google Maps distances in Tally
 
-Without this, Tally measures quote distances with OpenStreetMap, which is free but less exact.
-With it, the Android app asks Google Maps directly. About 10 minutes, all in a web browser.
+When you build a quote, Tally looks up the driving miles between the shop, the pickup and the
+delivery. With a Google key, the lookups come from Google Maps. Without one, Tally falls back to
+OpenStreetMap, which is free but less exact.
 
-The key is locked to the Tally app, so it doesn't work anywhere else, even if someone pulls it
-out of the APK. Google gives 10,000 free distance lookups a month. A quote uses up to 3, so 8
-quotes a day comes to about 720.
+## What is set up (October 5, 2026)
 
-## 1. Google Cloud (you do this; it needs your card)
+| | |
+|---|---|
+| Google Cloud project | **tally** (ID `tally-510721`), on the billing account "My Billing Account" |
+| API turned on | **Routes API** (Google's setup also switched on its other Maps APIs; the key can't use them) |
+| Key | **Tally distances (Supabase)**, restricted to the Routes API only |
+| Daily caps | Routes API › Quotas: ComputeRoutes **300 a day**, ComputeRouteMatrix **300 a day** |
+| Where the key lives | Supabase › Edge Functions › Secrets, as `GOOGLE_MAPS_KEY` |
 
-1. Go to **console.cloud.google.com** and sign in with the Google account you want this billed to.
-2. Top bar › **Select a project › New project**. Name it `Tally`. **Create**, then select it.
-3. **Billing**: link a billing account when asked. Google requires a card even for the free
-   allowance; step 6 stops it from ever going past free.
-4. **APIs & Services › Library**: search **Routes API**, open it, press **Enable**.
-5. **APIs & Services › Credentials › Create credentials › API key**. Copy the key and keep the
-   page open.
-6. Press **Edit API key** (or the key's name), then:
-   - **Application restrictions:** choose **Android apps**, press **Add**, and enter
-     - Package name: `com.tally.movers`
-     - SHA-1 certificate fingerprint: `62:D7:C6:F6:98:8D:1E:70:47:11:7C:0C:4C:28:7F:D0:7E:1F:D5:68`
-   - **API restrictions:** choose **Restrict key** and tick only **Routes API**.
-   - **Save**.
-7. Optional safety net: **APIs & Services › Routes API › Quotas & system limits**. Set the
-   per-day request limit to about **300**.
+The key stays on the Supabase server. The app asks the `tally-twilio` function for the distance,
+and the function asks Google, so the key never reaches a phone or a web page. Only the owner and
+dispatch can ask (they're the ones who build quotes). This works for the website and the Android
+app alike, and adding or changing the key never needs a new APK.
 
-(That fingerprint belongs to the test signing key the GitHub build uses. If you later switch to
-your own signing key, add its SHA-1 to the key too.)
+Cost: Google gives 10,000 free route lookups a month. A quote uses up to 3 (shop to pickup,
+pickup to delivery, delivery back to the shop), and the same pair of addresses isn't looked up
+twice. The 300-a-day cap keeps a month under 9,300, inside the free amount. Past the free amount
+Google charges $5 per 1,000.
 
-## 2. Give the key to the build (GitHub)
+## Putting the key in Supabase
 
-1. In the **Tally** repository on GitHub: **Settings › Secrets and variables › Actions**.
-2. **New repository secret**. Name: `TALLY_GOOGLE_MAPS_KEY`. Secret: paste the key. **Add secret**.
-3. **Actions › Android app › Run workflow** (or tell Claude, who can start it).
-   The build page's notes say "Key is set; quote distances use Google."
-4. Install the new Tally.apk.
+1. Google Cloud › **APIs & Services › Credentials** (project tally). Press **Show key** on
+   *Tally distances (Supabase)* and copy it.
+2. Supabase › your project › **Edge Functions › Secrets** › **Add new secret**.
+   Name: `GOOGLE_MAPS_KEY`. Value: the key. **Save**.
 
-Paste the key into GitHub, not into a chat. Secrets stay hidden, even in this public repository.
+That's all. Paste the key into Supabase, not into a chat.
 
-## 3. Check it
+## Check it
 
-Open a quote and enter a pickup and delivery. Under the distance it should say
-**"Distances from Google Maps."** If it says OpenStreetMap and "Google Maps turned the key down",
-recheck step 6: the package name and the fingerprint.
+Open a quote and enter a pickup and a delivery. Within a few seconds the miles fill in, and under
+them it says **"Distances from Google Maps."** If it says OpenStreetMap instead, the key isn't in
+Supabase yet (or was pasted with a space at either end).
+
+If Google ever refuses the key, the function's log shows `routes 403` (Supabase › Edge Functions ›
+tally-twilio › Logs). The usual causes: the Routes API was turned off, the key's API restriction
+no longer includes the Routes API, or the billing account was closed.
+
+## Changing the cap
+
+Google Cloud › **Google Maps Platform › Quotas** › Routes API. On *Directions - ComputeRoutes per
+request quota per day*, use **⋮ › Edit quota**.
+
+## Optional: a key built into the Android app
+
+The Android app can also ask Google itself, with a second key locked to the app. It isn't
+needed: the app already gets Google distances through Supabase. If you ever want it:
+
+1. Google Cloud › Credentials › **Create credentials › API key**. Restrict it to the **Routes API**,
+   and under **Application restrictions** choose **Android apps** with package `com.tally.movers`
+   and SHA-1 `62:D7:C6:F6:98:8D:1E:70:47:11:7C:0C:4C:28:7F:D0:7E:1F:D5:68` (the test signing key
+   the GitHub build uses).
+2. GitHub › Tally › **Settings › Secrets and variables › Actions** › **New repository secret**:
+   `TALLY_GOOGLE_MAPS_KEY`. Then run **Actions › Android app** and install the new Tally.apk.
+
+The app tries its own key first, then Supabase, then OpenStreetMap.
 
 ## Navigation is separate
 
-The Pickup and Delivery addresses on a job card already open turn-by-turn directions in the
-Google Maps app on the phone. That needs no key.
+The Pickup and Delivery addresses on a job card open turn-by-turn directions in the Google Maps
+app on the phone. That needs no key.

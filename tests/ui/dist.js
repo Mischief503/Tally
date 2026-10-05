@@ -22,7 +22,7 @@ const type = (P, sel, v, blur) => { const e = P.$(sel); e.value = v; e.dispatchE
   const reply = (b) => { if (b.action !== 'distance') return { ok: true }; calls++;
     if (mode === 'setup') return { ok: false, setup: true, message: 'Distance lookup is not set up yet.' };
     if (mode === 'bad') return { ok: false, message: 'Google Maps could not find one of those addresses.' };
-    return /Dallas/.test(b.to) ? { ok: true, miles: 195.3, minutes: 181 } : { ok: true, miles: 22.4, minutes: 31 }; };
+    return /Dallas/.test(b.to) ? { ok: true, src: 'google', miles: 195.3, minutes: 181 } : { ok: true, src: 'google', miles: 22.4, minutes: 31 }; };
   const B = await load(__dirname + '/../../build/tally-supabase.html', { db: seed(), org: ORG, me: { uid: 'u-owner', email: 'o@x' }, fnReply: reply });
   B.click('#fab'); await sleep(15);
   ok(/fills itself in/.test(B.$('#distNote').textContent), 'hosted: note says the distance fills itself in');
@@ -33,6 +33,7 @@ const type = (P, sel, v, blur) => { const e = P.$(sel); e.value = v; e.dispatchE
   ok(calls === 1 && fc.body.from === '418 Oak St, Austin' && fc.body.to === '77 Ridge Rd, Round Rock' && fc.init.headers.Authorization === 'Bearer tok-u-owner', 'hosted: leaving the second address looks up the drive');
   ok(B.$('[data-d="miles"]').value === '22.4' && B.T.state().draft.miles === '22.4', 'miles filled in: 22.4');
   ok(/Driving distance: 22\.4 mi, about 31m by car/.test(B.$('#distNote').textContent), 'note: ' + B.$('#distNote').textContent);
+  ok(/Distances from Google Maps/.test(B.$('#distNote').textContent) && !/OpenStreetMap/.test(B.$('#distNote').textContent), 'an answer through Supabase says it came from Google Maps');
   // price uses it
   B.T.state().draft.items = { sofa3: 2, boxm: 20 }; B.T.state().draft.miles = '22.4';
   // change delivery: auto-filled miles follow
