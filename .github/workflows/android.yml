@@ -59,7 +59,7 @@ jobs:
         env:
           TALLY_GOOGLE_MAPS_KEY: ${{ secrets.TALLY_GOOGLE_MAPS_KEY }}
         run: |
-          if [ -n "$TALLY_GOOGLE_MAPS_KEY" ]; then echo "::notice title=Google Maps::Key is set; quote distances use Google."; else echo "::notice title=Google Maps::No key yet; quote distances use OpenStreetMap."; fi
+          if [ -n "$TALLY_GOOGLE_MAPS_KEY" ]; then echo "::notice title=Google Maps::The app has its own Google key; quotes ask Google directly."; else echo "::notice title=Google Maps::No app key (optional). Quotes get Google distances through Supabase when GOOGLE_MAPS_KEY is set there, else OpenStreetMap."; fi
           gradle --no-daemon assembleRelease
 
       - name: Let the emulator use hardware acceleration
