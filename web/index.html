@@ -378,6 +378,35 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .tcard .tick{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:99px;background:var(--focus);color:#fff;font-size:12px;line-height:20px;text-align:center;font-weight:700}
 @media (min-width:640px){ .tgrid{grid-template-columns:repeat(3,1fr)} #pick .panel{left:50%;transform:translateX(-50%);width:640px;border-radius:calc(var(--r) + 6px)} }
 
+/* employee profiles */
+#emp[hidden]{display:none}
+#emp{position:fixed;inset:0;z-index:45}
+#emp .scrim{position:absolute;inset:0;background:var(--scrim)}
+#emp .panel{position:absolute;left:0;right:0;bottom:0;max-height:94vh;background:var(--bg);border-radius:calc(var(--r) + 6px) calc(var(--r) + 6px) 0 0;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+#emp .panel::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0;flex:none}
+@media (min-width:900px){ #emp .panel{left:auto;top:0;width:560px;max-height:none;border-radius:0} #emp .panel::before{display:none} }
+.emprow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r2);padding:10px 12px;margin:0 0 8px;color:var(--text);min-height:56px;font:inherit;cursor:pointer}
+.emprow .nm{font-weight:var(--w-mid);font-size:16px}
+.emprow small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.emprow .go{margin-left:auto;color:var(--muted);font-size:20px}
+.emprow.off{opacity:.62}
+.empst{font-size:14px;line-height:1.4;padding:9px 11px;border-radius:var(--r2);background:var(--card);border:var(--bw) solid var(--line);margin:8px 0 10px}
+.empst.ok{border-color:var(--ok)}
+.empst.warn{border-color:var(--warn)}
+.empst.off{border-color:var(--bad)}
+.empsec{margin:16px 0 6px;font-size:15px}
+.empro{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:14px;margin:6px 0 10px}
+.empro dt{color:var(--muted)}
+.empro dd{margin:0;overflow-wrap:anywhere}
+.empdoc{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line2);font-size:14px}
+.empdoc .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empdoc small{color:var(--muted)}
+#emp details.acc{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:0 12px;margin:0 0 8px}
+#emp input[readonly]{background:transparent;color:var(--muted)}
+.empfoot{position:sticky;bottom:0;z-index:1;background:var(--bg);padding:10px 0 6px;margin-top:10px;border-top:1px solid var(--line2)}
+.empfoot .bigbtn{margin:0}
+.empfoot .err{color:var(--bad);margin:6px 0 0}
+
 /* small bottom sheets: the call prompt and the start-job prompt */
 #call[hidden],#start[hidden]{display:none}
 #call,#start{position:fixed;inset:0;z-index:70}
@@ -721,8 +750,10 @@ function onSession(session){
   if(!session||!session.user){me={id:'',email:'',role:'',staff:'',isOwner:false,canEdit:false};showLogin();return}
   me.id=session.user.id;me.email=session.user.email||'';
   if(window.__tallyBooted){reload();return}   // a different person signed in on this device: start clean
-  sb.rpc('my_orgs').then(function(r){
-    var list=r.data||[],hit=list.filter(function(o){return o.id===ORG})[0];
+  // a profile the owner set up with this email links now, so the person walks straight in
+  sb.rpc('claim_invites').then(function(){},function(){}).then(function(){return sb.rpc('my_orgs')}).then(function(r){
+    var list=r.data||[],hit=list.filter(function(o){return o.id===ORG})[0],ready=list.filter(function(o){return !o.pending});
+    if(!hit&&!ORG&&ready.length===1){useOrg(ready[0].id);return}
     if(!hit){pick.orgs=list;pick.mode='list';pick.msg='';hideLoginOnly();renderPicker();return}
     window.tallyOrg={id:hit.id,name:hit.name,role:hit.role,join_code:hit.join_code,pending:hit.pending,plan:hit.plan};
     hideLogin();
@@ -758,6 +789,27 @@ var commsApi={
   }
 };
 window.tallyComms=commsApi;
+/* ---------- employee profiles (owner only), my own profile, and documents in a private bucket ---------- */
+var EMP_COLS='id,name,role,email,user_id,active,info,notes,updated_at',DOCS='employee-docs';
+function empRow(r){if(r.error)throw r.error;return r.data}
+window.tallyPeople={
+  list:function(){return sb.from('employees').select(EMP_COLS).eq('org_id',ORG).order('name').then(function(r){if(r.error)throw r.error;return r.data||[]})},
+  save:function(e){
+    var row={org_id:ORG,name:e.name,role:e.role,email:e.email||'',active:e.active!==false,info:e.info||{},notes:e.notes||''};
+    if(e.user_id!==undefined)row.user_id=e.user_id;
+    var q=e.id?sb.from('employees').update(row).eq('org_id',ORG).eq('id',e.id):sb.from('employees').insert(row);
+    return q.select(EMP_COLS).maybeSingle().then(empRow);
+  },
+  remove:function(id){return sb.from('employees').delete().eq('org_id',ORG).eq('id',id).then(chk)},
+  mine:function(){return sb.rpc('my_profile',{o:ORG}).then(empRow)},
+  updateMine:function(patch){return sb.rpc('update_my_profile',{o:ORG,patch:patch}).then(empRow)},
+  docs:function(id){return sb.storage.from(DOCS).list(ORG+'/'+id,{limit:200}).then(function(r){if(r.error)throw r.error;
+    return (r.data||[]).filter(function(f){return f&&f.id&&f.name}).map(function(f){return {name:f.name,path:ORG+'/'+id+'/'+f.name,size:(f.metadata&&f.metadata.size)||0}})})},
+  upload:function(id,file,name){var path=ORG+'/'+id+'/'+name;return sb.storage.from(DOCS).upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false}).then(function(r){if(r.error)throw r.error;return path})},
+  url:function(path){return sb.storage.from(DOCS).createSignedUrl(path,600).then(function(r){if(r.error)throw r.error;return r.data.signedUrl})},
+  removeDoc:function(path){return sb.storage.from(DOCS).remove([path]).then(function(r){if(r.error)throw r.error})},
+  uid:function(){return me.id}
+};
 window.tallyMaps={distance:function(from,to){return commsPost({action:'distance',from:from,to:to})}};
 var readyGo,ready=new Promise(function(r){readyGo=r});   // the app waits here until we know who is signed in
 window.claude={use:function(what){
@@ -815,6 +867,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <div id="more" hidden></div>
 <div id="call" hidden></div>
 <div id="start" hidden></div>
+<div id="emp" hidden></div>
 <button id="fab" class="fab" data-act="fab:quote" aria-label="New quote" hidden>+</button>
 <style id="themeVars"></style>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
@@ -1191,6 +1244,7 @@ function renderToday(){
     var no=j.assign.crew.filter(function(c){return !isConfirmed(j,c)});
     if(no.length)A.push(alertRow('warn','Not confirmed yet',esc(no.join(', '))+' · '+esc(j.d.name)+' '+esc(relDay(j.d.moveDate)),'job:open',j.id));
   });
+  if(role==='owner')empExpiryAlerts().forEach(function(x){A.push(x)});
   var mine=jobMsgsPending(myName());
   if(mine)A.push('<button class="alert" data-act="jm:open"><span class="ic warn">'+mine+'</span><span class="tx"><b>Confirm your jobs</b><small>You are on '+mine+' job'+(mine===1?'':'s')+' that need'+(mine===1?'s':'')+' your OK</small></span><span class="go">›</span></button>');
   var unread=chatUnread(myName());
@@ -1241,6 +1295,7 @@ function renderMore(){
   }
   el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="More"><div class="row between"><h2>More</h2><button class="btn sm" data-act="more:close">Done</button></div><div class="mlist">'+btns+
     (canPreview()?'<button data-act="more:preview">'+ICON.crew+'<b>See it their way</b><small>'+(previewing()?'Previewing '+esc(ui.preview.staff||ui.preview.role):'Owner, dispatch, lead or crew')+'</small></button>':'')+
+    (canMyProfile()?'<button data-act="me:open">'+ICON.crew+'<b>My profile</b><small>Your details and documents</small></button>':'')+
     '<button data-act="more:theme">'+ICON.settings+'<b>Change the look</b><small>24 themes, light or dark</small></button>'+
     (window.tallySwitchCompany?'<button data-act="more:company">'+ICON.board+'<b>Switch company</b><small>'+esc((window.tallyOrg||{}).name||'')+'</small></button>':'')+
     (window.tallySignOut?'<button data-act="more:signout">'+ICON.crew+'<b>Sign out</b><small>'+esc(sync.meName||'')+'</small></button>':'')+'</div></div>';
@@ -1651,7 +1706,7 @@ function renderReports(){
 function renderSettings(){
   renderSettingsRaw();accordify($('#view'),'section.card','H2','st',[]);
   var v=$('#view'),cards={};$$('details.acc.card',v).forEach(function(d){cards[d.dataset.k]=d});
-  var groups=[['Business',['Company','Time clock','Bid accuracy']],['People',['App access','Crew','Office staff','Texts and calls','Roles']],['Pricing and jobs',['Rate card','Materials and job costs','Fleet','Inventory catalog','Custom job fields','Lead sources']],['Paperwork and payments',['Forms to sign','Saved payment methods']],['Data',['Your data']]];
+  var groups=[['Business',['Company','Time clock','Bid accuracy']],['People',['Employees','App access','Texts and calls','Roles']],['Pricing and jobs',['Rate card','Materials and job costs','Fleet','Inventory catalog','Custom job fields','Lead sources']],['Paperwork and payments',['Forms to sign','Saved payment methods']],['Data',['Your data']]];
   var frag=document.createDocumentFragment(),used={};
   groups.forEach(function(g){var present=g[1].filter(function(t){return cards['st:'+t]});if(!present.length)return;var lb=document.createElement('div');lb.className='glabel';lb.textContent=g[0];frag.appendChild(lb);present.forEach(function(t){frag.appendChild(cards['st:'+t]);used['st:'+t]=1})});
   Object.keys(cards).forEach(function(k){if(!used[k])frag.appendChild(cards[k])});
@@ -1673,9 +1728,6 @@ function renderSettingsRaw(){
   var chips=function(arr,act){return '<div class="chips">'+arr.map(function(n,i){return '<button class="chip" data-act="'+act+'" data-i="'+i+'" aria-label="Remove '+esc(n)+'">'+esc(n)+' ×</button>'}).join('')+'</div>'};
   var formsList=(S.forms||[]).map(function(f){return '<details class="grp"><summary>'+esc(f.title)+' <small>'+(f.required?'required':'optional')+'</small></summary><div class="formbox">'+(f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+pg+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join(''))+'</div><div class="row" style="margin:8px 0"><button class="chip'+(f.required?' on':'')+'" data-act="st:reqform" data-id="'+f.id+'" aria-pressed="'+!!f.required+'">Required before payment</button><button class="btn sm danger" data-act="st:rmform" data-id="'+f.id+'">Remove</button></div></details>'}).join('')||'<p class="hint">No forms yet.</p>';
   var vaultList=state.vault.map(function(x){return '<div class="who"><span>'+(x.type==='card'?esc(x.brand)+' ending '+esc(x.last4):'Bank ending '+esc(x.last4))+'<br><small>Customer: '+esc(x.cust)+'</small></span><button class="btn sm danger" data-act="st:rmvault" data-id="'+x.id+'">Remove</button></div>'}).join('')||'<p class="hint">Nothing saved yet.</p>';
-  var phoneIn=function(n){return '<input aria-label="Phone for '+esc(n)+'" inputmode="tel" placeholder="Phone" data-phone="'+esc(n)+'" value="'+esc(S.contacts[n]||'')+'" style="min-height:40px;width:130px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--field);color:var(--text)">'};
-  var roster=S.crew.map(function(n,i){var l=isLead(n);return '<div class="who" style="flex-wrap:wrap"><span>'+esc(n)+'</span><span class="row">'+phoneIn(n)+'<button class="chip'+(l?' on':'')+'" data-act="st:lead" data-i="'+i+'" aria-pressed="'+l+'">'+(l?'Crew lead':'Crew')+'</button><button class="btn sm danger" data-act="st:rmcrew" data-i="'+i+'" aria-label="Remove '+esc(n)+'">Remove</button></span></div>'}).join('');
-  var officeList=(S.office||[]).map(function(o,i){return '<div class="who" style="flex-wrap:wrap"><span>'+esc(o.name)+'</span><span class="row">'+phoneIn(o.name)+'<button class="chip on" data-act="st:officekind" data-i="'+i+'">'+(o.kind==='owner'?'Owner':'Dispatch')+'</button><button class="btn sm danger" data-act="st:rmoffice" data-i="'+i+'" aria-label="Remove '+esc(o.name)+'">Remove</button></span></div>'}).join('');
   var cfl=S.customFields.map(function(f,i){return '<div class="row between" style="margin-bottom:6px"><span>'+esc(f.label)+' <small>('+esc(f.type)+')</small></span><button class="btn sm danger" data-act="st:rmcf" data-i="'+i+'">Remove</button></div>'}).join('');
   var cat=S.catalog.map(function(it,i){return '<tr><td>'+esc(it.name)+'</td><td class="n">'+it.cf+'</td><td class="n">'+(it.fee?money(it.fee):'')+'</td><td class="n"><button class="btn sm ghost" data-act="st:rmitem" data-i="'+i+'" aria-label="Remove '+esc(it.name)+'">×</button></td></tr>'}).join('');
   var pm=function(label,path){return '<label class="check"><input type="checkbox" data-s="perms.'+path+'" data-t="bool"'+(S.perms[path]?' checked':'')+'> '+label+'</label>'};
@@ -1684,11 +1736,10 @@ function renderSettingsRaw(){
      '<div style="margin-top:8px">'+fld('Shop address (where trucks start and end the day)','<input data-s="shopAddress" data-t="text" autocomplete="street-address" placeholder="1200 Industrial Blvd, Austin, TX" value="'+esc(S.shopAddress||'')+'">')+'</div>'+
      '<p class="hint">Quotes add the drive from here to the pickup and from the delivery back here.</p></section>'+accessCard()+pricing+
    '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="grid-template-columns:2fr 1fr auto"><input id="nTruckName" placeholder="Name" aria-label="New truck name" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><input id="nTruckCf" type="number" placeholder="Cu ft" aria-label="New truck cubic feet" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn sm" data-act="st:addtruck">Add</button></div></section>'+
-   '<section class="card"><h2>Crew</h2><p class="sub">Crew leads run the job timer and bill out. Everyone else is base crew. Add a phone number so coworkers can call from Chat.</p>'+roster+'<div class="row" style="margin-top:10px"><input id="nCrew" placeholder="Name" aria-label="New crew member" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addcrew">Add</button></div></section>'+
+   employeesCard()+
    materialsCard()+
    '<section class="card"><h2>Forms to sign</h2><p class="sub">When a job is finished, the lead is walked through every required form for the customer to sign, then straight to payment. Payment stays locked until they are signed. Sample wording only: have your attorney review anything you rely on.</p>'+formsList+
    '<h3 style="margin:14px 0 6px">Add a form</h3><div class="grid2 stack">'+fld('Form name','<input id="nFormTitle" placeholder="Bill of lading">','span2')+fld('Upload a PDF or photos of the form','<input id="nFormFiles" type="file" accept="application/pdf,image/*" multiple>','span2')+fld('Or type the form text','<textarea id="nFormText" placeholder="Paste the wording customers agree to"></textarea>','span2')+'</div><button class="btn primary" style="margin-top:8px" data-act="st:addform">Add form</button><p class="hint">Uploads are stored as page images on this device. Keep forms to a few pages so storage stays roomy.</p></section>'+
-   '<section class="card"><h2>Office staff</h2><p class="sub">Owners and dispatchers show up in chat and the call list, right next to the crew. Phone numbers power the Call buttons.</p>'+officeList+'<div class="grid3" style="grid-template-columns:2fr 1fr auto;margin-top:10px"><input id="nOfficeName" placeholder="Name" aria-label="New office person" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field);color:var(--text)"><select id="nOfficeKind" aria-label="Office role" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field);color:var(--text)"><option value="dispatch">Dispatch</option><option value="owner">Owner</option></select><button class="btn sm" data-act="st:addoffice">Add</button></div></section>'+
    commsCard()+
    '<section class="card"><h2>Time clock</h2><p class="sub">If someone clocks out later than this after their last finished job that day, they must add a note.</p>'+nf('Late clock-out note after (minutes)','lateMins','5')+'<label class="check" style="margin-top:6px"><input type="checkbox" data-s="payMin" data-t="bool"'+(S.payMin!==false?' checked':'')+'> Pay the crew the '+esc(String(S.minHours))+'-hour minimum when a job runs short</label>'+'<div class="f" style="margin-top:10px"><span>Work types</span></div>'+chips(S.activities,'st:rmact')+'<div class="row"><input id="nAct" placeholder="Work type" aria-label="New work type" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addact">Add</button></div></section>'+
    '<section class="card"><h2>Lead sources</h2>'+chips(S.sources,'st:rmsrc')+'<div class="row"><input id="nSrc" placeholder="Source" aria-label="New lead source" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addsrc">Add</button></div></section>'+
@@ -2230,15 +2281,309 @@ function syncBoot(){
 }
 function accessCard(){
   if(sync.mode!=='shared')return '<section class="card"><h2>App access</h2><p class="sub">Sign-in and access control switch on when Tally is opened with shared storage. Right now this copy runs on one device.</p></section>';
-  var dir=directory(),staffOpts='<option value="">Choose a person</option>'+dir.map(function(x){return '<option>'+esc(x.name)+'</option>'}).join('');
+  var dir=directory(),staffOpts='<option value="">Choose a person</option>'+(peopleHosted()?empRoster().filter(function(x){return !x.rec||(!x.rec.user_id&&x.rec.active!==false)}).map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''):dir.map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''));
   var roleOpts=function(sel){return ['crew','lead','dispatch','owner'].map(function(r){return '<option value="'+r+'"'+(r===sel?' selected':'')+'>'+KIND[r]+'</option>'}).join('')};
   var nm=function(id){return esc(sync.names[id]||'Someone')};
   var pend=sync.requests.map(function(r){var f={kind:'crew'};return '<div class="who" style="display:block"><b>'+nm(r.uid)+'</b> <small>is asking for access</small><div class="grid2 stack" style="margin-top:6px"><label class="f"><span>This person is</span><select id="accStaff_'+esc(r.uid)+'">'+staffOpts+'</select></label><label class="f"><span>Role</span><select id="accRole_'+esc(r.uid)+'">'+roleOpts(f.kind)+'</select></label></div><div class="row" style="margin-top:6px"><button class="btn primary sm" data-act="acc:approve" data-uid="'+esc(r.uid)+'">Approve</button><button class="btn sm ghost" data-act="acc:deny" data-uid="'+esc(r.uid)+'">Deny</button></div></div>'}).join('');
   var appr=sync.users.map(function(u){return '<div class="who"><span><b>'+nm(u.uid)+'</b><br><small>'+esc(u.staff||'')+' · '+esc(KIND[u.role]||u.role)+'</small></span><button class="btn sm danger" data-act="acc:revoke" data-uid="'+esc(u.uid)+'">Revoke</button></div>'}).join('');
-  var org=window.tallyOrg,codeHtml=org&&org.join_code?'<div class="note" style="margin-bottom:10px"><b>'+esc(org.name)+'</b> · company code <b style="letter-spacing:3px;font-size:18px">'+esc(org.join_code)+'</b><br><small>Employees sign in with their own email, tap Join a company, and enter this code. You approve them here.</small></div>':'';
+  var org=window.tallyOrg,codeHtml=org&&org.join_code?'<div class="note" style="margin-bottom:10px"><b>'+esc(org.name)+'</b> · company code <b style="letter-spacing:3px;font-size:18px">'+esc(org.join_code)+'</b><br><small>'+(peopleHosted()?'Easiest: add each person under Employees with the email they sign in with, and they go straight in. Anyone else can tap Join a company, enter this code, and wait for you to approve them here.':'Employees sign in with their own email, tap Join a company, and enter this code. You approve them here.')+'</small></div>':'';
   return '<section class="card"><h2>App access</h2>'+codeHtml+'<p class="sub">Everyone signs in with their own account. Approve each person and pick who they are in Tally. Their role decides what they can see and do, and they cannot change it themselves.</p>'+
     '<h3 style="margin-bottom:4px">Waiting for approval</h3>'+(pend||'<p class="hint">No one is waiting.</p>')+
     '<h3 style="margin:14px 0 4px">People with access</h3>'+(appr||'<p class="hint">Only you so far.</p>')+'</section>';
+}
+
+/* ---------- employees: profiles with hiring info ----------
+   The owner keeps a profile for everyone who works here: the name Tally uses, their role, the
+   email they sign in with, and their hiring details. In the hosted app profiles live in the
+   employees table, which only the owner can read; each person sees their own through My profile,
+   and signing in with the profile's email links them to it (claim_invites). Without a server
+   (the claude.ai artifact, or an app without Supabase) profiles stay on this device only. */
+var EMP_ROLES=[['crew','Crew'],['lead','Crew lead'],['dispatch','Dispatch'],['owner','Owner']];
+var EMP_SELF=['phone','address','city','state','zip','emergencyName','emergencyRelation','emergencyPhone','shirtSize'];
+var SHIRTS=['','S','M','L','XL','2XL','3XL'];
+var EMP_SECS=[
+  {t:'Job and pay',open:true,f:[['title','Job title','text','Mover, driver, crew lead'],['hireDate','Hire date','date'],['payType','Pay type','sel',['','Hourly','Salary','Per job']],['payRate','Pay rate ($)','money'],['workerType','Worker type','sel',['','W-2 employee','1099 contractor']]]},
+  {t:'Contact',open:true,f:[['phone','Phone','tel'],['address','Street address','text'],['city','City','text'],['state','State','text'],['zip','ZIP','text']]},
+  {t:'Personal',f:[['dob','Date of birth','date'],['ssnLast4','Social Security number: last 4 only','last4'],['shirtSize','Shirt size','sel',SHIRTS]]},
+  {t:'Emergency contact',f:[['emergencyName','Name','text'],['emergencyRelation','Relationship','text'],['emergencyPhone','Phone','tel']]},
+  {t:'Driving',f:[['dlNumber',"Driver's license number",'text'],['dlState','License state','text'],['dlClass','License class','sel',['','C (regular)','B (CDL)','A (CDL)']],['dlExpires','License expires','date'],['medExpires','DOT medical card expires','date'],['mvrDate','Last driving record check','date']]},
+  {t:'Background check',f:[['bgDate','Date','date'],['bgResult','Result','sel',['','Clear','Needs review','Not done']]]},
+  {t:'Leaving',f:[['endDate','Last day','date'],['endReason','Reason','text']]}
+];
+var DOC_TYPES=[['i9','I-9'],['w4','W-4'],['license',"Driver's license"],['dot','DOT medical card'],['background','Background check'],['handbook','Signed handbook'],['other','Other']];
+var DEFAULT_APP_LINK='https://github.com/Mischief503/Tally/releases/latest/download/Tally.apk';
+var people={list:[],loaded:false,loading:false,err:'',mine:null,mineState:'',docs:{},docsLoading:{}};
+function peopleHosted(){return !!window.tallyPeople}
+function canMyProfile(){return peopleHosted()&&sync.mode==='shared'&&sync.identity.status==='ok'&&!sync.isOwner}
+var EMP_KEY='tally.employees.'+(window.TALLY_ORG_KEY||'local');
+function empLocal(){try{var v=JSON.parse(localStorage.getItem(EMP_KEY)||'[]');return Array.isArray(v)?v:[]}catch(e){return []}}
+function empLocalSave(list){try{localStorage.setItem(EMP_KEY,JSON.stringify(list))}catch(e){toast('Storage is full. Export your data in Setup.')}}
+function loadPeople(force){
+  if(!peopleHosted()){people.list=empLocal();people.loaded=true;return Promise.resolve(people.list)}
+  if(people.loading||(people.loaded&&!force))return Promise.resolve(people.list);
+  people.loading=true;
+  return window.tallyPeople.list().then(function(rows){people.list=clone(rows||[]);people.err=''},function(){people.err='Could not load employee profiles. Check your connection.'})
+    .then(function(){people.loaded=true;people.loading=false;peopleRefresh();return people.list});
+}
+function peopleRefresh(){if(ui.emp)renderEmp();if(ui.tab==='settings')softSettings();else if(ui.tab==='today'&&!ui.jobId&&!ui.flow)renderTab()}
+function empByName(n){var k=String(n||'').trim().toLowerCase();return people.list.filter(function(e){return e.name.toLowerCase()===k})[0]||null}
+function empById(id){return people.list.filter(function(e){return e.id===id})[0]||null}
+function upsertPerson(e){e=clone(e);var i=people.list.findIndex(function(x){return x.id===e.id});if(i>=0)people.list[i]=e;else people.list.push(e);people.list.sort(function(a,b){return a.name.localeCompare(b.name)})}
+function dirRole(n){var o=officeRec(n);if(o)return o.kind==='owner'?'owner':'dispatch';return isLead(n)?'lead':'crew'}
+// Everyone on the Employees list: profiles, then names on the crew and office lists with no profile yet.
+function empRoster(){
+  var out=people.list.map(function(e){return {name:e.name,rec:e,role:e.role}});
+  directory().forEach(function(d){if(!empByName(d.name))out.push({name:d.name,rec:null,role:d.kind})});
+  return out.sort(function(a,b){var ao=a.rec&&a.rec.active===false?1:0,bo=b.rec&&b.rec.active===false?1:0;return ao-bo||a.name.localeCompare(b.name)});
+}
+function empStatus(e){
+  if(!e)return {k:'',t:'No profile yet. Tap to add their details.'};
+  if(e.active===false)return {k:'off',t:'Access off'+(e.info&&e.info.endDate?' · last day '+fmtDate(e.info.endDate):'')};
+  if(!peopleHosted())return {k:'',t:'Profile kept on this device'};
+  if(e.user_id)return {k:'ok',t:'Signed in'+(e.email?' as '+e.email:'')};
+  if(e.email)return {k:'warn',t:'Waiting for their first sign-in with '+e.email};
+  return {k:'warn',t:'No sign-in email yet, so they can\'t sign in'};
+}
+// The crew and office lists the rest of the app uses follow each profile's role and access.
+function dirApply(e){
+  var S=state.settings,n=e.name,ci=S.crew.indexOf(n),oi=(S.office||[]).findIndex(function(o){return o.name===n});
+  S.crew=S.crew.filter(function(x){return x!==n});S.leads=S.leads.filter(function(x){return x!==n});S.office=(S.office||[]).filter(function(o){return o.name!==n});
+  if(e.active!==false){
+    if(e.role==='crew'||e.role==='lead'){if(ci>=0)S.crew.splice(ci,0,n);else S.crew.push(n);if(e.role==='lead')S.leads.push(n)}
+    else{var ob={name:n,kind:e.role};if(oi>=0)S.office.splice(oi,0,ob);else S.office.push(ob)}
+  }
+  var ph=String((e.info&&e.info.phone)||'').trim();if(ph)S.contacts[n]=ph;
+  dirChanged();
+}
+function employeesCard(){
+  if(state.ui.role!=='owner')return '';
+  var host=peopleHosted(),S=state.settings;
+  if(!people.loaded&&!people.loading)loadPeople();
+  var rows=empRoster().map(function(x){var st=empStatus(x.rec);
+    return '<button class="emprow'+(x.rec&&x.rec.active===false?' off':'')+'" data-act="emp:open" '+(x.rec?'data-id="'+esc(x.rec.id)+'"':'data-name="'+esc(x.name)+'"')+'><span><span class="nm">'+esc(x.name)+'</span> <span class="pill">'+esc(KIND[x.role]||x.role)+'</span><small>'+esc(st.t)+'</small></span><span class="go" aria-hidden="true">›</span></button>'}).join('');
+  return '<section class="card"><h2>Employees</h2><p class="sub">'+(host?'Everyone who works for you. Add the email each person signs in with: when they sign in, Tally connects them to their profile and role, with no code to share. Hiring details are visible only to you and that person.':'Everyone who works for you, with their hiring details. In this copy, profiles stay on this device. In the Tally app they are private to you and each employee, and signing in connects people to their profile.')+'</p>'+
+    (people.err?'<div class="note">'+esc(people.err)+'</div>':'')+(host&&people.loading&&!people.list.length?'<p class="hint">Loading profiles…</p>':'')+
+    '<button class="btn primary" data-act="emp:new" style="margin:2px 0 12px">Add employee</button>'+(rows||'<p class="hint">No one yet.</p>')+
+    (host?'<div style="margin-top:10px">'+fld('Link to download the app (used in invite texts)','<input data-s="appLink" data-t="text" inputmode="url" autocomplete="off" placeholder="'+esc(DEFAULT_APP_LINK)+'" value="'+esc(S.appLink||'')+'">')+'</div>':'')+'</section>';
+}
+function openEmp(o){
+  var rec=o.id?empById(o.id):(o.name?empByName(o.name):null);
+  if(o.id&&!rec&&!people.loaded){loadPeople().then(function(){if(empById(o.id))openEmp(o)});return}
+  var S=state.settings;
+  var d=rec?{name:rec.name,role:rec.role,email:rec.email||'',active:rec.active!==false,info:clone(rec.info||{}),notes:rec.notes||''}
+           :{name:o.name||'',role:o.name?dirRole(o.name):'crew',email:'',active:true,info:{phone:o.name?(S.contacts[o.name]||''):''},notes:''};
+  ui.emp={mode:'edit',id:rec?rec.id:'',fixedName:!!(rec||o.name),draft:d,err:'',busy:false,docType:'i9',armed:''};
+  renderEmp();
+  if(rec&&peopleHosted())loadDocs(rec.id);
+}
+function openMyProfile(){
+  if(!peopleHosted())return;
+  ui.emp={mode:'self',draft:null,err:'',busy:false,docType:'license',armed:''};people.mineState='loading';renderEmp();
+  window.tallyPeople.mine().then(function(p){people.mine=p?clone(p):null;people.mineState='ok';
+    if(ui.emp&&ui.emp.mode==='self'){ui.emp.draft=p?{info:clone(p.info||{})}:null;renderEmp();if(p)loadDocs(p.id)}},
+    function(){people.mineState='error';if(ui.emp)renderEmp()});
+}
+function closeEmp(){ui.emp=null;renderEmp()}
+// Keep whatever was typed when the profile redraws (a document finishing upload, a save failing).
+function empCapture(){
+  var el=$('#emp'),E=ui.emp;if(!el||!E||!E.draft)return;
+  $$('[data-ek],[data-mk]',el).forEach(function(i){
+    var k=i.dataset.ek||i.dataset.mk,v=i.type==='checkbox'?i.checked:(i.dataset.money!==undefined?(i.value.trim()?String(round2(moneyVal(i))):''):i.value);
+    if(i.dataset.ek&&['name','role','email','active','notes'].indexOf(k)>=0)E.draft[k]=v;else{E.draft.info=E.draft.info||{};E.draft.info[k]=v}
+  });
+}
+function empField(k,label,type,opts,val,attr){
+  var v=val==null?'':String(val),a=attr+'="'+k+'"',ctl;
+  if(type==='sel')ctl='<select '+a+'>'+opts.map(function(o){return '<option value="'+esc(o)+'"'+(o===v?' selected':'')+'>'+esc(o||'—')+'</option>'}).join('')+'</select>';
+  else if(type==='date')ctl='<input type="date" '+a+' value="'+esc(v)+'">';
+  else if(type==='money')ctl='<input '+a+' data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00" value="'+esc(v?fmtCents(Math.round(num(v)*100)):'')+'">';
+  else if(type==='tel')ctl='<input '+a+' type="tel" inputmode="tel" autocomplete="off" value="'+esc(v)+'">';
+  else if(type==='last4')ctl='<input '+a+' inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234" value="'+esc(v)+'">';
+  else ctl='<input '+a+' autocomplete="off"'+(typeof opts==='string'?' placeholder="'+esc(opts)+'"':'')+' value="'+esc(v)+'">';
+  return fld(esc(label),ctl);
+}
+function inviteHtml(rec){
+  if(!peopleHosted()||!rec||rec.user_id||!rec.email||rec.active===false)return '';
+  var first=rec.name.split(' ')[0],ph=(rec.info&&rec.info.phone)||'',link=state.settings.appLink||DEFAULT_APP_LINK,co=String((window.tallyOrg&&window.tallyOrg.name)||state.settings.company||'work').trim().replace(/[.!]+$/,'');
+  var msg='Hi '+first+', it\'s '+co+'. Get the Tally app here: '+link+' and sign in with '+rec.email+'. You\'ll go straight to your jobs.';
+  return '<div class="note">'+esc(first)+' hasn\'t signed in yet.'+(ph?' <a class="btn sm" href="'+esc(smsHref(ph,msg))+'">Text '+esc(first)+' the app</a>':' Add a phone number to text them the app link.')+'</div>';
+}
+function empEditBody(){
+  var E=ui.emp,d=E.draft,rec=E.id?empById(E.id):null,host=peopleHosted(),i=d.info||{};
+  var self=!!(rec&&rec.user_id&&host&&rec.user_id===window.tallyPeople.uid()),st=empStatus(rec);
+  var roleSel='<select data-ek="role"'+(self?' disabled':'')+'>'+EMP_ROLES.map(function(r){return '<option value="'+r[0]+'"'+(d.role===r[0]?' selected':'')+'>'+r[1]+'</option>'}).join('')+'</select>';
+  var nameCtl='<input data-ek="name" autocomplete="off" value="'+esc(d.name)+'"'+(E.fixedName?' readonly aria-readonly="true"':' placeholder="The name the crew uses"')+'>';
+  var head='<div class="sheet-head"><div><h2>'+esc(E.fixedName?d.name:'New employee')+'</h2><small>'+esc(KIND[d.role]||'')+'</small></div><button class="btn sm" data-act="emp:close">Close</button></div>';
+  var access='<div class="grid2 stack">'+fld('Name in Tally',nameCtl)+fld('Role',roleSel)+
+      fld('Email they sign in with','<input data-ek="email" type="email" inputmode="email" autocapitalize="off" spellcheck="false" autocomplete="off" value="'+esc(d.email)+'" placeholder="name@example.com">','span2')+'</div>'+
+    (E.fixedName?'<p class="hint">The name ties together their jobs, hours and chat, so it can\'t be changed here.</p>':'')+
+    (rec?'<div class="empst '+st.k+'">'+esc(st.t)+'</div>':'')+
+    '<label class="check"><input type="checkbox" data-ek="active"'+(d.active?' checked':'')+(self?' disabled':'')+'> Can use Tally'+(host?' (turn off when someone leaves: their access ends at once)':'')+'</label>'+
+    (self?'<p class="hint">This is you, so your role and access can\'t be changed here.</p>':'')+inviteHtml(rec);
+  var secs=EMP_SECS.map(function(sx){
+    var key='emp:'+sx.t,filled=sx.f.some(function(f){return i[f[0]]}),open=ui.open[key];if(open===undefined)open=!!(sx.open||filled);
+    var inner='<div class="grid2 stack">'+sx.f.map(function(f){return empField(f[0],f[1],f[2],f[3],i[f[0]],'data-ek')}).join('')+'</div>'+
+      (sx.t==='Personal'?'<p class="hint">Keep full Social Security and bank account numbers with your payroll company. Tally keeps only the last 4 digits.</p>':'');
+    return '<details class="acc" data-k="'+esc(key)+'"'+(open?' open':'')+'><summary><span>'+esc(sx.t)+'</span></summary><div class="acc-body">'+inner+'</div></details>';
+  }).join('');
+  var docs='<h3 class="empsec">Documents</h3>'+(rec?docsHtml(rec.id,true):'<p class="hint">Save the profile first, then add their I-9, W-4, license and other papers.</p>');
+  var notes='<h3 class="empsec">Your notes</h3>'+fld('Only you see these. They never show on '+esc((d.name||'their').split(' ')[0])+'\'s profile.','<textarea data-ek="notes" rows="3">'+esc(d.notes||'')+'</textarea>');
+  var btns=(rec&&!self?'<button class="btn '+(E.armed==='del'?'danger':'ghost')+'" data-act="emp:del" style="margin-top:14px">'+(E.armed==='del'?'Tap again to delete '+esc(rec.name)+' and their documents':'Delete profile')+'</button><p class="hint">To keep their records, turn off “Can use Tally” instead.</p>':'')+
+    empFoot('emp:save',E.busy?'Saving…':'Save',E);
+  return head+'<div class="sheet-body">'+access+'<h3 class="empsec">Hiring details</h3>'+secs+docs+notes+btns+'</div>';
+}
+function empSelfBody(){
+  var head='<div class="sheet-head"><div><h2>My profile</h2><small>'+esc(lockedStaff()||'')+'</small></div><button class="btn sm" data-act="emp:close">Close</button></div>';
+  var p=people.mine,ms=people.mineState;
+  if(ms==='loading')return head+'<div class="sheet-body"><p class="hint">Loading your profile…</p></div>';
+  if(ms==='error')return head+'<div class="sheet-body"><div class="note">Could not load your profile. Check your connection and try again.</div></div>';
+  if(!p)return head+'<div class="sheet-body"><div class="card empty"><h3>No profile yet</h3><p>Ask the owner to add you under Setup › Employees with the email you sign in with'+(sync.meName?' ('+esc(sync.meName)+')':'')+'.</p></div></div>';
+  var i=(ui.emp.draft&&ui.emp.draft.info)||p.info||{},fx=p.info||{};
+  var ro=function(label,val){return val?'<dt>'+esc(label)+'</dt><dd>'+esc(val)+'</dd>':''};
+  var pay=[fx.payType,fx.payRate?money(num(fx.payRate))+(fx.payType==='Hourly'?' an hour':''):''].filter(Boolean).join(' · ');
+  var facts='<dl class="empro">'+ro('Name',p.name)+ro('Role',KIND[p.role]||p.role)+ro('Signs in with',p.email)+ro('Job title',fx.title)+ro('Hired',fx.hireDate&&fmtDate(fx.hireDate))+ro('Pay',pay)+ro('Worker type',fx.workerType)+
+    ro('Social Security',fx.ssnLast4&&'•••-••-'+fx.ssnLast4)+ro('Date of birth',fx.dob&&fmtDate(fx.dob))+ro("Driver's license",[fx.dlNumber,fx.dlState,fx.dlClass].filter(Boolean).join(' · '))+
+    ro('License expires',fx.dlExpires&&fmtDate(fx.dlExpires))+ro('DOT medical card expires',fx.medExpires&&fmtDate(fx.medExpires))+ro('Background check',[fx.bgResult,fx.bgDate&&fmtDate(fx.bgDate)].filter(Boolean).join(' · '))+'</dl>';
+  var mine=function(k,label,type,opts){return empField(k,label,type,opts,i[k],'data-mk')};
+  var form='<h3 class="empsec">Your contact details</h3><div class="grid2 stack">'+mine('phone','Phone','tel')+mine('address','Street address','text')+mine('city','City','text')+mine('state','State','text')+mine('zip','ZIP','text')+mine('shirtSize','Shirt size','sel',SHIRTS)+'</div>'+
+    '<h3 class="empsec">Emergency contact</h3><div class="grid2 stack">'+mine('emergencyName','Name','text')+mine('emergencyRelation','Relationship','text')+mine('emergencyPhone','Phone','tel')+'</div>'+
+    '';
+  return head+'<div class="sheet-body"><p class="hint">Only you and the owner can see this. For anything you can\'t change here, ask the owner.</p>'+facts+form+'<h3 class="empsec">Your documents</h3>'+docsHtml(p.id,false)+empFoot('me:save',ui.emp.busy?'Saving…':'Save my details',ui.emp)+'</div>';
+}
+function empFoot(act,label,E){return '<div class="empfoot"><button class="btn primary bigbtn" data-act="'+act+'"'+(E.busy?' disabled':'')+'>'+esc(label)+'</button><p class="hint err" id="empErr" role="alert"'+(E.err?'':' hidden')+'>'+esc(E.err||'')+'</p></div>'}
+function renderEmp(){
+  var el=$('#emp');if(!el)return;
+  if(!ui.emp){el.hidden=true;el.innerHTML='';syncLock();return}
+  empCapture();
+  var E=ui.emp,prev=$('.sheet-body',el),keep=prev?prev.scrollTop:0;
+  el.innerHTML='<div class="scrim" data-act="emp:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="'+(E.mode==='self'?'My profile':'Employee profile')+'">'+(E.mode==='self'?empSelfBody():empEditBody())+'</div>';
+  el.hidden=false;syncLock();
+  var nb=$('.sheet-body',el);if(nb&&prev)nb.scrollTop=keep;
+  if(!prev){var pn=$('.panel',el);if(pn){pn.setAttribute('tabindex','-1');try{pn.focus({preventScroll:true})}catch(e){}}}
+}
+function empErrMsg(e){
+  var m=String((e&&(e.message||e.details||e.hint))||'');
+  if(/employees_email_uq/.test(m))return 'Another profile already uses that email.';
+  if(/employees_name_uq/.test(m))return 'There is already someone with that name. Add a last initial.';
+  if(/does not look right/.test(m))return 'That email address does not look right.';
+  if(/own access/.test(m))return 'You can\'t turn off or remove your own access.';
+  if(/asked to join/.test(m))return 'That person hasn\'t asked to join this company.';
+  if(/row-level security|permission denied/i.test(m))return 'Only the owner can change employee profiles.';
+  return 'Could not save. Check your connection and try again.';
+}
+function empSave(){
+  var E=ui.emp;if(!E||E.busy||E.mode!=='edit')return;
+  empCapture();
+  var d=E.draft,rec=E.id?empById(E.id):null,host=peopleHosted(),i=d.info||{};
+  var name=String(d.name||'').trim().replace(/\s+/g,' '),email=String(d.email||'').trim().toLowerCase();
+  var fail=function(m){E.err=m;E.busy=false;renderEmp()};
+  if(!name)return fail('Give them a name.');
+  if(name.length>60)return fail('Keep the name under 60 characters.');
+  if(!E.fixedName&&(empByName(name)||directory().some(function(x){return x.name.toLowerCase()===name.toLowerCase()})))return fail('There is already someone named '+name+'. Add a last initial.');
+  if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return fail('That email address does not look right.');
+  if(email&&people.list.some(function(x){return x.email===email&&(!rec||x.id!==rec.id)}))return fail('Another profile already uses that email.');
+  if(i.ssnLast4&&!/^\d{4}$/.test(String(i.ssnLast4).trim()))return fail('Social Security: enter only the last 4 digits.');
+  var info={};Object.keys(i).forEach(function(k){var v=i[k];if(v!==''&&v!=null)info[k]=typeof v==='string'?v.trim():v});
+  var out={id:rec?rec.id:undefined,name:name,role:EMP_ROLES.some(function(r){return r[0]===d.role})?d.role:'crew',email:email,active:!!d.active,info:info,notes:String(d.notes||'').slice(0,5000)};
+  var done=function(saved){
+    upsertPerson(saved);
+    if(ui.emp===E){E.busy=false;E.err='';E.id=saved.id;E.fixedName=true;E.draft={name:saved.name,role:saved.role,email:saved.email||'',active:saved.active!==false,info:clone(saved.info||{}),notes:saved.notes||''}}
+    dirApply(saved);toast(rec?'Saved.':saved.name+' added.');
+    if(ui.emp===E){renderEmp();if(!rec&&host)loadDocs(saved.id)}
+    softSettings();
+  };
+  E.busy=true;E.err='';renderEmp();
+  if(!host){var list=empLocal(),saved=Object.assign({},out,{id:rec?rec.id:'e'+uid(),user_id:null,updated_at:new Date().toISOString()}),ix=list.findIndex(function(x){return x.id===saved.id});
+    if(ix>=0)list[ix]=saved;else list.push(saved);empLocalSave(list);done(saved);return}
+  window.tallyPeople.save(out).then(function(saved){if(!saved)throw new Error('not saved');done(saved)},function(err){fail(empErrMsg(err))});
+}
+function empDelete(){
+  var E=ui.emp,rec=E&&E.id?empById(E.id):null;if(!rec)return;
+  if(E.armed!=='del'){E.armed='del';renderEmp();setTimeout(function(){if(ui.emp===E&&E.armed==='del'){E.armed='';renderEmp()}},5000);return}
+  E.armed='';
+  var finish=function(){
+    people.list=people.list.filter(function(x){return x.id!==rec.id});delete people.docs[rec.id];
+    var S=state.settings;S.crew=S.crew.filter(function(x){return x!==rec.name});S.leads=S.leads.filter(function(x){return x!==rec.name});S.office=(S.office||[]).filter(function(o){return o.name!==rec.name});delete S.contacts[rec.name];dirChanged();
+    ui.emp=null;renderEmp();softSettings();toast(rec.name+' removed.');
+  };
+  if(!peopleHosted()){empLocalSave(empLocal().filter(function(x){return x.id!==rec.id}));finish();return}
+  var files=people.docs[rec.id]||[];
+  Promise.all(files.map(function(f){return window.tallyPeople.removeDoc(f.path).catch(function(){})})).then(function(){return window.tallyPeople.remove(rec.id)})
+    .then(finish,function(err){E.err=empErrMsg(err);renderEmp()});
+}
+function approveViaProfile(uid,name,role){
+  var rec=empByName(name),email=String(sync.names[uid]||'').trim().toLowerCase();if(!/@/.test(email))email='';
+  if(rec&&rec.user_id&&rec.user_id!==uid){toast(name+' is already signed in on another account.');return}
+  var out=rec?Object.assign({},rec,{role:role,user_id:uid,email:rec.email||email,active:true})
+             :{name:name,role:role,email:email,active:true,info:{phone:state.settings.contacts[name]||''},notes:'',user_id:uid};
+  window.tallyPeople.save(out).then(function(saved){upsertPerson(saved);dirApply(saved);toast('Access approved. '+name+' is in.');softSettings()},function(err){toast(empErrMsg(err))});
+}
+function revokeViaProfile(uid){
+  var rec=people.list.filter(function(e){return e.user_id===uid})[0];if(!rec)return;
+  window.tallyPeople.save(Object.assign({},rec,{active:false})).then(function(saved){upsertPerson(saved);dirApply(saved);toast('Access removed. '+rec.name+'\'s profile is kept.');softSettings()},function(err){toast(empErrMsg(err))});
+}
+function mySave(){
+  var E=ui.emp;if(!E||E.busy||E.mode!=='self'||!people.mine)return;
+  empCapture();
+  var i=(E.draft&&E.draft.info)||{},patch={};EMP_SELF.forEach(function(k){if(i[k]!==undefined)patch[k]=String(i[k]==null?'':i[k]).trim()});
+  E.busy=true;E.err='';renderEmp();
+  window.tallyPeople.updateMine(patch).then(function(p){people.mine=p||people.mine;E.busy=false;E.draft={info:clone((p&&p.info)||{})};renderEmp();toast('Your details are saved.')},
+    function(){E.busy=false;E.err='Could not save. Check your connection and try again.';renderEmp()});
+}
+/* ---- documents: <company>/<employee>/<time>_<type>_<file name> in the private bucket ---- */
+function loadDocs(id){
+  if(!peopleHosted()||!id||people.docsLoading[id])return;
+  people.docsLoading[id]=true;
+  window.tallyPeople.docs(id).then(function(list){people.docs[id]=list||[]},function(){people.docs[id]=null}).then(function(){delete people.docsLoading[id];if(ui.emp)renderEmp()});
+}
+function docMeta(name){var m=/^(\d+)_([a-z0-9]+)_(.+)$/.exec(name||''),tp=m&&DOC_TYPES.filter(function(x){return x[0]===m[2]})[0];return {type:tp?tp[1]:'Document',file:m?m[3]:name,ts:m?+m[1]:0}}
+function docName(type,file){var safe=String(file||'file').replace(/[^A-Za-z0-9._-]+/g,'-').replace(/-+/g,'-').replace(/^-+|-+$/g,'').slice(-60)||'file';return Date.now()+'_'+type+'_'+safe}
+function docsHtml(id,canDelete){
+  if(!peopleHosted())return '<p class="hint">Document uploads work in the Tally app, where they are stored privately. This copy has nowhere private to keep them.</p>';
+  var E=ui.emp,list=people.docs[id];
+  var rows=list===undefined?'<p class="hint">Loading documents…</p>':list===null?'<p class="hint">Could not load documents.</p>':!list.length?'<p class="hint">No documents yet.</p>':
+    list.slice().sort(function(a,b){return docMeta(b.name).ts-docMeta(a.name).ts}).map(function(f){var m=docMeta(f.name),arm=E&&E.armed==='doc:'+f.path;
+      return '<div class="empdoc"><span class="grow"><b>'+esc(m.type)+'</b> · '+esc(m.file)+(m.ts?' <small>'+esc(fmtDate(iso(new Date(m.ts))))+'</small>':'')+'</span><button class="btn sm" data-act="emp:docview" data-path="'+esc(f.path)+'">View</button>'+
+        (canDelete?'<button class="btn sm '+(arm?'danger':'ghost')+'" data-act="emp:docdel" data-path="'+esc(f.path)+'">'+(arm?'Tap again':'Delete')+'</button>':'')+'</div>'+
+        (E&&E.openUrl&&E.openUrl.path===f.path?'<p class="hint"><a href="'+esc(E.openUrl.url)+'" target="_blank" rel="noopener">Open '+esc(m.file)+'</a> (the link works for 10 minutes)</p>':'')}).join('');
+  var types=DOC_TYPES.map(function(t){return '<option value="'+t[0]+'"'+(E&&E.docType===t[0]?' selected':'')+'>'+esc(t[1])+'</option>'}).join('');
+  var up=E&&E.uploading;
+  return rows+'<div class="grid2 stack" style="margin-top:10px">'+fld('Add a document','<select id="empDocType">'+types+'</select>','span2')+fld('File: PDF or photo, up to 10 MB','<input id="empDocFile" type="file" accept="application/pdf,image/*">','span2')+'</div>'+
+    '<button class="btn sm" style="margin-top:6px" data-act="emp:docup"'+(up?' disabled':'')+'>'+(up?'Uploading…':'Upload')+'</button><p class="hint">Stored privately. Only you'+(canDelete?' and this person':' and the owner')+' can open these.</p>';
+}
+function docUpload(){
+  var E=ui.emp;if(!E||E.uploading)return;
+  var id=E.mode==='self'?(people.mine&&people.mine.id):E.id;if(!id)return;
+  var inp=$('#empDocFile'),f=inp&&inp.files&&inp.files[0],tp=($('#empDocType')||{}).value||'other';E.docType=tp;
+  if(!f){toast('Choose a file first.');return}
+  if(f.size>10*1024*1024){toast('That file is over 10 MB. Take a smaller photo or split the PDF.');return}
+  if(!/^(application\/pdf|image\/)/.test(f.type||'')&&!/\.(pdf|jpe?g|png|webp|heic|heif)$/i.test(f.name||'')){toast('Upload a PDF or a photo.');return}
+  E.uploading=true;renderEmp();
+  window.tallyPeople.upload(id,f,docName(tp,f.name)).then(function(){E.uploading=false;toast('Uploaded.');delete people.docs[id];renderEmp();loadDocs(id)},
+    function(){E.uploading=false;renderEmp();toast('Could not upload that file. Check your connection.')});
+}
+function docView(path){
+  var E=ui.emp;if(!E)return;
+  window.tallyPeople.url(path).then(function(u){
+    if(/TallyAndroid\//.test(navigator.userAgent||'')){location.href=u;return}   // the app hands it to the phone's viewer
+    var w=null;try{w=window.open(u,'_blank')}catch(e){}
+    if(w){try{w.opener=null}catch(e){}}else{E.openUrl={path:path,url:u};renderEmp()}
+  },function(){toast('Could not open that document.')});
+}
+function docDelete(path){
+  var E=ui.emp;if(!E||E.mode!=='edit')return;
+  if(E.armed!=='doc:'+path){E.armed='doc:'+path;renderEmp();return}
+  E.armed='';
+  window.tallyPeople.removeDoc(path).then(function(){people.docs[E.id]=(people.docs[E.id]||[]).filter(function(f){return f.path!==path});renderEmp();toast('Document deleted.')},function(){toast('Could not delete that document.')});
+}
+/* ---- Today: licenses and DOT medical cards that have run out or will within 30 days ---- */
+function empExpiryAlerts(){
+  if(!people.loaded){if(!people.loading)loadPeople();return []}
+  var t=todayISO(),soon=addDays(t,30),out=[];
+  people.list.forEach(function(e){if(e.active===false)return;var i=e.info||{};
+    [['dlExpires',"driver's license"],['medExpires','DOT medical card']].forEach(function(f){var d=i[f[0]];if(!d||d>soon)return;
+      out.push(alertRow(d<t?'bad':'warn',esc(e.name)+"'s "+f[1]+(d<t?' has expired':' expires soon'),(d<t?'Expired ':'Expires ')+esc(relDay(d)),'emp:open',esc(e.id)))})});
+  return out;
 }
 
 /* ---------- materials and job costs ---------- */
@@ -3079,12 +3424,12 @@ function renderStart(){
 }
 
 /* ---------- signing and payment flow ---------- */
-function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||sync.gate||ui.pick||ui.more||ui.call||ui.start));navSync()}
+function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.emp));navSync()}
 /* In the installed app the phone's Back button should close whatever is open, not the app.
    One history entry stands in for "something is open"; Back closes the top screen. */
 var nav={pushed:false};
 function standalone(){try{return !!window.TALLY_STANDALONE||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||String(document.referrer).indexOf('android-app://')===0}catch(e){return false}}
-function topOverlay(){return ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':''}
+function topOverlay(){return ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':''}
 function navSync(){if(!standalone()||nav.pushed||!topOverlay())return;nav.pushed=true;try{history.pushState({tally:1},'')}catch(e){}}
 window.addEventListener('popstate',function(){
   nav.pushed=false;var t=topOverlay();
@@ -3092,6 +3437,7 @@ window.addEventListener('popstate',function(){
   else if(t==='call'){ui.call=null;renderCall()}
   else if(t==='pick'){ui.pick=false;renderPick()}
   else if(t==='more'){ui.more=false;ui.moreMode='list';renderMore()}
+  else if(t==='emp')closeEmp();
   else if(t==='flow')closeFlow();
   else if(t==='sheet')closeSheet();
   else if(t==='thread'){ui.chatThread=null;renderChat()}
@@ -3286,9 +3632,10 @@ document.addEventListener('click',function(e){
     case 'sync:init':initOrg(t.dataset.m);break;
     case 'sync:request':if(sync.db&&sync.uid){sync.db.doc('requests/'+sync.uid).set({uid:sync.uid,ts:Date.now()}).then(function(){toast('Request sent.')}).catch(function(){toast('Could not send the request.')})}break;
     case 'acc:approve':{var au=t.dataset.uid,as1=$('#accStaff_'+au),ar1=$('#accRole_'+au);if(!as1||!ar1||!sync.db)break;if(!as1.value){toast('Pick who this person is first.');break}
+      if(peopleHosted()){approveViaProfile(au,as1.value,ar1.value);break}
       sync.db.doc('users/'+au).set({uid:au,staff:as1.value,role:ar1.value,ts:Date.now()}).then(function(){return sync.db.doc('requests/'+au).delete()}).then(function(){toast('Access approved.')}).catch(function(){toast('Could not approve. Only owners and editors can.')});break}
     case 'acc:deny':if(sync.db)sync.db.doc('requests/'+t.dataset.uid).delete().catch(function(){});break;
-    case 'acc:revoke':if(sync.db)sync.db.doc('users/'+t.dataset.uid).delete().then(function(){toast('Access removed.')}).catch(function(){toast('Could not remove access.')});break;
+    case 'acc:revoke':if(peopleHosted()&&people.list.some(function(e){return e.user_id===t.dataset.uid})){revokeViaProfile(t.dataset.uid);break}if(sync.db)sync.db.doc('users/'+t.dataset.uid).delete().then(function(){toast('Access removed.')}).catch(function(){toast('Could not remove access.')});break;
     case 'mat:add':{j=byId(t.dataset.id);if(!j)break;var mx=t.dataset.ctx+'_'+j.id,msel=$('#mat_i_'+mx),mq=num($('#mat_q_'+mx).value),mn=$('#mat_n_'+mx).value.trim();
       if(!msel||!msel.value){toast('Choose a material first.');break}
       if(!(mq>0)){toast('Enter a quantity.');break}
@@ -3342,6 +3689,16 @@ document.addEventListener('click',function(e){
     case 'more:go':ui.more=false;renderMore();ui.tab=t.dataset.tab;ui.armed='';render();window.scrollTo(0,0);break;
     case 'more:signout':if(window.tallySignOut)window.tallySignOut();break;
     case 'more:company':if(window.tallySwitchCompany)window.tallySwitchCompany();break;
+    case 'emp:new':openEmp({});break;
+    case 'emp:open':ui.more=false;renderMore();openEmp({id:t.dataset.id,name:t.dataset.name});break;
+    case 'emp:close':closeEmp();break;
+    case 'emp:save':empSave();break;
+    case 'emp:del':empDelete();break;
+    case 'emp:docup':docUpload();break;
+    case 'emp:docview':docView(t.dataset.path);break;
+    case 'emp:docdel':docDelete(t.dataset.path);break;
+    case 'me:open':ui.more=false;renderMore();openMyProfile();break;
+    case 'me:save':mySave();break;
     case 'more:theme':ui.more=false;renderMore();ui.pick=true;renderPick();break;
     case 'fab:quote':ui.tab='quote';ui.qstep=1;ui.armed='';render();window.scrollTo(0,0);break;
     case 'fab:clock':{var fm=fieldMe();if(!fm){toast('Ask the office to add you to the crew list.');break}
@@ -3452,7 +3809,7 @@ document.addEventListener('change',function(e){
   if(e.target&&e.target.dataset&&(e.target.dataset.d==='from'||e.target.dataset.d==='to')){distLookup();shopLookup(false);return}
   var t=e.target,j=ui.jobId&&canEditJobs()?byId(ui.jobId):null;
   if(t.dataset&&t.dataset.dq!==undefined){var dj=canEditJobs()?byId(t.dataset.id):null;if(dj){if(t.dataset.dq==='truckId')dj.assign.truckId=t.value;else{dj.d[t.dataset.dq]=t.value;if(t.dataset.dq==='moveDate'&&t.value){ui.weekStart=mondayOf(t.value);ui.day=t.value}}save();renderDispatch()}return}
-  if(t.id&&t.id.indexOf('accStaff_')===0){var rs=$('#accRole_'+t.id.slice(9)),dv=directory().find(function(x){return x.name===t.value});if(rs&&dv)rs.value=dv.kind;return}
+  if(t.id&&t.id.indexOf('accStaff_')===0){var rs=$('#accRole_'+t.id.slice(9)),er=peopleHosted()?empByName(t.value):null,dv=directory().find(function(x){return x.name===t.value});if(rs&&(er||dv))rs.value=er?er.role:dv.kind;return}
   if(t.id==='chatAs'){var rl=state.ui.role;if(rl==='crew'||rl==='lead')state.ui.me=t.value;else state.ui.who=t.value;save();renderTabs();renderChat();return}
   if(t.id==='role'){if(sync.mode==='shared'&&sync.identity.status==='ok'){t.value=state.ui.role;return}
     state.ui.who='';ui.chatThread=null;state.ui.role=t.value;save();ui.armed='';render();return}
@@ -3465,7 +3822,7 @@ document.addEventListener('change',function(e){
     if((t.value==='done'||t.value==='paid')&&j.status!=='done'&&j.status!=='paid'&&formsPending(j).length){t.value=j.status;toast('The customer has to sign '+formsPending(j).map(function(f){return f.title}).join(', ')+' before this job can close. Use Finish job, or waive the form.');return}
     setStatus(j,t.value);save();renderSheet()}
 });
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId)closeSheet()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId)closeSheet()});
 
 /* ---------- errors are shown, not swallowed ---------- */
 var lastErrAt=0;
@@ -3501,7 +3858,7 @@ window.addEventListener('resize',function(){renderTabs()});
 setInterval(function(){var el=$('#clkElapsed');if(!el||!el.dataset.since)return;var typing=document.activeElement&&document.activeElement.id==='clockNote';if(typing||ui.tab!=='crew')el.textContent=fmtDur(Date.now()-(+el.dataset.since));else renderCrew()},30000);
 if(location.hash==='#messages'){ui.tab='chat';ui.chatThread='jobs'}
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople};
 })();
 </script>
 </body>

@@ -11,18 +11,18 @@ function makeSupabase(db, me, calls) {
   const listeners = [];
   function fire(table, row) { listeners.forEach((l) => { if (l.table === table) l.cb({ new: row, old: null }); }); }
   function query(table) {
-    let filters = [], order = null, lim = null, single = false, op = 'select', payload = null;
+    let filters = [], order = null, lim = null, single = false, op = 'select', payload = null, returning = false;
     const val = (row, col) => {
       let m = /^data->>?'?([A-Za-z0-9_]+)'?$/.exec(col);
       if (m) return row.data ? row.data[m[1]] : undefined;
       return row[col];
     };
     const api = {
-      select() { return api; }, eq(c, v) { filters.push((r) => String(val(r, c)) === String(v)); return api; },
+      select() { if (op !== 'select') returning = true; return api; }, eq(c, v) { filters.push((r) => String(val(r, c)) === String(v)); return api; },
       filter(c, o, v) { filters.push((r) => { const x = val(r, c); return o === 'eq' ? String(x) === String(v) : o === 'gt' ? x > v : o === 'lt' ? x < v : true; }); return api; },
       order(c, opts) { order = [c, opts && opts.ascending === false]; return api; }, limit(n) { lim = n; return api; },
       maybeSingle() { single = true; return api; },
-      upsert(o) { op = 'upsert'; payload = o; return api; }, update(o) { op = 'update'; payload = o; return api; }, delete() { op = 'delete'; return api; },
+      upsert(o) { op = 'upsert'; payload = o; return api; }, insert(o) { op = 'insert'; payload = o; return api; }, update(o) { op = 'update'; payload = o; return api; }, delete() { op = 'delete'; return api; },
       then(res, rej) {
         try {
           const rows = db[table] || (db[table] = []);
@@ -42,8 +42,21 @@ function makeSupabase(db, me, calls) {
             setTimeout(() => fire(table, row), 5);
             return Promise.resolve({ data: null, error: null }).then(res, rej);
           }
-          if (op === 'update') { rows.filter((r) => filters.every((f) => f(r))).forEach((r) => Object.assign(r, clone(payload))); return Promise.resolve({ data: null, error: null }).then(res, rej); }
-          if (op === 'delete') { const keep = rows.filter((r) => !filters.every((f) => f(r))); rows.length = 0; keep.forEach((r) => rows.push(r)); setTimeout(() => fire(table, {}), 5); return Promise.resolve({ data: null, error: null }).then(res, rej); }
+          if (op === 'insert') {
+            if (db.__failInsert && db.__failInsert[table]) return Promise.resolve({ data: null, error: { message: db.__failInsert[table] } }).then(res, rej);
+            const row = Object.assign({ id: 'id-' + (++db.__seq || (db.__seq = 1)), user_id: null }, clone(payload));
+            rows.push(row); calls.writes.push({ table, op: 'insert', row: clone(row) });
+            setTimeout(() => fire(table, row), 5);
+            return Promise.resolve({ data: returning ? (single ? clone(row) : [clone(row)]) : null, error: null }).then(res, rej);
+          }
+          if (op === 'update') {
+            const hit = rows.filter((r) => filters.every((f) => f(r)));
+            hit.forEach((r) => Object.assign(r, clone(payload)));
+            calls.writes.push({ table, op: 'update', row: clone(payload), n: hit.length });
+            const out = hit.map(clone);
+            return Promise.resolve({ data: returning ? (single ? (out[0] || null) : out) : null, error: null }).then(res, rej);
+          }
+          if (op === 'delete') { calls.writes.push({ table, op: 'delete', n: rows.filter((r) => filters.every((f) => f(r))).length }); const keep = rows.filter((r) => !filters.every((f) => f(r))); rows.length = 0; keep.forEach((r) => rows.push(r)); setTimeout(() => fire(table, {}), 5); return Promise.resolve({ data: null, error: null }).then(res, rej); }
         } catch (e) { return Promise.reject(e).then(res, rej); }
       },
     };
@@ -56,12 +69,37 @@ function makeSupabase(db, me, calls) {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       signOut: () => Promise.resolve({}), signInWithOtp: () => Promise.resolve({}), verifyOtp: () => Promise.resolve({}),
     },
-    rpc(name) {
+    rpc(name, args) {
+      calls.rpc.push({ name, args: clone(args || {}) });
+      const emps = db.employees || [];
+      if (name === 'claim_invites') return Promise.resolve({ data: db.__claim ? db.__claim() : 0 });
+      if (name === 'my_profile') {
+        const e = emps.find((x) => x.user_id === me.uid && x.active !== false);
+        return Promise.resolve({ data: e ? { id: e.id, name: e.name, role: e.role, email: e.email, active: true, info: clone(e.info || {}) } : null });
+      }
+      if (name === 'update_my_profile') {
+        const e = emps.find((x) => x.user_id === me.uid && x.active !== false);
+        if (!e) return Promise.resolve({ data: null, error: { message: 'No profile to update' } });
+        const ok = ['phone','address','city','state','zip','emergencyName','emergencyRelation','emergencyPhone','shirtSize'];
+        Object.keys(args.patch || {}).forEach((k) => { if (ok.includes(k)) e.info[k] = args.patch[k]; });
+        return Promise.resolve({ data: { id: e.id, name: e.name, role: e.role, email: e.email, active: true, info: clone(e.info) } });
+      }
       if (name === 'my_orgs') return Promise.resolve({ data: db.members.filter((m) => m.user_id === me.uid).map((m) => ({ id: m.org_id, name: 'Ace Moving', role: m.role, join_code: 'ABC123' })) });
-      if (name === 'people') return Promise.resolve({ data: db.members.map((m) => ({ user_id: m.user_id, email: m.email })) });
+      if (name === 'people') return Promise.resolve({ data: db.members.map((m) => ({ user_id: m.user_id, email: m.email })).concat((db.access_requests || []).map((r) => ({ user_id: r.user_id, email: r.email }))) });
       return Promise.resolve({ data: null });
     },
     from: query,
+    storage: {
+      from(bucket) {
+        const files = db.__files || (db.__files = []);
+        return {
+          list(prefix) { calls.storage.push({ op: 'list', bucket, prefix }); return Promise.resolve({ data: files.filter((f) => f.path.startsWith(prefix + '/')).map((f) => ({ id: f.path, name: f.path.slice(prefix.length + 1), metadata: { size: f.size } })), error: null }); },
+          upload(path, file, opts) { calls.storage.push({ op: 'upload', bucket, path, type: opts && opts.contentType }); files.push({ path, size: file.size || 0 }); return Promise.resolve({ data: { path }, error: null }); },
+          createSignedUrl(path, secs) { calls.storage.push({ op: 'sign', bucket, path, secs }); return Promise.resolve({ data: { signedUrl: 'https://signed.example/' + path }, error: null }); },
+          remove(paths) { calls.storage.push({ op: 'remove', bucket, paths }); paths.forEach((p) => { const i = files.findIndex((f) => f.path === p); if (i >= 0) files.splice(i, 1); }); return Promise.resolve({ data: [], error: null }); },
+        };
+      },
+    },
     channel() { const ch = { on(ev, f, cb) { listeners.push({ table: f.table, cb }); return ch; }, subscribe() { return ch; } }; return ch; },
   };
 }
@@ -72,7 +110,7 @@ async function load(file, opts = {}) {
   const vc = new VirtualConsole();
   vc.on('jsdomError', (e) => { if (!/Not implemented|Could not load/.test(String(e.message))) errors.push('jsdom: ' + e.message); });
   vc.on('error', (e) => errors.push('console.error: ' + e));
-  const calls = { fn: [], writes: [] };
+  const calls = { fn: [], writes: [], rpc: [], storage: [] };
   const dom = new JSDOM(html, {
     url: 'https://tally.example.com/' + (opts.hash || ''), runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vc,
     beforeParse(w) {
