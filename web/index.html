@@ -466,6 +466,9 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
   .acc[open]>.acc-body{animation:tallyFade .16s ease-out}
 }
 @media (prefers-reduced-motion:no-preference) and (min-width:900px){ #sheet .panel{animation-name:tallySlideX} }
+.qrwrap{display:flex;justify-content:center;margin:10px 0 0}.qr{width:220px;height:220px;max-width:100%;border-radius:10px;box-shadow:0 0 0 1px var(--line)}
+.linkbox{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:2px}.linkbox code{font-family:ui-monospace,Menlo,Consolas,monospace}
+.stripe-box{min-height:96px;margin:8px 0 6px}
 </style>
 <!-- ===== Supabase back end: fill these two lines in, then host this file ===== -->
 <script>
@@ -583,11 +586,22 @@ function docRef(path){
     },
     update:function(patch){
       if(collection==='users')return sb.from('members').update(patch).eq('org_id',ORG).eq('user_id',id).then(chk);
-      return readOne().then(function(s){
-        if(!s.exists)throw new Error('missing');
-        var merged=deepMerge(s.data(),patch);
-        return sb.from('docs').upsert({org_id:ORG,path:path,collection:collection,doc_id:id,data:merged,updated_at:new Date().toISOString()}).then(chk);
+      // merged on the server in one step, so two phones (or a payment the server records) can't undo
+      // each other; a database without doc_patch yet falls back to read, merge, write
+      if(patchRpc!==false)return sb.rpc('doc_patch',{o:ORG,p:path,patch:patch}).then(function(r){
+        if(r&&r.error){if(noFunction(r.error)){patchRpc=false;return mergeWrite()}throw r.error}
+        patchRpc=true;
+        if(!r||r.data!==true)throw new Error('missing');
+        return r;
       });
+      return mergeWrite();
+      function mergeWrite(){
+        return readOne().then(function(s){
+          if(!s.exists)throw new Error('missing');
+          var merged=deepMerge(s.data(),patch);
+          return sb.from('docs').upsert({org_id:ORG,path:path,collection:collection,doc_id:id,data:merged,updated_at:new Date().toISOString()}).then(chk);
+        });
+      }
     },
     delete:function(){
       if(collection==='users')return sb.from('members').delete().eq('org_id',ORG).eq('user_id',id).then(chk);
@@ -601,6 +615,8 @@ function docRef(path){
   };
 }
 function chk(r){if(r&&r.error)throw r.error;return r}
+var patchRpc=null;   // null: not tried yet; false: this database has no doc_patch yet
+function noFunction(e){return e.code==='PGRST202'||/could not find the function/i.test(e.message||'')}
 
 /* ---------- who am I ---------- */
 function refreshMe(){
@@ -767,8 +783,8 @@ function commsPost(body){
     var s=r&&r.data&&r.data.session;if(!s)return {ok:false,message:'Sign in again.'};
     return fetch(CFG.url.replace(/\/+$/,'')+'/functions/v1/tally-twilio/app',{method:'POST',keepalive:true,
       headers:{'Content-Type':'application/json',apikey:CFG.anonKey,Authorization:'Bearer '+s.access_token},
-      body:JSON.stringify(Object.assign({org:ORG},body))}).then(function(res){return res.json().catch(function(){return {ok:false,message:'The texting service did not answer.'}})});
-  }).catch(function(){return {ok:false,message:'Could not reach the texting service. Check your connection.'}});
+      body:JSON.stringify(Object.assign({org:ORG},body))}).then(function(res){return res.json().catch(function(){return {ok:false,message:'The server did not answer. Try again.'}})});
+  }).catch(function(){return {ok:false,message:'Could not reach the server. Check your connection.'}});
 }
 var commsApi={
   number:function(){return commsLine},
@@ -811,6 +827,16 @@ window.tallyPeople={
   uid:function(){return me.id}
 };
 window.tallyMaps={distance:function(from,to){return commsPost({action:'distance',from:from,to:to})}};
+/* ---------- card payments (Stripe, through the same Edge Function) ---------- */
+window.tallyPay={
+  config:function(){return commsPost({action:'pay_config'})},
+  link:function(id,amount,save,text){return commsPost({action:'pay_link',jobId:id,amount:amount,save:!!save,text:!!text})},
+  intent:function(id,amount,save){return commsPost({action:'pay_intent',jobId:id,amount:amount,save:!!save})},
+  saved:function(id,vaultId,amount,nonce){return commsPost({action:'pay_saved',jobId:id,vaultId:vaultId,amount:amount,nonce:nonce})},
+  check:function(id,pi){return commsPost({action:'pay_check',jobId:id,pi:pi||''})},
+  forget:function(vaultId){return commsPost({action:'pay_forget',vaultId:vaultId})},
+  refresh:function(){Object.keys(watchers).forEach(function(k){if(k.indexOf('jobs|')===0||k.indexOf('vault|')===0)bump(k)})}
+};
 var readyGo,ready=new Promise(function(r){readyGo=r});   // the app waits here until we know who is signed in
 window.claude={use:function(what){
   if(what!=='db'&&what!=='user')return Promise.resolve(null);
@@ -886,7 +912,7 @@ var uid=function(){return Math.random().toString(36).slice(2,9)};
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
 var num=function(v){var n=parseFloat(v);return isFinite(n)?n:0};
 var round2=function(n){return Math.round((+n||0)*100)/100};
-var money=function(n){n=round2(n);var whole=Math.abs(n-Math.round(n))<0.005;return '$'+(whole?Math.round(n).toLocaleString('en-US'):n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}))};
+var money=function(n){n=round2(n);var neg=n<0;n=Math.abs(n);var whole=Math.abs(n-Math.round(n))<0.005;return (neg?'-':'')+'$'+(whole?Math.round(n).toLocaleString('en-US'):n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}))};
 /* amount fields: type digits and the cents fill in from the right (1500 becomes 15.00) */
 function fmtCents(c){var neg=c<0;c=Math.abs(c);return (neg?'-':'')+Math.floor(c/100).toLocaleString('en-US')+'.'+String(c%100).padStart(2,'0')}
 function moneyVal(el){var d=(el&&el.value||'').replace(/\D/g,'');return d?parseInt(d,10)/100:0}
@@ -966,7 +992,13 @@ var LABEL={lead:'Lead',quoted:'Quoted',booked:'Booked',active:'In progress',done
 var RANK={active:0,booked:1,quoted:2,lead:3,done:4,paid:5,lost:6};
 var byId=function(id){return state.jobs.find(function(j){return j.id===id})};
 function truckName(id){var t=state.settings.trucks.find(function(x){return x.id===id});return t?t.name:(id?'Removed truck':'No truck')}
-function paidOf(j){return round2(j.payments.reduce(function(a,p){return a+p.amt},0))}
+// What counts toward a bill, the same way the server counts it: a payment the server wrote down, or one
+// a person recorded for more than zero (only the server takes money off a bill, for a refund or a
+// dispute). Payments made in Stripe's test mode (trying Tally out) count only while Stripe is in test
+// mode; until this phone hears which mode it is in, it goes by what it heard last time.
+function payTestMode(){if(typeof pay==='undefined'||!pay)return false;if(pay.cfg&&pay.cfg.ready)return pay.cfg.test===true;return pay.lastTest===true}
+function payCounts(p){if(!p)return false;if(p.stripe)return p.live!==false||payTestMode();return p.amt>0}
+function paidOf(j){return round2(j.payments.reduce(function(a,p){return a+(payCounts(p)?p.amt:0)},0))}
 function matTotal(j){return round2((j.materials||[]).reduce(function(a,m){return a+(m.price==null?0:m.qty*m.price)},0))}
 function matCostTotal(j){return round2((j.materials||[]).reduce(function(a,m){return a+(m.cost==null?0:m.qty*m.cost)},0))}
 function costTotal(j){return round2((j.costs||[]).reduce(function(a,c){return a+c.amt},0))}
@@ -1430,6 +1462,7 @@ function renderSheet(){
   if(ui.jobId&&!canEditJobs())ui.jobId=null;
   var el=$('#sheet'),j=ui.jobId?byId(ui.jobId):null;
   if(!j){el.hidden=true;el.innerHTML='';syncLock();return}
+  if(window.tallyPay&&!pay.cfg)payLoad();
   var S=state.settings,q=j.quote,paid=paidOf(j),bal=balOf(j),cf=conflictsFor(j);
   var prev=$('.sheet-body',el),keep=prev?prev.scrollTop:0,na=nextAction(j);
   var cfs=S.customFields.map(function(f){return fld(esc(f.label),cfInput(f,j.d.custom[f.id],'data-jcf="'+f.id+'"'))}).join('');
@@ -1446,7 +1479,7 @@ function renderSheet(){
   var pendRows=pend.map(function(f){return '<div class="who"><span><b>'+esc(f.title)+'</b><br><small>Waiting for signature</small></span>'+(state.ui.role==='owner'?'<button class="btn sm ghost" data-act="sh:waive" data-fid="'+f.id+'">Waive</button>':'')+'</div>'}).join('');
   var fsec='<div class="sec" data-meta="'+(formsRequired().length?(formsRequired().length-pend.length)+' of '+formsRequired().length+' signed':'')+'"><h3>Forms</h3>'+(signedRows+pendRows||'<small>No forms are required. Add them in Setup.</small>')+'</div>';
   var payHtml='<div class="sec" data-meta="'+money(paid)+' paid"><h3>Payments</h3><table class="lines">'+pays+'</table>'+
-     '<button class="btn primary" style="margin-top:8px;width:100%" data-act="flow:open" data-id="'+j.id+'" data-who="Office">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>'+
+     '<button class="btn primary" style="margin-top:8px;width:100%" data-act="flow:open" data-id="'+j.id+'" data-who="Office">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>'+officeLinkHtml(j)+
      '<h3 style="margin:16px 0 6px;font-size:16px">Record a deposit, cash or check</h3>'+
      (payLocked(j)?'<p class="hint">Forms must be signed before payment on a job that has started.</p>':'')+
      '<div class="row" style="margin-top:8px"><button class="btn sm" data-act="sh:fillpay" data-v="'+q.deposit+'">Deposit '+money(q.deposit)+'</button><button class="btn sm" data-act="sh:fillpay" data-v="'+bal+'">Balance '+money(bal)+'</button></div>'+
@@ -1706,7 +1739,7 @@ function renderReports(){
 function renderSettings(){
   renderSettingsRaw();accordify($('#view'),'section.card','H2','st',[]);
   var v=$('#view'),cards={};$$('details.acc.card',v).forEach(function(d){cards[d.dataset.k]=d});
-  var groups=[['Business',['Company','Time clock','Bid accuracy']],['People',['Employees','App access','Texts and calls','Roles']],['Pricing and jobs',['Rate card','Materials and job costs','Fleet','Inventory catalog','Custom job fields','Lead sources']],['Paperwork and payments',['Forms to sign','Saved payment methods']],['Data',['Your data']]];
+  var groups=[['Business',['Company','Time clock','Bid accuracy']],['People',['Employees','App access','Texts and calls','Roles']],['Pricing and jobs',['Rate card','Materials and job costs','Fleet','Inventory catalog','Custom job fields','Lead sources']],['Paperwork and payments',['Forms to sign','Payments','Saved payment methods']],['Data',['Your data']]];
   var frag=document.createDocumentFragment(),used={};
   groups.forEach(function(g){var present=g[1].filter(function(t){return cards['st:'+t]});if(!present.length)return;var lb=document.createElement('div');lb.className='glabel';lb.textContent=g[0];frag.appendChild(lb);present.forEach(function(t){frag.appendChild(cards['st:'+t]);used['st:'+t]=1})});
   Object.keys(cards).forEach(function(k){if(!used[k])frag.appendChild(cards[k])});
@@ -1727,7 +1760,9 @@ function renderSettingsRaw(){
   var trucks=S.trucks.map(function(t,i){return '<div class="grid3" style="grid-template-columns:2fr 1fr auto;margin-bottom:8px"><input aria-label="Truck name" data-s="trucks.'+i+'.name" value="'+esc(t.name)+'" class="f" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><input aria-label="Cubic feet" type="number" data-s="trucks.'+i+'.cf" data-t="num" value="'+t.cf+'" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn sm danger" data-act="st:rmtruck" data-i="'+i+'">Remove</button></div>'}).join('');
   var chips=function(arr,act){return '<div class="chips">'+arr.map(function(n,i){return '<button class="chip" data-act="'+act+'" data-i="'+i+'" aria-label="Remove '+esc(n)+'">'+esc(n)+' ×</button>'}).join('')+'</div>'};
   var formsList=(S.forms||[]).map(function(f){return '<details class="grp"><summary>'+esc(f.title)+' <small>'+(f.required?'required':'optional')+'</small></summary><div class="formbox">'+(f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+pg+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join(''))+'</div><div class="row" style="margin:8px 0"><button class="chip'+(f.required?' on':'')+'" data-act="st:reqform" data-id="'+f.id+'" aria-pressed="'+!!f.required+'">Required before payment</button><button class="btn sm danger" data-act="st:rmform" data-id="'+f.id+'">Remove</button></div></details>'}).join('')||'<p class="hint">No forms yet.</p>';
-  var vaultList=state.vault.map(function(x){return '<div class="who"><span>'+(x.type==='card'?esc(x.brand)+' ending '+esc(x.last4):'Bank ending '+esc(x.last4))+'<br><small>Customer: '+esc(x.cust)+'</small></span><button class="btn sm danger" data-act="st:rmvault" data-id="'+x.id+'">Remove</button></div>'}).join('')||'<p class="hint">Nothing saved yet.</p>';
+  // a card kept for a customer without a phone belongs to the job it was kept on
+  var vaultWho=function(x){if(!/^job:/.test(x.cust||''))return 'Customer: '+esc(x.cust);var kj=byId(x.cust.slice(4));return kj?'Kept on '+esc(kj.d.name||'a job')+'’s job':'Kept on a job that is no longer here'};
+  var vaultList=state.vault.map(function(x){return '<div class="who"><span>'+(x.type==='card'?esc(x.brand)+' ending '+esc(x.last4):'Bank ending '+esc(x.last4))+(x.name?' · '+esc(x.name):'')+(x.via==='stripe'?' <small>· Stripe'+(x.live?'':' test')+'</small>':'')+'<br><small>'+vaultWho(x)+'</small></span><button class="btn sm danger" data-act="st:rmvault" data-id="'+x.id+'">Remove</button></div>'}).join('')||'<p class="hint">Nothing saved yet.</p>';
   var cfl=S.customFields.map(function(f,i){return '<div class="row between" style="margin-bottom:6px"><span>'+esc(f.label)+' <small>('+esc(f.type)+')</small></span><button class="btn sm danger" data-act="st:rmcf" data-i="'+i+'">Remove</button></div>'}).join('');
   var cat=S.catalog.map(function(it,i){return '<tr><td>'+esc(it.name)+'</td><td class="n">'+it.cf+'</td><td class="n">'+(it.fee?money(it.fee):'')+'</td><td class="n"><button class="btn sm ghost" data-act="st:rmitem" data-i="'+i+'" aria-label="Remove '+esc(it.name)+'">×</button></td></tr>'}).join('');
   var pm=function(label,path){return '<label class="check"><input type="checkbox" data-s="perms.'+path+'" data-t="bool"'+(S.perms[path]?' checked':'')+'> '+label+'</label>'};
@@ -1751,6 +1786,7 @@ function renderSettingsRaw(){
    '<div class="who" style="display:block"><b>Dispatch</b><br><small>Books quotes, schedules crews and trucks, and sees company revenue and revenue by crew. Can also work in the field with lead-level access, including billing.</small></div>'+
    '<div class="who" style="display:block"><b>Owner</b><br><small>Everything, plus employee hours, job hours, and bid accuracy for the company and each crew. Can also work in the field and waive a form for a job.</small></div>'+
    '</section>'+
+   payCardHtml()+
    '<section class="card"><h2>Saved payment methods</h2><p class="sub">Only the last four digits are kept. Customers find their saved cards and bank accounts when they pay.</p>'+vaultList+'</section>'+
    '<section class="card"><h2>Bid accuracy</h2>'+nf('A job counts as accurate when actual hours land within this % of the bid','bidTol','1')+'</section>'+
    '<section class="card"><h2>Your data</h2><p class="sub">'+(sync.mode==='shared'?'This workspace is shared, so these actions change data for everyone.':'Stored on this device. Copy an export to back it up or move it.')+'</p><div class="row"><button class="btn" data-act="st:export">Export data</button><label class="check" style="min-height:44px"><input type="checkbox" id="expPhotos"> Include photos</label></div><textarea class="code" id="dataBox" placeholder="Export appears here. Paste an export here to import." aria-label="Data export or import">'+esc(ui.exportText||'')+'</textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="st:copy">Copy</button><button class="btn primary" data-act="st:import">Import</button></div>'+
@@ -2070,7 +2106,11 @@ function syncOut(){
       var key='jobs/'+j.id;if(sync.inflight[key])return;
       var cur=jobDoc(j),prev=sync.lastJobs[j.id];
       if(!prev)qwrite(key,function(){return db.doc(key).set(cur)},function(){sync.lastJobs[j.id]=cur});
-      else{var diff=jobDiff(prev,cur);if(diff)qwrite(key,function(){return db.doc(key).update(diff).catch(function(){return db.doc(key).set(cur)})},function(){sync.lastJobs[j.id]=cur})}
+      else{var diff=jobDiff(prev,cur);if(diff)qwrite(key,function(){return db.doc(key).update(diff).catch(function(e){
+        // only a job that is gone is written whole; any other trouble retries the change itself, so this
+        // phone's copy never lands on top of payments the server has recorded since
+        return db.doc(key).get().then(function(s){if(s&&s.exists)throw e;return db.doc(key).set(cur)})})},function(){sync.lastJobs[j.id]=cur;
+          if(diff.payments||diff.extras||diff.materials||diff.quote)payCheckSoon(j.id)})}
     });
     Object.keys(sync.lastJobs).forEach(function(id){if(seen[id])return;var key='jobs/'+id;if(sync.inflight[key])return;qwrite(key,function(){return db.doc(key).delete()},function(){delete sync.lastJobs[id]})});
   }
@@ -2155,7 +2195,7 @@ function pullJobs(snap){
   jobMsgNotice();
   state.jobs.forEach(function(j){(j.photos||[]).forEach(function(p){if(!p.data)fetchPhoto(p.id,0)})});
   commsBaseline();
-  if(changed){cacheSave();softRefresh()}
+  if(changed){cacheSave();softRefresh();if(ui.flow)flowRefresh()}
   syncOut();
 }
 function pullShifts(snap){
@@ -2170,7 +2210,7 @@ function pullShifts(snap){
 function pullVault(snap){
   if(!sync.started)return;
   var ch=pullSimple(snap,state.vault,sync.lastVault,function(a){state.vault=a});
-  sync.got.vault=true;if(ch)cacheSave();syncOut();
+  sync.got.vault=true;if(ch){cacheSave();if(ui.flow)flowRefresh()}syncOut();
 }
 function pullSettings(snap){
   if(!sync.started)return;
@@ -2188,7 +2228,7 @@ function pullSettings(snap){
 function stopData(){
   sync.unsubs.forEach(function(u){try{u()}catch(e){}});sync.unsubs=[];
   sync.started=false;sync.got={settings:false,jobs:false,shifts:false,vault:false};sync.settingsSeen=false;
-  sync.lastJobs={};sync.lastShifts={};sync.lastVault={};sync.lastSettings='';chat.db=null;chat.mode='local';
+  sync.lastJobs={};sync.lastShifts={};sync.lastVault={};sync.lastSettings='';chat.db=null;chat.mode='local';pay.cfg=null;
 }
 function startData(){
   if(sync.started)return;
@@ -2200,6 +2240,7 @@ function startData(){
   sync.unsubs.push(db.collection('shifts').where('inAt','>',Date.now()-400*864e5).onSnapshot(pullShifts,ef));
   sync.unsubs.push(db.collection('vault').onSnapshot(pullVault,ef));
   chatStart(db);
+  payLoad();
   if(sync.isOwner){
     sync.unsubs.push(db.collection('requests').onSnapshot(function(snap){sync.requests=snap.docs.map(function(d){return d.data()}).filter(function(x){return x&&x.uid});resolveNames(sync.requests.map(function(x){return x.uid}));softSettings()},ef));
     sync.unsubs.push(db.collection('users').onSnapshot(function(snap){sync.users=snap.docs.map(function(d){return d.data()}).filter(function(x){return x&&x.uid});resolveNames(sync.users.map(function(x){return x.uid}));softSettings()},ef));
@@ -3008,7 +3049,7 @@ function commsLoadLog(id,loud){
     .then(function(){delete comms.loading[id];if(ui.jobId===id&&!ui.flow)renderSheet()});
 }
 function fmtPhone(p){var d=String(p||'').replace(/\D/g,'');if(d.length===11&&d[0]==='1')d=d.slice(1);return d.length===10?'('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6):String(p||'')}
-var COMM_PURPOSE={eta:'Arrival time',assigned:'Crew assigned',removed:'Taken off the job',moved:'Job moved',forms:'Forms waiting',masked:'Call to customer',callback:'Customer called in','missed-call':'Missed-call alert','customer-text':'Customer texted',forward:'Forwarded to the office',reply:'Crew replied'};
+var COMM_PURPOSE={eta:'Arrival time',assigned:'Crew assigned',removed:'Taken off the job',moved:'Job moved',forms:'Forms waiting',masked:'Call to customer',callback:'Customer called in','missed-call':'Missed-call alert','customer-text':'Customer texted',forward:'Forwarded to the office',reply:'Crew replied',paylink:'Payment link'};
 function commStatus(r){
   var s=r.status||'',dur=r.duration_sec>0?fmtSecs(r.duration_sec):'';
   if(r.channel==='call'){
@@ -3423,6 +3464,220 @@ function renderStart(){
   el.hidden=false;syncLock();
 }
 
+/* ---------- QR codes ----------
+   qrcode-generator 1.4.4, Copyright (c) 2009 Kazuhiko Arase, MIT license (http://www.d-project.com/).
+   "QR Code" is a registered trademark of DENSO WAVE INCORPORATED. Minified, unchanged. */
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)};
+function qrSvg(text){
+  try{
+    var q=qrcode(0,'M');q.addData(String(text));q.make();
+    var n=q.getModuleCount(),m=4,sz=n+2*m,d='';
+    for(var r=0;r<n;r++)for(var c=0;c<n;c++)if(q.isDark(r,c))d+='M'+(c+m)+' '+(r+m)+'h1v1h-1z';
+    return '<svg class="qr" viewBox="0 0 '+sz+' '+sz+'" role="img" aria-label="QR code for the payment link" shape-rendering="crispEdges"><rect width="'+sz+'" height="'+sz+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
+  }catch(e){return ''}
+}
+
+/* ---------- card payments through Stripe (hosted edition) ----------
+   window.tallyPay comes from the Supabase adapter. Without it (the artifact edition), or for a
+   company that isn't turned on for payments, the payment screen stays the demo it always was.
+   Card numbers never reach Tally: a pay link opens Stripe's own page, a typed card goes into
+   Stripe's own card box, and a card on file is charged by the server. The server, not this
+   screen, decides what is still owed. */
+var STRIPE_JS='https://js.stripe.com/endive/stripe.js',MIN_PAY=50;
+var pay={cfg:null,loading:null,stripe:null,js:null,elements:null,el:null,elJob:'',busy:false,links:{},poll:null,
+  lastTest:(function(){try{return localStorage.getItem('tally.payTest')==='1'}catch(e){return false}})()};
+function payOn(){return !!(window.tallyPay&&sync.mode==='shared'&&sync.identity.status==='ok'&&pay.cfg&&pay.cfg.ready)}
+function payCardOn(){return payOn()&&!!pay.cfg.publishableKey}
+function payLoad(force){
+  if(!window.tallyPay||sync.mode!=='shared')return Promise.resolve(null);
+  if(pay.cfg&&!force)return Promise.resolve(pay.cfg);
+  if(pay.loading)return pay.loading;
+  pay.loading=Promise.resolve(window.tallyPay.config()).then(function(c){pay.cfg=c&&c.ok?c:{ready:false,reason:'down'};
+      if(pay.cfg.ready){pay.lastTest=pay.cfg.test===true;try{localStorage.setItem('tally.payTest',pay.lastTest?'1':'0')}catch(e){}}},function(){pay.cfg={ready:false,reason:'down'}})
+    .then(function(){pay.loading=null;if(ui.flow)renderFlow();if(ui.jobId)renderSheet();softSettings();return pay.cfg});
+  return pay.loading;
+}
+// Cards kept on file through Stripe for this job's customer: kept on this job, or kept for the same phone
+// number. (Without a phone, a card belongs to the job it was kept on: two customers can share a name.)
+// A crew lead sees only cards kept on this job; the server allows no more. A card is picked for you only
+// when it was kept on this job; any other one, check with the customer first.
+function phoneKey(k){return /^\d{7,}$/.test(String(k||''))}
+function stripeCards(j){var live=!(pay.cfg&&pay.cfg.test),lead=state.ui.role==='lead';return state.vault.filter(function(v){
+  if(v.via!=='stripe'||!!v.live!==live)return false;var here=(v.jobs||[]).indexOf(j.id)>=0;return lead?here:(here||(phoneKey(v.cust)&&v.cust===custKey(j)))})}
+function cardFits(j,v){return (v.jobs||[]).indexOf(j.id)>=0}
+function flowMethodStripe(j){
+  var cards=stripeCards(j),m=ui.flow&&ui.flow.method,ok=['link','other'].concat(cards.length?['vault']:[],payCardOn()?['card']:[]);
+  return ok.indexOf(m)>=0?m:(cards.some(function(v){return cardFits(j,v)})?'vault':'link');
+}
+function stripeJs(){
+  if(window.Stripe)return Promise.resolve(window.Stripe);
+  if(pay.js)return pay.js;
+  pay.js=new Promise(function(res,rej){
+    var s=document.createElement('script');s.src=STRIPE_JS;s.async=true;
+    s.onload=function(){if(window.Stripe)res(window.Stripe);else{pay.js=null;rej(new Error('stripe'))}};
+    s.onerror=function(){pay.js=null;rej(new Error('stripe'))};
+    document.head.appendChild(s);
+  });
+  return pay.js;
+}
+function stripeLook(){
+  var cs=window.getComputedStyle?getComputedStyle(document.documentElement):null,v=function(n,d){return (cs&&cs.getPropertyValue(n)||'').trim()||d};
+  return {theme:modeOf()==='dark'?'night':'stripe',variables:{colorPrimary:v('--focus','#2563EB'),colorText:v('--text','#141B2D'),colorBackground:v('--field','#FFFFFF'),colorDanger:v('--bad','#D0392B'),borderRadius:'8px',fontSizeBase:'16px'}};
+}
+// what Stripe's card box is told; it has to match the payment the server makes
+function cardOpts(cents,save){return {mode:'payment',currency:'usd',amount:Math.max(MIN_PAY,cents),allowedPaymentMethodTypes:['card'],paymentMethodOptions:{card:{setup_future_usage:save?'off_session':'none'}}}}
+function flowAmt(){return round2(moneyVal($('#flowAmt')))}
+function cardMount(j){
+  if(!$('#stripeCard'))return;
+  var cents=Math.round(flowAmt()*100),keepCard=!!(d0('#saveCard')||{}).checked;
+  stripeJs().then(function(S){
+    if(!pay.stripe)pay.stripe=S(pay.cfg.publishableKey);
+    var box=$('#stripeCard');if(!box)return;
+    if(!pay.elements||pay.elJob!==j.id){
+      cardDrop();
+      pay.elements=pay.stripe.elements(Object.assign(cardOpts(cents,keepCard),{appearance:stripeLook()}));
+      pay.el=pay.elements.create('payment',{layout:'tabs'});pay.elJob=j.id;
+    }else{try{pay.el.unmount()}catch(e){}}
+    box.innerHTML='';pay.el.mount(box);
+  }).catch(function(){var b=$('#stripeCard');if(b)b.innerHTML='<p class="hint">The card form did not load. Check the connection, or send a pay link.</p>'});
+}
+function cardDrop(){if(pay.el){try{pay.el.destroy()}catch(e){}}pay.el=null;pay.elements=null;pay.elJob=''}
+function payBusy(on,label){
+  pay.busy=on;
+  $$('#flow [data-busy],#sheet [data-busy]').forEach(function(b){b.disabled=on;if(on){if(!b.dataset.was)b.dataset.was=b.textContent;b.textContent=label||'Working…'}else if(b.dataset.was){b.textContent=b.dataset.was;delete b.dataset.was}});
+}
+function payDone(j,msg){
+  toast(msg);cardDrop();
+  if(window.tallyPay.refresh)window.tallyPay.refresh();
+  setTimeout(function(){if(ui.flow&&ui.flow.jobId===j.id)renderFlow()},1500);
+}
+function payAmtCheck(j,amt){var bal=balOf(j);if(!(amt>0))return 'Enter an amount.';if(amt>bal+0.004)return 'That is more than the balance of '+money(bal)+'.';if(amt<MIN_PAY/100)return 'Card payments start at '+money(MIN_PAY/100)+'.';return ''}
+function payByCard(j){
+  var amt=flowAmt(),keepCard=!!(d0('#saveCard')||{}).checked,bad=payAmtCheck(j,amt);
+  if(bad)return flowFail(bad);
+  if(!pay.elements||!pay.stripe)return flowFail('The card form is still loading.');
+  var E=pay.elements,cents=Math.round(amt*100);
+  payBusy(true,'Charging…');flowFail('');
+  Promise.resolve(E.update(cardOpts(cents,keepCard))).then(function(){return E.submit()})
+    .then(function(r){if(r&&r.error)throw {msg:r.error.message};return window.tallyPay.intent(j.id,amt,keepCard)})
+    .then(function(r){if(!r||!r.ok)throw {msg:(r&&r.message)||'The payment did not start.'};
+      return pay.stripe.confirmPayment({elements:E,clientSecret:r.clientSecret,confirmParams:{return_url:r.returnUrl},redirect:'if_required'})})
+    .then(function(res){
+      if(res&&res.error)throw {msg:res.error.message};
+      var pi=res&&res.paymentIntent;if(!pi)throw {msg:'The card was not charged.'};
+      return window.tallyPay.check(j.id,pi.id).then(function(){payDone(j,pi.status==='processing'?'Payment processing.':'Card charged '+money(amt)+'.')});
+    })
+    .catch(function(e){flowFail((e&&e.msg)||'The card was not charged.')})
+    .then(function(){payBusy(false)});
+}
+function payBySaved(j){
+  var amt=flowAmt(),pick=d0('input[name=vaultPick]:checked'),bad=payAmtCheck(j,amt);
+  if(bad)return flowFail(bad);
+  if(!pick)return flowFail('Pick a saved card.');
+  payBusy(true,'Charging…');flowFail('');
+  window.tallyPay.saved(j.id,pick.value,amt,'t'+uid()+uid()).then(function(r){
+    if(r&&r.ok){payDone(j,r.message||'Charged.');return}
+    if(r&&r.needLink){ui.flow.method='link';payBusy(false);renderFlow();flowFail(r.message);return}
+    flowFail((r&&r.message)||'The card was not charged.');
+  }).then(function(){payBusy(false)});
+}
+function linkFor(j,amt,save){var l=pay.links[j.id];return l&&Math.abs(l.amount-amt)<0.004&&l.save===!!save&&Date.now()-l.at<20*3600e3?l:null}
+function payLinkText(amt,url){return (state.settings.company||'Your movers')+': Here is your secure payment link for '+money(amt)+': '+url}
+function makeLink(j,amt,keep,text){
+  var bad=payAmtCheck(j,amt);
+  if(bad)return Promise.resolve({ok:false,message:bad});
+  payBusy(true,text?'Texting…':'Making the link…');
+  return window.tallyPay.link(j.id,amt,keep,text).then(function(r){
+    payBusy(false);
+    if(r&&r.ok){pay.links[j.id]={url:r.url,amount:amt,save:!!keep,at:Date.now()};logEv(j,(text&&r.texted?'Payment link texted: ':'Payment link made: ')+money(amt));save()}
+    return r||{ok:false,message:'Could not make the link.'};
+  });
+}
+function payLinkPanel(j,amt){
+  var dflt=amt<balOf(j)-0.004,keep=ui.flow.saveLink!=null?ui.flow.saveLink:dflt,l=linkFor(j,amt,keep),who=esc(j.d.name||'the customer'),co=commsReady();
+  var h='<label class="check"><input type="checkbox" id="saveLink"'+(keep?' checked':'')+'> Keep the card on file for the rest of the bill</label>';
+  if(!l)return h+'<div class="row" style="margin-top:8px"><button class="btn primary grow" data-act="pay:qr" data-busy="1">Show a QR code</button>'+
+    (j.d.phone?'<button class="btn grow" data-act="pay:text" data-busy="1">'+(co?'Text it to '+who:'Text it from my phone')+'</button>':'')+'</div>'+
+    '<p class="hint">'+who+' pays on their own phone, with Apple Pay, Google Pay or a card. This screen updates when they have paid.</p>';
+  return h+'<div class="qrwrap">'+qrSvg(l.url)+'</div><p class="hint" style="text-align:center;margin:4px 0 8px">Point the phone camera here to pay '+money(amt)+'</p>'+
+    '<div class="linkbox"><code id="payUrl">'+esc(l.url)+'</code></div>'+
+    '<div class="row" style="margin-top:8px">'+(j.d.phone?(co?'<button class="btn grow" data-act="pay:text" data-busy="1">Text it to '+who+'</button>':'<a class="btn grow" href="'+esc(smsHref(j.d.phone,payLinkText(amt,l.url)))+'">Text it from my phone</a>'):'')+
+    '<button class="btn" data-act="pay:copy" data-url="'+esc(l.url)+'">Copy link</button></div>'+
+    '<p class="hint" id="payWait">Waiting for '+who+' to pay. This updates by itself. <button class="btn sm ghost" data-act="pay:check" data-busy="1">Check now</button></p>';
+}
+function payStepStripe(j){
+  var bal=balOf(j),cards=stripeCards(j),m=flowMethodStripe(j),f=ui.flow;
+  var amt=f.amt>0?Math.min(round2(f.amt),bal):bal;
+  var methods=[].concat(cards.length?[['vault','Card on file']]:[],[['link','Pay link']],payCardOn()?[['card','Card']]:[],[['other','Cash or check']]);
+  var chips=methods.map(function(x){return '<button class="chip'+(m===x[0]?' on':'')+'" data-act="flow:method" data-m="'+x[0]+'" aria-pressed="'+(m===x[0])+'">'+x[1]+'</button>'}).join('');
+  var panel='',btn='';
+  if(m==='vault'){
+    var pick=cards.filter(function(v){return cardFits(j,v)})[0];
+    panel=cards.map(function(v){var here=(v.jobs||[]).indexOf(j.id)>=0;return '<label class="pick"><input type="radio" name="vaultPick" value="'+esc(v.id)+'"'+(v===pick?' checked':'')+'><span>'+esc(v.brand)+' ending '+esc(v.last4)+(v.name?' · '+esc(v.name):'')+' <small>exp '+esc(v.exp||'')+' · '+(here?'kept on this job':'kept on another job')+'</small></span></label>'}).join('')+
+      (pick?'':'<p class="hint">Check with '+esc(j.d.name||'the customer')+' that this is their card before charging it.</p>');
+    btn='<button class="btn primary bigbtn" data-act="flow:pay" data-busy="1">Charge the card on file</button>';
+  }else if(m==='link')panel=payLinkPanel(j,amt);
+  else if(m==='card'){
+    panel='<div id="stripeCard" class="stripe-box"><p class="hint">Loading the card form…</p></div><label class="check"><input type="checkbox" id="saveCard"> Keep this card on file for this customer</label>';
+    btn='<button class="btn primary bigbtn" data-act="flow:pay" data-busy="1">Charge the card</button>';
+  }else{
+    panel='<div class="grid2 stack">'+fld('Method','<select id="otherMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option></select>')+fld('Check number or reference (optional)','<input id="otherRef">')+'</div>';
+    btn='<button class="btn primary bigbtn" data-act="flow:pay">Record payment</button>';
+  }
+  return '<h2>Collect payment</h2>'+(pay.cfg.test?'<div class="note">Stripe test mode: no real money moves. Test card 4242 4242 4242 4242, any future date, any security code.</div>':'')+
+    '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paidOf(j)>0?' paid':'')+'"><b>'+money(paidOf(j))+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>Due now</span></div></div>'+
+    fld('Amount','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(amt*100))+'">')+'<div class="methods">'+chips+'</div>'+panel+btn+'<p class="hint" id="flowErr" role="alert"></p>';
+}
+// a payment that lands while the payment screen is open (a pay link used, a card charged) shows at once
+function flowRefresh(){
+  var f=ui.flow,j=f&&byId(f.jobId);if(!j||pay.busy)return;
+  var a=document.activeElement;if(a&&a.closest&&a.closest('#flow')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return;
+  if(paidOf(j)!==f.paidSeen||formsPending(j).length!==f.pendSeen)renderFlow();
+}
+// Once a change that can lower what is owed reaches the server (cash recorded, the bill lowered), the
+// server closes any pay link page that would now ask for too much. Asked again while it is busy.
+var payChecks={};
+function payCheckSoon(id,tries){
+  if(!payOn()||state.ui.role==='crew')return;
+  clearTimeout(payChecks[id]);
+  payChecks[id]=setTimeout(function(){delete payChecks[id];
+    window.tallyPay.check(id).then(function(r){
+      if(r&&r.busy&&(tries||0)<4){payCheckSoon(id,(tries||0)+1);return}
+      var j=byId(id);if(r&&r.ok&&j&&r.owed<balOf(j)-0.004)window.tallyPay.refresh();
+    });
+  },tries?4000:800);
+}
+function payPoll(){
+  var f=ui.flow,j=f&&byId(f.jobId);
+  var want=!!(j&&payOn()&&balOf(j)>0&&!formsPending(j).length&&flowMethodStripe(j)==='link'&&pay.links[j.id]);
+  if(want&&!pay.poll)pay.poll=setInterval(function(){
+    var f2=ui.flow,j2=f2&&byId(f2.jobId);if(!j2||pay.busy)return;
+    window.tallyPay.check(j2.id).then(function(r){if(r&&r.ok&&r.owed<balOf(j2)-0.004)window.tallyPay.refresh()});
+  },12000);
+  if(!want&&pay.poll){clearInterval(pay.poll);pay.poll=null}
+}
+// the office's job sheet: a link for the deposit or the balance, to text or show
+function officeLinkHtml(j){
+  var bal=balOf(j);if(!payOn()||bal<=0||!canEditJobs())return '';
+  var l=pay.links[j.id],co=commsReady(),dep=Math.min(round2(j.quote.deposit||0),bal),who=esc(j.d.name||'the customer');
+  return '<h3 style="margin:16px 0 6px;font-size:16px">Send a payment link</h3><p class="hint" style="margin-top:0">'+who+' pays on their phone; the payment shows up here by itself.'+(pay.cfg.test?' Stripe test mode.':'')+'</p>'+
+    '<div class="row">'+(dep>0&&dep<bal-0.004?'<button class="btn sm" data-act="pl:make" data-v="'+dep+'" data-save="1" data-busy="1">Deposit '+money(dep)+'</button>':'')+'<button class="btn sm" data-act="pl:make" data-v="'+bal+'" data-busy="1">Balance '+money(bal)+'</button></div>'+
+    (l?'<div class="linkbox" style="margin-top:8px"><code>'+esc(l.url)+'</code><small>'+money(l.amount)+(l.save?' · keeps the card on file':'')+'</small></div>'+
+      '<div class="row" style="margin-top:6px">'+(j.d.phone?(co?'<button class="btn sm" data-act="pl:text" data-busy="1">Text it to '+who+'</button>':'<a class="btn sm" href="'+esc(smsHref(j.d.phone,payLinkText(l.amount,l.url)))+'">Text it from my phone</a>'):'')+
+      '<button class="btn sm" data-act="pay:copy" data-url="'+esc(l.url)+'">Copy</button><button class="btn sm" data-act="pl:qr">'+(ui.plQr?'Hide the QR code':'QR code')+'</button></div>'+
+      (ui.plQr?'<div class="qrwrap">'+qrSvg(l.url)+'</div>':''):'');
+}
+function payCardHtml(){
+  if(!window.tallyPay)return '<section class="card"><h2>Payments</h2><p class="sub">Card payments run on the hosted edition of Tally (the website and the Android app), through Stripe. This copy records payments but does not charge cards.</p></section>';
+  var c=pay.cfg,st;
+  if(!c)st='<p class="hint">Checking…</p>';
+  else if(c.ready)st='<div class="note"><b>Stripe is connected'+(c.test?' (test mode)':'')+'.</b><br><small>Pay links and cards on file are on'+(c.publishableKey?', and cards can be typed in':'. Typing a card in needs STRIPE_PUBLISHABLE_KEY in Supabase')+'. '+(c.test?'No real money moves until Supabase has your live keys.':'Payments are real.')+'</small></div>';
+  else if(c.reason==='org-off')st='<div class="note"><b>Stripe is set up, but this company is not turned on for card payments yet.</b><br><small>Add it to the pay_orgs table in Supabase (the payments setup guide shows how).</small></div>';
+  else if(c.reason==='no-key')st='<div class="note"><b>Not connected yet.</b><br><small>Add STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY under Supabase › Edge Functions › Secrets. The payments setup guide walks through it.</small></div>';
+  else st='<div class="note"><b>The payment service did not answer.</b></div>';
+  return '<section class="card"><h2>Payments</h2>'+st+'<p class="sub">Card numbers never touch Tally. Customers pay on Stripe’s own page or in Stripe’s card box, and only the brand, last four digits, expiry and name of a card kept on file are saved here.</p><button class="btn sm" data-act="pay:reload">Check again</button></section>';
+}
+
 /* ---------- signing and payment flow ---------- */
 function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.emp));navSync()}
 /* In the installed app the phone's Back button should close whatever is open, not the app.
@@ -3444,8 +3699,8 @@ window.addEventListener('popstate',function(){
   navSync();
 });
 document.addEventListener('click',function(){setTimeout(navSync,0)});
-function startFlow(id,who,finishing){ui.flow={jobId:id,who:who||'',method:'',finishing:!!finishing};renderFlow()}
-function closeFlow(){var fl=ui.flow,fj=fl&&byId(fl.jobId);if(fl&&fl.finishing&&fj&&fj.status==='active'&&formsPending(fj).length)toast('The job stays open until the customer signs.');ui.flow=null;renderFlow();renderTab();renderSheet();if(fj)commsFormsCheck(fj)}
+function startFlow(id,who,finishing){ui.flow={jobId:id,who:who||'',method:'',finishing:!!finishing};renderFlow();payLoad(!!(pay.cfg&&pay.cfg.reason==='down'))}
+function closeFlow(){var fl=ui.flow,fj=fl&&byId(fl.jobId);if(fl&&fl.finishing&&fj&&fj.status==='active'&&formsPending(fj).length)toast('The job stays open until the customer signs.');ui.flow=null;cardDrop();renderFlow();renderTab();renderSheet();if(fj)commsFormsCheck(fj)}
 function vaultFor(j){return state.vault.filter(function(x){return x.cust===custKey(j)})}
 function flowMethod(j){var v=vaultFor(j),m=ui.flow.method;if(m==='vault'&&!v.length)m='';return m||(v.length?'vault':'card')}
 var sigDirty=false;
@@ -3471,7 +3726,21 @@ function formStep(j,form){
     '<div class="f"><span>Sign here with your finger</span></div><canvas id="sigPad" class="sigpad" aria-label="Signature pad"></canvas>'+
     '<div class="row"><button class="btn" data-act="flow:clearsig">Clear</button><button class="btn primary grow" data-act="flow:sign" data-fid="'+form.id+'">Sign and continue</button></div><p class="hint" id="flowErr" role="alert"></p>';
 }
+// The hosted app when cards can't be taken right now (not set up, not turned on, or the server didn't
+// answer): cash and checks only, with the reason. The demo card form never shows here, so nobody can
+// think a card was charged when it wasn't.
+function payStepOffline(j){
+  var bal=balOf(j),c=pay.cfg,why=sync.mode!=='shared'?'Card payments need the connection to your company’s data.':!c||pay.loading?'Checking whether card payments are on…':
+    c.reason==='no-key'?'Card payments are not set up yet.':c.reason==='org-off'?'Card payments are not turned on for this company yet.':'The payment service did not answer, so cards can’t be taken right now.';
+  return '<h2>Collect payment</h2><div class="note">'+why+' Cash and checks can still be recorded. <button class="btn sm" data-act="pay:retry">Check again</button></div>'+
+    '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paidOf(j)>0?' paid':'')+'"><b>'+money(paidOf(j))+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>Due now</span></div></div>'+
+    fld('Amount','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(bal*100))+'">')+
+    '<div class="grid2 stack">'+fld('Method','<select id="otherMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option></select>')+fld('Check number or reference (optional)','<input id="otherRef">')+'</div>'+
+    '<button class="btn primary bigbtn" data-act="flow:pay">Record payment</button><p class="hint" id="flowErr" role="alert"></p>';
+}
 function payStep(j){
+  if(payOn())return payStepStripe(j);
+  if(window.tallyPay)return payStepOffline(j);
   var bal=balOf(j),vault=vaultFor(j),m=flowMethod(j);
   var methods=[].concat(vault.length?[['vault','Card on file']]:[],[['card','New card'],['ach','Bank (ACH)'],['other','Cash or check']]);
   var chips=methods.map(function(x){return '<button class="chip'+(m===x[0]?' on':'')+'" data-act="flow:method" data-m="'+x[0]+'" aria-pressed="'+(m===x[0])+'">'+x[1]+'</button>'}).join('');
@@ -3504,6 +3773,9 @@ function renderFlow(){
   el.hidden=false;syncLock();
   var nb=$('.flow-body',el);if(nb&&prev)nb.scrollTop=keep;
   if(pend.length)initSig();
+  f.paidSeen=paidOf(j);f.pendSeen=pend.length;
+  if(!pend.length&&bal>0&&payCardOn()&&flowMethodStripe(j)==='card')cardMount(j);
+  payPoll();
 }
 
 /* ---------- form upload (PDF or images become page images) ---------- */
@@ -3713,6 +3985,20 @@ document.addEventListener('click',function(e){
     case 'flow:close':closeFlow();break;
     case 'flow:clearsig':clearSig();break;
     case 'flow:method':ui.flow.method=t.dataset.m;renderFlow();break;
+    case 'pay:qr':case 'pay:text':{var lj=ui.flow&&byId(ui.flow.jobId);if(!lj||pay.busy)break;var la=flowAmt(),lk=!!(d0('#saveLink')||{}).checked,ltx=a==='pay:text'&&commsReady();
+      ui.flow.amt=la;
+      makeLink(lj,la,lk,ltx).then(function(r){if(!r.ok){flowFail(r.message);return}renderFlow();toast(ltx?r.message:a==='pay:text'?'Link ready. Tap Text it from my phone.':'Show the code to '+(lj.d.name||'the customer')+'.')});break}
+    case 'pay:copy':{var cu=t.dataset.url||'';var selU=function(){var c=$('#payUrl');if(c){try{var rg=document.createRange();rg.selectNodeContents(c);var sl=window.getSelection();sl.removeAllRanges();sl.addRange(rg)}catch(x){}}toast('Link selected. Copy it from here.')};
+      try{navigator.clipboard.writeText(cu).then(function(){toast('Link copied.')},selU)}catch(x){selU()}break}
+    case 'pay:check':{var cj=ui.flow&&byId(ui.flow.jobId);if(!cj||pay.busy)break;payBusy(true,'Checking…');
+      window.tallyPay.check(cj.id).then(function(r){payBusy(false);if(!r||!r.ok){toast((r&&r.message)||'Could not check.');return}
+        if(r.owed<balOf(cj)-0.004){toast('Payment found.');window.tallyPay.refresh()}else toast('Nothing paid yet.')});break}
+    case 'pay:reload':pay.cfg=null;payLoad(true);renderSettings();break;
+    case 'pay:retry':pay.cfg=null;payLoad(true);renderFlow();break;
+    case 'pl:make':case 'pl:text':{var oj=byId(ui.jobId);if(!oj||pay.busy)break;var ol=pay.links[oj.id];
+      var oa=a==='pl:make'?round2(+t.dataset.v):ol&&ol.amount,ok2=a==='pl:make'?t.dataset.save==='1':ol&&ol.save;if(!oa)break;
+      makeLink(oj,oa,ok2,a==='pl:text').then(function(r){if(!r.ok){toast(r.message);return}renderSheet();if(a==='pl:text')toast(r.message)});break}
+    case 'pl:qr':ui.plQr=!ui.plQr;renderSheet();break;
     case 'flow:sign':{var fj=byId(ui.flow.jobId),fm=(S.forms||[]).find(function(x){return x.id===t.dataset.fid});if(!fj||!fm)break;
       var sn=$('#sigName').value.trim();
       if(!sn){flowFail('Type the printed name.');break}
@@ -3720,7 +4006,8 @@ document.addEventListener('click',function(e){
       if(!sigDirty){flowFail('The customer needs to sign in the box.');break}
       fj.signed=fj.signed||[];fj.signed.push({id:uid(),formId:fm.id,title:fm.title,name:sn,sig:exportSig(),ts:Date.now(),by:ui.flow.who||''});logEv(fj,'Signed: '+fm.title);save();sigDirty=false;renderFlow();break}
     case 'flow:pay':{var pj=byId(ui.flow.jobId);if(!pj)break;
-      var pbal=balOf(pj),pamt=round2(moneyVal($('#flowAmt'))),pm=flowMethod(pj);
+      if(payOn()){var spm=flowMethodStripe(pj);if(spm==='card'){if(!pay.busy)payByCard(pj);break}if(spm==='vault'){if(!pay.busy)payBySaved(pj);break}}
+      var pbal=balOf(pj),pamt=round2(moneyVal($('#flowAmt'))),pm=window.tallyPay?'other':flowMethod(pj);
       if(!(pamt>0)){flowFail('Enter an amount.');break}
       if(pamt>pbal+0.004){flowFail('That is more than the balance of '+money(pbal)+'.');break}
       var plabel='',pextra=null,vault=null;
@@ -3741,11 +4028,16 @@ document.addEventListener('click',function(e){
         if($('#saveAch').checked)state.vault.push({id:uid(),cust:custKey(pj),type:'ach',brand:'Bank',last4:ac.slice(-4),exp:'',ts:Date.now()})}
       else{plabel=$('#otherMethod').value;var rf=$('#otherRef').value.trim();if(rf)plabel+=' '+rf}
       if(!addPayment(pj,pamt,plabel,pextra)){flowFail('Sign the required forms first.');break}
-      save();toast('Payment recorded: '+money(pamt)+' · '+plabel);renderFlow();renderTab();break}
+      save();toast('Payment recorded: '+money(pamt)+' · '+plabel);renderFlow();renderTab();
+      break}
     case 'sh:waive':{j=byId(ui.jobId);if(!j||state.ui.role!=='owner')break;j.signed=j.signed||[];j.signed.push({id:uid(),formId:t.dataset.fid,title:((S.forms||[]).find(function(x){return x.id===t.dataset.fid})||{}).title||'Form',waived:true,reason:'Waived by the owner.',ts:Date.now(),by:'Owner'});logEv(j,'Form waived');save();renderSheet();break}
     case 'st:reqform':{var rf2=S.forms.find(function(x){return x.id===t.dataset.id});if(rf2){rf2.required=!rf2.required;save();renderSettings()}break}
     case 'st:rmform':S.forms=S.forms.filter(function(x){return x.id!==t.dataset.id});save();renderSettings();break;
-    case 'st:rmvault':state.vault=state.vault.filter(function(x){return x.id!==t.dataset.id});save();renderSettings();break;
+    case 'st:rmvault':{var rv=state.vault.find(function(x){return x.id===t.dataset.id});
+      if(rv&&rv.via==='stripe'&&window.tallyPay&&window.tallyPay.forget){toast('Removing the card…');
+        window.tallyPay.forget(rv.id).then(function(r){if(!r||!r.ok){toast((r&&r.message)||'Could not remove the card.');return}
+          state.vault=state.vault.filter(function(x){return x.id!==rv.id});save();renderSettings();toast(r.message||'Card removed.')});break}
+      state.vault=state.vault.filter(function(x){return x.id!==t.dataset.id});save();renderSettings();break}
     case 'st:addform':{var ft=$('#nFormTitle').value.trim(),fx=$('#nFormText').value.trim(),ff=$('#nFormFiles').files;
       if(!ft){toast('Give the form a name.');break}
       if(ff&&ff.length){toast('Reading the file…');formPages(ff).then(function(pages){S.forms.push({id:uid(),title:ft,kind:'pages',text:'',pages:pages,required:true});save();renderSettings();toast('Form added.')}).catch(function(er){toast(er&&er.message?er.message:'Could not read that file.')});break}
@@ -3794,7 +4086,7 @@ document.addEventListener('click',function(e){
 document.addEventListener('input',function(e){
   var t=e.target,S=state.settings;
   if(t.id==='cardNum'||t.id==='cardExp'){fmtField(t,e)}
-  else if(t.dataset.money!==undefined){fmtMoneyField(t)}
+  else if(t.dataset.money!==undefined){fmtMoneyField(t);if(t.id==='flowAmt'&&ui.flow)ui.flow.amt=moneyVal(t)}
   else if(t.dataset.phone!==undefined){state.settings.contacts[t.dataset.phone]=t.value;dirChanged()}
   else if(t.dataset.d!==undefined){state.draft[t.dataset.d]=t.type==='checkbox'?t.checked:t.value;if(t.dataset.d==='miles'){state.draft.milesAuto=false;renderDistNote()}if(t.dataset.d==='milesOut'||t.dataset.d==='milesBack'){state.draft.shopManual=Object.assign({},state.draft.shopManual);state.draft.shopManual[t.dataset.d==='milesOut'?'out':'back']=true;renderShopNote()}save();updateQuote()}
   else if(t.dataset.dcf){state.draft.custom[t.dataset.dcf]=t.value;save()}
@@ -3806,6 +4098,8 @@ document.addEventListener('input',function(e){
 });
 document.addEventListener('change',function(e){
   if(e.target&&e.target.id==='etaOn'&&ui.start){ui.start.text=e.target.checked;renderStart();return}
+  if(e.target&&ui.flow&&e.target.id==='saveLink'){ui.flow.saveLink=e.target.checked;renderFlow();return}
+  if(e.target&&ui.flow&&e.target.id==='flowAmt'&&payOn()){var fj0=byId(ui.flow.jobId);if(fj0&&flowMethodStripe(fj0)==='link')renderFlow();return}
   if(e.target&&e.target.dataset&&(e.target.dataset.d==='from'||e.target.dataset.d==='to')){distLookup();shopLookup(false);return}
   var t=e.target,j=ui.jobId&&canEditJobs()?byId(ui.jobId):null;
   if(t.dataset&&t.dataset.dq!==undefined){var dj=canEditJobs()?byId(t.dataset.id):null;if(dj){if(t.dataset.dq==='truckId')dj.assign.truckId=t.value;else{dj.d[t.dataset.dq]=t.value;if(t.dataset.dq==='moveDate'&&t.value){ui.weekStart=mondayOf(t.value);ui.day=t.value}}save();renderDispatch()}return}
@@ -3858,7 +4152,7 @@ window.addEventListener('resize',function(){renderTabs()});
 setInterval(function(){var el=$('#clkElapsed');if(!el||!el.dataset.since)return;var typing=document.activeElement&&document.activeElement.id==='clockNote';if(typing||ui.tab!=='crew')el.textContent=fmtDur(Date.now()-(+el.dataset.since));else renderCrew()},30000);
 if(location.hash==='#messages'){ui.tab='chat';ui.chatThread='jobs'}
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg};
 })();
 </script>
 </body>

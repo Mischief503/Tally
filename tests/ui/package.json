@@ -4,6 +4,7 @@
   "description": "jsdom and Chromium checks for the Tally web app",
   "dependencies": {
     "jsdom": "^24.1.0",
+    "jsqr": "^1.4.0",
     "playwright": "1.56.0"
   }
 }

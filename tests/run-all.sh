@@ -24,8 +24,9 @@ run() {
 for ed in artifact supabase; do
   for s in regress field confirm minpay; do run node tests/ui/$s.js build/tally-$ed.html $s-$ed; done
 done
-for s in hosted confirm-hosted employees dist shop osm testpack nav pwa-check; do run node tests/ui/$s.js; done
+for s in hosted confirm-hosted employees pay dist shop osm testpack nav pwa-check; do run node tests/ui/$s.js; done
 run deno run -A tests/function/test.ts
-if [ "$(id -u)" = 0 ]; then echo "== sql: skipped as root (initdb refuses root); runs in GitHub"; else run bash tests/sql/run.sh; run bash tests/sql/schema.sh; run bash tests/sql/employees.sh; fi
+run deno run -A tests/function/pay.ts
+if [ "$(id -u)" = 0 ]; then echo "== sql: skipped as root (initdb refuses root); runs in GitHub"; else run bash tests/sql/run.sh; run bash tests/sql/schema.sh; run bash tests/sql/employees.sh; run bash tests/sql/payments.sh; fi
 echo; [ $fail -eq 0 ] && echo "ALL PASSED" || echo "SOMETHING FAILED"
 exit $fail

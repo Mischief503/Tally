@@ -84,6 +84,19 @@ function makeSupabase(db, me, calls) {
         Object.keys(args.patch || {}).forEach((k) => { if (ok.includes(k)) e.info[k] = args.patch[k]; });
         return Promise.resolve({ data: { id: e.id, name: e.name, role: e.role, email: e.email, active: true, info: clone(e.info) } });
       }
+      if (name === 'doc_patch') {
+        // the server merges a change in one step (null removes a key, objects merge, the rest replaces)
+        if (db.__noDocPatch) return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.doc_patch(o, p, patch) in the schema cache' } });
+        if (db.__docPatchFail) return Promise.resolve({ data: null, error: { code: '08006', message: 'connection failure' } });
+        const rows = db.docs || (db.docs = []);
+        const row = rows.find((r) => r.org_id === args.o && r.path === args.p);
+        if (!row) return Promise.resolve({ data: false, error: null });
+        const merge = (t, s) => { Object.keys(s).forEach((k) => { const v = s[k]; if (v && typeof v === 'object' && !Array.isArray(v) && t[k] && typeof t[k] === 'object' && !Array.isArray(t[k])) merge(t[k], v); else if (v === null) delete t[k]; else t[k] = v; }); return t; };
+        row.data = merge(clone(row.data), clone(args.patch)); row.updated_at = new Date().toISOString();
+        calls.writes.push({ table: 'docs', op: 'patch', row: clone(row), patch: clone(args.patch) });
+        setTimeout(() => fire('docs', row), 5);
+        return Promise.resolve({ data: true, error: null });
+      }
       if (name === 'my_orgs') return Promise.resolve({ data: db.members.filter((m) => m.user_id === me.uid).map((m) => ({ id: m.org_id, name: 'Ace Moving', role: m.role, join_code: 'ABC123' })) });
       if (name === 'people') return Promise.resolve({ data: db.members.map((m) => ({ user_id: m.user_id, email: m.email })).concat((db.access_requests || []).map((r) => ({ user_id: r.user_id, email: r.email }))) });
       return Promise.resolve({ data: null });
@@ -131,6 +144,7 @@ async function load(file, opts = {}) {
       }
       if (!opts.db && opts.net) w.fetch = async (url, init) => opts.net(String(url), init);
       w.addEventListener('error', (e) => errors.push('window: ' + (e.message || e.error)));
+      if (opts.setup) opts.setup(w);
     },
   });
   const w = dom.window;

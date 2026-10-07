@@ -112,6 +112,9 @@ public class MainActivity extends Activity {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                // frames inside the page (Stripe's card box and its bank check) load in place;
+                // only the page itself leaving for another site opens outside
+                if (!request.isForMainFrame()) return false;
                 Uri u = request.getUrl();
                 if (HOST.equals(u.getHost())) return false;
                 openOutside(u);
