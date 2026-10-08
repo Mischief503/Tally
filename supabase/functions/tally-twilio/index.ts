@@ -1,6 +1,6 @@
 // Tally — the server side of the app (Supabase Edge Function, named tally-twilio for history)
-// Text alerts, masked calling, callbacks to the office, the call/text log, quote distances and
-// card payments through Stripe.
+// Text alerts, masked calling, callbacks to the office, the call/text log, quote distances,
+// emergency alert texts and card payments through Stripe.
 //
 // Secrets this function reads (Supabase › Edge Functions › Secrets):
 //   TWILIO_ACCOUNT_SID   your Twilio Account SID (starts with AC)
@@ -19,6 +19,7 @@
 //
 // Routes:
 //   POST /app            the Tally app: {action:'job'|'forms'|'call'|'line'|'pay_…', org, jobId}
+//                        and {action:'sos', org, msgId, kind:'start'|'end'} for emergency alerts
 //   POST /stripe         Stripe events (payments finishing or failing, pay links used, refunds, disputes)
 //   GET  /p/<code>       a short payment link: sends the customer to a Stripe page for what they owe now
 //   GET  /pay/done       where the customer lands after paying
@@ -188,13 +189,14 @@ function staffByPhone(S: J, from: string): string {
   if (!want) return "";
   return Object.keys(c).find((n) => last10(c[n]) === want) || "";
 }
-// The address texts link to, so a tap opens Job messages. Setup › Texts and calls fills it in.
-export function appLink(S: J, origin?: string | null): string {
+// The address texts link to, so a tap opens Job messages (or, for an emergency, the alert).
+// Setup › Texts and calls fills it in.
+export function appLink(S: J, origin?: string | null, hash = "messages"): string {
   // The Android app's own pages live at appassets.androidplatform.net, which no one else can open.
   const fromOrigin = origin && !/androidplatform\.net(:\d+)?\/?$/i.test(origin) ? origin : "";
   const raw = String((S && S.comms && S.comms.appUrl) || fromOrigin || "").trim();
   if (!/^https:\/\/[^\s"<>]+$/i.test(raw)) return "";
-  return raw.replace(/#.*$/, "") + "#messages";
+  return raw.replace(/#.*$/, "") + "#" + hash;
 }
 function slotOf(job: J): string {
   const d = job.d || {};
@@ -216,17 +218,29 @@ function leadOf(S: J, job: J): string {
 }
 
 /* ---------- Twilio ---------- */
+// A call to Twilio that hangs is given up after 20 seconds, so one stuck text never holds up the
+// rest (and a truck-down request always renews its claim well inside its 90 seconds).
+export const limits = { twilioMs: 20e3 };
 async function twilio(resource: string, params: Record<string, string>): Promise<J> {
   const sid = env("TWILIO_ACCOUNT_SID"), tok = env("TWILIO_AUTH_TOKEN");
   if (!sid || !tok) throw new Error("Twilio is not configured: add TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN");
-  const r = await fetch("https://api.twilio.com/2010-04-01/Accounts/" + sid + "/" + resource + ".json", {
-    method: "POST",
-    headers: { Authorization: "Basic " + btoa(sid + ":" + tok), "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(params).toString(),
-  });
-  const out = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error((out && out.message) || "Twilio error " + r.status);
-  return out;
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), limits.twilioMs);
+  try {
+    const r = await fetch("https://api.twilio.com/2010-04-01/Accounts/" + sid + "/" + resource + ".json", {
+      method: "POST",
+      headers: { Authorization: "Basic " + btoa(sid + ":" + tok), "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(params).toString(),
+      signal: ctl.signal,
+    });
+    const out = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((out && out.message) || "Twilio error " + r.status);
+    return out;
+  } catch (e) {
+    if (ctl.signal.aborted) throw new Error("Twilio did not answer within " + Math.round(limits.twilioMs / 1000) + " seconds");
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function twilioSignature(url: string, params: Record<string, string>, token: string): Promise<string> {
@@ -566,6 +580,214 @@ async function startCall(org: string, me: J, jobId: string): Promise<J> {
     return { ok: false, message: "Could not start the call: " + (e as Error).message };
   }
   return { ok: true, message: "Your phone will ring from the company line. Answer and press 1 to reach " + ((job.d && job.d.name) || "the customer") + "." };
+}
+
+/* ---------- truck down (the emergency beacon) ----------
+   A crew tapped Truck down in the app. The alert itself is a chat message (k "sos") that the
+   office's copies of Tally show at once; these texts reach the office even with the app closed,
+   with the truck, who sent it, and a map link to where they are.
+   What was texted for an alert is kept in comm_job_state under the key "sos:<alert id>":
+     crew       who was texted
+     move_date  the hour's slot this alert took (see sosSlot)
+     move_time  "sending" while a request is sending them, then "sent"
+     forms_at   when the all-clear went out
+   and every text is logged with job_id "sos:<alert id>", so asking again never texts anyone twice,
+   and a request that died part way is finished by the next one. A request sending them renews its
+   claim before each text, so one that is only slow is never taken over, and it stops as soon as
+   another request has taken over or the all-clear has gone out. */
+const SOS_FRESH_MS = 60 * 60e3;   // texts go out only for an alert sent in the last hour
+const SOS_PER_HOUR = 6;           // alerts a company can text about in an hour
+const SOS_STUCK_MS = 90e3;        // a "sending" left this long belongs to a request that died
+function ownerName(S: J): string {
+  const o = ((S && S.office) || []).find((x: J) => x && x.kind === "owner");
+  return (o && o.name) || "Owner";
+}
+// The names a person goes by in Tally. The app calls an owner by the owner's name in Setup, which
+// can differ from the staff name on their sign-in (empty to start with, or a profile's name).
+function namesOf(me: J, S: J): string[] {
+  const out: string[] = me.staff ? [me.staff] : [];
+  if (me.role === "owner" && out.indexOf(ownerName(S)) < 0) out.push(ownerName(S));
+  return out;
+}
+export function sosPlace(loc: J): string {
+  if (!loc || loc.lat == null || loc.lng == null) return "";
+  const lat = Number(loc.lat), lng = Number(loc.lng);
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return "";
+  const acc = Math.round(Number(loc.acc) || 0);
+  return "https://maps.google.com/?q=" + lat.toFixed(5) + "," + lng.toFixed(5) +
+    (acc > 0 && acc < 1e6 ? " (within " + (acc >= 1000 ? Math.round(acc / 100) / 10 + " km" : acc + " m") + ")" : "");
+}
+// The office (owner and dispatch), one text per phone number, never the sender's own.
+export function sosPeople(S: J, from: string): string[] {
+  const C = contacts(S), mine = e164(C[from]), seen = new Set<string>(), out: string[] = [];
+  for (const n of officeNames(S)) {
+    const num = e164(C[n]);
+    if (n === from || !num || num === mine || seen.has(num)) continue;
+    seen.add(num);
+    out.push(n);
+  }
+  return out;
+}
+// One of the company's emergency-text slots for this hour. Each slot is a row of its own, so two
+// alerts at the same moment can't both take the last one. Returns the slot's key, or "" when the
+// hour's slots are used up. An alert whose texts all fail gives its slot back (sosFree).
+async function sosSlot(org: string): Promise<string> {
+  const hour = Math.floor(Date.now() / 3600e3), now = new Date().toISOString();
+  await rest("DELETE", "comm_job_state?org_id=eq." + q(org) + "&job_id=like." + q("sosslot:*") + "&updated_at=lt." + q(new Date(Date.now() - 3 * 3600e3).toISOString()));
+  for (let n = 0; n < SOS_PER_HOUR; n++) {
+    const slot = "sosslot:" + hour + ":" + n;
+    const rows = await rest("POST", "comm_job_state?on_conflict=org_id,job_id",
+      { org_id: org, job_id: slot, version: 1, updated_at: now }, "resolution=ignore-duplicates,return=representation");
+    if (rows && rows.length) return slot;
+  }
+  return "";
+}
+async function sosFree(org: string, slot: unknown): Promise<void> {
+  if (typeof slot === "string" && slot.indexOf("sosslot:") === 0) await rest("DELETE", "comm_job_state?org_id=eq." + q(org) + "&job_id=eq." + q(slot));
+}
+// Who this alert's text (or its all-clear) has reached. Only texts Twilio took count: a request
+// that died while handing one over leaves a log row without a message id, and that person is
+// texted again rather than missed.
+// maybe: count a text that was still being handed to Twilio too
+async function sosTexted(org: string, key: string, purpose: string, maybe = false): Promise<string[]> {
+  const rows = await rest("GET", "comm_log?select=staff,status,sid&org_id=eq." + q(org) + "&job_id=eq." + q(key) + "&purpose=eq." + q(purpose));
+  return (rows || []).filter((r: J) => (maybe || r.sid) && r.status !== "failed" && r.status !== "no-number").map((r: J) => String(r.staff || ""));
+}
+const sosOk = (r: J) => r.status !== "failed" && r.status !== "no-number";
+
+// The all-clear, to whoever got the alert. by: the names of the signed-in person who ended it, when known.
+async function sosAllClear(org: string, S: J, a: J, key: string, by: string[]): Promise<J> {
+  const prev = await stateOf(org, key);
+  if (!prev) return { ok: true, sent: 0, skipped: "none-texted" };
+  if (prev.forms_at) return { ok: true, sent: 0, already: true };
+  // the request still sending the alert sends the all-clear when it finishes
+  const sending = prev.move_time === "sending";
+  if (sending && Date.now() - Date.parse(prev.updated_at) < SOS_STUCK_MS) return { ok: true, sent: 0, skipped: "start-in-progress" };
+  const line = await lineFor(org);
+  if (!line) return { ok: false, reason: "no-line", message: "The company line is not set up, so the all-clear did not go out." };
+  // A start that died part way: the all-clear goes to whoever its texts may have reached, a text
+  // Twilio was still being handed included (an all-clear too many beats one missing). Claiming
+  // the all-clear also stops that start from sending any more.
+  const crew: string[] = sending ? await sosTexted(org, key, "sos", true) : (prev.crew || []);
+  if (!(await claim(org, key, prev, { crew: prev.crew, move_date: prev.move_date, move_time: prev.move_time, forms_at: new Date().toISOString() }))) {
+    return { ok: true, sent: 0, raced: true };
+  }
+  if (!crew.length) return { ok: true, sent: 0, skipped: "none-texted" };
+  return { ok: true, sent: await sosClearSend(org, S, a, key, line, crew.filter((n) => by.indexOf(n) < 0), by) };   // whoever closed it knows already
+}
+function sosClearBody(S: J, a: J, by: string[]): string {
+  const from = String(a.from), co = company(S), at = clockIn(Number(a.ts) || Date.now());
+  const truck = gsm(String(a.truck || "")).slice(0, 60) || "The truck";
+  const byName = by.indexOf(from) >= 0 ? from : (by.find((n) => officeNames(S).indexOf(n) >= 0) || by[0] || "");
+  return byName && byName !== from
+    ? co + ": " + gsm(byName).slice(0, 60) + " closed the truck-down alert from " + gsm(from) + (at ? " (sent at " + at + ")" : "") + "."
+    : byName
+    ? co + ": All clear. " + truck + " is running again, " + gsm(from) + " says. The truck-down alert" + (at ? " from " + at : "") + " is over."
+    : co + ": All clear. The truck-down alert from " + gsm(from) + (at ? " (sent at " + at + ")" : "") + " is over.";
+}
+// The all-clear to each of these people who hasn't had it yet.
+async function sosClearSend(org: string, S: J, a: J, key: string, line: J, names: string[], by: string[]): Promise<number> {
+  const had = await sosTexted(org, key, "sos-end", true), body = sosClearBody(S, a, by);
+  let sent = 0;
+  for (const n of names) {
+    if (had.indexOf(n) >= 0) continue;
+    if (sosOk(await sendText({ org, line, jobId: key, purpose: "sos-end", staff: n, party: String(a.from), to: contacts(S)[n], body }))) sent++;
+  }
+  return sent;
+}
+// A start that lost its claim part way. If that was the all-clear going out, the people this
+// start texted after the all-clear had worked out who to tell get it too.
+async function sosClearAfter(org: string, S: J, msgId: string, key: string, names: string[]): Promise<void> {
+  if (!names.length) return;
+  const cur = await stateOf(org, key);
+  if (!cur || !cur.forms_at) return;
+  const [a, line] = await Promise.all([getDoc(org, "chat/" + msgId), lineFor(org)]);
+  if (a && a.end && line) await sosClearSend(org, S, a, key, line, names, []);
+}
+
+export async function sosText(org: string, me: J, msgId: string, kind: string, clientNow?: unknown): Promise<J> {
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(msgId)) return { ok: false, message: "Missing alert", status: 400 };
+  if (kind !== "start" && kind !== "end") return { ok: false, message: "Unknown step", status: 400 };
+  const [S, a] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "chat/" + msgId)]);
+  if (!a || a.k !== "sos" || typeof a.from !== "string" || !a.from) return { ok: false, message: "That alert is not available." };
+  const names = namesOf(me, S), mine = names.indexOf(a.from) >= 0, office = me.role === "owner" || me.role === "dispatch";
+  const key = "sos:" + msgId, from = a.from, C = contacts(S);
+
+  if (kind === "end") {
+    if (!a.end) return { ok: false, message: "That alert is still on." };
+    if (!(mine || office)) return { ok: false, message: "Only the person who sent the alert, or the office, can end it.", status: 403 };
+    return await sosAllClear(org, S, a, key, names);
+  }
+
+  if (!mine) return { ok: false, message: "Only the person who sent an alert can text about it.", status: 403 };
+  if (a.end) return { ok: true, sent: 0, skipped: "ended" };
+  // how old the alert is, by the clock of the phone that sent it (it may not agree with ours)
+  const cn = Number(clientNow), age = (isFinite(cn) && cn > 0 ? cn : Date.now()) - Number(a.ts);
+  if (!(age > -120e3 && age < SOS_FRESH_MS)) return { ok: false, message: "That alert is too old to text about." };
+  const line = await lineFor(org);
+  if (!line) return { ok: false, reason: "no-line", message: "The company line is not set up, so no texts went out." };
+  // a crew trying it out on a test job: the office sees the alert in Tally, but nobody is texted
+  if (a.jobId && /^[A-Za-z0-9_-]{1,40}$/.test(String(a.jobId))) {
+    const j = await getDoc(org, "jobs/" + a.jobId);
+    if (j && j.test) return { ok: true, sent: 0, skipped: "test", names: [] };
+  }
+  const to = sosPeople(S, from);
+  let prev = await stateOf(org, key);
+  if (prev && prev.move_time !== "sending") return { ok: true, sent: 0, already: true, names: prev.crew || [] };
+  if (prev && Date.now() - Date.parse(prev.updated_at) < SOS_STUCK_MS) return { ok: true, sent: 0, pending: true };
+  if (!prev) {
+    const slot = await sosSlot(org);
+    if (!slot) return { ok: false, reason: "limit", message: "There have been a lot of truck-down alerts this hour." };
+    // numbered from the clock rather than 1, so a claim made after an earlier one was let go never
+    // shares a number a request still holding the old one could renew
+    if (!(await claim(org, key, null, { crew: to, move_date: slot, move_time: "sending", version: Math.floor(Date.now() / 1000) }))) {
+      await sosFree(org, slot);   // another request got this alert first, with a slot of its own
+      return { ok: true, sent: 0, pending: true };
+    }
+  } else if (!(await claim(org, key, prev, { crew: to, move_date: prev.move_date, move_time: "sending" }))) {
+    return { ok: true, sent: 0, pending: true };   // another request is finishing the stuck one
+  }
+  prev = await stateOf(org, key);
+  if (!prev) return { ok: true, sent: 0, pending: true };
+  const slot = prev.move_date;
+  let ver = Number(prev.version);
+
+  const truck = gsm(String(a.truck || "")).slice(0, 60), job = gsm(String(a.job || "")).slice(0, 60);
+  const note = gsm(String(a.text || "")).slice(0, 160), place = sosPlace(a.loc), link = appLink(S, null, "sos"), num = e164(C[from]);
+  const at = clockIn(Number(a.ts) || Date.now());
+  const body = company(S) + " TRUCK DOWN: " + (truck || "A truck") + " is down. Sent by " + gsm(from) + (at ? " at " + at : "") +
+    (job ? ", on the " + job + " job" : "") + "." +
+    (note ? ' "' + note + '"' : "") +
+    (place ? " Location: " + place + "." : " No location yet.") +
+    (num ? " Call " + gsm(from) + ": " + num + "." : "") +
+    (link ? " Live in Tally: " + link : "");
+  const got: string[] = [];
+  let sent = 0;
+  for (const n of to) {
+    // the log, read again for each person: whoever a stuck request already texted is not texted twice
+    if ((await sosTexted(org, key, "sos")).indexOf(n) >= 0) { got.push(n); continue; }
+    // renew the claim, and stop if a newer request took over or the all-clear went out
+    if (!(await claim(org, key, { version: ver }, { crew: to, move_date: slot, move_time: "sending" }))) {
+      await sosClearAfter(org, S, msgId, key, got);
+      return { ok: true, sent, pending: true };
+    }
+    ver++;
+    if (sosOk(await sendText({ org, line, jobId: key, purpose: "sos", staff: n, party: from, to: C[n], body }))) { got.push(n); sent++; }
+  }
+  if (to.length && !got.length) {
+    // nothing went out: let go of the claim and the hour's slot, so trying again really sends them
+    const gone = await rest("DELETE", "comm_job_state?org_id=eq." + q(org) + "&job_id=eq." + q(key) + "&version=eq." + ver, undefined, "return=representation");
+    if (gone && gone.length) await sosFree(org, slot);
+    return { ok: false, reason: "failed", message: "The texts did not go out." };
+  }
+  if (!(await claim(org, key, { version: ver }, { crew: got, move_date: slot, move_time: "sent" }))) {
+    await sosClearAfter(org, S, msgId, key, got);
+    return { ok: true, sent, pending: true };
+  }
+  // ended while the texts were going out: the all-clear follows them
+  const a2 = await getDoc(org, "chat/" + msgId);
+  if (a2 && a2.end) await sosAllClear(org, S, a2, key, []);
+  return to.length ? { ok: true, sent, names: got } : { ok: true, sent: 0, names: [], reason: "no-numbers" };
 }
 
 /* ---------- card payments (Stripe) ----------
@@ -1566,6 +1788,12 @@ async function handleApp(req: Request): Promise<Response> {
       return json(await driveDistance(b.from, b.to));
     }
     if (b.action === "pay_config") return json(await payConfig(org));
+    if (b.action === "sos") {
+      const out = await sosText(org, me, String(b.msgId || ""), String(b.kind || ""), b.now);
+      const st = out.status;
+      delete out.status;
+      return json(out, typeof st === "number" ? st : 200);
+    }
     const pay: Record<string, (o: string, m: J, j: string, x: J) => Promise<J>> = {
       pay_link: payLink, pay_intent: payIntent, pay_saved: paySaved, pay_check: payCheck,
       pay_forget: (o: string, m: J, _j: string, x: J) => payForget(o, m, x),

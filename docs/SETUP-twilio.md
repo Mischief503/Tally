@@ -29,8 +29,9 @@ US carriers block business texts from unregistered numbers. Calls aren't affecte
   far fewer than its 6,000 texts a day.
 - **Campaign:** use case *Low Volume Mixed*. Description, for example:
   *"Job alerts to our own moving crew (assignments, schedule changes, signatures waiting),
-  an arrival-time text to the customer when their crew heads out, and forwarding of customer
-  texts and missed calls to our office staff."*
+  an arrival-time text to the customer when their crew heads out, forwarding of customer
+  texts and missed calls to our office staff, and truck-down alerts from our crews to our
+  office staff."*
 - **How people opt in:** *"Employees give us their mobile number when hired and agree to receive
   job alerts by text. Customers give us their mobile number when they book and are told we
   will text them on moving day when the crew is on the way."* Make that true: say it when you
@@ -40,6 +41,7 @@ US carriers block business texts from unregistered numbers. Calls aren't affecte
   - `Ace Moving: Priya Nair moved to Mon Oct 6 at 9:30 AM (was Sat Oct 4 at 8:00 AM).`
   - `Ace Moving: Tomorrow you're on Priya Nair at 8:00 AM (418 Oak St). Please confirm: https://your-tally-site#messages`
   - `Ace Moving: Hi Priya, your crew is on the way and should arrive in about 30 minutes, around 8:35 AM. Reply STOP to opt out.`
+  - `Ace Moving TRUCK DOWN: Box 1 (26 ft) is down. Sent by Marcus at 2:14 PM, on the Priya Nair job. "Flat tire" Location: https://maps.google.com/?q=30.26715,-97.74306 (within 12 m). Call Marcus: +15125550101.`
 - Tick that messages include opt-out wording. Tally adds "Reply STOP to opt out." to the first
   text each number receives, and Twilio handles STOP itself.
 
@@ -149,7 +151,8 @@ back in first (same values as last time).
 - Pick **who rings when a customer calls the company line**. Nobody picked = the office staff.
 - The switches turn each kind of text on or off.
 - **Link in texts** fills itself in the first time you open this card on the hosted site. It's
-  the address texts point to, so a tap opens the app at Job messages.
+  the address texts point to, so a tap opens the app at Job messages (or, in a truck-down text,
+  at the alert).
 
 **Try it:** call the Twilio number from your cell — your office phones should ring and announce
 "Tally call from…". Then open a job, tap Call, choose *Call through the company line*: your
@@ -172,6 +175,8 @@ number.
 | Nobody answers the company line | Whoever rings for it: "Missed call from…" |
 | A customer texts the company line | Whoever rings for it, with the text |
 | A mover replies to an alert | Nobody — it lands in the app chat with Dispatch, free |
+| A crew taps **Truck down** | Owner and dispatch: which truck, who sent it, the job, their note, a map link to where they are, and their number (at most 6 alerts an hour per company) |
+| The crew taps **Running again**, or the office closes the alert | The same people: all clear |
 
 Past jobs, quotes and finished jobs never trigger schedule texts. Every text and call is logged
 on the job (job sheet › Calls and texts), with delivery status and any error. Crew see only

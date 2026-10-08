@@ -1,6 +1,7 @@
 # Tally
 
-Moving-company software: quotes, dispatch, crew in the field, signing, payments, texts and calls.
+Moving-company software: quotes, dispatch, crew in the field, signing, payments, texts and calls,
+and a truck-down alert that tells the office where a broken-down truck is ([docs/TRUCK-DOWN.md](docs/TRUCK-DOWN.md)).
 One web app (`web/index.html`) that runs three ways:
 
 - **Android app**: built here by GitHub on every push. The APK has the whole app inside it.

@@ -30,8 +30,9 @@ function matches(row: any, filters: [string, string][]) {
     if (op === "neq") return String(v) !== val;
     if (op === "is") return val === "true" ? v === true : val === "null" ? v == null : v === false;
     if (op === "gte") return String(v) >= val;
+    if (op === "lt") return String(v) < val;
     if (op === "in") return val.replace(/^\(|\)$/g, "").split(",").indexOf(String(v)) >= 0;
-    if (op === "ilike") { const re = new RegExp("^" + val.split("*").map((s) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$", "i"); return v != null && re.test(String(v)); }
+    if (op === "ilike" || op === "like") { const re = new RegExp("^" + val.split("*").map((s) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$", op === "ilike" ? "i" : ""); return v != null && re.test(String(v)); }
     throw new Error("op " + op);
   });
 }
@@ -68,6 +69,11 @@ function restMock(method: string, u: URL, body: any, prefer: string) {
     hit.forEach((r) => Object.assign(r, clone(body)));
     return { status: 200, body: rep ? clone(hit) : null };
   }
+  if (method === "DELETE") {
+    const goneRows = rows.filter((r) => matches(r, filters)), keep = rows.filter((r) => !matches(r, filters)), gone = goneRows.length;
+    rows.length = 0; keep.forEach((r) => rows.push(r));
+    return { status: 200, body: rep ? clone(goneRows) : null, gone };
+  }
   return { status: 405, body: null };
 }
 
@@ -75,6 +81,7 @@ function restMock(method: string, u: URL, body: any, prefer: string) {
 const sent: any[] = [];
 const routesCalls: any[] = [];
 let twilioFail = "";
+let onSend: ((p: any) => Promise<void>) | null = null;   // runs once, as a text is being sent
 const USERS: Record<string, string> = { "tok-owner": "u-owner", "tok-dispatch": "u-dispatch", "tok-marcus": "u-marcus", "tok-kim": "u-kim", "tok-stranger": "u-stranger" };
 (globalThis as any).fetch = async (input: string, init: any = {}) => {
   const u = new URL(input), method = (init.method || "GET").toUpperCase();
@@ -83,6 +90,11 @@ const USERS: Record<string, string> = { "tok-owner": "u-owner", "tok-dispatch": 
     const p = Object.fromEntries(new URLSearchParams(init.body));
     const kind = u.pathname.endsWith("Messages.json") ? "sms" : "call";
     if (twilioFail) return reply(400, { message: twilioFail });
+    if (onSend) {
+      const f = onSend; onSend = null;
+      // a hold that the function's own timeout can cut short, like a real hung connection
+      await Promise.race([f(p), new Promise((_, rej) => init.signal && init.signal.addEventListener("abort", () => rej(new DOMException("aborted", "AbortError"))))]);
+    }
     const sid = (kind === "sms" ? "SM" : "CA") + (sent.length + 1);
     sent.push({ kind, sid, ...p });
     return reply(201, { sid, status: "queued" });
@@ -492,6 +504,241 @@ const nf = await fn.handle(new Request(BASE + "/nope", { method: "POST", body: "
 ok(nf.status === 404, "unknown path 404");
 r = await app("tok-owner", { action: "line", org: ORG });
 ok(r.body.number === "+15125550000" && r.body.twilio === true, "line check reports the number");
+
+/* ---------- truck down (the emergency beacon) ---------- */
+{
+  const appSettings = { ...settings, comms: { ...settings.comms, appUrl: "https://tally.example.com/app/" } };
+  putDoc(ORG, "org/settings", appSettings);
+  const sos = (id: string, over: any = {}) => ({ id, t: "office", from: "Marcus", text: "Flat tire, rear left", ts: Date.now() - 30e3, k: "sos", upd: Date.now(), truck: "Box 1 (26 ft)",
+    truckId: "t26", jobId: "j1", job: "Priya Nair", loc: { lat: 30.2671534, lng: -97.7430571, acc: 12, ts: Date.now() }, ...over });
+  const step = (tok: string, msgId: string, kind: string, extra: any = {}, origin?: string) => app(tok, { action: "sos", org: ORG, msgId, kind, now: Date.now(), ...extra }, origin);
+  const texts = (from: number) => sent.slice(from).filter((s) => s.kind === "sms");
+  const state = (id: string) => DB.comm_job_state.find((x) => x.org_id === ORG && x.job_id === "sos:" + id);
+  const slots = () => DB.comm_job_state.filter((x) => /^sosslot:/.test(x.job_id));
+  const freeSlots = () => { const keep = DB.comm_job_state.filter((x) => !/^sosslot:/.test(x.job_id)); DB.comm_job_state.length = 0; keep.forEach((x) => DB.comm_job_state.push(x)); };
+
+  ok(fn.sosPlace({ lat: 30.2671534, lng: -97.7430571, acc: 12 }) === "https://maps.google.com/?q=30.26715,-97.74306 (within 12 m)", "map link, to about a metre, with how precise it is");
+  ok(fn.sosPlace({ lat: 30.2, lng: -97.7, acc: 2400 }) === "https://maps.google.com/?q=30.20000,-97.70000 (within 2.4 km)", "a rough fix says so in km");
+  ok(fn.sosPlace(null) === "" && fn.sosPlace({ lat: null, lng: 1 }) === "" && fn.sosPlace({ lat: 95, lng: 1 }) === "" && fn.sosPlace({ lat: "x", lng: 1 }) === "", "no location, or nonsense, gives no link");
+  ok(JSON.stringify(fn.sosPeople(settings, "Marcus")) === '["Owner","Dispatch"]', "the office is texted, not the crew");
+  ok(JSON.stringify(fn.sosPeople(settings, "Dispatch")) === '["Owner"]', "never the person who sent it");
+  ok(JSON.stringify(fn.sosPeople({ ...settings, contacts: { ...settings.contacts, Dispatch: "+1 512 555 0100" } }, "Marcus")) === '["Owner"]', "one text per phone number");
+  ok(JSON.stringify(fn.sosPeople({ ...settings, contacts: { ...settings.contacts, Owner: "" } }, "Marcus")) === '["Dispatch"]', "someone in the office with no number is skipped");
+
+  putDoc(ORG, "chat/sa1", sos("sa1"));
+  let n0 = sent.length;
+  r = await step("tok-kim", "sa1", "start");
+  ok(r.status === 403 && sent.length === n0, "only the person who sent the alert can have it texted");
+  r = await step("tok-stranger", "sa1", "start");
+  ok(r.status === 401 && sent.length === n0, "nobody from another company can");
+  r = await step("tok-marcus", "../x", "start");
+  ok(r.status === 400, "odd alert id rejected");
+  r = await step("tok-marcus", "sa1", "maybe");
+  ok(r.status === 400 && sent.length === n0, "unknown step rejected");
+  r = await step("tok-marcus", "j1", "start");
+  ok(!r.body.ok && /not available/.test(r.body.message), "a chat message that isn't an alert can't be texted");
+  r = await step("tok-marcus", "sa1", "start", {}, "https://evil.example.com");
+  ok(r.body.ok && r.body.sent === 2 && JSON.stringify(r.body.names) === '["Owner","Dispatch"]', "Marcus's alert texts the office");
+  const t1 = texts(n0);
+  ok(t1.map((s) => s.To).sort().join() === "+15125550100,+15125550199" && t1.every((s) => s.From === "+15125550000"), "both office phones, from the company line");
+  ok(/^Ace Moving - Austin TRUCK DOWN: Box 1 \(26 ft\) is down\. Sent by Marcus at \d{1,2}:\d{2} [AP]M, on the Priya Nair job\. "Flat tire, rear left" Location: https:\/\/maps\.google\.com\/\?q=30\.26715,-97\.74306 \(within 12 m\)\. Call Marcus: \+15125550101\. Live in Tally: https:\/\/tally\.example\.com\/app\/#sos/.test(t1[0].Body),
+    "the text says which truck, who, when, the job, the note, where, and how to reach them: " + t1[0].Body);
+  ok(!/evil/.test(t1[0].Body), "the link is the company's own app address, never one the phone sent");
+  ok(t1.every((s) => /^[\x20-\x7E]*$/.test(s.Body)), "plain characters only");
+  const logged = DB.comm_log.filter((x) => x.purpose === "sos");
+  ok(logged.length === 2 && logged.every((x) => x.party === "Marcus" && x.job_id === "sos:sa1") && logged.map((x) => x.staff).sort().join() === "Dispatch,Owner", "logged as truck-down texts to each office person");
+  ok(state("sa1").move_time === "sent" && JSON.stringify(state("sa1").crew) === '["Owner","Dispatch"]', "it remembers who was texted");
+  ok(state("sa1").version > 1e9 && state("sa1").version < 2147483647, "a new claim is numbered from the clock, so it never repeats an old one's number");
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa1", "start");
+  ok(r.body.ok && r.body.already && JSON.stringify(r.body.names) === '["Owner","Dispatch"]' && sent.length === n0, "asking again texts nobody twice");
+  r = await step("tok-marcus", "sa1", "end");
+  ok(!r.body.ok && /still on/.test(r.body.message) && sent.length === n0, "no all-clear while the alert is still on");
+  putDoc(ORG, "chat/sa1", sos("sa1", { end: { by: "Click https://evil.example.com/login to keep your account", ts: Date.now() } }));
+  r = await step("tok-kim", "sa1", "end");
+  ok(r.status === 403 && sent.length === n0, "crew who didn't send it can't send the all-clear");
+  r = await step("tok-marcus", "sa1", "end");
+  ok(r.body.ok && r.body.sent === 2 && texts(n0).length === 2 && texts(n0).every((s) => /^Ace Moving - Austin: All clear\. Box 1 \(26 ft\) is running again, Marcus says\. The truck-down alert from \d{1,2}:\d{2} [AP]M is over\.$/.test(s.Body)),
+    "Running again texts the all-clear to the same people: " + (texts(n0)[0] || {}).Body);
+  ok(texts(n0).every((s) => !/evil|Click/.test(s.Body)), "the all-clear names whoever is signed in, never what was written on the alert");
+  ok(DB.comm_log.filter((x) => x.purpose === "sos-end" && x.job_id === "sos:sa1").length === 2, "logged as all-clear texts");
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa1", "end");
+  ok(r.body.already && sent.length === n0, "the all-clear goes once");
+  r = await step("tok-marcus", "sa1", "start");
+  ok(r.body.skipped === "ended" && sent.length === n0, "an alert that has ended texts nobody");
+
+  // the office closes it; the one who closed it isn't texted about it
+  putDoc(ORG, "chat/sa2", sos("sa2", { text: "", loc: null }));
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa2", "start");
+  ok(r.body.sent === 2 && / is down\. Sent by Marcus at [^.]*\. No location yet\. Call Marcus: \+15125550101\. Live in Tally: \S+#sos( Reply STOP to opt out\.)?$/.test(texts(n0)[0].Body), "no note and no location yet: the text says so: " + texts(n0)[0].Body);
+  putDoc(ORG, "chat/sa2", sos("sa2", { text: "", loc: null, end: { by: "Marcus", ts: Date.now() } }));
+  n0 = sent.length;
+  r = await step("tok-dispatch", "sa2", "end");
+  ok(r.body.ok && r.body.sent === 1 && texts(n0).length === 1 && texts(n0)[0].To === "+15125550100" &&
+    /^Ace Moving - Austin: Dispatch closed the truck-down alert from Marcus \(sent at \d{1,2}:\d{2} [AP]M\)\.$/.test(texts(n0)[0].Body), "the office closing it tells the rest of the office, by who is signed in: " + texts(n0)[0].Body);
+
+  // an owner who has no staff name of their own goes by the owner's name in Setup
+  const ownerRow = DB.members.find((m) => m.user_id === "u-owner");
+  ownerRow.staff = "";
+  putDoc(ORG, "chat/sa3", sos("sa3", { from: "Owner" }));
+  n0 = sent.length;
+  r = await step("tok-owner", "sa3", "start");
+  ok(r.body.ok && r.body.sent === 1 && texts(n0)[0].To === "+15125550199" && /Call Owner: \+15125550100\./.test(texts(n0)[0].Body), "the owner's own alert texts dispatch");
+  r = await step("tok-owner", "sa1", "start");
+  ok(r.status === 403, "and the owner can't text about someone else's alert");
+  ownerRow.staff = "Richie";   // an owner whose sign-in is linked to a profile under another name
+  putDoc(ORG, "chat/sa3b", sos("sa3b", { from: "Owner" }));
+  n0 = sent.length;
+  r = await step("tok-owner", "sa3b", "start");
+  ok(r.body.ok && r.body.sent === 1 && texts(n0)[0].To === "+15125550199", "an owner is still the owner's name in Setup when their sign-in has a profile name");
+  putDoc(ORG, "chat/sa3b", sos("sa3b", { from: "Owner", end: { by: "Owner", ts: Date.now() } }));
+  n0 = sent.length;
+  r = await step("tok-owner", "sa3b", "end");
+  ok(r.body.sent === 1 && /All clear\. Box 1 \(26 ft\) is running again, Owner says\./.test(texts(n0)[0].Body), "and their all-clear reads as their own");
+  ownerRow.staff = "Owner";
+
+  // the age of an alert is judged by the clock of the phone that sent it
+  putDoc(ORG, "chat/sa4", sos("sa4", { ts: Date.now() - 2 * 3600e3 }));
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa4", "start");
+  ok(!r.body.ok && /too old/.test(r.body.message) && sent.length === n0, "an alert from 2 hours ago isn't texted now");
+  r = await step("tok-marcus", "sa4", "start", { now: Date.now() - 2 * 3600e3 + 60e3 });
+  ok(r.body.ok && r.body.sent === 2, "unless the phone's own clock says it was sent a minute ago (a phone whose clock is off)");
+  putDoc(ORG, "chat/sa5", sos("sa5", { jobId: "tj" }));
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa5", "start");
+  ok(r.body.ok && r.body.skipped === "test" && sent.length === n0 && !state("sa5"), "an alert from a test job texts nobody");
+
+  // a text that fails: nothing is kept, so trying again really sends it
+  freeSlots();   // a new hour
+  putDoc(ORG, "chat/sa6", sos("sa6"));
+  twilioFail = "Twilio is down";
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa6", "start");
+  ok(!r.body.ok && r.body.reason === "failed" && !state("sa6") && slots().length === 0, "texts that all fail say so, and let go of the alert and of the hour's slot");
+  for (let k = 0; k < 8; k++) r = await step("tok-marcus", "sa6", "start");
+  ok(!r.body.ok && r.body.reason === "failed" && slots().length === 0, "so trying again and again during an outage never uses up the hour's alerts");
+  twilioFail = "";
+  r = await step("tok-marcus", "sa6", "start");
+  ok(r.body.ok && r.body.sent === 2 && JSON.stringify(r.body.names) === '["Owner","Dispatch"]' && texts(n0).length === 2 && slots().length === 1, "so trying again texts the office");
+
+  // another request is still sending them; or one died part way
+  putDoc(ORG, "chat/sa7", sos("sa7"));
+  DB.comm_job_state.push({ org_id: ORG, job_id: "sos:sa7", crew: ["Owner", "Dispatch"], move_date: null, move_time: "sending", forms_at: null, version: 1, updated_at: new Date().toISOString() });
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa7", "start");
+  ok(r.body.ok && r.body.pending && sent.length === n0, "while another request is sending them, the phone is told to look again");
+  state("sa7").updated_at = new Date(Date.now() - 3 * 60e3).toISOString();
+  DB.comm_log.push({ id: nextId++, org_id: ORG, job_id: "sos:sa7", channel: "sms", direction: "out", purpose: "sos", staff: "Owner", status: "delivered", sid: "SMold1", created_at: new Date().toISOString() });
+  r = await step("tok-marcus", "sa7", "start");
+  ok(r.body.ok && r.body.sent === 1 && texts(n0).length === 1 && texts(n0)[0].To === "+15125550199" && JSON.stringify(r.body.names) === '["Owner","Dispatch"]',
+    "a request that died part way is finished by the next one, without texting anyone twice");
+  ok(state("sa7").move_time === "sent", "and it is marked done");
+  // a request that died while handing a text to Twilio: that person is texted again rather than missed
+  putDoc(ORG, "chat/sa7b", sos("sa7b"));
+  DB.comm_job_state.push({ org_id: ORG, job_id: "sos:sa7b", crew: ["Owner", "Dispatch"], move_date: null, move_time: "sending", forms_at: null, version: 1, updated_at: new Date(Date.now() - 3 * 60e3).toISOString() });
+  DB.comm_log.push({ id: nextId++, org_id: ORG, job_id: "sos:sa7b", channel: "sms", direction: "out", purpose: "sos", staff: "Owner", status: "queued", created_at: new Date().toISOString() });
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa7b", "start");
+  ok(r.body.ok && r.body.sent === 2 && texts(n0).length === 2, "someone a dead request was still handing to Twilio is texted again, rather than missed");
+
+  // a slow request that another one has taken over stops after the text in hand
+  putDoc(ORG, "chat/sa9", sos("sa9"));
+  onSend = async () => { const st = state("sa9"); st.version += 5; st.updated_at = new Date().toISOString(); };
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa9", "start");
+  ok(r.body.ok && r.body.pending && r.body.sent === 1 && texts(n0).length === 1, "a request that has been taken over stops, so nobody is texted twice, and the phone is told to look again");
+
+  // so slow it looks dead (over 90 seconds) when the office closes the alert: the all-clear goes to
+  // whoever the alert may have reached, and the slow request sends nothing more
+  putDoc(ORG, "chat/sa10", sos("sa10"));
+  let closeSlow: any = null;
+  onSend = async () => {
+    state("sa10").updated_at = new Date(Date.now() - 3 * 60e3).toISOString();
+    putDoc(ORG, "chat/sa10", sos("sa10", { end: { by: "Dispatch", ts: Date.now() } }));
+    closeSlow = await step("tok-dispatch", "sa10", "end");
+  };
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa10", "start");
+  const slow = texts(n0);
+  ok(closeSlow && closeSlow.body.ok && closeSlow.body.sent === 1 && slow.filter((s) => /closed the truck-down alert from Marcus/.test(s.Body)).map((s) => s.To).join() === "+15125550100",
+    "the all-clear goes to the person whose alert text was still going out, not to Dispatch, who closed it");
+  ok(r.body.pending && slow.filter((s) => /TRUCK DOWN/.test(s.Body)).length === 1 && !slow.some((s) => /TRUCK DOWN/.test(s.Body) && s.To === "+15125550199"),
+    "and the slow request sends no more alert texts once it was closed");
+  ok(!!state("sa10").forms_at && slow.filter((s) => /closed the truck-down alert/.test(s.Body)).length === 1, "the all-clear goes once");
+
+  // a text Twilio never answers is given up after a short wait, and the rest still go
+  putDoc(ORG, "chat/sa11", sos("sa11"));
+  fn.limits.twilioMs = 60;
+  onSend = () => new Promise((res) => setTimeout(res, 2000));
+  n0 = sent.length;
+  const t0 = Date.now();
+  r = await step("tok-marcus", "sa11", "start");
+  fn.limits.twilioMs = 20e3;
+  const hung = DB.comm_log.find((x) => x.job_id === "sos:sa11" && x.staff === "Owner");
+  ok(Date.now() - t0 < 1500 && r.body.ok && r.body.sent === 1 && JSON.stringify(r.body.names) === '["Dispatch"]' && texts(n0).length === 1,
+    "a hung text to Twilio is given up, and the next one still goes");
+  ok(hung && hung.status === "failed" && /did not answer/.test(hung.error || ""), "and the log says Twilio did not answer");
+
+  // the office closes it while the texts are going out: the all-clear follows them
+  putDoc(ORG, "chat/sa8", sos("sa8"));
+  let endWhileSending: any = null;
+  onSend = async () => {
+    putDoc(ORG, "chat/sa8", sos("sa8", { end: { by: "Dispatch", ts: Date.now() } }));
+    endWhileSending = await step("tok-dispatch", "sa8", "end");
+  };
+  n0 = sent.length;
+  r = await step("tok-marcus", "sa8", "start");
+  const raced = texts(n0);
+  ok(endWhileSending && endWhileSending.body.skipped === "start-in-progress", "an all-clear asked for mid-send waits for the alert texts");
+  ok(r.body.ok && raced.filter((s) => /TRUCK DOWN/.test(s.Body)).length === 2 && raced.filter((s) => /All clear\. The truck-down alert from Marcus \(sent at [^)]*\) is over\./.test(s.Body)).length === 2,
+    "and goes out right after them, to each of them once");
+  n0 = sent.length;
+  r = await step("tok-dispatch", "sa8", "end");
+  ok(r.body.already && sent.length === n0, "and not again");
+
+  // six alerts an hour, even sent all at once
+  freeSlots();
+  const batch = [];
+  for (let k = 0; k < 9; k++) { putDoc(ORG, "chat/sp" + k, sos("sp" + k)); batch.push(step("tok-marcus", "sp" + k, "start")); }
+  n0 = sent.length;
+  const res = await Promise.all(batch);
+  ok(res.filter((x) => x.body.ok && x.body.sent === 2).length === 6 && res.filter((x) => x.body.reason === "limit").length === 3 && slots().length === 6,
+    "nine alerts at once: six are texted, three are told there have been a lot this hour");
+  slots().forEach((x) => { x.updated_at = new Date(Date.now() - 4 * 3600e3).toISOString(); x.job_id = "sosslot:1:" + x.job_id.split(":").pop(); });
+  r = await step("tok-marcus", "sp8", "start");
+  ok(r.body.ok && r.body.sent === 2 && slots().length === 1, "the next hour they go again, and old slots are cleared away");
+
+  // with no app address in Setup the text has no link: an address the phone sends is never used
+  putDoc(ORG, "org/settings", settings);
+  freeSlots();
+  putDoc(ORG, "chat/sc1", sos("sc1"));
+  n0 = sent.length;
+  r = await step("tok-marcus", "sc1", "start", {}, "https://evil.example.com");
+  ok(r.body.sent === 2 && texts(n0).length === 2 && texts(n0).every((s) => !/Live in Tally|evil/.test(s.Body)), "with no app address in Setup the text has no link, whatever address the phone sends");
+  putDoc(ORG, "org/settings", appSettings);
+
+  // no company line
+  const line = DB.comm_lines.splice(0, DB.comm_lines.length);
+  putDoc(ORG, "chat/sb1", sos("sb1"));
+  n0 = sent.length;
+  r = await step("tok-marcus", "sb1", "start");
+  ok(!r.body.ok && r.body.reason === "no-line" && sent.length === n0, "no company line: no texts, and the app is told why");
+  line.forEach((l) => DB.comm_lines.push(l));
+  freeSlots();
+  r = await step("tok-marcus", "sb1", "start");
+  ok(r.body.ok && r.body.sent === 2, "the alert can still be texted once the line is back");
+
+  // nobody in the office has a number
+  putDoc(ORG, "org/settings", { ...appSettings, contacts: { ...settings.contacts, Owner: "", Dispatch: "" } });
+  putDoc(ORG, "chat/sb2", sos("sb2"));
+  n0 = sent.length;
+  r = await step("tok-marcus", "sb2", "start");
+  ok(r.body.ok && r.body.reason === "no-numbers" && r.body.names.length === 0 && sent.length === n0, "no office numbers: the app is told nobody could be texted");
+  putDoc(ORG, "org/settings", settings);
+}
 
 console.log("\n" + passes + " passed, " + failures + " failed");
 if (failures) Deno.exit(1);

@@ -360,6 +360,7 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .mlist button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .mlist button b{font-weight:var(--w-mid);font-size:14.5px}
 .mlist button small{display:block}
+.mlist button.sosm svg{color:var(--sos)}
 @media (min-width:640px){ .mlist{grid-template-columns:repeat(3,1fr)} #more .panel{left:50%;transform:translateX(-50%);width:620px;border-radius:calc(var(--r) + 6px)} }
 @media (min-width:900px){ .fab{left:auto;right:28px;bottom:28px;transform:none;width:56px;height:56px} nav.tabs.has-fab button.spacer{display:none} }
 .icon-btn{background:transparent;border:1px solid color-mix(in srgb, var(--header-text) 32%, transparent);color:inherit;border-radius:9px;min-height:32px;min-width:34px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0 6px}
@@ -469,6 +470,51 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .qrwrap{display:flex;justify-content:center;margin:10px 0 0}.qr{width:220px;height:220px;max-width:100%;border-radius:10px;box-shadow:0 0 0 1px var(--line)}
 .linkbox{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:2px}.linkbox code{font-family:ui-monospace,Menlo,Consolas,monospace}
 .stripe-box{min-height:96px;margin:8px 0 6px}
+/* truck down (the emergency beacon): the same red in every theme, with white text (5.9:1) */
+:root{--sos:#C8102E;--sos-deep:#93091E;--sos-ink:#FFFFFF;--sosH:46px}
+#sosBar[hidden]{display:none}
+#sosBar{position:fixed;top:0;left:0;right:0;z-index:78;display:flex;align-items:center;gap:10px;width:100%;min-height:calc(var(--sosH) + env(safe-area-inset-top));padding:env(safe-area-inset-top) 14px 0;margin:0;background:var(--sos);color:var(--sos-ink);border:0;border-radius:0;font:600 15px/1.25 var(--font);text-align:left;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.28)}
+#sosBar .grow{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sosBar .go{flex:none;border:1px solid rgba(255,255,255,.65);border-radius:99px;padding:4px 12px;font-size:13px}
+.sos-dot{width:10px;height:10px;border-radius:99px;background:var(--sos-ink);flex:none}
+body.sos-on{padding-top:calc(var(--sosH) + env(safe-area-inset-top))}
+body.sos-on .top{padding-top:8px}
+body.sos-on #sheet,body.sos-on #emp,body.sos-on #flow,body.sos-on #more,body.sos-on #pick,body.sos-on #call,body.sos-on #start{top:calc(var(--sosH) + env(safe-area-inset-top))}
+body.sos-on #sheet .panel,body.sos-on #emp .panel,body.sos-on #more .panel,body.sos-on #pick .panel,body.sos-on #call .panel,body.sos-on #start .panel{max-height:100%}
+@media (min-width:900px){ body.sos-on nav.tabs{top:calc(var(--sosH) + env(safe-area-inset-top))} }
+#sos[hidden]{display:none}
+#sos:not([hidden])~.toast{z-index:95}
+#sos{position:fixed;inset:0;z-index:90;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--sos);color:var(--sos-ink);padding:calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
+#sos:focus{outline:none}
+#sos .sos-in,#sos .sos-card{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px;width:100%}
+#sos h2{font:700 32px/1.05 var(--display);letter-spacing:.3px;margin:0;color:inherit;text-wrap:balance;text-transform:none}
+#sos p{margin:0}
+#sos .sos-k{font:700 12.5px/1.2 var(--font);letter-spacing:1.8px;text-transform:uppercase}
+#sos .sos-sub{font-size:15px;line-height:1.4}
+#sos .sos-note{font-size:18px;line-height:1.35;background:rgba(0,0,0,.2);border-radius:10px;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+#sos .card2{background:var(--card);color:var(--text);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.4}
+#sos .card2 small{color:var(--muted);font-size:13px}
+#sos .card2 b{font-weight:var(--w-mid)}
+#sos .card2 .row{gap:8px}
+#sos .who{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--line2)}
+#sos .who:first-of-type{border-top:0}
+#sos .who span{min-width:0;overflow-wrap:anywhere}
+#sos .big{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;border-radius:12px;font:700 17px/1.2 var(--font);text-decoration:none;cursor:pointer;border:2px solid transparent;padding:10px 14px;text-align:center}
+#sos .big small{font-weight:500;font-size:14px;color:inherit;opacity:.85}
+#sos .big.white{background:#FFFFFF;color:var(--sos-deep)}
+#sos .big.line{background:transparent;color:var(--sos-ink);border-color:rgba(255,255,255,.8)}
+#sos .big.deep{background:var(--sos-deep);color:var(--sos-ink);border-color:rgba(255,255,255,.35)}
+#sos .big:disabled{opacity:.7;cursor:default}
+#sos .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#sos label.lbl{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+#sos textarea{width:100%;min-height:76px;border-radius:10px;border:0;padding:10px 12px;font:400 16px/1.4 var(--font);background:#FFFFFF;color:#141B2D;resize:vertical}
+#sos select{width:100%;min-height:46px;border-radius:10px;border:0;padding:8px 10px;font:400 16px/1.3 var(--font);background:#FFFFFF;color:#141B2D}
+#sos .sos-sub a{color:var(--sos-ink);font-weight:700}
+#sos .err{background:#FFFFFF;color:var(--sos-deep);border-radius:10px;padding:10px 12px;font-weight:600}
+#sos .linkbtn{background:none;border:0;color:var(--sos-ink);text-decoration:underline;font-size:15px;padding:10px;cursor:pointer;align-self:center;min-height:44px}
+#sos hr{border:0;border-top:1px solid rgba(255,255,255,.4);margin:8px 0;width:100%}
+@keyframes sosBlink{50%{opacity:.3}}
+@media (prefers-reduced-motion:no-preference){ #sos:not([hidden]){animation:tallyIn .15s ease-out} .sos-dot{animation:sosBlink 1.1s ease-in-out infinite} }
 </style>
 <!-- ===== Supabase back end: fill these two lines in, then host this file ===== -->
 <script>
@@ -539,8 +585,8 @@ function watch(key,run){
 function build(collection,filters,order,lim){
   var q=sb.from('docs').select('doc_id,data,collection').eq('org_id',ORG).eq('collection',collection);
   filters.forEach(function(f){
-    var col="data->>'"+f[0]+"'";
-    if(f[1]==='==')q=q.filter(col,'eq',String(f[2]));
+    // PostgREST takes a JSON key bare (data->>t); quotes would be read as part of the key
+    if(f[1]==='==')q=q.filter("data->>"+f[0],'eq',String(f[2]));
     else if(f[1]==='<')q=q.filter("data->"+f[0],'lt',f[2]);
     else if(f[1]==='>')q=q.filter("data->"+f[0],'gt',f[2]);
   });
@@ -799,6 +845,7 @@ var commsApi={
   eta:function(id,m){return commsPost({action:'eta',jobId:id,minutes:m})},
   remind:function(id){return commsPost({action:'remind',jobId:id})},
   call:function(id){return commsPost({action:'call',jobId:id})},
+  sos:function(id,kind){return commsPost({action:'sos',msgId:id,kind:kind,now:Date.now()})},
   log:function(id){
     return sb.from('comm_log').select('*').eq('org_id',ORG).eq('job_id',id).order('created_at',{ascending:false}).limit(60)
       .then(function(r){if(r.error)throw r.error;return r.data||[]});
@@ -894,6 +941,8 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <div id="call" hidden></div>
 <div id="start" hidden></div>
 <div id="emp" hidden></div>
+<button id="sosBar" data-act="sos:open" hidden></button>
+<div id="sos" role="alertdialog" aria-modal="true" aria-label="Truck down" tabindex="-1" hidden></div>
 <button id="fab" class="fab" data-act="fab:quote" aria-label="New quote" hidden>+</button>
 <style id="themeVars"></style>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
@@ -969,7 +1018,7 @@ function defaultSettings(){return {
 function blankDraft(){return {name:'',phone:'',email:'',source:'Google',moveDate:'',time:'08:00',from:'',to:'',miles:'',milesOut:'',milesBack:'',flights:'',pack:false,crew:'',truckId:'',hoursOverride:'',discount:'',notes:'',custom:{},items:{},editId:''}}
 
 /* ---------- state ---------- */
-var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null};
+var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null,sosOpen:false,sosStart:null,sosArm:'',sosDraft:{},sosShown:{},sosWant:false,sosBusy:{}};
 var sync={mode:'local',db:null,user:null,uid:'',meName:'',isOwner:false,isAdmin:false,gate:'',identity:{status:'',role:'',staff:''},started:false,keepLocal:false,inited:false,requested:false,
   got:{settings:false,jobs:false,shifts:false,vault:false},settingsSeen:false,lastJobs:{},lastShifts:{},lastVault:{},lastSettings:'',inflight:{},q:{},unsubs:[],
   photoCache:{},pageCache:{},fetching:{},photoUp:{},requests:[],users:[],names:{},retryMs:5000,warned:false,userSub:null,reqSub:null};
@@ -1178,7 +1227,8 @@ var ICON={
   crew:'<svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>',
   chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
   reports:'<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>',
-  settings:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>'
+  settings:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>',
+  sos:'<svg viewBox="0 0 24 24"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4.5M12 17.2v.1"/></svg>'
 };
 var TABS=[{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'}];
 var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['today','chat'],crew:['today','chat']};
@@ -1257,8 +1307,8 @@ function renderToday(){
       return '<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span><span class="r">'+money(totalOf(j))+'</span></div><div class="route">'+jobLine(j)+'</div><div>'+pill(j.status)+' <span class="pill">'+esc(j.assign.crew.length?j.assign.crew.join(', '):'no crew')+'</span>'+(cf?' <span class="pill bad">Double-booked</span>':'')+'</div></button>'}).join('')
       :'<div class="card empty"><h3>Nothing booked today</h3><p>Quiet day. Quotes and leads are waiting in Jobs.</p></div>');
   var A=[];
-  state.jobs.filter(needsSched).forEach(function(j){A.push(alertRow('warn','Needs scheduling','<b>'+esc(j.d.name)+'</b> · '+esc(fmtDate(j.d.moveDate)),'tab','')+'')});
-  A=[];
+  // a truck that is down comes first
+  sosActive().forEach(function(a){A.push(alertRow('bad','Truck down: '+esc(sosTruck(a)),esc(a.from)+(a.job?' · '+esc(a.job):'')+' · sent '+fmtClock(a.ts),'sos:open',''))});
   var need=state.jobs.filter(needsSched);
   if(need.length)A.push('<button class="alert" data-act="tab" data-tab="dispatch"><span class="ic warn">!</span><span class="tx"><b>'+need.length+' job'+(need.length===1?'':'s')+' need scheduling</b><small>'+esc(need.map(function(j){return j.d.name}).join(', '))+'</small></span><span class="go">›</span></button>');
   state.jobs.forEach(function(j){
@@ -1305,8 +1355,9 @@ function renderFieldToday(head){
   var msg=un?'<button class="alert" data-act="tab" data-tab="chat"><span class="ic ok">'+un+'</span><span class="tx"><b>Unread messages</b><small>Tap to read</small></span><span class="go">›</span></button>':'';
   var toConfirm=jobMsgs(me).filter(function(j){return needsConfirm(j)&&!isConfirmed(j,me)});
   var cfmHtml=toConfirm.length?'<div class="secline"><h2>Confirm your jobs</h2><button data-act="jm:open">Job messages ›</button></div>'+toConfirm.map(function(j){return jobMsgCard(j,me)}).join(''):'';
-  v.innerHTML=head+clock+cfmHtml+msg+'<div class="secline"><h2>'+(todayJobs.length?'Today':'Next up')+'</h2><button data-act="tab" data-tab="crew">All my jobs ›</button></div>'+
-    (list||'<div class="card empty"><h3>No jobs assigned</h3><p>The office assigns crews. Yours will show here.</p></div>')+restHtml;
+  var sv=sosToday();
+  v.innerHTML=head+sv[0]+clock+cfmHtml+msg+'<div class="secline"><h2>'+(todayJobs.length?'Today':'Next up')+'</h2><button data-act="tab" data-tab="crew">All my jobs ›</button></div>'+
+    (list||'<div class="card empty"><h3>No jobs assigned</h3><p>The office assigns crews. Yours will show here.</p></div>')+restHtml+sv[1];
 }
 function renderMore(){
   var el=$('#more');if(!el)return;
@@ -1326,6 +1377,7 @@ function renderMore(){
     el.hidden=!ui.more;syncLock();return;
   }
   el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="More"><div class="row between"><h2>More</h2><button class="btn sm" data-act="more:close">Done</button></div><div class="mlist">'+btns+
+    '<button class="sosm" data-act="sos:open">'+ICON.sos+'<b>Truck down</b><small>Tell the office where you are</small></button>'+
     (canPreview()?'<button data-act="more:preview">'+ICON.crew+'<b>See it their way</b><small>'+(previewing()?'Previewing '+esc(ui.preview.staff||ui.preview.role):'Owner, dispatch, lead or crew')+'</small></button>':'')+
     (canMyProfile()?'<button data-act="me:open">'+ICON.crew+'<b>My profile</b><small>Your details and documents</small></button>':'')+
     '<button data-act="more:theme">'+ICON.settings+'<b>Change the look</b><small>24 themes, light or dark</small></button>'+
@@ -1556,10 +1608,12 @@ function renderDispatch(){
     return '<button class="block'+(j.status==='quoted'?' tent':'')+(cf?' clash':'')+'" data-act="job:open" data-id="'+j.id+'"><span class="tm">'+fmtTime(j.d.time)+' · '+esc(j.d.name)+(j.test?' · test':'')+'</span><small>'+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</small><small>'+(j.assign.crew.length?esc(j.assign.crew.join(', ')):'No crew')+' · '+(j.quote.hours||3)+' h'+(needsConfirm(j)&&j.assign.crew.length?' · '+j.assign.crew.filter(function(c){return isConfirmed(j,c)}).length+'/'+j.assign.crew.length+' confirmed':'')+'</small><span>'+pill(j.status)+(cf?' <span class="pill bad">Double-booked</span>':'')+'</span></button>'};
   var used={},crewUsed={};
   jobs.forEach(function(j){if(j.assign.truckId)used[j.assign.truckId]=1;j.assign.crew.forEach(function(c){crewUsed[c]=1})});
+  var down=sosActive();
   var lanes=S.trucks.map(function(tr){
     var mine=jobs.filter(function(j){return j.assign.truckId===tr.id});
     var hrs=mine.reduce(function(a,j){return a+(j.quote.hours||3)},0);
-    return '<div class="lane'+(mine.length?'':' free')+'"><div class="lh"><b>'+esc(tr.name)+'</b><small>'+(mine.length?mine.length+' job'+(mine.length===1?'':'s')+' · '+hrs+' h':'free all day')+'</small></div>'+
+    var dn=down.filter(function(a){return a.truckId===tr.id})[0];
+    return '<div class="lane'+(mine.length?'':' free')+'"><div class="lh"><b>'+esc(tr.name)+(dn?' <button class="pill bad" style="border:1px solid;cursor:pointer;font-family:inherit" data-act="sos:open" aria-label="'+esc(tr.name)+' is down. Open the alert.">Down since '+fmtClock(dn.ts)+'</button>':'')+'</b><small>'+(mine.length?mine.length+' job'+(mine.length===1?'':'s')+' · '+hrs+' h':'free all day')+'</small></div>'+
       (mine.map(block).join('')||'<small>Nothing on this truck.</small>')+'</div>'}).join('');
   var loose=jobs.filter(function(j){return !j.assign.truckId||!S.trucks.some(function(x){return x.id===j.assign.truckId})});
   var looseHtml=loose.length?'<div class="lane"><div class="lh"><b>No truck yet</b><small>'+loose.length+'</small></div>'+loose.map(block).join('')+'</div>':'';
@@ -1650,8 +1704,9 @@ function renderCrew(){
       acc('media','Photos and updates',j.photos.length?j.photos.length+(j.photos.length===1?' photo':' photos'):'',mediaBody,['done','paid'].indexOf(j.status)>=0)+
       (billIn?acc('bill','Bill out',balOf(j)>0?'<span class="money-due">'+money(balOf(j))+' due</span>':'<span class="money-paid">Paid</span>',billPanel(j),j.status==='done'):'')+'</section>';
   }
-  v.innerHTML=picker+clockCard()+
-    (mine.length?mine.map(card).join(''):'<div class="card empty"><h3>No jobs assigned to '+esc(me)+'</h3><p>Dispatch assigns crew to booked jobs and they show up here.</p></div>')+
+  var sv=sosToday();
+  v.innerHTML=picker+sv[0]+clockCard()+
+    (mine.length?mine.map(card).join(''):'<div class="card empty"><h3>No jobs assigned to '+esc(me)+'</h3><p>Dispatch assigns crew to booked jobs and they show up here.</p></div>')+sv[1]+
     (billJobs.length?'<h2 style="margin:6px 0 10px">Finished, needs billing</h2>'+billJobs.map(card).join(''):'')+
     (pastJobs.length?'<h2 style="margin:16px 0 4px">Finished jobs</h2><p class="hint" style="margin:0 2px 10px">Photos and notes can still be added to these.</p>'+pastJobs.map(card).join(''):'');
 }
@@ -1805,7 +1860,7 @@ function render(){
   $('#role').value=role;
   if(!tabs.some(function(t){return t.id===ui.tab}))ui.tab=tabs[0].id;
   renderTabs();
-  renderTab();renderSheet();renderFlow();renderMore();renderCall();renderStart();renderPvBar();
+  renderTab();renderSheet();renderFlow();renderMore();renderCall();renderStart();renderPvBar();renderSos();renderSosBar();
 }
 function renderTabs(){
   var un=unreadTotal(),nav=navTabs(),wide=window.innerWidth>=900;
@@ -1894,7 +1949,7 @@ function myName(){
 function ago(ts){var m=Math.round((Date.now()-ts)/60000);return m<1?'just now':m<60?m+' min ago':Math.floor(m/60)+' h ago'}
 function phoneHref(p){return 'tel:'+String(p||'').replace(/[^0-9+]/g,'')}
 function dmId(a,b){return 'dm:'+[a,b].sort().join('|')}
-var chat={db:null,mode:'local',msgs:[],locs:{}};
+var chat={db:null,mode:'local',msgs:[],locs:{},sos:[]};
 var dirT;
 function nameKey(n){return String(n).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_')}
 function visibleMsgs(me){
@@ -1905,14 +1960,22 @@ function unreadTotal(){var me=myName();if(!me)return 0;return chatUnread(me)+job
 function chatUnread(me){var vis=visibleMsgs(me),n=0,seen={};vis.forEach(function(m){if(!seen[m.t]){seen[m.t]=1;n+=unreadIn(me,m.t,vis)}});return n}
 function markRead(me,t,list){var latest=list.length?list[list.length-1].ts:0,k=me+'|'+t;if(latest>(state.ui.reads[k]||0)){state.ui.reads[k]=latest;save();renderTabs()}}
 function onChatChange(){
+  sosSync();
   renderTabs();
   if(ui.tab!=='chat')return;
   if(ui.chatThread)updateMsgList(false);else renderChat();
 }
 function chatInit(){chat.msgs=state.chatMsgs||[];chat.locs=state.locs||{}}
 function chatStart(db){
-  chat.db=db;chat.mode='shared';chat.msgs=[];chat.locs={};
-  sync.unsubs.push(db.collection('chat').orderBy('ts','desc').limit(400).onSnapshot(function(snap){chat.msgs=snap.docs.map(function(d){return d.data()});onChatChange()},function(){chat.mode='local';chat.db=null;chat.msgs=state.chatMsgs||[];onChatChange()}));
+  chat.db=db;chat.mode='shared';chat.msgs=[];chat.locs={};chat.sos=[];chat.ok=false;
+  // a fetch that fails once chat has worked is a blip: keep the shared chat and wait for the next one
+  // and a first fetch that failed is undone by the next one that works
+  sync.unsubs.push(db.collection('chat').orderBy('ts','desc').limit(400).onSnapshot(function(snap){
+    if(chat.db!==db){if(!sync.started||sync.db!==db)return;chat.db=db;chat.mode='shared'}
+    chat.ok=true;chat.msgs=snap.docs.map(function(d){return d.data()});onChatChange();
+  },function(){if(chat.ok||chat.db!==db)return;chat.mode='local';chat.db=null;chat.msgs=state.chatMsgs||[];onChatChange()}));
+  // truck-down alerts and the office's answers (thread 'office') get a query of their own, so a busy chat never pushes one out of view
+  sync.unsubs.push(db.collection('chat').where('t','==','office').onSnapshot(function(snap){chat.sos=snap.docs.map(function(d){return d.data()});sosSync()},function(){}));
   sync.unsubs.push(db.collection('locs').onSnapshot(function(snap){var o={};snap.docs.forEach(function(d){var v=d.data();if(v&&v.name)o[v.name]=v});chat.locs=o;if(ui.tab==='dispatch'&&!ui.jobId&&!ui.flow)renderDispatch()},function(){}));
   onChatChange();
 }
@@ -2010,6 +2073,429 @@ function locCard(){
   var rows=list.map(function(x){var stale=Date.now()-x.ts>15*60000;return '<div class="who"><span><b>'+esc(x.name)+'</b>'+(x.activity?' · '+esc(x.activity):'')+'<br><small>'+(stale?'Last seen ':'Updated ')+ago(x.ts)+(x.acc?' · within '+x.acc+' m':'')+'</small></span><a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps?q='+Number(x.lat)+','+Number(x.lng)+'">Map</a></div>'}).join('');
   return '<details class="acc card" data-k="d:locs"'+(ui.open['d:locs']?' open':'')+'><summary><span>Crew locations</span><small>'+list.length+' sharing</small></summary><div class="acc-body">'+(rows||'<p class="hint" style="margin:0">Nobody is sharing a location. Locations only appear while a person is clocked in, and disappear when they clock out.</p>')+'</div></details>';
 }
+
+/* ---------- truck down: the emergency beacon ----------
+   When a truck breaks down or is in an accident, the crew taps Truck down (on Today, on their jobs,
+   or in More). The office is told at once: which truck, who sent it, the job, and where they are,
+   with a map link that keeps updating while the alert is on. The hosted app texts the office too.
+   The alert is a chat message (k 'sos', thread 'office') that only the office is shown, and never
+   on the chat screen; the office answers Got it (k 'sosack', ref the alert) so the crew knows it
+   landed. The crew ends it with Running again, or the office closes it, and the location stops.
+   Nothing is sent from a copy that is not connected to the office, or from an owner's preview of
+   someone else's screen. */
+var SOS_TTL=12*3600e3;
+var sos={id:'',watch:null,beat:null,last:null,pub:null,locErr:false,dirty:false,sentAt:0,geo:'off',saved:null,local:{},acked:{},texts:{},lock:null,ring:{},ringT:null,armT:null,ctx:null,title:'',sig:null,clearMs:95000};
+function sosShared(){return chat.mode==='shared'&&!!chat.db&&sync.identity.status==='ok'}
+function sosMe(){return sosShared()?(sync.identity.staff||''):myName()}
+function sosOffice(){return sosShared()?(sync.identity.role==='owner'||sync.identity.role==='dispatch'):canEditJobs()}
+function sosWhyNot(){if(previewing())return 'preview';if(!sosShared())return 'local';if(!sosMe())return 'noname';return ''}
+function andList(a){return a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' and '+a[a.length-1]}
+function phoneOf(n){return (state.settings.contacts||{})[n]||''}
+// the newest copy of an alert wins, and an alert that has ended never turns back on
+function sosNewer(a,b){if(!a)return b;if(!!a.end!==!!b.end)return a.end?a:b;return (b.upd||0)>=(a.upd||0)?b:a}
+// Anyone in the company can write chat messages, so an alert is only taken as one when its fields
+// have the right types, and numbers are put on screen as numbers.
+function sosNum(v){var n=+v;return isFinite(n)?n:0}
+function sosFit(m){return !!m&&typeof m.id==='string'&&typeof m.from==='string'&&!!m.from&&typeof m.ts==='number'&&isFinite(m.ts)}
+function sosAll(){
+  var by={},add=function(m){if(sosFit(m)&&m.k==='sos')by[m.id]=sosNewer(by[m.id],m)};
+  Object.keys(sos.local).forEach(function(k){add(sos.local[k])});
+  (chat.sos||[]).forEach(add);(chat.msgs||[]).forEach(add);
+  return by;
+}
+function sosIsOn(a){return !!a&&!a.end&&Date.now()-(+a.ts||0)<SOS_TTL}
+// the alerts this person is shown: their own, and everyone's for the office
+function sosActive(){
+  var by=sosAll(),me=sosMe(),off=sosOffice();
+  return Object.keys(by).map(function(k){return by[k]}).filter(function(a){return sosIsOn(a)&&(a.from===me||off)}).sort(function(a,b){return b.ts-a.ts});
+}
+function sosTruck(a){return (a&&a.truck)||'A truck'}
+function sosEndLine(a){var by=(a.end&&a.end.by)||'';return by&&by!==a.from?'Closed by '+by:sosTruck(a)+' is running again'}
+function sosAcks(id){   // each person's latest answer
+  var out={},add=function(m){if(sosFit(m)&&m.k==='sosack'&&m.ref===id&&(!out[m.from]||m.ts>out[m.from].ts))out[m.from]=m};
+  (chat.sos||[]).forEach(add);(chat.msgs||[]).forEach(add);Object.keys(sos.acked).forEach(function(k){add(sos.acked[k])});
+  return Object.keys(out).map(function(k){return out[k]}).sort(function(a,b){return a.ts-b.ts});
+}
+function sosMyAck(id){var me=sosMe();return sosAcks(id).filter(function(x){return x.from===me})[0]||null}
+function sosAckLine(x){return '<div class="who"><span><b>'+esc(x.from)+'</b> got it</span><small data-ago="'+sosNum(x.ts)+'">'+ago(sosNum(x.ts))+'</small></div>'}
+function sosAcc(L){var a=Math.round(+L.acc||0);return a?(a>=1000?'within '+(Math.round(a/100)/10)+' km':'within '+a+' m'):''}
+function sosHasLoc(a){return !!(a&&a.loc&&a.loc.lat!=null&&a.loc.lng!=null&&isFinite(a.loc.lat)&&isFinite(a.loc.lng))}
+function sosMapLinks(L){
+  var ll=Number(L.lat)+','+Number(L.lng);
+  return '<div class="row"><a class="btn primary" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+ll+'">Directions</a><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps?q='+ll+'">Map</a></div>';
+}
+function sosCallRow(x){return '<div class="who"><span><b>'+esc(x.name)+'</b> <small>'+esc(fmtPhone(x.phone))+'</small></span><a class="btn sm" href="'+esc(phoneHref(x.phone))+'" aria-label="Call '+esc(x.name)+'">Call</a></div>'}
+function sosOfficeList(me){return directory().filter(function(x){return x.phone&&x.name!==me&&(x.kind==='owner'||x.kind==='dispatch')})}
+function sosHurt(){return '<p class="sos-sub">Someone hurt? <a href="tel:911">Call 911</a> first.'+(window.TALLY_ARTIFACT?' If the link does not open your phone, dial 911 yourself.':'')+'</p>'}
+// the job this person is on today, the one under way first
+function sosMyJob(me){
+  var t=todayISO(),list=state.jobs.filter(function(j){return j.d.moveDate===t&&['booked','active','done'].indexOf(j.status)>=0&&(j.assign.crew||[]).indexOf(me)>=0});
+  return list.filter(function(j){return j.status==='active'})[0]||list[0]||null;
+}
+// Today and the crew's jobs: the button, or the alert that is on
+function sosToday(){
+  var me=sosMe(),a=sosActive().filter(function(x){return x.from===me})[0];
+  if(a)return ['<button class="alert" data-act="sos:open"><span class="ic bad">!</span><span class="tx"><b>Truck down alert is on</b><small>'+esc(sosTruck(a))+' · sent '+fmtClock(a.ts)+'. Tap to see who got it, or to end it.</small></span><span class="go">›</span></button>',''];
+  return ['','<button class="btn danger bigbtn" style="margin-top:14px" data-act="sos:open">Truck down? Tell the office</button>'];
+}
+
+/* the screens */
+function sosStartHtml(){
+  var st=ui.sosStart,why=sosWhyNot(),me=sosMe(),d=ui.sosDraft,S=state.settings;
+  var head='<div class="row between"><p class="sos-k">Truck down</p><button class="linkbtn" style="padding:6px 4px" data-act="sos:cancel">Cancel</button></div>';
+  if(why){
+    var msg=why==='preview'?'You are looking at '+esc((ui.preview&&ui.preview.staff)||'someone else')+'’s screen. An alert can’t be sent from a preview. Leave the preview to send one as yourself.'
+      :why==='noname'?'Tally doesn’t know who you are in this company yet, so it can’t tell the office. Ask the owner to link your sign-in to your name.'
+      :'This copy of Tally isn’t connected to the office, so it can’t tell them from here. Call the office instead.';
+    var people=sosOfficeList(me);
+    return head+'<h2>Call the office</h2><p class="sos-sub">'+msg+'</p>'+(people.length?'<div class="card2"><b>The office</b>'+people.map(sosCallRow).join('')+'</div>':'')+sosHurt();
+  }
+  var job=sosMyJob(me),tk=d.sosTruck!=null?d.sosTruck:((job&&job.assign.truckId)||'');
+  var trucks='<option value="">Not sure</option>'+(S.trucks||[]).map(function(t){return '<option value="'+esc(t.id)+'"'+(t.id===tk?' selected':'')+'>'+esc(t.name)+'</option>'}).join('');
+  return head+'<h2>Tell the office your truck is down?</h2><p class="sos-sub">They get an alert right away with where you are'+(commsReady()&&!(job&&job.test)?', and a text':'')+'.'+(job?' Job: '+esc(job.d.name)+'.':'')+'</p>'+
+    (job&&job.test?'<p class="sos-sub"><b>You’re on a test job,</b> so this is a good way to try it: the office sees the alert in Tally, but no texts go out.</p>':'')+
+    '<label class="lbl" for="sosTruck">Truck<select id="sosTruck">'+trucks+'</select></label>'+
+    '<label class="lbl" for="sosNote">What happened? (optional)<textarea id="sosNote" maxlength="280" placeholder="Flat tire, won’t start, accident">'+esc(d.sosNote||'')+'</textarea></label>'+
+    (st.err?'<p class="err" role="alert">'+esc(st.err)+'</p>':'')+
+    '<button class="big white" data-act="sos:send"'+(st.busy?' disabled':'')+'>'+(st.busy?'Sending…':'Tell the office')+'</button>'+
+    '<p class="sos-sub">Your location goes to the office only while the alert is on. You end it with Running again.</p>'+sosHurt();
+}
+function sosMyLocText(a){
+  if(sos.id===a.id){
+    if(sos.geo==='denied')return 'Location is blocked on this phone, so the office can’t see where you are. Say where you are in the note, or call them.';
+    if(sos.locErr)return 'Your location didn’t go out just now. Check your signal; Tally keeps trying.';
+    if(sos.pub){var L=sos.pub,lt=sosNum(L.ts)||Date.now();return 'Sharing where you are · updated <span data-ago="'+lt+'">'+ago(lt)+'</span>'+(sosAcc(L)?' · '+sosAcc(L):'')+'. Keep Tally open so it keeps updating.'}
+    if(sos.last)return 'Sending your location…';
+    if(sos.geo==='unavailable')return 'This phone can’t find its location. Say where you are in the note.';
+    return 'Finding your location…';
+  }
+  var ot=sosHasLoc(a)?(sosNum(a.loc.ts)||sosNum(a.upd)||a.ts):0;
+  return ot?'Shared from the phone that sent the alert · updated <span data-ago="'+ot+'">'+ago(ot)+'</span>':'Not shared from this phone.';
+}
+function sosTextsLine(id){
+  var t=sos.texts[id];
+  if(!t)return window.tallyComms?'Texts go out from the phone that sent the alert.':'This copy of Tally can’t send texts, so the office sees the alert only with Tally open. Call them too.';
+  if(t.st==='wait'||t.st==='sending')return 'Texting the office…';
+  if(t.st==='sent')return t.names&&t.names.length?'Texted '+esc(andList(t.names))+'.':'No one in the office has a phone number saved in Setup, so no texts went out. Call them.';
+  if(t.st==='test')return 'You’re on a test job, so no texts went out. The office sees the alert in Tally.';
+  if(t.st==='ended')return 'The alert ended before the texts went out.';
+  if(t.st==='noline')return 'Texts aren’t set up for this company, so the office sees the alert only with Tally open. Call them too.';
+  if(t.st==='nocopy')return 'This copy of Tally can’t send texts, so the office sees the alert only with Tally open. Call them too.';
+  return 'The texts did not go out.'+(t.msg&&!/did not go out/.test(t.msg)?' '+esc(t.msg):'')+' Call the office. <button class="btn sm" data-act="sos:texts" data-id="'+esc(id)+'">Try the texts again</button>';
+}
+function sosMineCard(a){
+  var me=sosMe(),acks=sosAcks(a.id).filter(function(x){return x.from!==me}),arm=ui.sosArm===a.id,nid='sosNote_'+a.id,office=sosOfficeList(me);
+  var note=ui.sosDraft[nid]!=null?ui.sosDraft[nid]:(a.text||'');
+  return '<section class="sos-card" data-id="'+esc(a.id)+'"><p class="sos-k">Truck down alert is on</p><h2>'+(acks.length?esc(andList(acks.map(function(x){return x.from})))+' got it':'The office has been told')+'</h2>'+
+    '<p class="sos-sub">'+esc(sosTruck(a))+(a.job?' · '+esc(a.job):'')+' · sent '+fmtClock(a.ts)+', <span data-ago="'+sosNum(a.ts)+'">'+ago(a.ts)+'</span></p>'+
+    '<div class="card2"><b>Office answers</b>'+(acks.length?acks.map(sosAckLine).join(''):'<small>No answer yet.</small>')+'</div>'+
+    '<div class="card2"><b>Your location</b><small id="sosLocLine">'+sosMyLocText(a)+'</small></div>'+
+    '<div class="card2"><b>Texts</b><small>'+sosTextsLine(a.id)+'</small></div>'+
+    '<label class="lbl" for="'+esc(nid)+'">Tell them more<textarea id="'+esc(nid)+'" maxlength="280" placeholder="What happened, what you need">'+esc(note)+'</textarea></label>'+
+    '<button class="big deep" data-act="sos:note" data-id="'+esc(a.id)+'">Update the note</button>'+
+    (office.length?'<div class="card2"><b>Call the office</b>'+office.map(sosCallRow).join('')+'</div>':'')+
+    '<button class="big white" data-act="sos:end" data-id="'+esc(a.id)+'"'+(ui.sosBusy[a.id]?' disabled':'')+'>'+(ui.sosBusy[a.id]?'Ending…':arm?'Tap again to end the alert':'Running again: end the alert')+'</button>'+sosHurt()+'</section>';
+}
+function sosOtherCard(a){
+  var me=sosMe(),L=a.loc,has=sosHasLoc(a),ph=phoneOf(a.from),mine=sosMyAck(a.id),acks=sosAcks(a.id).filter(function(x){return x.from!==me}),arm=ui.sosArm===a.id,id=esc(a.id),lts=has?(sosNum(L.ts)||sosNum(a.upd)||a.ts):0;
+  var loc=has?'<b>Where they are</b><small>Updated <span data-ago="'+lts+'">'+ago(lts)+'</span>'+(sosAcc(L)?' · '+sosAcc(L):'')+'</small>'+sosMapLinks(L)
+    :'<b>Where they are</b><small>'+(a.geo==='off'||a.geo==='none'?'Their phone isn’t sharing a location. Call them to find out where they are.':'Not in yet. Their phone is still finding it.')+'</small>';
+  return '<section class="sos-card" data-id="'+id+'"><p class="sos-k">Truck down</p><h2>'+esc(sosTruck(a))+' is down</h2>'+
+    (a.test?'<p class="sos-sub"><b>Sent from a test job,</b> so it may be practice.</p>':'')+
+    (a.text?'<p class="sos-note">'+esc(a.text)+'</p>':'')+
+    '<p class="sos-sub">From '+esc(a.from)+(a.job?' · job: '+esc(a.job):'')+' · sent '+fmtClock(a.ts)+', <span data-ago="'+sosNum(a.ts)+'">'+ago(a.ts)+'</span></p>'+
+    '<div class="card2">'+loc+'</div>'+
+    (ph?'<a class="big white" href="'+esc(phoneHref(ph))+'">Call '+esc(a.from)+' <small>'+esc(fmtPhone(ph))+'</small></a>':'<p class="sos-sub">No phone number saved for '+esc(a.from)+'.</p>')+
+    (mine?'<p class="sos-sub"><b>'+esc(a.from)+' can see you got it.</b></p>':'<button class="big deep" data-act="sos:ack" data-id="'+id+'"'+(ui.sosBusy['ack:'+a.id]?' disabled>Sending…':'>Got it')+'</button>')+
+    (acks.length?'<div class="card2"><b>Also answered</b>'+acks.map(sosAckLine).join('')+'</div>':'')+
+    '<button class="linkbtn" data-act="sos:end" data-id="'+id+'"'+(ui.sosBusy[a.id]?' disabled':'')+'>'+(ui.sosBusy[a.id]?'Closing…':arm?'Tap again to close this alert':'Truck sorted out: close this alert')+'</button></section>';
+}
+function sosListHtml(){
+  var me=sosMe(),by=sosAll(),act=sosActive(),mine=act.filter(function(a){return a.from===me}),oth=act.filter(function(a){return a.from!==me});
+  var done=Object.keys(ui.sosShown).map(function(k){return by[k]}).filter(function(a){return a&&a.end&&!sosIsOn(a)});
+  var parts=mine.map(sosMineCard).concat(oth.map(sosOtherCard)).concat(done.map(function(a){
+    return '<section class="sos-card"><p class="sos-k">All clear</p><h2>'+esc(sosEndLine(a))+'</h2><p class="sos-sub">The truck-down alert '+esc(a.from)+' sent at '+fmtClock(a.ts)+' is over.</p></section>'}));
+  if(!parts.length)parts.push('<p class="sos-k">Truck down</p><h2>No alert is on</h2><p class="sos-sub">No truck is reported down right now.</p>');
+  return parts.join('<hr>')+
+    (!mine.length&&!sosWhyNot()?'<button class="linkbtn" data-act="sos:new">Report a truck down</button>':'')+
+    '<button class="linkbtn" data-act="sos:hide">Close</button>';
+}
+function renderSos(soft){
+  var el=$('#sos');if(!el)return;
+  if(!ui.sosStart&&!ui.sosOpen){if(!el.hidden){el.hidden=true;el.innerHTML='';syncLock()}sos.dirty=false;return}
+  var act=document.activeElement,keep=act&&act.tagName==='TEXTAREA'&&el.contains(act)?{id:act.id,s:act.selectionStart,e:act.selectionEnd}:null;
+  if(soft&&keep&&!el.hidden){sos.dirty=true;return}   // drawn again once they stop typing
+  sos.dirty=false;
+  var first=el.hidden,top=el.scrollTop;
+  el.innerHTML='<div class="sos-in">'+(ui.sosStart?sosStartHtml():sosListHtml())+'</div>';
+  el.hidden=false;el.scrollTop=first?0:top;
+  if(keep){var n=document.getElementById(keep.id);if(n){try{n.focus();n.setSelectionRange(keep.s,keep.e)}catch(x){}}}
+  else if(first){try{el.focus()}catch(x){}}
+  if(first)syncLock();
+}
+function renderSosBar(){
+  var b=$('#sosBar');if(!b)return;
+  var me=sosMe(),act=sosActive(),oth=act.filter(function(a){return a.from!==me});
+  var show=act.length>0&&!ui.sosOpen&&!ui.sosStart;
+  document.body.classList.toggle('sos-on',show);
+  if(!show){b.hidden=true;b.innerHTML='';return}
+  var txt=oth.length>1?oth.length+' trucks are down: '+esc(andList(oth.map(sosTruck)))
+    :oth.length?esc(sosTruck(oth[0]))+' is down · '+esc(oth[0].from)+' · <span data-ago="'+sosNum(oth[0].ts)+'">'+ago(oth[0].ts)+'</span>'
+    :'Your truck-down alert is on';
+  b.innerHTML='<span class="sos-dot" aria-hidden="true"></span><span class="grow">'+txt+'</span><span class="go">Open</span>';
+  b.hidden=false;
+}
+function sosTitle(fresh){
+  if(!sos.title)sos.title=document.title;
+  var t=fresh.length?'TRUCK DOWN: '+sosTruck(fresh[0]):sos.title;
+  if(document.title!==t)document.title=t;
+}
+
+/* a chime and a buzz for the office, until someone answers or closes it (30 seconds at most) */
+function sosBeep(){
+  var C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+  try{
+    var ctx=sos.ctx||(sos.ctx=new C());if(ctx.state==='suspended'&&ctx.resume)ctx.resume();
+    var t0=ctx.currentTime+0.05,tones=[660,880,1100,660,880,1100];
+    tones.forEach(function(f,i){var o=ctx.createOscillator(),g=ctx.createGain(),t=t0+i*0.2+(i>2?0.25:0);o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.3,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+0.19)});
+  }catch(e){}
+}
+function sosAlarm(on){
+  if(!on){if(sos.ringT){clearInterval(sos.ringT);sos.ringT=null;try{if(navigator.vibrate)navigator.vibrate(0)}catch(e){}}return}
+  clearInterval(sos.ringT);
+  var until=Date.now()+30000,ring=function(){
+    if(Date.now()>until||!ui.sosOpen){clearInterval(sos.ringT);sos.ringT=null;return}
+    sosBeep();try{if(navigator.vibrate)navigator.vibrate([400,150,400])}catch(e){}
+  };
+  sos.ringT=setInterval(ring,6000);ring();
+}
+document.addEventListener('pointerdown',function(){if(sos.ctx&&sos.ctx.state==='suspended'){try{sos.ctx.resume()}catch(e){}}},true);
+// keeps the sender's screen on, so the location keeps going out
+function sosWake(on){
+  if(!on){if(sos.lock){try{sos.lock.release()}catch(e){}sos.lock=null}return}
+  if(sos.lock||!(navigator.wakeLock&&navigator.wakeLock.request))return;
+  try{navigator.wakeLock.request('screen').then(function(l){sos.lock=l;if(l&&l.addEventListener)l.addEventListener('release',function(){sos.lock=null})},function(){})}catch(e){}
+}
+
+/* the sender's location, while the alert is on: the first fix at once, then whenever the truck
+   moves or the fix gets much sharper, and every 2 minutes so the office can see it is current */
+function sosGeoStart(id){
+  sosGeoStop();
+  sos.id=id;sos.geo='asking';
+  var g=navigator.geolocation;
+  if(!(g&&g.watchPosition)){sos.geo='unavailable';return}
+  var opts={enableHighAccuracy:true,maximumAge:5000,timeout:20000};
+  try{sos.watch=g.watchPosition(sosPos,sosGeoErr,opts)}catch(e){sos.geo='unavailable';sos.watch=null;return}
+  sos.beat=setInterval(function(){try{g.getCurrentPosition(sosPos,function(){},opts)}catch(e){}},120000);
+}
+function sosGeoStop(){
+  if(sos.watch!=null){try{navigator.geolocation.clearWatch(sos.watch)}catch(e){}}
+  clearInterval(sos.beat);sos.watch=null;sos.beat=null;sos.id='';sos.geo='off';sos.last=null;sos.pub=null;sos.locErr=false;sos.sentAt=0;
+}
+function sosPos(p){
+  if(!sos.id||!p||!p.coords)return;
+  var loc={lat:+(+p.coords.latitude).toFixed(5),lng:+(+p.coords.longitude).toFixed(5),acc:Math.round(p.coords.accuracy||0),ts:Date.now()};
+  if(!isFinite(loc.lat)||!isFinite(loc.lng))return;
+  var pub=sos.pub,since=Date.now()-sos.sentAt,moved=pub?distM(pub,loc):1e9,sharper=!!pub&&pub.acc>30&&loc.acc>0&&loc.acc<pub.acc/2;
+  sos.last=loc;sos.geo='on';
+  if(!sos.sentAt||(since>=8000&&(moved>50||sharper))||since>=120000)sosPutLoc(loc);
+  sosLocLine();
+}
+function sosGeoErr(e){
+  var id=sos.id;if(!id)return;
+  if(e&&e.code===1){
+    sosGeoStop();sos.id=id;sos.geo='denied';     // keeps sos.id, so the screen can say why
+    sosPut(id,{geo:'off'}).then(function(){sosTextsNow(id)},function(){sosTextsNow(id)});
+  }else if(!sos.last)sos.geo='unavailable';
+  sosLocLine();
+}
+function sosLocLine(){var e=$('#sosLocLine'),a=sosAll()[sos.id];if(e&&a)e.innerHTML=sosMyLocText(a)}
+function sosPutLoc(loc){
+  var id=sos.id;if(!id)return;
+  sos.sentAt=Date.now();
+  // a save that fails is tried again with a newer fix about 8 seconds later
+  sosPut(id,{loc:loc}).then(function(){if(sos.id===id){sos.pub=loc;sos.locErr=false;sosLocLine()}sosTextsNow(id)},function(){if(sos.id===id){sos.sentAt=Date.now()-112000;sos.locErr=true;sosLocLine()}});
+}
+// One change to an alert, saved after the alert itself. Once it is saved it shows on this phone
+// straight away, without waiting for the shared copy to come back; each field keeps its newest value.
+function sosPut(id,patch){
+  var t=patch.upd=Date.now();
+  return (sos.saved||Promise.resolve()).then(function(){
+    var d=chat.db;if(!d)throw new Error('offline');
+    return d.doc('chat/'+id).update(patch);
+  }).then(function(r){
+    var base=sosAll()[id],l=sos.local[id]||(sos.local[id]=base?clone(base):null);
+    if(l){l.__t=l.__t||{};Object.keys(patch).forEach(function(k){if(!(l.__t[k]>t)){l[k]=clone(patch[k]);l.__t[k]=t}});if(!(l.upd>t))l.upd=t}
+    return r;
+  });
+}
+
+/* sending, answering, ending */
+function sosSend(){
+  var st=ui.sosStart;if(!st||st.busy)return;
+  if(sosWhyNot()){renderSos();return}
+  var me=sosMe(),ta=$('#sosNote'),ts=$('#sosTruck'),note=String((ta&&ta.value)||'').trim().slice(0,280),now=Date.now();
+  var tid=(ts&&ts.value)||'',tk=(state.settings.trucks||[]).filter(function(x){return x.id===tid})[0],job=sosMyJob(me);
+  var m={id:'s'+uid()+uid(),t:'office',from:me,text:note,ts:now,k:'sos',upd:now,truck:tk?tk.name:'',truckId:tk?tk.id:'',jobId:job?job.id:'',job:job?(job.d.name||''):''};
+  if(job&&job.test)m.test=true;
+  st.busy=true;st.err='';renderSos();
+  sosGeoStart(m.id);   // asked inside the tap, so the phone can show its location prompt
+  sos.saved=chat.db.collection('chat').doc(m.id).set(m).then(function(){
+    sos.local[m.id]=clone(m);state.ui.sosOwn={id:m.id,ts:m.ts,from:m.from};save();
+    if(sos.id===m.id&&sos.watch==null&&sos.geo==='unavailable')sosPut(m.id,{geo:'none'}).catch(function(){});
+    delete ui.sosDraft.sosNote;delete ui.sosDraft.sosTruck;ui.sosStart=null;ui.sosOpen=true;ui.sosShown[m.id]=1;
+    sos.texts[m.id]={st:'wait'};sosTextsSoon(m.id);sosWake(true);
+    sosSync();
+  },function(){
+    if(sos.id===m.id)sosGeoStop();
+    st.busy=false;st.err='The alert did not go out. Check your signal and try again, or call the office.';
+    if(ui.sosStart===st)renderSos();else toast('The truck-down alert did not go out. Check your signal and try again, or call the office.');
+  });
+}
+// the texts wait a few seconds for a location, so they can carry one
+function sosTextsSoon(id){
+  var t=sos.texts[id];if(!t)return;
+  if(!commsReady()){t.st=window.tallyComms?'noline':'nocopy';sosTextsKeep(id);return}
+  clearTimeout(t.timer);t.st='wait';t.timer=setTimeout(function(){sosTextsNow(id)},8000);
+  // a location on its way sends them as soon as it is saved; with none coming, they go now
+  if(sos.id!==id||(sos.watch==null&&sos.geo!=='denied'))sosTextsNow(id);
+}
+function sosTextsNow(id){
+  var t=sos.texts[id];if(!t||t.st!=='wait')return;
+  clearTimeout(t.timer);t.st='sending';renderSos();
+  window.tallyComms.sos(id,'start').then(function(r){
+    if(r&&r.ok&&r.pending){   // another request is sending them right now: look again shortly
+      t.st='wait';clearTimeout(t.timer);t.timer=setTimeout(function(){sosTextsNow(id)},5000);return}
+    if(r&&r.ok){t.st=r.skipped==='test'?'test':r.skipped==='ended'?'ended':'sent';t.names=r.names||[]}
+    else if(r&&r.reason==='no-line')t.st='noline';
+    else{t.st='failed';t.msg=(r&&r.message)||''}
+  },function(){t.st='failed';t.msg=''}).then(function(){sosTextsKeep(id);renderSos()});
+}
+function sosTextsKeep(id){var o=state.ui.sosOwn,t=sos.texts[id];if(o&&o.id===id&&t){o.texts={st:t.st,names:t.names||[],msg:t.msg||''};save()}}
+var SOS_OFFLINE='Tally isn’t connected right now. Check your signal and try again.';
+// Got it shows as sent only once it is saved, so the crew is never told the office has it when it doesn't
+function sosAck(id){
+  var a=sosAll()[id],bk='ack:'+id;if(!sosIsOn(a)||!sosOffice()||ui.sosBusy[bk])return;
+  if(!sosShared()){toast(SOS_OFFLINE);return}
+  var me=sosMe(),m={id:uid()+uid(),t:'office',from:me,text:'Got it',ts:Date.now(),k:'sosack',ref:id};
+  ui.sosBusy[bk]=1;renderSos();
+  chat.db.collection('chat').doc(m.id).set(m).then(function(){
+    delete ui.sosBusy[bk];sos.acked[id+'|'+me]=m;sosSync();
+  },function(){delete ui.sosBusy[bk];toast('“Got it” did not go out. Check your signal and try again.');renderSos()});
+}
+function sosNote(id){
+  var a=sosAll()[id],ta=document.getElementById('sosNote_'+id);if(!sosIsOn(a)||!ta)return;
+  if(!sosShared()){toast(SOS_OFFLINE);return}
+  var v=String(ta.value||'').trim().slice(0,280);
+  sosPut(id,{text:v}).then(function(){delete ui.sosDraft['sosNote_'+id];toast('Note updated.');renderSos()},function(){toast('The note did not save. Check your signal.')});
+  renderSos();
+}
+function sosEnd(id){
+  var a=sosAll()[id];if(!sosIsOn(a)||ui.sosBusy[id])return;
+  if(!sosShared()){toast(SOS_OFFLINE);return}
+  var me=sosMe(),mine=a.from===me;
+  if(!mine&&!sosOffice())return;
+  if(ui.sosArm!==id){
+    ui.sosArm=id;renderSos();clearTimeout(sos.armT);
+    sos.armT=setTimeout(function(){if(ui.sosArm===id){ui.sosArm='';renderSos()}},5000);return;
+  }
+  ui.sosArm='';ui.sosBusy[id]=1;renderSos();
+  sosPut(id,{end:{by:me,ts:Date.now()}}).then(function(){
+    delete ui.sosBusy[id];
+    toast(mine?'Alert ended. The office can see you’re running again.':'Alert closed.');
+    sosClearText(id,0);
+    sosSync();
+  },function(){
+    delete ui.sosBusy[id];
+    toast('Could not end the alert. Check your signal and try again.');renderSos();
+  });
+}
+// The all-clear text. While the alert's own texts are still going out, or the server couldn't be
+// reached, it is asked for again a little later, and this phone remembers to even if Tally closes.
+function sosClearText(id,tries){
+  if(!commsReady())return;
+  window.tallyComms.sos(id,'end').then(function(r){
+    if(r&&r.sent>0)toast('The office was texted that it’s sorted.');
+    var again=!r||(r.ok&&r.skipped==='start-in-progress')||(!r.ok&&/reach the server|went wrong|did not answer|Sign in again/i.test(r.message||''));
+    if(again&&tries<4)sosClearLater(id,tries+1);else sosClearDone(id);
+  });
+}
+function sosClearLater(id,tries){
+  var q=state.ui.sosClearQ||(state.ui.sosClearQ={}),o=q[id];
+  q[id]={tries:tries,at:Date.now()+sos.clearMs,first:(o&&o.first)||Date.now()};save();
+  setTimeout(sosClearDue,sos.clearMs+50);
+}
+function sosClearDone(id){var q=state.ui.sosClearQ;if(q&&q[id]){delete q[id];save()}}
+function sosClearDue(){
+  var q=state.ui.sosClearQ;if(!q||!commsReady())return;
+  var n=Date.now();
+  Object.keys(q).forEach(function(id){
+    var x=q[id];if(!x||n-(+x.first||0)>6*3600e3){delete q[id];save();return}   // given up after 6 hours
+    if(x.at>n)return;
+    delete q[id];save();sosClearText(id,+x.tries||0);
+  });
+}
+function sosHide(){
+  var me=sosMe();state.ui.sosHide=state.ui.sosHide||{};
+  sosActive().forEach(function(a){if(a.from!==me)state.ui.sosHide[a.id]=Date.now()});
+  ui.sosOpen=false;ui.sosStart=null;ui.sosArm='';ui.sosShown={};save();
+  sosSync();
+}
+function sosOpen(){
+  ui.more=false;renderMore();
+  if(sosActive().length)ui.sosOpen=true;else ui.sosStart={busy:false,err:''};
+  sosSync();
+}
+// keeps everything in step with the alerts: this phone's own location, the chime, the screens
+function sosSync(){
+  var by=sosAll(),me=sosMe(),own=state.ui.sosOwn;
+  if(own&&own.id&&sosShared()){
+    var oa=by[own.id];
+    var ownFrom=own.from||(oa&&oa.from)||'';
+    if((ownFrom&&ownFrom!==me)||(oa&&!sosIsOn(oa))||Date.now()-(+own.ts||0)>SOS_TTL){
+      if(sos.id===own.id)sosGeoStop();
+      sosWake(false);state.ui.sosOwn=null;save();
+      if(oa&&oa.end&&oa.end.by&&oa.end.by!==me&&ownFrom===me)toast(String(oa.end.by).slice(0,40)+' closed your truck-down alert. Your location is no longer shared.');
+    }else if(oa&&sos.id!==own.id&&sosShared()){
+      // Tally opened again while the alert is on: pick the location back up
+      sosGeoStart(own.id);sosWake(true);
+      if(!sos.texts[own.id]){var tx=own.texts||{st:'wait'};sos.texts[own.id]={st:tx.st,names:tx.names||[],msg:tx.msg||''};if(tx.st==='wait'||tx.st==='sending')sosTextsSoon(own.id)}
+    }
+  }
+  var act=sosActive(),hide=state.ui.sosHide||{};
+  var fresh=act.filter(function(a){return a.from!==me&&!hide[a.id]&&!sosMyAck(a.id)});
+  var isNew=fresh.some(function(a){return !sos.ring[a.id]});
+  sos.ring={};fresh.forEach(function(a){sos.ring[a.id]=1});
+  if(isNew){ui.sosOpen=true;ui.sosStart=null;ui.sosArm=''}
+  if(ui.sosWant&&act.length){ui.sosWant=false;ui.sosOpen=true}
+  if(ui.sosOpen)act.forEach(function(a){ui.sosShown[a.id]=1});
+  if(isNew)sosAlarm(true);else if(!fresh.length)sosAlarm(false);
+  sosTitle(fresh);
+  // Today, the crew's jobs and the board show the alerts too: drawn again when the set changes
+  var sig=act.map(function(a){return a.id+(a.truckId?':'+a.truckId:'')}).join(',');
+  if(sig!==sos.sig){var had=sos.sig!=null;sos.sig=sig;if(had&&(ui.tab==='today'||ui.tab==='crew'||ui.tab==='dispatch')&&!ui.jobId&&!ui.flow)renderTab()}
+  if(!ui.sosStart||$('#sos').hidden)renderSos(true);   // the form being filled in is left alone
+  renderSosBar();syncLock();
+  sosClearDue();
+}
+function sosRefresh(){
+  var db=chat.db||(sync.started&&sync.mode==='shared'&&sync.identity.status==='ok'?sync.db:null);if(!db)return;
+  if(!chat.db){   // chat's first fetch failed: try again, and pick the shared chat back up once it works
+    db.collection('chat').orderBy('ts','desc').limit(400).get().then(function(snap){
+      if(chat.db||!sync.started||sync.db!==db)return;
+      chat.db=db;chat.mode='shared';chat.ok=true;chat.msgs=snap.docs.map(function(d){return d.data()});onChatChange();sosRefresh();
+    }).catch(function(){});
+    return;
+  }
+  db.collection('chat').where('t','==','office').get().then(function(snap){chat.sos=snap.docs.map(function(d){return d.data()});sosSync()}).catch(function(){});
+}
+document.addEventListener('visibilitychange',function(){if(document.hidden)return;if(state.ui.sosOwn)sosWake(true);sosRefresh()});
+setInterval(function(){
+  $$('#sos [data-ago],#sosBar [data-ago]').forEach(function(e){e.textContent=ago(+e.getAttribute('data-ago'))});
+  if(sos.dirty)renderSos(true);
+},10000);
+setInterval(function(){if(!document.hidden)sosRefresh();if(sosActive().length||ui.sosOpen)sosSync()},60000);
+document.addEventListener('input',function(e){var t=e.target;if(t&&(t.tagName==='TEXTAREA'||t.tagName==='SELECT')&&t.id&&t.closest&&t.closest('#sos'))ui.sosDraft[t.id]=t.value});
 
 /* ---------- shared backend: identity, roles and synced data ---------- */
 var MAPKEYS=['payments','signed','extras','crewNotes','photos','log','materials','costs','confirm'];
@@ -2228,7 +2714,8 @@ function pullSettings(snap){
 function stopData(){
   sync.unsubs.forEach(function(u){try{u()}catch(e){}});sync.unsubs=[];
   sync.started=false;sync.got={settings:false,jobs:false,shifts:false,vault:false};sync.settingsSeen=false;
-  sync.lastJobs={};sync.lastShifts={};sync.lastVault={};sync.lastSettings='';chat.db=null;chat.mode='local';pay.cfg=null;
+  sync.lastJobs={};sync.lastShifts={};sync.lastVault={};sync.lastSettings='';chat.db=null;chat.mode='local';chat.sos=[];pay.cfg=null;
+  if(sos.id)sosGeoStop();sosWake(false);sosAlarm(false);
 }
 function startData(){
   if(sync.started)return;
@@ -3049,7 +3536,7 @@ function commsLoadLog(id,loud){
     .then(function(){delete comms.loading[id];if(ui.jobId===id&&!ui.flow)renderSheet()});
 }
 function fmtPhone(p){var d=String(p||'').replace(/\D/g,'');if(d.length===11&&d[0]==='1')d=d.slice(1);return d.length===10?'('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6):String(p||'')}
-var COMM_PURPOSE={eta:'Arrival time',assigned:'Crew assigned',removed:'Taken off the job',moved:'Job moved',forms:'Forms waiting',masked:'Call to customer',callback:'Customer called in','missed-call':'Missed-call alert','customer-text':'Customer texted',forward:'Forwarded to the office',reply:'Crew replied',paylink:'Payment link'};
+var COMM_PURPOSE={eta:'Arrival time',assigned:'Crew assigned',removed:'Taken off the job',moved:'Job moved',forms:'Forms waiting',masked:'Call to customer',callback:'Customer called in','missed-call':'Missed-call alert','customer-text':'Customer texted',forward:'Forwarded to the office',reply:'Crew replied',paylink:'Payment link',sos:'Emergency alert','sos-end':'All clear'};
 function commStatus(r){
   var s=r.status||'',dur=r.duration_sec>0?fmtSecs(r.duration_sec):'';
   if(r.channel==='call'){
@@ -3679,16 +4166,17 @@ function payCardHtml(){
 }
 
 /* ---------- signing and payment flow ---------- */
-function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.emp));navSync()}
+function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.emp||ui.sosOpen||ui.sosStart));navSync()}
 /* In the installed app the phone's Back button should close whatever is open, not the app.
    One history entry stands in for "something is open"; Back closes the top screen. */
 var nav={pushed:false};
 function standalone(){try{return !!window.TALLY_STANDALONE||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||String(document.referrer).indexOf('android-app://')===0}catch(e){return false}}
-function topOverlay(){return ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':''}
+function topOverlay(){return (ui.sosOpen||ui.sosStart)?'sos':ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':''}
 function navSync(){if(!standalone()||nav.pushed||!topOverlay())return;nav.pushed=true;try{history.pushState({tally:1},'')}catch(e){}}
 window.addEventListener('popstate',function(){
   nav.pushed=false;var t=topOverlay();
-  if(t==='start'){ui.start=null;renderStart()}
+  if(t==='sos')sosHide();
+  else if(t==='start'){ui.start=null;renderStart()}
   else if(t==='call'){ui.call=null;renderCall()}
   else if(t==='pick'){ui.pick=false;renderPick()}
   else if(t==='more'){ui.more=false;ui.moreMode='list';renderMore()}
@@ -3955,6 +4443,14 @@ document.addEventListener('click',function(e){
     case 'call:go':if(ui.call&&t.dataset.pref)setCallPref(ui.call.key,t.dataset.pref);setTimeout(function(){ui.call=null;renderCall()},0);break;
     case 'more:open':ui.more=true;ui.moreMode='list';renderMore();break;
     case 'more:close':ui.more=false;ui.moreMode='list';renderMore();break;
+    case 'sos:open':sosOpen();break;
+    case 'sos:new':ui.sosOpen=false;ui.sosArm='';ui.sosStart={busy:false,err:''};renderSos();renderSosBar();syncLock();break;
+    case 'sos:cancel':case 'sos:hide':sosHide();break;
+    case 'sos:send':sosSend();break;
+    case 'sos:ack':sosAck(t.dataset.id);break;
+    case 'sos:end':sosEnd(t.dataset.id);break;
+    case 'sos:note':sosNote(t.dataset.id);break;
+    case 'sos:texts':{var stx=sos.texts[t.dataset.id];if(stx&&stx.st==='failed'){stx.st='wait';stx.msg='';sosTextsNow(t.dataset.id)}break}
     case 'more:preview':ui.moreMode='preview';renderMore();break;
     case 'pv:set':ui.more=false;ui.moreMode='list';renderMore();startPreview(t.dataset.role,t.dataset.staff||'');break;
     case 'pv:end':endPreview();break;
@@ -4116,7 +4612,7 @@ document.addEventListener('change',function(e){
     if((t.value==='done'||t.value==='paid')&&j.status!=='done'&&j.status!=='paid'&&formsPending(j).length){t.value=j.status;toast('The customer has to sign '+formsPending(j).map(function(f){return f.title}).join(', ')+' before this job can close. Use Finish job, or waive the form.');return}
     setStatus(j,t.value);save();renderSheet()}
 });
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId)closeSheet()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId)closeSheet()});
 
 /* ---------- errors are shown, not swallowed ---------- */
 var lastErrAt=0;
@@ -4151,8 +4647,10 @@ state.ui.realRole=null;if(state.ui.role!=='owner')state.ui.role='owner';
 window.addEventListener('resize',function(){renderTabs()});
 setInterval(function(){var el=$('#clkElapsed');if(!el||!el.dataset.since)return;var typing=document.activeElement&&document.activeElement.id==='clockNote';if(typing||ui.tab!=='crew')el.textContent=fmtDur(Date.now()-(+el.dataset.since));else renderCrew()},30000);
 if(location.hash==='#messages'){ui.tab='chat';ui.chatThread='jobs'}
+else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency text opens the alert
+(function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh};
 })();
 </script>
 </body>

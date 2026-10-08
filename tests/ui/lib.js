@@ -12,14 +12,17 @@ function makeSupabase(db, me, calls) {
   function fire(table, row) { listeners.forEach((l) => { if (l.table === table) l.cb({ new: row, old: null }); }); }
   function query(table) {
     let filters = [], order = null, lim = null, single = false, op = 'select', payload = null, returning = false;
+    const asked = [];   // [column, value] pairs, so a test can fail one kind of query
     const val = (row, col) => {
-      let m = /^data->>?'?([A-Za-z0-9_]+)'?$/.exec(col);
+      // PostgREST reads quotes around a JSON key as part of the key, so a quoted key matches nothing there
+      if (/'/.test(col)) throw new Error('PostgREST would read the quotes as part of the key: ' + col);
+      let m = /^data->>?([A-Za-z0-9_]+)$/.exec(col);
       if (m) return row.data ? row.data[m[1]] : undefined;
       return row[col];
     };
     const api = {
-      select() { if (op !== 'select') returning = true; return api; }, eq(c, v) { filters.push((r) => String(val(r, c)) === String(v)); return api; },
-      filter(c, o, v) { filters.push((r) => { const x = val(r, c); return o === 'eq' ? String(x) === String(v) : o === 'gt' ? x > v : o === 'lt' ? x < v : true; }); return api; },
+      select() { if (op !== 'select') returning = true; return api; }, eq(c, v) { asked.push([c, v]); filters.push((r) => String(val(r, c)) === String(v)); return api; },
+      filter(c, o, v) { asked.push([c, v]); filters.push((r) => { const x = val(r, c); return o === 'eq' ? String(x) === String(v) : o === 'gt' ? x > v : o === 'lt' ? x < v : true; }); return api; },
       order(c, opts) { order = [c, opts && opts.ascending === false]; return api; }, limit(n) { lim = n; return api; },
       maybeSingle() { single = true; return api; },
       upsert(o) { op = 'upsert'; payload = o; return api; }, insert(o) { op = 'insert'; payload = o; return api; }, update(o) { op = 'update'; payload = o; return api; }, delete() { op = 'delete'; return api; },
@@ -28,6 +31,7 @@ function makeSupabase(db, me, calls) {
           const rows = db[table] || (db[table] = []);
           if (table === 'comm_lines' && db.__noLineTable) return Promise.resolve({ data: null, error: { message: 'relation does not exist' } }).then(res, rej);
           if (op === 'select') {
+            if (db.__failSelect && db.__failSelect(table, asked)) return Promise.resolve({ data: null, error: { message: 'network' } }).then(res, rej);
             let out = rows.filter((r) => filters.every((f) => f(r)));
             if (order) { const [c, desc] = order; out = out.slice().sort((a, b) => (val(a, c) < val(b, c) ? -1 : 1) * (desc ? -1 : 1)); }
             if (lim != null) out = out.slice(0, lim);
@@ -35,6 +39,8 @@ function makeSupabase(db, me, calls) {
             return Promise.resolve({ data: single ? (out[0] || null) : out, error: null }).then(res, rej);
           }
           if (op === 'upsert') {
+            const fu = db.__failUpsert && db.__failUpsert(table, payload);   // true, or how many ms until it fails
+            if (fu) return new Promise((r) => setTimeout(r, typeof fu === 'number' ? fu : 0)).then(() => ({ data: null, error: { message: 'offline' } })).then(res, rej);
             const key = table === 'docs' ? (r) => r.org_id + '|' + r.path : table === 'members' || table === 'access_requests' ? (r) => r.org_id + '|' + r.user_id : (r) => JSON.stringify(r);
             const i = rows.findIndex((r) => key(r) === key(payload));
             const row = clone(payload); if (i >= 0) rows[i] = row; else rows.push(row);
