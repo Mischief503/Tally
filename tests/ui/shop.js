@@ -42,7 +42,10 @@ const type = (P, sel, v, blur) => { const e = P.$(sel); e.value = v; e.dispatchE
   const d = P.T.state().draft; d.items = { sofa3: 2, boxm: 20 };
   P.click('[data-act="q:step"][data-s="3"]'); await sleep(20);
   const lines = P.$('#qLines').textContent;
-  ok(/Travel: 53 mi round trip from the shop, 33 past 20\$49/.test(lines), 'price charges the round trip past the included miles: ' + lines.match(/Travel[^$]*\$\d+/));
+  // pickup 12.3 and delivery 18.1 mi from the shop: both inside the 20-mile radius, so a local move,
+  // by the hour with the whole 52.8 mi drive in the hours (170 cu ft / 90 + 52.8 / 30 = 3.65, so 4 h), no mileage
+  ok(/2 movers, 4 hr at \$140\/hr\$560/.test(lines) && !/Mileage|Travel/.test(lines), 'local move: the drive from the shop and back is in the hours, no mileage line: ' + lines);
+  ok(/^Local move: by the hour with the drive included, no mileage\. The pickup is 12\.3 mi and the delivery is 18\.1 mi from the shop, inside your 20-mile radius\.$/.test(P.$('#kindNote').textContent), 'the price says why it is local: ' + P.$('#kindNote').textContent);
   P.click('[data-act="q:step"][data-s="1"]'); await sleep(20);
   ok(/Round trip from the shop: 52\.8 mi/.test(P.$('#shopNote').textContent), 'note survives moving between steps');
   // a leg typed by hand is kept
@@ -56,7 +59,8 @@ const type = (P, sel, v, blur) => { const e = P.$(sel); e.value = v; e.dispatchE
   P.click('[data-act="more:open"]'); await sleep(5); P.click('[data-act="more:go"][data-tab="settings"]'); await sleep(20);
   const st = P.$('input[data-s="shopTravel"]'); st.checked = false; st.dispatchEvent(new P.w.Event('input', { bubbles: true })); await sleep(5);
   P.click('#fab'); await sleep(15); P.click('[data-act="q:step"][data-s="3"]'); await sleep(20);
-  ok(/Travel: 2 mi past 20\$4/.test(P.$('#qLines').textContent), 'switched off: only pickup to delivery is priced');
+  ok(/2 movers, 3 hr at \$140\/hr\$420/.test(P.$('#qLines').textContent) && !/Mileage/.test(P.$('#qLines').textContent), 'switched off: only the pickup-to-delivery drive is in the hours (1.89 + 0.75 → 3 h): ' + P.$('#qLines').textContent);
+  ok(/inside your 20-mile radius/.test(P.$('#kindNote').textContent), 'still local: the radius is measured from the shop either way');
   P.click('[data-act="q:step"][data-s="1"]'); await sleep(20);
   ok(/not counted in the price/.test(P.$('#shopNote').textContent), 'and the note says the round trip is logged but not counted');
   st.checked = true;
