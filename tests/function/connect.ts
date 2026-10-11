@@ -176,7 +176,7 @@ function stripeV2(method: string, path: string, body: any, h: any) {
   }
   if (method === "POST" && path === "/v2/core/account_links") {
     if (!ST.accounts[body.account]) return reply(404, { error: { type: "invalid_request_error", message: "No such account" } });
-    const url = "https://connect.stripe.com/setup/s/" + body.account + "/" + (++ST.n);
+    const url = "https://accounts.stripe.com/r/" + body.account + "#alu_test_" + (++ST.n);   // the shape Stripe's links have
     ST.links.push({ ...clone(body), url });
     return reply(200, { object: "v2.core.account_link", account: body.account, url, expires_at: new Date(Date.now() + 300e3).toISOString() });
   }
@@ -269,7 +269,7 @@ ok(r.status === 403 && /Only the owner/.test(r.body.message), "dispatch can't co
 r = await app("tok-ana-lead", { action: "pay_connect", org: BLUE });
 ok(r.status === 403, "nor can a crew lead");
 r = await app("tok-ana", { action: "pay_connect", org: BLUE });
-ok(r.body.ok && /^https:\/\/connect\.stripe\.com\/setup\//.test(r.body.url), "the owner gets Stripe's own sign-up page: " + r.body.url);
+ok(r.body.ok && /^https:\/\/accounts\.stripe\.com\/r\/acct_/.test(r.body.url), "the owner gets Stripe's own sign-up page: " + r.body.url);
 const mk = last("/v2/core/accounts");
 ok(mk && mk.ver === fn.STRIPE_V2_VERSION && mk.type === "application/json" && !mk.acct, "the account is made with Stripe's v2 API, as JSON, from the platform");
 ok(mk.body.dashboard === "full" && mk.body.defaults.responsibilities.fees_collector === "stripe" && mk.body.defaults.responsibilities.losses_collector === "stripe", "the company gets the full Stripe Dashboard, pays Stripe's fees itself, and Stripe carries the risk");
@@ -388,7 +388,7 @@ ok(!r.body.ok && /disconnected from Tally/.test(r.body.message), "a payment says
 ST.accounts[A1].gone = true;
 r = await app("tok-ana", { action: "pay_connect", org: BLUE });
 const A2 = acctOfBlue();
-ok(r.body.ok && /^https:\/\/connect\.stripe\.com/.test(r.body.url) && A2 && A2 !== A1 && /-test-1$/.test(last("/v2/core/accounts").idem), "connecting again makes a new account");
+ok(r.body.ok && /^https:\/\/accounts\.stripe\.com/.test(r.body.url) && A2 && A2 !== A1 && /-test-1$/.test(last("/v2/core/accounts").idem), "connecting again makes a new account");
 ok(DB.pay_accounts.find((a) => a.account_id === A1).is_current === false, "the old one is kept, no longer current, for its old payments");
 // a refund on an old payment still reaches the job
 ST.charges[ST.intents[pid].latest_charge].amount_refunded = 5000;

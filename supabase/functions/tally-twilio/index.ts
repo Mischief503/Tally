@@ -810,7 +810,7 @@ export async function sosText(org: string, me: J, msgId: string, kind: string, c
    fees, and Stripe carries the risk on it. Tally takes no cut: companies pay Tally a membership instead. pay_accounts says which account is whose, and every payment,
    pay link and card on file remembers the account it is on (`account`, '' for the platform). */
 export const STRIPE_VERSION = "2026-09-30.endive";
-export const STRIPE_V2_VERSION = "2026-09-30.preview";   // Stripe's v2 API (connected accounts, their sign-up links)
+export const STRIPE_V2_VERSION = STRIPE_VERSION;   // Stripe's v2 API (connected accounts, their sign-up links): generally available in this version
 const ACCT_RE = /^acct_[A-Za-z0-9]{6,40}$/;
 export const CONNECT_EVENTS = ["account.updated", "account.application.deauthorized"];
 export const PAY_EVENTS = ["payment_intent.succeeded", "payment_intent.processing", "payment_intent.payment_failed",

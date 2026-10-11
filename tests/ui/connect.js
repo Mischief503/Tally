@@ -5,7 +5,7 @@
 const { load, ok, sleep, summary, clone } = require('./lib');
 const FILE = __dirname + '/../../build/tally-supabase.html';
 const ORG = 'org-1', ACCT = 'acct_1Blue000ABCD';
-const SIGNUP = 'https://connect.stripe.com/setup/s/acct_1Blue000ABCD/xyz';
+const SIGNUP = 'https://accounts.stripe.com/r/acct_1Blue000ABCD#alu_test_61SGhyomRuz7xsw5216';   // the shape Stripe's sign-up links have
 const day = (n) => { const d = new Date(Date.now() + n * 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
 function jobDoc(id, over = {}) {
