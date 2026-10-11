@@ -1038,7 +1038,7 @@ function defaultSettings(){return {
 function blankDraft(){return {name:'',phone:'',email:'',source:'Google',moveDate:'',time:'08:00',from:'',to:'',miles:'',milesOut:'',milesBack:'',flights:'',pack:false,crew:'',truckId:'',hoursOverride:'',discount:'',notes:'',custom:{},items:{},editId:'',moveKind:''}}
 
 /* ---------- state ---------- */
-var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null,sosOpen:false,sosStart:null,sosArm:'',sosDraft:{},sosShown:{},sosWant:false,sosBusy:{}};
+var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',hq:'',hf:'all',hShow:50,hOpen:'',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null,sosOpen:false,sosStart:null,sosArm:'',sosDraft:{},sosShown:{},sosWant:false,sosBusy:{}};
 var sync={mode:'local',db:null,user:null,uid:'',meName:'',isOwner:false,isAdmin:false,gate:'',identity:{status:'',role:'',staff:''},started:false,keepLocal:false,inited:false,requested:false,
   got:{settings:false,jobs:false,shifts:false,vault:false},settingsSeen:false,lastJobs:{},lastShifts:{},lastVault:{},lastSettings:'',inflight:{},q:{},unsubs:[],
   photoCache:{},pageCache:{},fetching:{},photoUp:{},requests:[],users:[],names:{},retryMs:5000,warned:false,userSub:null,reqSub:null};
@@ -1406,14 +1406,15 @@ var ICON={
   reports:'<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>',
   settings:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>',
   sos:'<svg viewBox="0 0 24 24"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4.5M12 17.2v.1"/></svg>',
-  admin:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>'
+  admin:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
+  history:'<svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.7h3.7"/><path d="M12 8v4.3l2.8 1.7"/></svg>'
 };
-var TABS=[{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
+var TABS=[{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
 var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['today','chat'],crew:['today','chat']};
 function navTabs(){var ids=NAV[state.ui.role]||NAV.owner;return ids.map(function(id){return TABS.filter(function(t){return t.id===id})[0]})}
 function allowedTabs(role){
-  var ids=role==='crew'||role==='lead'?['today','crew','chat']:role==='dispatch'?['today','quote','jobs','dispatch','crew','chat','reports']:
-    ['today','quote','jobs','dispatch','crew','chat','reports','settings'];
+  var ids=role==='crew'||role==='lead'?['today','crew','history','chat']:role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat','reports']:
+    ['today','quote','jobs','dispatch','crew','history','chat','reports','settings'];
   if(typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // Tally's own admins, in any company
   return TABS.filter(function(t){return ids.indexOf(t.id)>=0});
 }
@@ -1439,6 +1440,16 @@ function assignable(){var S=state.settings,out=S.crew.slice();(S.office||[]).for
 function whoTag(n){var o=officeRec(n);if(o)return o.kind==='owner'?' (owner)':' (dispatch)';return isLead(n)?' (lead)':''}
 var leadOf=function(j){return j.assign.crew.filter(isLead)[0]||j.assign.crew.filter(isOfficeName)[0]||''};
 var needsSched=function(j){return j.status==='booked'&&(!j.d.moveDate||!j.assign.truckId||!j.assign.crew.length||!j.assign.crew.some(canRun))};
+/* Job history. A job leaves the working screens (Jobs, Board, Field) once it is over and nothing is
+   left to do on it: Lost right away; Paid, or Complete with nothing owed and every form signed, from
+   the day after its move (today's finished work still shows today). A finished job that still owes
+   money or a signature stays out front until it is settled. */
+function jobDay(j){return j.d.moveDate||(j.finishedAt?iso(new Date(j.finishedAt)):'')||iso(new Date(j.createdAt||Date.now()))}
+function settled(j){return j.status==='paid'||(j.status==='done'&&balOf(j)<=0&&!formsPending(j).length)}
+function isHistory(j,t){return j.status==='lost'||(settled(j)&&jobDay(j)<(t||todayISO()))}
+// open work whose move date went by without the move being done in the app
+function datePassed(j,t){return ['lead','quoted','booked'].indexOf(j.status)>=0&&!!j.d.moveDate&&j.d.moveDate<(t||todayISO())}
+function namesLine(list){var n=list.map(function(j){return j.d.name||'Unnamed'});return n.length>3?n.slice(0,3).join(', ')+' and '+(n.length-3)+' more':n.join(', ')}
 var canEditJobs=function(){return state.ui.role==='owner'||state.ui.role==='dispatch'};
 var canTakePay=function(){return state.ui.role==='owner'||state.ui.role==='dispatch'};
 
@@ -1490,6 +1501,9 @@ function renderToday(){
   sosActive().forEach(function(a){A.push(alertRow('bad','Truck down: '+esc(sosTruck(a)),esc(a.from)+(a.job?' · '+esc(a.job):'')+' · sent '+fmtClock(a.ts),'sos:open',''))});
   var need=state.jobs.filter(needsSched);
   if(need.length)A.push('<button class="alert" data-act="tab" data-tab="dispatch"><span class="ic warn">!</span><span class="tx"><b>'+need.length+' job'+(need.length===1?'':'s')+' need scheduling</b><small>'+esc(need.map(function(j){return j.d.name}).join(', '))+'</small></span><span class="go">›</span></button>');
+  // booked moves whose day went by without being started in the app: finish them, move them or mark them lost
+  var lateB=state.jobs.filter(function(j){return j.status==='booked'&&datePassed(j,t)});
+  if(lateB.length)A.push('<button class="alert" data-act="jobs:late"><span class="ic warn">!</span><span class="tx"><b>'+lateB.length+' booked job'+(lateB.length===1?' is':'s are')+' past '+(lateB.length===1?'its':'their')+' date</b><small>'+esc(namesLine(lateB))+' · finish, move or mark lost</small></span><span class="go">›</span></button>');
   state.jobs.forEach(function(j){
     if(conflictsFor(j).length)A.push(alertRow('bad','Double-booked',esc(j.d.name)+' on '+esc(fmtDate(j.d.moveDate)),'job:open',j.id));
   });
@@ -1519,7 +1533,8 @@ function renderToday(){
 function renderFieldToday(head){
   var v=$('#view'),me=fieldMe(),t=todayISO();
   if(!me){v.innerHTML=head+'<div class="card empty"><h3>No one to work as yet</h3><p>Ask the office to add you to the crew list.</p></div>';return}
-  var mine=state.jobs.filter(function(j){return ['booked','active'].indexOf(j.status)>=0&&j.assign.crew.indexOf(me)>=0}).sort(function(a,b){return ((a.d.moveDate||'9999')+a.d.time)<((b.d.moveDate||'9999')+b.d.time)?-1:1});
+  // a booking whose day already went by is the office's to sort out, not "next up" (it still shows in My jobs)
+  var mine=state.jobs.filter(function(j){return ['booked','active'].indexOf(j.status)>=0&&j.assign.crew.indexOf(me)>=0&&!datePassed(j,t)}).sort(function(a,b){return ((a.d.moveDate||'9999')+a.d.time)<((b.d.moveDate||'9999')+b.d.time)?-1:1});
   var todayJobs=mine.filter(function(j){return j.d.moveDate===t}),next=mine[0];
   var sh=openShift(me),clock=sh?
     '<button class="alert" data-act="tab" data-tab="crew"><span class="ic ok">●</span><span class="tx"><b>On the clock · '+fmtDur(Date.now()-sh.inAt)+'</b><small>'+esc(sh.activity)+' since '+fmtClock(sh.inAt)+'</small></span><span class="go">›</span></button>':
@@ -1544,10 +1559,12 @@ function renderMore(){
   var items=[];
   if(office){
     items.push(['quote','New quote','Build and book a move']);
+    items.push(['history','Job history','Paid and lost jobs']);
     items.push(['crew','Field view','Work a job like the crew']);
     items.push(['reports',role==='dispatch'?'Revenue':'Reports','Money, hours and accuracy']);
   }else{
     items.push(['crew','My jobs','Clock, tally, photos, billing']);
+    items.push(['history','Job history','Jobs you worked']);
   }
   if(role==='owner')items.push(['settings','Setup','Rates, crew, forms, access']);
   if(isTallyAdmin())items.push(['admin','Tally admin','Every company, fees and trials']);
@@ -1669,12 +1686,16 @@ function saveQuote(kind){
 
 /* ---------- JOBS ---------- */
 function renderJobs(){
-  var v=$('#view'),jobs=state.jobs.slice().sort(function(a,b){return (RANK[a.status]-RANK[b.status])||((a.d.moveDate||'9999')<(b.d.moveDate||'9999')?-1:1)});
-  var counts={all:jobs.length};STATUS.forEach(function(s){counts[s]=jobs.filter(function(j){return j.status===s}).length});
-  var chips=['all'].concat(STATUS).map(function(s){return '<button class="chip'+(ui.filter===s?' on':'')+'" data-act="filter" data-f="'+s+'">'+(s==='all'?'All':LABEL[s])+' <small>'+counts[s]+'</small></button>'}).join('');
-  var list=jobs.filter(function(j){return ui.filter==='all'||j.status===ui.filter});
+  var v=$('#view'),t=todayISO(),past=0;
+  var jobs=state.jobs.filter(function(j){if(isHistory(j,t)){past++;return false}return true})   // paid and lost jobs live in Job history
+    .sort(function(a,b){return (RANK[a.status]-RANK[b.status])||((a.d.moveDate||'9999')<(b.d.moveDate||'9999')?-1:1)});
+  var counts={all:jobs.length,late:jobs.filter(function(j){return datePassed(j,t)}).length};STATUS.forEach(function(s){counts[s]=jobs.filter(function(j){return j.status===s}).length});
+  if(ui.filter==='lost'||(ui.filter==='late'&&!counts.late))ui.filter='all';
+  var chips=['all'].concat(counts.late?['late']:[]).concat(STATUS.filter(function(s){return s!=='lost'})).map(function(s){return '<button class="chip'+(ui.filter===s?' on':'')+'" data-act="filter" data-f="'+s+'">'+(s==='all'?'All':s==='late'?'Date passed':LABEL[s])+' <small>'+counts[s]+'</small></button>'}).join('');
+  var list=jobs.filter(function(j){return ui.filter==='all'||(ui.filter==='late'?datePassed(j,t):j.status===ui.filter)});
   var cards=list.map(function(j){
     var cf=conflictsFor(j),bal=balOf(j),badges='';
+    if(datePassed(j,t))badges+=' <span class="pill warn">Date passed</span>';
     if(cf.length)badges+=' <span class="pill bad">Double-booked</span>';
     if((j.crewNotes||[]).length)badges+=' <span class="pill">'+j.crewNotes.length+' crew note'+(j.crewNotes.length===1?'':'s')+'</span>';
     if(needsSched(j))badges+=' <span class="pill warn">Needs scheduling</span>';
@@ -1682,9 +1703,13 @@ function renderJobs(){
     if(j.status==='done'&&bal>0)badges+=' <span class="pill due">'+money(bal)+' due</span>';
     return '<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><div class="t">'+esc(j.d.name||'Unnamed')+'</div><div class="r">'+(j.quote.cf?money(totalOf(j)):'')+'</div></div><div class="route">'+esc(fmtDate(j.d.moveDate))+(j.d.time&&j.d.moveDate?' · '+fmtTime(j.d.time):'')+' · '+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</div><div>'+pill(j.status)+badges+'</div></button>';
   }).join('');
+  var allPast=!jobs.length&&past>0;
+  var histLine=past&&!allPast?'<div class="secline"><small>'+past+' paid or lost job'+(past===1?'':'s')+'</small><button data-act="hist:go">Job history ›</button></div>':'';
   v.innerHTML=(state.demo?'<div class="note">Sample data is loaded so you can look around. Clear it in Setup when you are ready to start fresh.</div>':'')+
     '<div class="scrollx" style="margin-bottom:10px">'+chips+'</div>'+
-    (cards||'<div class="card empty"><h3>No jobs here yet</h3><p>Build a quote and it lands in this list.</p><button class="btn primary" data-act="tab" data-tab="quote">New quote</button></div>');
+    (cards||(allPast?'<div class="card empty"><h3>Nothing open right now</h3><p>Paid and lost jobs are in Job history.</p><div class="row" style="justify-content:center"><button class="btn primary" data-act="tab" data-tab="quote">New quote</button><button class="btn" data-act="hist:go">Job history</button></div></div>':
+      '<div class="card empty"><h3>No jobs here yet</h3><p>Build a quote and it lands in this list.</p><button class="btn primary" data-act="tab" data-tab="quote">New quote</button></div>'))+
+    histLine;
 }
 function openJob(id){if(!canEditJobs())return;ui.jobId=id;ui.armed='';ui.open['sh:Schedule']=true;renderSheet();commsLoadLog(id)}
 function closeSheet(){ui.jobId=null;renderSheet();renderTab()}
@@ -1728,9 +1753,10 @@ function renderSheet(){
   var nowIx=-1;steps.forEach(function(st,i){if(st[1].indexOf(j.status)>=0)nowIx=i});
   if(j.status==='booked'&&needsSched(j))nowIx=0;
   var rail=j.status==='lost'?'':'<div class="rail">'+steps.map(function(st,i){return '<span class="st '+(i<nowIx?'done':i===nowIx?'now':'')+'"><i></i><span>'+st[0]+'</span></span>'}).join('')+'</div>';
+  var lateNote=datePassed(j)?'<div class="note">The move date ('+esc(fmtDate(j.d.moveDate))+') has passed. '+(j.status==='booked'?'If the move happened, set Status to Complete or Paid. If not, pick a new date or set Status to Lost.':'If they are still moving, pick a new date. If not, set Status to Lost.')+' Paid and lost jobs move to Job history.</div>':'';
   el.innerHTML='<div class="scrim" data-act="sheet:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Job details">'+
    '<div class="sheet-head"><div><h2>'+esc(j.d.name||'Unnamed')+'</h2><div style="margin-top:4px">'+pill(j.status)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+' <small>'+fmtInt(q.cf)+' cu ft · '+q.crew+' movers · '+q.hours+' h'+(q.kind==='mileage'?' · mileage move':q.kind==='local'?' · local move':'')+'</small></div></div><button class="btn sm" data-act="sheet:close" id="sheetClose">Close</button></div>'+
-   '<div class="sheet-body">'+rail+
+   '<div class="sheet-body">'+lateNote+rail+
    '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paid>0?' paid':'')+'"><b>'+money(paid)+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>'+(bal>0?'Balance':'Paid in full')+'</span></div></div>'+
    '<div class="row sec">'+(na?'<button class="btn primary grow" data-act="'+na.act+'">'+na.label+'</button>':'')+'<button class="btn grow" data-act="sh:requote">Edit quote</button></div>'+
    '<div class="sec" data-meta="'+esc(fmtDate(j.d.moveDate)+(j.d.moveDate&&j.d.time?' · '+fmtTime(j.d.time):''))+'"><h3>Schedule</h3>'+clash+'<div class="grid2 stack">'+
@@ -1774,7 +1800,8 @@ function renderDispatch(){
   if(!ui.day||ui.day<ui.weekStart||ui.day>addDays(ui.weekStart,6))ui.day=(t>=ui.weekStart&&t<=addDays(ui.weekStart,6))?t:ui.weekStart;
   var days=[0,1,2,3,4,5,6].map(function(i){return addDays(ui.weekStart,i)});
   var vis=['quoted','booked','active','done','paid'];
-  var onDay=function(day){return state.jobs.filter(function(j){return j.d.moveDate===day&&vis.indexOf(j.status)>=0})};
+  var onDay=function(day){return state.jobs.filter(function(j){return j.d.moveDate===day&&vis.indexOf(j.status)>=0&&!isHistory(j,t)})};
+  var gone=state.jobs.filter(function(j){return j.d.moveDate===ui.day&&j.status!=='lost'&&isHistory(j,t)}).length;
   var strip='<div class="daystrip">'+days.map(function(day){
     var n=onDay(day).length,dt=parseISO(day);
     return '<button class="dpill'+(day===ui.day?' on':'')+'" data-act="day" data-d="'+day+'"><small>'+dt.toLocaleDateString('en-US',{weekday:'short'})+'</small><b>'+dt.getDate()+'</b>'+(n?'<i class="n"></i>':'<i class="n" style="background:transparent"></i>')+'</button>'}).join('')+'</div>';
@@ -1807,42 +1834,18 @@ function renderDispatch(){
   var dt=parseISO(ui.day);
   var head='<div class="row between" style="margin:2px 0 8px"><h2>'+esc(dt.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}))+'</h2><div class="row"><button class="btn sm" data-act="wk" data-n="-7" aria-label="Previous week">←</button><button class="btn sm" data-act="wk" data-n="0">Today</button><button class="btn sm" data-act="wk" data-n="7" aria-label="Next week">→</button></div></div>';
   var cap='<p class="hint" style="margin:0 2px 10px">'+S.crew.filter(function(n){return crewUsed[n]}).length+' of '+S.crew.length+' crew working'+(officeOn.length?' · plus '+esc(officeOn.join(', ')):'')+(free.length?' · free: '+esc(free.join(', ')):'')+'</p>';
-  v.innerHTML=strip+head+cap+needHtml+locCard()+(jobs.length?looseHtml+lanes:'<div class="card empty"><h3>Nothing scheduled</h3><p>Pick another day, or book a job from a quote.</p></div>'+looseHtml+lanes);
+  var goneHtml=gone&&jobs.length?'<div class="secline"><small>'+gone+' finished job'+(gone===1?'':'s')+' from this day</small><button data-act="hist:go" data-q="'+esc(ui.day)+'">Job history ›</button></div>':'';
+  var emptyHtml=gone?'<div class="card empty"><h3>Nothing open this day</h3><p>'+gone+' finished job'+(gone===1?' is':'s are')+' in Job history.</p><button class="btn" data-act="hist:go" data-q="'+esc(ui.day)+'">Open Job history</button></div>':
+    '<div class="card empty"><h3>Nothing scheduled</h3><p>Pick another day, or book a job from a quote.</p></div>';
+  v.innerHTML=strip+head+cap+needHtml+locCard()+goneHtml+(jobs.length?looseHtml+lanes:emptyHtml+looseHtml+lanes);
   var on=$('.dpill.on',v);if(on&&on.scrollIntoView)try{on.scrollIntoView({block:'nearest',inline:'center'})}catch(e){}
 }
 
 /* ---------- CREW ---------- */
-function renderCrew(){
-  var v=$('#view'),S=state.settings,role=state.ui.role;
-  var roster=fieldRoster();
-  var me=fieldMe();
-  var t=todayISO();
-  var picker='<label class="row" style="margin-bottom:8px;gap:8px;flex-wrap:nowrap;font-size:13px;color:var(--muted)"><span>Working as</span><select id="meSel" class="inline-sel">'+roster.map(function(n){return '<option value="'+esc(n)+'"'+(n===me?' selected':'')+'>'+esc(n)+(role==='owner'||role==='dispatch'?whoTag(n):'')+'</option>'}).join('')+'</select></label>';
-  if(!me){v.innerHTML='<div class="card empty"><h3>No one here yet</h3><p>Add '+(role==='lead'?'crew leads':'crew members')+' in Setup.</p></div>';return}
+/* The field card for one job, as the crew member or lead `me` sees it (used by Field and Job history). */
+function crewKit(me){
+  var S=state.settings,role=state.ui.role,t=todayISO();
   var asLead=role==='owner'||role==='dispatch'||(role==='lead'&&isLead(me));
-  var mine=state.jobs.filter(function(j){return ['booked','active'].indexOf(j.status)>=0&&j.assign.crew.indexOf(me)>=0}).sort(function(a,b){return ((a.d.moveDate||'9999')+a.d.time)<((b.d.moveDate||'9999')+b.d.time)?-1:1});
-  var billJobs=asLead?state.jobs.filter(function(j){return j.status==='done'&&j.assign.crew.indexOf(me)>=0&&(balOf(j)>0||formsPending(j).length>0)}):[];
-  var since=Date.now()-60*864e5;
-  var sinceDay=iso(new Date(since));
-  var pastJobs=state.jobs.filter(function(j){
-    if(['done','paid'].indexOf(j.status)<0)return false;
-    if(j.assign.crew.indexOf(me)<0)return false;
-    if(billJobs.indexOf(j)>=0)return false;
-    return j.finishedAt?j.finishedAt>since:(j.d.moveDate||'')>=sinceDay;
-  }).sort(function(a,b){return (b.finishedAt||0)-(a.finishedAt||0)});
-  function clockCard(){
-    var sh=openShift(me);
-    if(!sh){
-      return '<section class="card clock"><h2>Time clock</h2><p class="sub">Separate from the job timer. Location is shared only while you are clocked in.</p><div class="row"><select id="clkAct" class="grow" aria-label="What are you working on" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)">'+S.activities.map(function(a){return '<option>'+esc(a)+'</option>'}).join('')+'</select><button class="btn primary" data-act="clk:in" data-who="'+esc(me)+'">Clock in</button></div></section>';
-    }
-    var li=lateInfo(me,Date.now()),hint='';
-    if(li)hint=li.needNote?'Your last job ended at '+fmtClock(li.end)+', '+fmtDur(li.lateMs)+' ago. Add a note to clock out.':'Your last job ended at '+fmtClock(li.end)+'. Clocking out more than '+S.lateMins+' min after that needs a note.';
-    return '<section class="card clock on"><div class="row between"><h2>On the clock</h2><span class="pill" data-s="done">'+esc(sh.activity)+'</span></div><div class="elapsed" id="clkElapsed" data-since="'+sh.inAt+'">'+fmtDur(Date.now()-sh.inAt)+'</div><small>Since '+fmtClock(sh.inAt)+'</small>'+
-      '<p class="hint" id="geoLine">'+esc(geoText())+'</p>'+
-      (hint?'<p class="hint">'+esc(hint)+'</p>':'')+
-      '<textarea id="clockNote" class="'+(ui.needNote||(li&&li.needNote)?'need':'')+'" placeholder="'+(li&&li.needNote?'Note (required): why the late clock-out?':'Note (optional)')+'" aria-label="Clock-out note">'+esc(ui.clockNote||'')+'</textarea>'+
-      '<button class="btn primary big" style="width:100%;min-height:56px;font-size:18px;margin-top:8px" data-act="clk:out" data-who="'+esc(me)+'">Clock out</button></section>';
-  }
   function billPanel(j){
     var bal=balOf(j),pend=formsPending(j),req=formsRequired();
     var extras=(j.extras||[]).map(function(e){return '<tr><td>'+esc(e.label)+'</td><td>'+(e.amt<0?'−':'')+money(Math.abs(e.amt))+'</td></tr>'}).join('');
@@ -1893,11 +1896,113 @@ function renderCrew(){
       acc('media','Photos and updates',j.photos.length?j.photos.length+(j.photos.length===1?' photo':' photos'):'',mediaBody,['done','paid'].indexOf(j.status)>=0)+
       (billIn?acc('bill','Bill out',balOf(j)>0?'<span class="money-due">'+money(balOf(j))+' due</span>':'<span class="money-paid">Paid</span>',billPanel(j),j.status==='done'):'')+'</section>';
   }
+  return {card:card,asLead:asLead};
+}
+function renderCrew(){
+  if(ui.tab==='history'){renderHistory();return}   // a field card opened from Job history redraws there
+  var v=$('#view'),S=state.settings,role=state.ui.role;
+  var roster=fieldRoster();
+  var me=fieldMe();
+  var t=todayISO();
+  var picker='<label class="row" style="margin-bottom:8px;gap:8px;flex-wrap:nowrap;font-size:13px;color:var(--muted)"><span>Working as</span><select id="meSel" class="inline-sel">'+roster.map(function(n){return '<option value="'+esc(n)+'"'+(n===me?' selected':'')+'>'+esc(n)+(role==='owner'||role==='dispatch'?whoTag(n):'')+'</option>'}).join('')+'</select></label>';
+  if(!me){v.innerHTML='<div class="card empty"><h3>No one here yet</h3><p>Add '+(role==='lead'?'crew leads':'crew members')+' in Setup.</p></div>';return}
+  var asLead=role==='owner'||role==='dispatch'||(role==='lead'&&isLead(me));
+  var mine=state.jobs.filter(function(j){return ['booked','active'].indexOf(j.status)>=0&&j.assign.crew.indexOf(me)>=0}).sort(function(a,b){return ((a.d.moveDate||'9999')+a.d.time)<((b.d.moveDate||'9999')+b.d.time)?-1:1});
+  var billJobs=asLead?state.jobs.filter(function(j){return j.status==='done'&&j.assign.crew.indexOf(me)>=0&&(balOf(j)>0||formsPending(j).length>0)}):[];
+  var since=Date.now()-60*864e5;
+  var sinceDay=iso(new Date(since));
+  var older=0;
+  var pastJobs=state.jobs.filter(function(j){
+    if(['done','paid'].indexOf(j.status)<0)return false;
+    if(j.assign.crew.indexOf(me)<0)return false;
+    if(billJobs.indexOf(j)>=0)return false;
+    if(isHistory(j,t)){older++;return false}   // settled before today: Job history
+    return j.finishedAt?j.finishedAt>since:(j.d.moveDate||'')>=sinceDay;
+  }).sort(function(a,b){return (b.finishedAt||0)-(a.finishedAt||0)});
+  function clockCard(){
+    var sh=openShift(me);
+    if(!sh){
+      return '<section class="card clock"><h2>Time clock</h2><p class="sub">Separate from the job timer. Location is shared only while you are clocked in.</p><div class="row"><select id="clkAct" class="grow" aria-label="What are you working on" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)">'+S.activities.map(function(a){return '<option>'+esc(a)+'</option>'}).join('')+'</select><button class="btn primary" data-act="clk:in" data-who="'+esc(me)+'">Clock in</button></div></section>';
+    }
+    var li=lateInfo(me,Date.now()),hint='';
+    if(li)hint=li.needNote?'Your last job ended at '+fmtClock(li.end)+', '+fmtDur(li.lateMs)+' ago. Add a note to clock out.':'Your last job ended at '+fmtClock(li.end)+'. Clocking out more than '+S.lateMins+' min after that needs a note.';
+    return '<section class="card clock on"><div class="row between"><h2>On the clock</h2><span class="pill" data-s="done">'+esc(sh.activity)+'</span></div><div class="elapsed" id="clkElapsed" data-since="'+sh.inAt+'">'+fmtDur(Date.now()-sh.inAt)+'</div><small>Since '+fmtClock(sh.inAt)+'</small>'+
+      '<p class="hint" id="geoLine">'+esc(geoText())+'</p>'+
+      (hint?'<p class="hint">'+esc(hint)+'</p>':'')+
+      '<textarea id="clockNote" class="'+(ui.needNote||(li&&li.needNote)?'need':'')+'" placeholder="'+(li&&li.needNote?'Note (required): why the late clock-out?':'Note (optional)')+'" aria-label="Clock-out note">'+esc(ui.clockNote||'')+'</textarea>'+
+      '<button class="btn primary big" style="width:100%;min-height:56px;font-size:18px;margin-top:8px" data-act="clk:out" data-who="'+esc(me)+'">Clock out</button></section>';
+  }
+  var card=crewKit(me).card;
   var sv=sosToday();
   v.innerHTML=picker+sv[0]+clockCard()+
     (mine.length?mine.map(card).join(''):'<div class="card empty"><h3>No jobs assigned to '+esc(me)+'</h3><p>Dispatch assigns crew to booked jobs and they show up here.</p></div>')+sv[1]+
     (billJobs.length?'<h2 style="margin:6px 0 10px">Finished, needs billing</h2>'+billJobs.map(card).join(''):'')+
-    (pastJobs.length?'<h2 style="margin:16px 0 4px">Finished jobs</h2><p class="hint" style="margin:0 2px 10px">Photos and notes can still be added to these.</p>'+pastJobs.map(card).join(''):'');
+    (pastJobs.length?'<h2 style="margin:16px 0 4px">Finished jobs</h2><p class="hint" style="margin:0 2px 10px">Photos and notes can still be added to these.</p>'+pastJobs.map(card).join(''):'')+
+    (older?'<div class="secline"><small>'+older+' past job'+(older===1?'':'s')+(role==='owner'||role==='dispatch'?' with '+esc(me):'')+'</small><button data-act="hist:go"'+(role==='owner'||role==='dispatch'?' data-q="'+esc(me)+'"':'')+'>Job history ›</button></div>':'');
+}
+
+/* ---------- JOB HISTORY ---------- */
+/* Everything that left the working screens (see isHistory). The office sees every company job and
+   opens it in the job sheet as before; a crew member or lead sees the jobs they worked and opens
+   the same field card as the Field view, to add photos and notes after the fact. */
+function histJobs(){
+  var t=todayISO(),office=canEditJobs(),me=office?'':fieldMe();
+  return state.jobs.filter(function(j){
+    if(!isHistory(j,t))return false;
+    return office||(j.status!=='lost'&&j.assign.crew.indexOf(me)>=0);
+  }).sort(function(a,b){
+    var x=jobDay(a)+' '+(a.d.time||''),y=jobDay(b)+' '+(b.d.time||'');
+    return x<y?1:x>y?-1:(b.finishedAt||0)-(a.finishedAt||0);
+  });
+}
+function histMatch(j,q){
+  if(!q)return true;
+  var d=j.d||{},ph=String(d.phone||'').replace(/\D/g,'');
+  var hay=[d.name,d.from,d.to,d.email,d.moveDate,d.moveDate?fmtDate(d.moveDate):'',(j.assign.crew||[]).join(' '),truckName(j.assign.truckId)].join(' ').toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(function(w){
+    if(hay.indexOf(w)>=0)return true;
+    var dg=w.replace(/\D/g,'');return /^[\d().+-]+$/.test(w)&&dg.length>=3&&ph.indexOf(dg)>=0;   // part of a phone number
+  });
+}
+function histReset(q){ui.hq=q||'';ui.hf='all';ui.hShow=50;ui.hOpen=''}
+function renderHistory(){
+  var v=$('#view'),office=canEditJobs(),role=state.ui.role;
+  var a=document.activeElement;
+  if(a&&a.id==='hSearch'&&$('#hBody')){histFill();return}   // keep typing in the search box
+  var me=office?'':fieldMe();
+  if(!office&&!me){v.innerHTML='<div class="card empty"><h3>No one here yet</h3><p>Ask the office to add you to the crew list.</p></div>';return}
+  var roster=office?[]:fieldRoster();
+  var picker=roster.length>1?'<label class="row" style="margin-bottom:8px;gap:8px;flex-wrap:nowrap;font-size:13px;color:var(--muted)"><span>Working as</span><select id="meSel" class="inline-sel">'+roster.map(function(n){return '<option value="'+esc(n)+'"'+(n===me?' selected':'')+'>'+esc(n)+'</option>'}).join('')+'</select></label>':'';
+  v.innerHTML=picker+'<label class="f hist-search"><span>Search '+(office?'past jobs':'your past jobs')+'</span><input id="hSearch" type="search" enterkeyhint="search" placeholder="'+(office?'Name, phone, address, crew or month':'Name, address or month')+'" autocomplete="off" value="'+esc(ui.hq||'')+'"></label><div id="hBody"></div>';
+  histFill();
+}
+function histFill(){
+  var el=$('#hBody');if(!el)return;
+  var office=canEditJobs(),me=office?'':fieldMe(),all=histJobs(),q=(ui.hq||'').trim();
+  if(!all.length){
+    el.innerHTML='<div class="card empty"><h3>No past jobs yet</h3><p>'+(office?'Paid jobs move here the day after the move, and lost jobs right away. A finished job that still owes money or a signature stays in Jobs until it is settled.':'Jobs you worked move here the day after they are paid.')+'</p></div>';
+    return;
+  }
+  var found=all.filter(function(j){return histMatch(j,q)});
+  if(!found.length){el.innerHTML='<div class="card empty"><h3>Nothing matches “'+esc(q)+'”</h3><p>Try part of a name, a street, or a month like “Sep”.</p><button class="btn" data-act="hist:clear">Clear search</button></div>';return}
+  var cnt={all:found.length};found.forEach(function(j){cnt[j.status]=(cnt[j.status]||0)+1});
+  if(ui.hf!=='all'&&!cnt[ui.hf])ui.hf='all';
+  var kinds=['paid','done','lost'].filter(function(s){return cnt[s]});
+  var chips=office&&kinds.length>1?'<div class="scrollx" style="margin:10px 0">'+['all'].concat(kinds).map(function(s){return '<button class="chip'+(ui.hf===s?' on':'')+'" data-act="hist:f" data-f="'+s+'" aria-pressed="'+(ui.hf===s)+'">'+(s==='all'?'All':LABEL[s])+' <small>'+cnt[s]+'</small></button>'}).join('')+'</div>':'';
+  var list=found.filter(function(j){return ui.hf==='all'||j.status===ui.hf});
+  var mt={};list.forEach(function(j){var k=jobDay(j).slice(0,7),m=mt[k]||(mt[k]={n:0,amt:0});m.n++;if(j.status!=='lost')m.amt+=totalOf(j)});
+  var shown=list.slice(0,ui.hShow),cur='',html='',kit=office?null:crewKit(me);
+  shown.forEach(function(j){
+    var k=jobDay(j).slice(0,7);
+    if(k!==cur){cur=k;var m=mt[k];html+='<div class="secline"><h2>'+esc(parseISO(k+'-01').toLocaleDateString('en-US',{month:'long',year:'numeric'}))+'</h2><small>'+m.n+' job'+(m.n===1?'':'s')+(office&&m.amt?' · '+money(m.amt):'')+'</small></div>'}
+    var when=esc((j.d.moveDate?fmtDate(j.d.moveDate):'No move date')+' · '+(j.d.from||'?')+' → '+(j.d.to||'?'));
+    var test=j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'';
+    if(office){html+='<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><div class="t">'+esc(j.d.name||'Unnamed')+'</div><div class="r"'+(j.status==='lost'?' style="color:var(--muted)"':'')+'>'+(j.quote.cf?money(totalOf(j)):'')+'</div></div><div class="route">'+when+'</div><div>'+pill(j.status)+test+'</div></button>';return}
+    var open=ui.hOpen===j.id;
+    html+='<button class="job" data-act="hist:open" data-id="'+j.id+'" aria-expanded="'+open+'"><div class="row between"><div class="t">'+esc(j.d.name||'Unnamed')+test+'</div>'+pill(j.status)+'</div><div class="route">'+when+'</div><small class="hint">'+(open?'Tap to close':'Tap to add photos or notes')+'</small></button>'+(open?kit.card(j):'');
+  });
+  var left=list.length-shown.length;
+  el.innerHTML=chips+html+(left>0?'<button class="btn" style="width:100%;margin-top:4px" data-act="hist:more">Show '+Math.min(50,left)+' more <small>('+left+' left)</small></button>':'');
 }
 
 /* ---------- REPORTS ---------- */
@@ -2041,7 +2146,7 @@ function renderSettingsRaw(){
 
 /* ---------- render core ---------- */
 function renderTab(){
-  var fn={today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,chat:renderChat,reports:renderReports,settings:renderSettings,admin:renderAdmin}[ui.tab];
+  var fn={today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,history:renderHistory,chat:renderChat,reports:renderReports,settings:renderSettings,admin:renderAdmin}[ui.tab];
   if(fn)fn();
 }
 function render(){
@@ -2812,10 +2917,11 @@ function softRefresh(){
   rfT=setTimeout(function(){
     if(ui.flow)return;
     var a=document.activeElement;
-    if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&(a.closest('#view')||a.closest('#sheet'))&&rfTries<6){rfTries++;softRefresh();return}
+    // wait while someone types on the screen (Job history's search box redraws around itself)
+    if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&(a.closest('#view')||a.closest('#sheet'))&&a.id!=='hSearch'&&rfTries<6){rfTries++;softRefresh();return}
     rfTries=0;renderTabs();
     if(ui.jobId)renderSheet();
-    if(['jobs','dispatch','crew','reports','today'].indexOf(ui.tab)>=0||(ui.tab==='chat'&&ui.chatThread==='jobs'))renderTab();
+    if(['jobs','dispatch','crew','history','reports','today'].indexOf(ui.tab)>=0||(ui.tab==='chat'&&ui.chatThread==='jobs'))renderTab();
   },300);
 }
 function softSettings(){var a=document.activeElement;if(ui.tab==='settings'&&!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))renderSettings()}
@@ -4769,7 +4875,13 @@ document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
   var a=t.dataset.act,S=state.settings,d=state.draft,j;
   switch(a){
-    case 'tab':ui.tab=t.dataset.tab;ui.armed='';render();var vw=$('#view');vw.classList.remove('view-in');void vw.offsetWidth;vw.classList.add('view-in');window.scrollTo(0,0);break;
+    case 'hist:go':histReset(t.dataset.q||'');ui.tab='history';ui.armed='';render();window.scrollTo(0,0);break;
+    case 'hist:f':ui.hf=t.dataset.f;ui.hShow=50;histFill();break;
+    case 'hist:more':ui.hShow+=50;histFill();break;
+    case 'hist:open':ui.hOpen=ui.hOpen===t.dataset.id?'':t.dataset.id;histFill();break;
+    case 'hist:clear':{ui.hq='';ui.hShow=50;var hs=$('#hSearch');if(hs){hs.value='';histFill();hs.focus()}else renderHistory();break}
+    case 'jobs:late':ui.tab='jobs';ui.filter='late';ui.armed='';render();window.scrollTo(0,0);break;
+    case 'tab':if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();ui.tab=t.dataset.tab;ui.armed='';render();var vw=$('#view');vw.classList.remove('view-in');void vw.offsetWidth;vw.classList.add('view-in');window.scrollTo(0,0);break;
     case 'inc':case 'dec':{var id=t.dataset.id,n=(d.items[id]||0)+(a==='inc'?1:-1);if(n<=0)delete d.items[id];else d.items[id]=n;var o=$('#q_'+id);if(o)o.textContent=n>0?n:0;save();updateQuote();break}
     case 'q:step':ui.qstep=Math.max(1,Math.min(3,+t.dataset.s));renderQuote();window.scrollTo(0,0);break;
     case 'q:save':saveQuote('save');break;
@@ -4894,7 +5006,7 @@ document.addEventListener('click',function(e){
     case 'more:preview':ui.moreMode='preview';renderMore();break;
     case 'pv:set':ui.more=false;ui.moreMode='list';renderMore();startPreview(t.dataset.role,t.dataset.staff||'');break;
     case 'pv:end':endPreview();break;
-    case 'more:go':ui.more=false;renderMore();ui.tab=t.dataset.tab;ui.armed='';render();window.scrollTo(0,0);break;
+    case 'more:go':ui.more=false;renderMore();if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();ui.tab=t.dataset.tab;ui.armed='';render();window.scrollTo(0,0);break;
     case 'more:signout':if(window.tallySignOut)window.tallySignOut();break;
     case 'more:company':if(window.tallySwitchCompany)window.tallySwitchCompany();break;
     case 'emp:new':openEmp({});break;
@@ -5038,6 +5150,7 @@ document.addEventListener('input',function(e){
   else if(t.dataset.dcf){state.draft.custom[t.dataset.dcf]=t.value;save()}
   else if(t.id==='clockNote'){ui.clockNote=t.value}
   else if(t.id==='qSearch'){filterItems(t.value)}
+  else if(t.id==='hSearch'){ui.hq=t.value;ui.hShow=50;ui.hOpen='';histFill()}
   else if(t.dataset.s){var val=t.dataset.t==='num'?num(t.value):t.dataset.t==='bool'?t.checked:t.value;setPath(S,t.dataset.s,val);if(t.dataset.s==='company')$('#brandCo').textContent=val||'Your Moving Co.';save()}
   else if(t.dataset.j){var jj=canEditJobs()?byId(ui.jobId):null;if(jj){jj.d[t.dataset.j]=t.value;save()}}
   else if(t.dataset.jcf){var j2=canEditJobs()?byId(ui.jobId):null;if(j2){j2.d.custom[t.dataset.jcf]=t.value;save()}}
@@ -5072,7 +5185,8 @@ document.addEventListener('change',function(e){
   else if(j&&t.dataset.jassign){j.assign[t.dataset.jassign]=t.value;save();renderSheet()}
   else if(j&&t.dataset.jstatus){
     if((t.value==='done'||t.value==='paid')&&j.status!=='done'&&j.status!=='paid'&&formsPending(j).length){t.value=j.status;toast('The customer has to sign '+formsPending(j).map(function(f){return f.title}).join(', ')+' before this job can close. Use Finish job, or waive the form.');return}
-    setStatus(j,t.value);save();renderSheet()}
+    var wasPast=isHistory(j);setStatus(j,t.value);save();renderSheet();
+    if(!wasPast&&isHistory(j))toast(j.status==='lost'?'Marked lost. It is in Job history now.':'Closed. It is in Job history now.')}
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId)closeSheet()});
 

@@ -22,7 +22,7 @@ run() {
   fi
 }
 for ed in artifact supabase; do
-  for s in regress field confirm minpay pricing; do run node tests/ui/$s.js build/tally-$ed.html $s-$ed; done
+  for s in regress field confirm minpay pricing history; do run node tests/ui/$s.js build/tally-$ed.html $s-$ed; done
 done
 for s in hosted confirm-hosted employees pay connect member sos pricing-hosted dist shop osm testpack nav pwa-check; do run node tests/ui/$s.js; done
 run deno run -A tests/function/test.ts

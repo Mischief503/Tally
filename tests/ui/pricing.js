@@ -238,6 +238,7 @@ const H = 36e5;
   // a finished job with a move type that was closed some other way: the office can bill it by the clock
   const SAMPLE = st().jobs.find((x) => x.d.name === 'Devon Reyes');
   ok(SAMPLE.quote.kind === 'mileage' && !SAMPLE.clockAt, L('sample job: a 31 mi move, mileage, closed at its quote'));
+  await more('history');   // paid weeks ago: it lives in Job history
   click('[data-act="job:open"][data-id="' + SAMPLE.id + '"]'); await sleep(15);
   ok(/This job was closed at its quoted price\. By the clock it would be/.test($('#sheet').textContent) && /Bill by the clock/.test($('[data-act="clk:set"]').textContent), L('its sheet offers Bill by the clock'));
   const before = SAMPLE.extras.length;
@@ -254,13 +255,14 @@ const H = 36e5;
   // changing the status by hand doesn't bill a job by the clock
   const CM = st().jobs.find((x) => x.d.name === 'Chloe Martin');
   const cmTotal = CM.quote.total + CM.extras.reduce((a, e) => a + e.amt, 0);
-  click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);
+  await more('history');
   click('[data-act="job:open"][data-id="' + CM.id + '"]'); await sleep(15);
   type('#sheet [data-jstatus]', 'done', true); await sleep(10);
   ok(CM.status === 'done' && !CM.extras.some((e) => e.id === 'clock') && !CM.clockAt && CM.quote.total + CM.extras.reduce((a, e) => a + e.amt, 0) === cmTotal, L('a paid sample job set to Complete by hand keeps its price'));
   type('#sheet [data-jstatus]', 'paid', true); await sleep(10);
   click('[data-act="sheet:close"]'); await sleep(5);
   // saving a quote with no change doesn't move a job between Paid and Complete
+  click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);
   click('[data-act="job:open"][data-id="' + LJ.id + '"]'); await sleep(15);
   type('#sheet [data-jstatus]', 'paid', true); await sleep(10);
   ok(LJ.status === 'paid' && LJ.clockAt > 0 && !LJ.payments.length, L('a job billed by the clock, marked Paid by hand'));
