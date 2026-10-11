@@ -17,11 +17,14 @@ and every phone shows it. A finished job moves to **Paid** when the balance reac
 ## What is set up already
 
 - The database parts: the payments tables, the ledger and the safe-merge function.
-- Your company (**Live company trst**) takes cards straight into your own Stripe account. Only
-  companies listed in **Supabase › Table Editor › pay_orgs** do that. Anyone can start a company in
-  Tally, so this list is what keeps a stranger's company from charging cards into your account.
+- A company listed in **Supabase › Table Editor › pay_orgs** (with enabled on) takes cards
+  straight into your own Stripe account. Anyone can start a company in Tally, so this list is what
+  keeps a stranger's company from charging cards into your account. Since October 10 none is on:
+  your **Live company trst** is a test company and connects its own Stripe account like the others.
 - Every other company connects **its own** Stripe account from Tally (Stripe Connect, below). Its
   customers' money goes to that company, not to you, and Tally takes no cut.
+- Companies pay you a monthly **membership** through the same Stripe account: see `MEMBERSHIP.md`
+  (Setup › Membership for owners, More › Tally admin for you).
 
 ## What you do: two keys into Supabase
 
