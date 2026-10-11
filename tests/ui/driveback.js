@@ -137,31 +137,84 @@ const H = 36e5;
   ok(!$('[data-act="back:open"][data-id="' + N.id + '"]'), L('once the office sets the hours, the lead can’t change the drive back'));
   delete N.clockFix;
 
-  /* ---------------- a mileage move: the miles so far plus the miles back ---------------- */
+  /* ---------------- a mileage move: the odometer at Start job and at bill-out, plus the miles back ---------------- */
   const O = setUp('Ortega family', { milesOut: '10', miles: '90', milesBack: '25', items: { boxm: 60 } }, 12, true);
-  Object.assign(O.phases, { unloadStart: O.startedAt + 5 * H, unloadEnd: O.startedAt + 6.5 * H });
-  O.signed.push({ id: 's-o', formId: 'f_deliv', title: 'Delivery receipt and release', name: 'Ortega', sig: '', ts: Date.now(), by: 'Marcus' });
   ok(O.quote.kind === 'mileage' && O.quote.miles === 125 && O.quote.shopTravel, L('a mileage move: 10 + 90 + 25 = 125 mi from the shop and back'));
+  O.status = 'booked'; delete O.startedAt; O.phases = {}; O.signed.push({ id: 's-o', formId: 'f_deliv', title: 'Delivery receipt and release', name: 'Ortega', sig: '', ts: Date.now(), by: 'Marcus' });
   T.render(); await sleep(10);
-  type('[data-mdrive="' + O.id + '"]', '101', true); await sleep(10);
-  ok(O.milesDriven === 101, L('the lead typed 101 mi from the odometer at the delivery'));
+  click('[data-act="cr:start"][data-id="' + O.id + '"]'); await sleep(10);
+  ok(/Odometer leaving the shop/.test($('#start').textContent) && !!$('#odoStartIn'), L('Start job on a mileage move asks for the odometer leaving the shop'));
+  type('#odoStartIn', '45210');
+  click('#start [data-act="go:set"][data-m="45"]'); await sleep(5);
+  ok($('#odoStartIn').value === '45210', L('the reading stays while the arrival time changes'));
+  click('#start [data-act="go:start"]'); await sleep(20);
+  ok(O.status === 'active' && O.odo && O.odo.start === 45210 && O.odo.by === 'Marcus' && O.log.some((l) => l.ev === 'Odometer leaving the shop: 45,210 (Marcus)'), L('started with 45,210 on the odometer, in the job’s history'));
+  const t0 = Date.now() - 12 * H;
+  Object.assign(O, { startedAt: t0, phases: { loadStart: t0 + 0.5 * H, loadEnd: t0 + 1.5 * H, unloadStart: t0 + 5 * H, unloadEnd: t0 + 6.5 * H } });
+  T.render(); await sleep(10);
+  ok($('[data-odo="' + O.id + '"]').value === '45210' && !$('[data-mdrive="' + O.id + '"]'), L('the job card shows the odometer leaving the shop (no miles-driven box)'));
+  type('[data-odo="' + O.id + '"]', '45200', true); await sleep(10);
+  ok(O.odo.start === 45200 && /Saved: 45,200 on the odometer\./.test(toastTxt()), L('the lead can fix it from the card'));
+  type('[data-odo="' + O.id + '"]', '45210', true); await sleep(10);
   click('[data-act="cr:finish"][data-id="' + O.id + '"]'); await sleep(20);
-  ok(/Miles back to the shop/.test(flow()) && $('#backSoFar').value === '101' && $('#backMi').value === '25', L('the step: 101 mi so far (from the odometer box) and the quote’s 25 mi back'));
-  ok(/Miles: 101 so far \+ 25 back ?126 mi/.test(bb()), L('the bill below counts 126 mi: ' + bb()));
-  type('#backMi', '24'); await sleep(5);
-  ok(/Miles: 101 so far \+ 24 back ?125 mi/.test(bb()) && w.document.activeElement !== null, L('24 mi back: 125 mi'));
-  type('#backSoFar', ''); await sleep(5);
+  ok(/Miles for the bill/.test(flow()) && $('#odoA').value === '45210' && $('#odoB').value === '' && $('#backMi').value === '25', L('bill-out: the start reading is in, the odometer now is asked for, and the quote’s 25 mi back to start with'));
+  ok(!$('#backOut') && !/min/.test($$('#flow .chip').map((c) => c.textContent).join('')), L('a mileage move adds miles, never time'));
+  ok(/This copy of Tally can’t look up the drive, so this is the quote’s 25 mi from the delivery to the shop\./.test(flow()) || /The quote’s 25 mi/.test(flow()), L('without a map service here, it says the miles back are the quote’s'));
+  ok(/Put in both odometer readings to see the bill\./.test(bb()), L('no bill until the odometer now is in'));
+  type('#odoB', '45200'); await sleep(5);
+  ok(/has to be more than when the truck left/.test(bb()), L('a reading below the start is caught'));
   click('[data-act="back:ok"]'); await sleep(10);
-  ok(/Put in the miles so far, from the odometer\./.test($('#flowErr').textContent) && !O.back, L('no miles so far: it asks for them'));
-  type('#backSoFar', '101'); type('#backMi', '30'); await sleep(5);
-  ok(/Miles: 101 so far \+ 30 back ?131 mi/.test(bb()), L('30 mi back: 131 mi'));
+  ok(/The odometer now has to be more than when the truck left the shop\./.test($('#flowErr').textContent) && !O.back, L('and not saved'));
+  type('#odoB', '45311'); await sleep(5);
+  ok(/Odometer ?45,210 → 45,311 ?101 mi/.test(bb()) && /Back to the shop \(the quote’s\) ?25 mi/.test(bb()) && /Miles on the bill ?126 mi/.test(bb()), L('45,311 now: 101 mi on the odometer + 25 back = 126 mi: ' + bb()));
+  type('#backMi', '30'); await sleep(5);
+  ok(/Back to the shop \(typed in\) ?30 mi/.test(bb()) && /Miles on the bill ?131 mi/.test(bb()), L('typing 30 mi back: 131 mi'));
   click('[data-act="back:ok"]'); await sleep(20);
-  ok(O.back && O.back.mi === 30 && O.back.soFar === 101 && O.milesDriven === 131 && O.log.some((l) => l.ev === 'Miles back to the shop: 30 mi, 131 mi in all (Marcus)'), L('in: 131 mi driven, 30 of them back to the shop'));
+  ok(O.back && O.back.mi === 30 && O.back.soFar === 101 && O.back.odoStart === 45210 && O.back.odoEnd === 45311 && O.back.src === 'typed' && O.milesDriven === 131, L('in: 101 mi on the odometer + 30 back = 131 mi'));
+  ok(O.log.some((l) => l.ev === 'Odometer 45,210 to 45,311: 101 mi, plus 30 mi back to the shop (typed in): 131 mi in all (Marcus)'), L('and the history says how: ' + O.log.slice(-2).map((l) => l.ev).join(' / ')));
   ok(/^By the clock: 2h 30m loading and unloading, billed 3 h, 131 mi driven incl\. 30 mi back to the shop \(quoted 3 h, 125 mi\)$/.test(clockLine(O).label || '') && clockLine(O).amt === 9, L('the bill line, +6 mi at $1.50: ' + clockLine(O).label));
   click('#flow [data-act="flow:close"]'); await sleep(10);
-  ok($('[data-mdrive="' + O.id + '"]').value === '131', L('the odometer box now shows the 131 mi billed'));
-  type('[data-mdrive="' + O.id + '"]', '130', true); await sleep(10);
-  ok(O.milesDriven === 130 && !/incl\./.test(clockLine(O).label || '') && /130 mi driven/.test(clockLine(O).label || ''), L('typing other miles later: 130 mi, and the line no longer claims a split'));
+  const oCard = $$('.crewcard').find((c) => c.querySelector('[data-act="back:open"][data-id="' + O.id + '"]'));
+  ok(oCard && /Miles: 101 on the odometer \+ 30 back to the shop typed in \(Marcus\) ?Change/.test(oCard.textContent) && !$('[data-odo="' + O.id + '"]'), L('Bill out shows the miles with Change; the odometer box is gone'));
+  click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);
+  click('[data-act="job:open"][data-id="' + O.id + '"]'); await sleep(15);
+  ok(/131 mi driven, from the crew \(odometer 45,210 to 45,311, 101 mi, plus 30 mi back to the shop typed in; Marcus at bill-out\)\./.test($('#sheet').textContent), L('the job sheet spells it out'));
+  click('[data-act="sheet:close"]'); await sleep(5);
+  await more('crew');
+  click('[data-act="back:open"][data-id="' + O.id + '"]'); await sleep(15);
+  ok($('#odoA').value === '45210' && $('#odoB').value === '45311' && $('#backMi').value === '30', L('Change opens with the readings'));
+  click('#flow [data-act="flow:close"]'); await sleep(5);
+
+  // no reading from Start job: the miles so far instead
+  const C2 = setUp('Chloe Martin', { milesOut: '10', miles: '90', milesBack: '25', items: { boxm: 60 } }, 12, true);
+  Object.assign(C2.phases, { unloadStart: C2.startedAt + 5 * H, unloadEnd: C2.startedAt + 6.5 * H });
+  C2.signed.push({ id: 's-c2', formId: 'f_deliv', title: 'Delivery receipt and release', name: 'Chloe', sig: '', ts: Date.now(), by: 'Marcus' });
+  T.render(); await sleep(10);
+  click('[data-act="cr:finish"][data-id="' + C2.id + '"]'); await sleep(20);
+  ok($('#odoA').value === '' && /No reading from when the truck left\?/.test(flow()), L('no start reading: it offers to type the miles so far instead'));
+  click('[data-act="back:ok"]'); await sleep(10);
+  ok(/Put in the odometer from when the truck left the shop, or type the miles so far instead\./.test($('#flowErr').textContent), L('Add without it says what to do'));
+  click('[data-act="back:mode"][data-m="sofar"]'); await sleep(10);
+  ok($('#backSoFar').value === '100' && /Miles so far \(typed\) ?100 mi/.test(bb()) && /Miles on the bill ?125 mi/.test(bb()), L('miles so far, starting at the quote’s 100 mi to the delivery: 125 mi'));
+  click('[data-act="back:ok"]'); await sleep(20);
+  ok(C2.back && C2.back.soFar === 100 && C2.back.odoStart === null && C2.back.src === 'quote' && C2.milesDriven === 125 && C2.log.some((l) => l.ev === 'Miles so far: 100, plus 25 mi back to the shop (the quote’s): 125 mi in all (Marcus)'), L('in: 100 typed + the quote’s 25 back'));
+  click('#flow [data-act="flow:close"]'); await sleep(5);
+
+  // an older job whose lead typed the miles in the old box: the step starts from them
+  const D2 = setUp('Devon Reyes', { milesOut: '10', miles: '90', milesBack: '25', items: { boxm: 60 } }, 12, true);
+  Object.assign(D2.phases, { unloadStart: D2.startedAt + 5 * H, unloadEnd: D2.startedAt + 6.5 * H }); D2.milesDriven = 88;
+  D2.signed.push({ id: 's-d2', formId: 'f_deliv', title: 'Delivery receipt and release', name: 'Devon', sig: '', ts: Date.now(), by: 'Marcus' });
+  T.render(); await sleep(10);
+  click('[data-act="cr:finish"][data-id="' + D2.id + '"]'); await sleep(20);
+  ok($('#backSoFar') && $('#backSoFar').value === '88', L('miles typed before this change: the step starts from them'));
+  click('#flow [data-act="flow:close"]'); await sleep(5);
+
+  // a local move's Start job has no odometer
+  const G2 = setUp('Grace Pham', { milesOut: '5', miles: '6', milesBack: '5', items: { boxm: 60 } }, 1, false);
+  G2.status = 'booked'; delete G2.startedAt; G2.phases = {}; T.render(); await sleep(10);
+  click('[data-act="cr:start"][data-id="' + G2.id + '"]'); await sleep(10);
+  ok(G2.quote.kind === 'local' && !$('#odoStartIn'), L('a local move’s Start job asks for no odometer'));
+  click('#start [data-act="go:close"]'); await sleep(5);
 
   /* ---------------- when the bill doesn't count the drive from the shop, nothing changes ---------------- */
   S.shopAddress = '';

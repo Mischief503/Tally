@@ -882,7 +882,8 @@ window.tallyPeople={
   removeDoc:function(path){return sb.storage.from(DOCS).remove([path]).then(function(r){if(r.error)throw r.error})},
   uid:function(){return me.id}
 };
-window.tallyMaps={distance:function(from,to){return commsPost({action:'distance',from:from,to:to})}};
+window.tallyMaps={distance:function(from,to){return commsPost({action:'distance',from:from,to:to})},
+  toShop:function(lat,lng){return commsPost({action:'shop_distance',lat:lat,lng:lng})}};   // bill-out: from the truck back to the shop
 /* ---------- card payments (Stripe, through the same Edge Function) ---------- */
 window.tallyPay={
   config:function(refresh){return commsPost(refresh?{action:'pay_config',refresh:true}:{action:'pay_config'})},
@@ -1210,7 +1211,9 @@ function clockLabel(j,c){
 }
 // a mileage move's miles back to the shop, from bill-out, while the miles driven are still the ones
 // worked out there (so far + back); 0 once someone types other miles
-function backMiles(j,c){var b=j.back;if(!b||b.mi==null||b.soFar==null||!c||c.setMi||!c.driven)return 0;return Math.abs(num(j.milesDriven)-(num(b.soFar)+num(b.mi)))<0.05?num(b.mi):0}
+function backSplit(j,c){var b=j.back;return !!(b&&b.mi!=null&&b.soFar!=null&&c&&!c.setMi&&c.driven&&Math.abs(num(j.milesDriven)-(num(b.soFar)+num(b.mi)))<0.05)}
+function backMiles(j,c){return backSplit(j,c)?num(j.back.mi):0}
+var BACK_HOW={gps:'by GPS',quote:'from the quote',typed:'typed in'};
 // what the bill line was worked out from. Stored with it (j.clockSig), so a phone that gets the job
 // from the database can tell when two phones changed it at once, and work the line out again.
 var CLOCK_V='c1';
@@ -1263,7 +1266,7 @@ function clockHtml(j){
       :'On the clock '+fmtDur(pt.span)+(pt.backSet?(pt.back?', plus '+fmtDur(pt.back)+' back to the shop':', no drive back added')+' (from '+esc(j.back.by||'the crew')+' at bill-out)':pt.back?', plus about '+fmtDur(pt.back)+' back to the shop':'')+': billed '+fmtHrs(c.billed)+'.';
     var diff=Math.abs(c.adj)>=0.01?' ('+(c.adj>0?'+':'\u2212')+money(Math.abs(c.adj))+' on the quote)':', the same as the quote';
     var bill=money(c.total)+(c.capped?', held to the not-to-exceed price':'')+diff;
-    body=how+(mileage?' '+fmtMi(c.miles)+' mi '+(c.setMi?'set by the office':c.driven?'driven, from the crew'+(backMiles(j,c)>0?' ('+fmtMi(j.back.soFar)+' so far and '+fmtMi(j.back.mi)+' back to the shop, put in by '+esc(j.back.by||'the crew')+' at bill-out)':''):'from the quote')+'.':'')+
+    body=how+(mileage?' '+fmtMi(c.miles)+' mi '+(c.setMi?'set by the office':c.driven?'driven, from the crew'+(backSplit(j,c)?' ('+(j.back.odoStart!=null&&j.back.odoEnd!=null?'odometer '+fmtMi(j.back.odoStart)+' to '+fmtMi(j.back.odoEnd)+', '+fmtMi(j.back.soFar)+' mi':fmtMi(j.back.soFar)+' mi so far')+', plus '+fmtMi(j.back.mi)+' mi back to the shop '+(BACK_HOW[j.back.src]||'typed in')+'; '+esc(j.back.by||'the crew')+' at bill-out)':''):'from the quote')+'.':'')+
       (off?' Billed at the quote, set by the office. By the clock it would be '+bill+'.'
        :applied?' Bill '+bill+'.'
        :fin?' This job was closed at its quoted price. By the clock it would be '+bill+'.'
@@ -1860,7 +1863,7 @@ function crewKit(me){
   function billPanel(j){
     var bal=balOf(j),pend=formsPending(j),req=formsRequired();
     var extras=(j.extras||[]).map(function(e){return '<tr><td>'+esc(e.label)+'</td><td>'+(e.amt<0?'−':'')+money(Math.abs(e.amt))+'</td></tr>'}).join('');
-    var bq=j.quote||{},bk=backApplies(j)?'<p class="hint" style="margin:8px 0 0">'+(j.back?(bq.kind==='mileage'?'Miles back to the shop: '+fmtMi(num(j.back.mi))+' mi':'Drive back to the shop: '+(num(j.back.mins)>0?fmtDur(num(j.back.mins)*60000):'none'))+' ('+esc(j.back.by||'')+') <button class="btn sm ghost" data-act="back:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Change</button>'
+    var bq=j.quote||{},bk=backApplies(j)?'<p class="hint" style="margin:8px 0 0">'+(j.back?(bq.kind==='mileage'?'Miles: '+fmtMi(num(j.back.soFar))+(j.back.odoEnd!=null?' on the odometer':' so far')+' + '+fmtMi(num(j.back.mi))+' back to the shop '+(BACK_HOW[j.back.src]||'typed in'):'Drive back to the shop: '+(num(j.back.mins)>0?fmtDur(num(j.back.mins)*60000):'none'))+' ('+esc(j.back.by||'')+') <button class="btn sm ghost" data-act="back:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Change</button>'
       :(bq.kind==='mileage'?'The miles back to the shop go':'The drive back to the shop goes')+' on the bill when you bill out.')+'</p>':'';
     return '<div><table class="lines"><tr><td>Quote</td><td>'+money(j.quote.total)+'</td></tr>'+matRows(j)+extras+'<tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+bk+
       '<div class="grid2 stack" style="margin-top:8px">'+fld('Add a charge or credit','<input id="ce_l_'+j.id+'" placeholder="Stairs, parking, damage credit">','span2')+fld('Amount','<input id="ce_a_'+j.id+'" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00">')+fld('Type','<select id="ce_t_'+j.id+'"><option value="charge">Charge</option><option value="credit">Credit</option></select>')+'</div><button class="btn" style="margin-top:6px" data-act="cr:charge" data-id="'+j.id+'">Add to bill</button>'+
@@ -1895,14 +1898,18 @@ function crewKit(me){
       (['done','paid'].indexOf(j.status)>=0?'':'<div style="margin-top:12px"><small>Send an update to the office and crew</small><div class="scrollx" style="margin-top:6px">'+UPDATES.map(function(u,i){return '<button class="chip" data-act="cr:update" data-id="'+j.id+'" data-u="'+i+'" data-who="'+esc(me)+'">'+u+'</button>'}).join('')+'</div></div>');
     var nItems=(j.materials||[]).length+(j.costs||[]).length;
     var billIn=asLead&&(j.status==='active'||j.status==='done');
-    var jq=j.quote||{},mdOn=asLead&&jq.kind==='mileage'&&(j.status==='active'||j.status==='done'),mdv=j.milesDriven!=null&&j.milesDriven!==''?String(j.milesDriven):'';
+    var jq=j.quote||{},mdOn=asLead&&jq.kind==='mileage'&&!jq.shopTravel&&(j.status==='active'||j.status==='done'),mdv=j.milesDriven!=null&&j.milesDriven!==''?String(j.milesDriven):'';
+    // a mileage move that counts the drive from the shop: the odometer when the truck left; the rest comes at bill-out
+    var odoOn=asLead&&jq.kind==='mileage'&&jq.shopTravel&&j.status==='active'&&!j.back,odv=j.odo&&j.odo.start!=null?String(j.odo.start):'';
+    var odoBox=odoOn?'<div style="margin-top:10px">'+fld('Odometer leaving the shop','<input type="number" inputmode="decimal" min="0" step="0.1" data-odo="'+j.id+'" value="'+esc(odv)+'" placeholder="The reading when the truck left">')+
+      '<p class="hint" style="margin:4px 0 0">Mileage move: every mile from the shop and back is billed. At bill-out you put in the odometer again, and the miles from there back to the shop are added.</p></div>':'';
     var mdrive=mdOn?'<div style="margin-top:10px">'+fld('Miles driven on this move','<input type="number" inputmode="decimal" min="0" step="0.1" data-mdrive="'+j.id+'" value="'+esc(mdv)+'" placeholder="Quoted '+fmtMi(jq.miles)+' mi">')+
       '<p class="hint" style="margin:4px 0 0">Mileage move: the bill is the miles driven'+(jq.shopTravel?' from the shop and back':'')+' plus loading and unloading time. Leave it blank to bill the quoted '+fmtMi(jq.miles)+' mi.</p></div>':'';
     return '<section class="card crewcard"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+'</h3><div class="cc-sub">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</div><div class="cc-sub">Crew: '+(crewLine||'none')+'</div>'+(j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+'</div>'+pill(j.status)+'</div>'+
       '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+
       '<div class="cc-actions">'+main+(j.d.phone?'<button class="btn" data-act="call:cust" data-id="'+j.id+'">Call</button>':'')+'</div>'+
       (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+(asLead&&j.status==='active'&&phaseNext(j)>0?'<button class="btn sm ghost" data-act="cr:phaseundo" data-id="'+j.id+'" data-who="'+esc(me)+'">Undo “'+PHASES[phaseNext(j)-1][1]+'”</button>':'')+'</div>':'')+
-      mdrive+
+      mdrive+odoBox+
       acc('notes','Notes',nmeta,notesBody,!!j.d.notes)+
       acc('tally','Load tally','Loaded '+ld+'/'+tl+' · Delivered '+dl+'/'+tl,rows||'<div class="hint">No items on this job.</div>',false)+
       acc('mats','Materials and costs',nItems?nItems+(nItems===1?' item':' items'):'',matSection(j,'c',me,asLead),false)+
@@ -2822,7 +2829,7 @@ function jobDoc(j){
   var dd=Object.assign({},j.d);
   dd.items=Object.keys(j.d.items||{}).map(function(k){return {id:k,q:j.d.items[k]}});
   var o={id:j.id,status:j.status,createdAt:j.createdAt,d:dd,quote:j.quote,items:j.items||[],assign:j.assign||{truckId:'',crew:[]},tally:j.tally||{}};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
   o.payments=toMap(j.payments,function(x){return x.id});
   o.signed=toMap(j.signed,function(x){return x.id});
   o.extras=toMap(j.extras,function(x){return x.id});
@@ -2845,7 +2852,7 @@ function docToJob(v){
     photos:mapArr(v.photos,'ts').map(function(p){return {id:p.id,kind:p.kind,ts:p.ts,data:sync.photoCache[p.id]}}),
     materials:mapArr(v.materials,'ts'),costs:mapArr(v.costs,'ts'),confirm:(v.confirm&&typeof v.confirm==='object')?v.confirm:{},
     log:mapArr(v.log,'ts').slice(-60)};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
   return j;
 }
 function jobDiff(prev,cur){
@@ -4276,6 +4283,8 @@ function renderStart(){
   el.innerHTML='<div class="scrim" data-act="go:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Start the job">'+
     '<div class="row between"><h2>Start '+esc(j.d.name)+'</h2><button class="btn sm" data-act="go:close">Cancel</button></div>'+
     '<p class="hint" style="margin:2px 0 6px">Pickup: '+esc(j.d.from||'not set')+'</p>'+
+    (j.quote&&j.quote.kind==='mileage'&&j.quote.shopTravel?fld('Odometer leaving the shop','<input id="odoStartIn" type="number" inputmode="decimal" min="0" step="0.1" placeholder="The reading on the truck" value="'+esc(s.odo!=null?String(s.odo):(j.odo&&j.odo.start!=null?String(j.odo.start):''))+'">')+
+      '<p class="hint" style="margin:4px 0 8px">Mileage move: every mile from the shop and back is billed. You put in the odometer again at bill-out.</p>':'')+
     (has?'<label class="check"><input type="checkbox" id="etaOn"'+(on?' checked':'')+'> Text '+esc(j.d.name)+' how long until you arrive</label>':'<p class="hint">No phone number on this job, so no arrival text.</p>')+
     box+go+'</div>';
   el.hidden=false;syncLock();
@@ -4746,7 +4755,9 @@ function startFlow(id,who,finishing,opts){
   opts=opts||{};var j=byId(id);
   ui.flow={jobId:id,who:who||'',method:'',finishing:!!finishing};
   if(j&&(opts.back?backApplies(j):!opts.noBack&&who!=='Office'&&needsBack(j))){backInit(j);ui.flow.finishAfter=!!opts.finishAfter}
-  renderFlow();payLoad(!!(pay.cfg&&pay.cfg.reason==='down'))
+  renderFlow();
+  if(j&&ui.flow&&ui.flow.step==='back'&&j.quote.kind==='mileage'&&!j.back)backGps(false);   // the miles back, from where the truck is
+  payLoad(!!(pay.cfg&&pay.cfg.reason==='down'))
 }
 function closeFlow(){var fl=ui.flow,fj=fl&&byId(fl.jobId);if(fl&&fl.step==='back'&&fl.finishAfter&&fj&&fj.status==='active')toast('The job stays open until you bill out.');else if(fl&&fl.finishing&&fj&&fj.status==='active'&&formsPending(fj).length)toast('The job stays open until the customer signs.');ui.flow=null;cardDrop();renderFlow();renderTab();renderSheet();if(fj)commsFormsCheck(fj)}
 
@@ -4766,37 +4777,69 @@ function needsBack(j){var p=j.phases||{};return !j.back&&backApplies(j)&&(j.stat
 function backInit(j){
   var q=j.quote||{},b=j.back||{};ui.flow.step='back';
   if(q.kind==='mileage'){
-    var qb=Math.round(num(j.d.milesBack)*10)/10,had=j.milesDriven!=null&&j.milesDriven!=='';
-    ui.flow.back={mi:b.mi!=null?num(b.mi):qb,soFar:b.soFar!=null?num(b.soFar):had?num(j.milesDriven):Math.max(0,Math.round((num(q.miles)-qb)*10)/10)};
+    // the odometer when the truck left the shop (from Start job) and now, plus the miles from here back
+    // to the shop (looked up from the phone's location; the quote's to start with). No start reading:
+    // the miles so far, typed.
+    var qb=Math.round(num(j.d.milesBack)*10)/10,odo=j.odo&&j.odo.start!=null?num(j.odo.start):'';
+    var typed=!j.back&&odo===''&&j.milesDriven!=null&&j.milesDriven!=='';
+    var mode=j.back?(b.odoEnd!=null?'odo':'sofar'):typed?'sofar':'odo';
+    ui.flow.back={mode:mode,odoStart:b.odoStart!=null?num(b.odoStart):odo,odoEnd:b.odoEnd!=null?num(b.odoEnd):'',
+      soFar:b.soFar!=null?num(b.soFar):typed?num(j.milesDriven):Math.max(0,Math.round((num(q.miles)-qb)*10)/10),
+      mi:b.mi!=null?num(b.mi):qb,miSrc:b.mi!=null?(b.src||'typed'):'quote',gps:{st:'idle'}};
   }else ui.flow.back={mins:b.mins!=null?num(b.mins):Math.round(num(q.backH)*12)*5};
+}
+var BACK_SRC={gps:'from the phone’s location',quote:'the quote’s',typed:'typed in'};
+// a mileage move's miles so far on the step: the two odometer readings, or what was typed; null if not in yet
+function backSoFar(fb){
+  if(fb.mode==='odo'){var a=num(fb.odoStart),b=num(fb.odoEnd);return a>0&&b>a?Math.round((b-a)*10)/10:null}
+  return num(fb.soFar)>0?Math.round(num(fb.soFar)*10)/10:null;
 }
 // the bill with the numbers on the drive-back step, without touching the job
 function backTry(j,fb){
   var q=j.quote||{},t={quote:q,phases:j.phases,startedAt:j.startedAt,finishedAt:j.finishedAt,clockFix:j.clockFix,milesDriven:j.milesDriven};
-  if(q.kind==='mileage'){t.back={mins:null,mi:num(fb.mi),soFar:num(fb.soFar)};t.milesDriven=Math.round((num(fb.soFar)+num(fb.mi))*10)/10}
+  if(q.kind==='mileage'){var so=backSoFar(fb);if(so==null)return null;t.back={mins:null,mi:num(fb.mi),soFar:so};t.milesDriven=Math.round((so+num(fb.mi))*10)/10}
   else t.back={mins:Math.max(0,num(fb.mins)),mi:null,soFar:null};
   var c=clockBill(t);if(!c||c.missing)return null;
   var other=(j.extras||[]).filter(function(e){return e.id!=='clock'}).reduce(function(a,e){return a+e.amt},0);
   return {c:c,total:round2(q.total+other+(Math.abs(c.adj)>=0.01?c.adj:0)+matTotal(j))};
 }
 function backBill(j,fb){
-  var q=j.quote||{},r=backTry(j,fb),p=j.phases||{};if(!r)return '';
+  var q=j.quote||{},r=backTry(j,fb),p=j.phases||{};
+  if(!r)return q.kind==='mileage'?'<p class="hint" style="margin:0">'+(fb.mode==='odo'?(num(fb.odoStart)>0&&num(fb.odoEnd)>0?'The odometer now has to be more than when the truck left the shop.':'Put in both odometer readings to see the bill.'):'Put in the miles so far to see the bill.')+'</p>':'';
   var c=r.c,pt=c.parts||{},rows;
-  if(q.kind==='mileage')rows='<tr><td>Loading and unloading</td><td>'+fmtDur(c.worked*36e5)+'</td></tr><tr><td>Billed hours</td><td>'+fmtHrs(c.billed)+'</td></tr>'+
-    '<tr><td>Miles: '+fmtMi(num(fb.soFar))+' so far + '+fmtMi(num(fb.mi))+' back</td><td>'+fmtMi(c.miles)+' mi</td></tr>';
+  if(q.kind==='mileage'){var so=backSoFar(fb);
+    rows=(fb.mode==='odo'?'<tr><td>Odometer<br><small>'+fmtMi(num(fb.odoStart))+' → '+fmtMi(num(fb.odoEnd))+'</small></td><td>'+fmtMi(so)+' mi</td></tr>':'<tr><td>Miles so far <small>(typed)</small></td><td>'+fmtMi(so)+' mi</td></tr>')+
+      '<tr><td>Back to the shop <small>('+(BACK_SRC[fb.miSrc]||'typed in')+')</small></td><td>'+fmtMi(num(fb.mi))+' mi</td></tr>'+
+      '<tr><td>Miles on the bill</td><td>'+fmtMi(c.miles)+' mi</td></tr>'+
+      '<tr><td>Loading and unloading</td><td>'+fmtDur(c.worked*36e5)+'</td></tr><tr><td>Billed hours</td><td>'+fmtHrs(c.billed)+'</td></tr>'}
   else rows='<tr><td>On the job<br><small>'+(j.startedAt?'Left the shop '+fmtClock(j.startedAt)+' · ':'')+'done unloading '+fmtClock(p.unloadEnd||j.finishedAt)+'</small></td><td>'+fmtDur(pt.span)+'</td></tr>'+
     '<tr><td>Drive back to the shop</td><td>'+(pt.back>0?fmtDur(pt.back):'None')+'</td></tr><tr><td>Billed hours'+(c.billed>c.worked+0.25-1e-6?' <small>(the '+fmtHrs(num(q.minHours))+' minimum)</small>':'')+'</td><td>'+fmtHrs(c.billed)+'</td></tr>';
   var diff=round2(r.total-totalOf(j));
   return '<table class="lines">'+rows+'<tr class="total"><td>Bill</td><td>'+money(r.total)+'</td></tr></table>'+
     '<p class="hint">'+(c.capped?'Held to the not-to-exceed price of '+money(q.nte)+'. ':'')+'The quote was '+money(q.total)+'.'+(Math.abs(diff)>=0.01&&(j.clockAt||j.status==='done')?' This changes the bill by '+(diff>0?'+':'−')+money(Math.abs(diff))+'.':'')+'</p>';
 }
+// where the miles back came from, and what the lookup is doing
+function backSrcLine(j,fb){
+  var g=fb.gps||{},qb=fmtMi(num(j.d.milesBack)),again=canFindShop()?' <button class="btn sm ghost" data-act="back:gps">'+(g.st==='ok'||g.st==='failed'||g.st==='denied'||g.st==='noloc'?'Look up again':'Look up from here')+'</button>':'';
+  if(g.st==='finding')return 'Finding where the truck is…';
+  if(g.st==='routing')return 'Looking up the drive from here to the shop…';
+  if(g.st==='ok')return (fb.miSrc==='gps'?'From here to the shop: '+fmtMi(g.miles)+' mi':'You typed this. From here the map says '+fmtMi(g.miles)+' mi')+(g.src==='osm'?' (OpenStreetMap)':g.src==='google'?' (Google Maps)':'')+'.'+again;
+  var fall=fb.miSrc==='quote'?' This is the quote’s '+qb+' mi from the delivery to the shop; change it if the drive is different.':'';
+  if(g.st==='denied')return 'Location is blocked on this phone.'+fall+again;
+  if(g.st==='noloc')return 'The phone couldn’t tell where it is.'+fall+again;
+  if(g.st==='failed')return esc(g.msg||'The drive back couldn’t be looked up.')+fall+again;
+  if(!canFindShop()&&fb.miSrc==='quote')return 'This copy of Tally can’t look up the drive, so this is the quote’s '+qb+' mi from the delivery to the shop. Change it if the drive is different.';
+  return (fb.miSrc==='quote'?'The quote’s '+qb+' mi from the delivery to the shop.':fb.miSrc==='gps'?'From the phone’s location.':'Typed in.')+again;
+}
 function backStep(j,f){
   var q=j.quote||{},fb=f.back,nm=esc(j.d.name||'the customer');
+  var inp=function(id,v,ph){return '<input id="'+id+'" type="number" inputmode="decimal" min="0" step="0.1" value="'+esc(String(v))+'"'+(ph?' placeholder="'+ph+'"':'')+'>'};
   if(q.kind==='mileage'){
-    return '<h2>Miles back to the shop</h2><p class="hint">The bill counts the miles from the shop and back, and the truck isn’t back yet. Put in the miles back now, so the bill is right before '+nm+' signs and pays.</p>'+
-      '<div class="grid2 stack" style="margin-top:10px">'+fld('Miles so far','<input id="backSoFar" type="number" inputmode="decimal" min="0" step="0.1" value="'+esc(String(fb.soFar))+'">')+
-      fld('Miles back to the shop','<input id="backMi" type="number" inputmode="decimal" min="0" step="0.1" value="'+esc(String(fb.mi))+'">')+'</div>'+
-      '<p class="hint">Miles so far: the odometer since the truck left the shop. '+(num(j.d.milesBack)>0?'The quote has '+fmtMi(num(j.d.milesBack))+' mi from the delivery to the shop. ':'')+'Already back at the shop? Put 0 for the miles back.</p>'+
+    return '<h2>Miles for the bill</h2><p class="hint">A mileage move bills every mile from the shop and back. Put in the odometer now; the miles from here back to the shop are added, so the bill is right before '+nm+' signs and pays.</p>'+
+      (fb.mode==='odo'?'<div class="grid2 stack" style="margin-top:10px">'+fld('Odometer leaving the shop',inp('odoA',fb.odoStart,'From Start job'))+fld('Odometer now',inp('odoB',fb.odoEnd))+'</div>'+
+          (j.odo&&j.odo.start!=null&&num(fb.odoStart)===num(j.odo.start)?'<p class="hint">Leaving the shop: put in'+(j.odo.by?' by '+esc(j.odo.by):'')+(j.odo.ts?' at '+fmtClock(j.odo.ts):'')+'.</p>':'<p class="hint">No reading from when the truck left? <button class="btn sm ghost" data-act="back:mode" data-m="sofar">Type the miles so far instead</button></p>')
+        :'<div style="margin-top:10px">'+fld('Miles so far (since the truck left the shop)',inp('backSoFar',fb.soFar))+'</div><p class="hint">The quote has '+fmtMi(Math.max(0,num(q.miles)-num(j.d.milesBack)))+' mi to the delivery. <button class="btn sm ghost" data-act="back:mode" data-m="odo">Use the odometer instead</button></p>')+
+      '<div style="margin-top:10px">'+fld('Miles back to the shop',inp('backMi',fb.mi))+'</div><p class="hint" id="backSrc">'+backSrcLine(j,fb)+'</p>'+
       '<div class="card" id="backBill" style="margin-top:10px">'+backBill(j,fb)+'</div>'+
       '<button class="btn primary bigbtn" data-act="back:ok">Add to the bill and continue</button><p class="hint" id="flowErr" role="alert"></p>';
   }
@@ -4809,21 +4852,73 @@ function backStep(j,f){
     '<div class="card" id="backBill" style="margin-top:10px">'+backBill(j,fb)+'</div>'+
     '<button class="btn primary bigbtn" data-act="back:ok">Add to the bill and continue</button><p class="hint" id="flowErr" role="alert"></p>';
 }
-// the step's numbers changed: redraw the bill under them, leaving the boxes alone
-function backRedraw(){var f=ui.flow,j=f&&byId(f.jobId),el=$('#backBill');if(!j||!el)return;el.innerHTML=backBill(j,f.back);var o=$('#backOut');if(o)o.innerHTML=num(f.back.mins)+'<small>min</small>'}
+// the step's numbers changed: redraw the bill under them (and where the miles back came from), leaving the boxes alone
+function backRedraw(){
+  var f=ui.flow,j=f&&byId(f.jobId),el=$('#backBill');if(!j||!el||!f.back)return;
+  el.innerHTML=backBill(j,f.back);
+  var o=$('#backOut');if(o)o.innerHTML=num(f.back.mins)+'<small>min</small>';
+  var sl=$('#backSrc');if(sl)sl.innerHTML=backSrcLine(j,f.back);
+  var mi=$('#backMi');if(mi&&document.activeElement!==mi&&String(mi.value)!==String(f.back.mi))mi.value=String(f.back.mi);
+}
+
+/* ---------- the miles from where the truck is back to the shop ----------
+   The phone's location, then the drive from there to the shop in Setup: Google through the Edge
+   Function, or OpenStreetMap when Google isn't set up there. The claude.ai artifact can reach
+   neither, so it keeps the quote's miles from the delivery to the shop. */
+function canFindShop(){return !!String(state.settings.shopAddress||'').trim()&&(!!(window.tallyMaps&&window.tallyMaps.toShop)||canFree())}
+function hereNow(){
+  return new Promise(function(res,rej){
+    var g=navigator.geolocation;if(!(g&&g.getCurrentPosition)){rej({code:'none'});return}
+    try{g.getCurrentPosition(function(p){res({lat:+p.coords.latitude,lng:+p.coords.longitude})},function(e){rej({code:e&&e.code})},{enableHighAccuracy:true,timeout:20000,maximumAge:60000})}catch(e){rej({code:'none'})}
+  });
+}
+function osrmToShop(lat,lng,shop){
+  return geocode(shop).then(function(s){return osmJson('https://router.project-osrm.org/route/v1/driving/'+lng+','+lat+';'+s.lon+','+s.lat+'?overview=false')},function(){throw {where:'shop'}}).then(function(j){
+    var rt=j&&j.code==='Ok'&&j.routes&&j.routes[0];
+    if(!rt)return {ok:false,message:'No driving route from here to the shop.'};
+    return {ok:true,src:'osm',miles:Math.round(rt.distance/1609.344*10)/10,minutes:Math.round(rt.duration/60)};
+  }).catch(function(e){return {ok:false,message:e&&e.where?'Couldn’t find the shop address on the map.':'The map service didn’t answer.'}});
+}
+function milesToShop(lat,lng){
+  var shop=String(state.settings.shopAddress||'').trim();
+  if(!shop)return Promise.resolve({ok:false,message:'The shop address isn’t in Setup yet.'});
+  var g=window.tallyMaps&&window.tallyMaps.toShop?window.tallyMaps.toShop(lat,lng).then(function(r){return r||{ok:false}},function(){return {ok:false}}):Promise.resolve({ok:false,setup:true});
+  return g.then(function(r){if(r&&r.ok)return r;return canFree()?osrmToShop(lat,lng,shop):(r&&r.message?r:{ok:false,message:'The drive back couldn’t be looked up.'})});
+}
+// look up the miles back for the step that is open; a number the lead typed stays unless they ask again
+function backGps(force){
+  var f=ui.flow,fb=f&&f.back,jid=f&&f.jobId;if(!fb||!canFindShop())return;
+  var tok=uid(),still=function(){return ui.flow&&ui.flow.jobId===jid&&ui.flow.back===fb&&fb.gps&&fb.gps.tok===tok};
+  fb.gps={st:'finding',tok:tok};backRedraw();
+  hereNow().then(function(pos){if(!still())return null;fb.gps={st:'routing',tok:tok};backRedraw();return milesToShop(pos.lat,pos.lng)},
+    function(e){if(still())fb.gps={st:e&&e.code===1?'denied':'noloc',tok:tok};return null})
+  .then(function(r){
+    if(!still()||!r)return;
+    if(r.ok){fb.gps={st:'ok',tok:tok,miles:r.miles,src:r.src};if(force||fb.miSrc!=='typed'){fb.mi=r.miles;fb.miSrc='gps'}}
+    else fb.gps={st:'failed',tok:tok,msg:r.message||''};
+  }).then(function(){if(still())backRedraw()});
+}
 function backSave(){
   var f=ui.flow,j=f&&byId(f.jobId);if(!j||f.step!=='back')return;
   var q=j.quote||{},fb=f.back,who=f.who||myName()||'the crew',was=j.back;
   if(q.kind==='mileage'){
-    var so=num(fb.soFar),bm=num(fb.mi);
-    if(!(so>0)){flowFail('Put in the miles so far, from the odometer.');return}
-    if(bm<0){flowFail('The miles back can’t be less than 0.');return}
-    so=Math.round(so*10)/10;bm=Math.round(bm*10)/10;
-    j.back={mins:null,mi:bm,soFar:so,by:who,ts:Date.now()};j.milesDriven=Math.round((so+bm)*10)/10;
-    logEv(j,'Miles back to the shop: '+fmtMi(bm)+' mi, '+fmtMi(so+bm)+' mi in all ('+who+')');
+    var a=num(fb.odoStart),b=num(fb.odoEnd),bm=num(fb.mi),so;
+    if(fb.mode==='odo'){
+      if(!(a>0)){flowFail('Put in the odometer from when the truck left the shop, or type the miles so far instead.');return}
+      if(!(b>0)){flowFail('Put in the odometer now.');return}
+      if(b<=a){flowFail('The odometer now has to be more than when the truck left the shop.');return}
+      a=Math.round(a*10)/10;b=Math.round(b*10)/10;so=Math.round((b-a)*10)/10;
+    }else{so=num(fb.soFar);if(!(so>0)){flowFail('Put in the miles so far.');return}so=Math.round(so*10)/10}
+    if(String(fb.mi).trim()===''||bm<0){flowFail('Put in the miles back to the shop (0 if the truck is already there).');return}
+    bm=Math.round(bm*10)/10;
+    var src=fb.miSrc||'typed',odo=fb.mode==='odo';
+    j.back={mins:null,mi:bm,soFar:so,odoStart:odo?a:null,odoEnd:odo?b:null,src:src,by:who,ts:Date.now()};
+    if(odo&&!(j.odo&&num(j.odo.start)===a))j.odo={start:a,by:who,ts:Date.now()};
+    j.milesDriven=Math.round((so+bm)*10)/10;
+    logEv(j,(odo?'Odometer '+fmtMi(a)+' to '+fmtMi(b)+': '+fmtMi(so)+' mi':'Miles so far: '+fmtMi(so))+', plus '+fmtMi(bm)+' mi back to the shop ('+(BACK_SRC[src]||src)+'): '+fmtMi(so+bm)+' mi in all ('+who+')');
   }else{
     var m=Math.max(0,Math.round(num(fb.mins)));
-    j.back={mins:m,mi:null,soFar:null,by:who,ts:Date.now()};
+    j.back={mins:m,mi:null,soFar:null,odoStart:null,odoEnd:null,src:null,by:who,ts:Date.now()};
     logEv(j,m>0?'Drive back to the shop: '+fmtDur(m*60000)+' ('+who+')':'No drive back to the shop ('+who+')');
   }
   f.step='';
@@ -5032,6 +5127,7 @@ document.addEventListener('click',function(e){
     case 'go:start':{var gs=ui.start,sj=gs&&byId(gs.jobId);if(!sj)break;
       var send=!!(sj.d.phone&&gs.text)&&!sj.test,viaCo=send&&commsReady(),isLink=t.tagName==='A';
       state.ui.etaMins=gs.mins;
+      if(sj.quote&&sj.quote.kind==='mileage'&&sj.quote.shopTravel&&num(gs.odo)>0){sj.odo={start:Math.round(num(gs.odo)*10)/10,by:gs.who||myName()||'',ts:Date.now()};logEv(sj,'Odometer leaving the shop: '+fmtMi(sj.odo.start)+(gs.who?' ('+gs.who+')':''))}
       if(sj.status==='booked'||sj.status==='quoted')setStatus(sj,'active');
       if(send)logEv(sj,viaCo?'Arrival text sent: about '+gs.mins+' min':'Arrival text opened on '+(gs.who||'the')+(gs.who?'’s':'')+' phone: about '+gs.mins+' min');
       save();
@@ -5146,6 +5242,8 @@ document.addEventListener('click',function(e){
     case 'back:mins':if(ui.flow&&ui.flow.back){ui.flow.back.mins=Math.min(600,Math.max(0,num(ui.flow.back.mins)+num(t.dataset.d)));$$('[data-act="back:set"]').forEach(function(b){var on=num(b.dataset.m)===ui.flow.back.mins;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});backRedraw()}break;
     case 'back:set':if(ui.flow&&ui.flow.back){ui.flow.back.mins=num(t.dataset.m);$$('[data-act="back:set"]').forEach(function(b){var on=b===t;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});backRedraw()}break;
     case 'back:ok':backSave();break;
+    case 'back:gps':backGps(true);break;
+    case 'back:mode':if(ui.flow&&ui.flow.back){ui.flow.back.mode=t.dataset.m==='sofar'?'sofar':'odo';renderFlow()}break;
     case 'flow:close':closeFlow();break;
     case 'flow:clearsig':clearSig();break;
     case 'flow:method':ui.flow.method=t.dataset.m;renderFlow();break;
@@ -5267,7 +5365,8 @@ document.addEventListener('input',function(e){
   else if(t.id==='clockNote'){ui.clockNote=t.value}
   else if(t.id==='qSearch'){filterItems(t.value)}
   else if(t.id==='hSearch'){ui.hq=t.value;ui.hShow=50;ui.hOpen='';histFill()}
-  else if((t.id==='backSoFar'||t.id==='backMi')&&ui.flow&&ui.flow.back){ui.flow.back[t.id==='backSoFar'?'soFar':'mi']=t.value;backRedraw()}
+  else if(/^(backSoFar|backMi|odoA|odoB)$/.test(t.id)&&ui.flow&&ui.flow.back){var fbk=ui.flow.back;fbk[{backSoFar:'soFar',backMi:'mi',odoA:'odoStart',odoB:'odoEnd'}[t.id]]=t.value;if(t.id==='backMi')fbk.miSrc='typed';backRedraw()}
+  else if(t.id==='odoStartIn'&&ui.start){ui.start.odo=t.value}
   else if(t.dataset.s){var val=t.dataset.t==='num'?num(t.value):t.dataset.t==='bool'?t.checked:t.value;setPath(S,t.dataset.s,val);if(t.dataset.s==='company')$('#brandCo').textContent=val||'Your Moving Co.';save()}
   else if(t.dataset.j){var jj=canEditJobs()?byId(ui.jobId):null;if(jj){jj.d[t.dataset.j]=t.value;save()}}
   else if(t.dataset.jcf){var j2=canEditJobs()?byId(ui.jobId):null;if(j2){j2.d.custom[t.dataset.jcf]=t.value;save()}}
@@ -5284,6 +5383,17 @@ document.addEventListener('change',function(e){
   if(t.id==='role'){if(sync.mode==='shared'&&sync.identity.status==='ok'){t.value=state.ui.role;return}
     state.ui.who='';ui.chatThread=null;state.ui.role=t.value;save();ui.armed='';render();return}
   if(t.id==='meSel'){state.ui.me=t.value;save();renderCrew();return}
+  if(t.dataset&&t.dataset.odo){
+    var oj=byId(t.dataset.odo),ome=fieldMe(),orl=state.ui.role;
+    if(!oj||!(orl==='owner'||orl==='dispatch'||(orl==='lead'&&isLead(ome)))||oj.status!=='active')return;
+    var oraw=String(t.value).trim();
+    if(oraw!==''&&!(num(oraw)>0)){toast('Put in the odometer reading, like 45210.');return}
+    var ov2=oraw===''?null:Math.round(num(oraw)*10)/10;
+    if((oj.odo&&oj.odo.start!=null?num(oj.odo.start):null)===ov2)return;
+    oj.odo={start:ov2,by:ome||myName()||'',ts:Date.now()};   // cleared: start null, so the other phones clear it too
+    logEv(oj,ov2==null?'Odometer leaving the shop cleared'+(ome?' by '+ome:''):'Odometer leaving the shop: '+fmtMi(ov2)+(ome?' ('+ome+')':''));
+    save();renderCrew();toast(ov2==null?'Cleared.':'Saved: '+fmtMi(ov2)+' on the odometer.');
+    return}
   if(t.dataset&&t.dataset.mdrive){
     var mj=byId(t.dataset.mdrive),mme=fieldMe(),mrl=state.ui.role;
     if(!mj||!(mrl==='owner'||mrl==='dispatch'||(mrl==='lead'&&isLead(mme)))||!(mj.status==='active'||mj.status==='done'))return;

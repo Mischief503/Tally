@@ -481,6 +481,39 @@ r = await app("tok-dispatch", { action: "distance", org: ORG, from: "418 Oak St"
 ok(!r.body.ok && /did not answer \(403\)/.test(r.body.message) && !/bad|key/i.test(r.body.message), "a bad key fails without exposing it");
 Deno.env.set("GOOGLE_MAPS_KEY", "gkey");
 
+/* ---------- bill-out on a mileage move: from where the truck is back to the shop ---------- */
+putDoc(ORG, "org/settings", { ...settings, shopAddress: "1200 Industrial Blvd, Austin" });
+let rn = routesCalls.length;
+r = await app("tok-marcus", { action: "shop_distance", org: ORG, lat: 30.2672, lng: -97.7431 });
+const sc = routesCalls[routesCalls.length - 1];
+ok(r.body.ok && r.body.miles === 22.4 && r.body.minutes === 31 && r.body.src === "google" && routesCalls.length === rn + 1, "a crew lead gets the miles from the truck back to the shop");
+ok(sc.bd.origin.location.latLng.latitude === 30.2672 && sc.bd.origin.location.latLng.longitude === -97.7431 && !sc.bd.origin.address && sc.bd.destination.address === "1200 Industrial Blvd, Austin" && sc.bd.travelMode === "DRIVE" && sc.h["X-Goog-FieldMask"] === "routes.distanceMeters,routes.duration", "from the phone's position to the shop address in Setup, distance only");
+r = await app("tok-marcus", { action: "shop_distance", org: ORG, lat: 30.2672, lng: -97.7431, to: "nowhere special" });
+ok(r.body.ok && routesCalls[routesCalls.length - 1].bd.destination.address === "1200 Industrial Blvd, Austin", "it always goes to the shop: the phone can't name another place");
+r = await app("tok-dispatch", { action: "shop_distance", org: ORG, lat: 30.2672, lng: -97.7431 });
+ok(r.body.ok, "the office can use it too");
+rn = routesCalls.length;
+r = await app("tok-kim", { action: "shop_distance", org: ORG, lat: 30.2672, lng: -97.7431 });
+ok(r.status === 403 && routesCalls.length === rn, "crew (not leads) cannot use the lookup");
+r = await app("tok-stranger", { action: "shop_distance", org: ORG, lat: 30.2672, lng: -97.7431 });
+ok(r.status === 401 && routesCalls.length === rn, "outsiders cannot use your Google key");
+for (const bad of [{ lat: "30.2", lng: -97.7 }, { lat: 91, lng: 0 }, { lat: 0, lng: 181 }, { lat: 30.2 }, {}]) {
+  r = await app("tok-marcus", { action: "shop_distance", org: ORG, ...bad });
+  ok(r.status === 400 && routesCalls.length === rn, "a location that isn't one is refused: " + JSON.stringify(bad));
+}
+putDoc(ORG, "org/settings", { ...settings, shopAddress: "" });
+r = await app("tok-marcus", { action: "shop_distance", org: ORG, lat: 30.2672, lng: -97.7431 });
+ok(!r.body.ok && /shop address isn't in Setup/.test(r.body.message) && routesCalls.length === rn, "no shop address: says so, calls nothing");
+putDoc(ORG, "org/settings", { ...settings, shopAddress: "zzz" });
+r = await app("tok-marcus", { action: "shop_distance", org: ORG, lat: 30.2672, lng: -97.7431 });
+ok(!r.body.ok && /could not find one of those addresses/.test(r.body.message), "a shop address Google can't find: clear message");
+Deno.env.delete("GOOGLE_MAPS_KEY");
+putDoc(ORG, "org/settings", { ...settings, shopAddress: "1200 Industrial Blvd, Austin" });
+r = await app("tok-marcus", { action: "shop_distance", org: ORG, lat: 30.2672, lng: -97.7431 });
+ok(!r.body.ok && r.body.setup === true, "no Google key: not set up (the phone then tries OpenStreetMap)");
+Deno.env.set("GOOGLE_MAPS_KEY", "gkey");
+putDoc(ORG, "org/settings", settings);
+
 /* ---------- test jobs never text or call ---------- */
 putDoc(ORG, "org/settings", settings);
 putDoc(ORG, "jobs/tj", job("tj", { test: true, assign: { truckId: "t26", crew: ["Marcus", "Dee"] } }));

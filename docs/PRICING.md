@@ -58,9 +58,18 @@ the shop, **Finish job** (and **Collect payment** once the truck is unloaded) fi
   **Already back**. The bill underneath changes as the lead picks, for example *3h 30m on the job +
   45m back = 4.25 h, $640*. On the bill: *By the clock: 3h 30m on the job + 45m back to the shop,
   billed 4.25 h (quoted 3.5 h)*.
-- **Mileage move:** the miles so far (the odometer since the truck left the shop, or what the lead
-  already typed in **Miles driven**) plus the miles back (the quote's to start with). The miles
-  driven become the two added up: *131 mi driven incl. 30 mi back to the shop*.
+- **Mileage move (miles, never time):** the odometer is read twice. **Start job** asks for the
+  **odometer leaving the shop** (the job card has the same box, to fix it or put it in later). At
+  bill-out the lead puts in the **odometer now**; the miles so far are the difference. The miles
+  **back to the shop** fill themselves in from the phone's location: the drive from where the
+  truck is to the shop address in Setup, from Google Maps (through the server) or OpenStreetMap
+  when Google isn't set up. The quote's miles from the delivery to the shop are used when the
+  phone won't share its location, the lookup doesn't answer, or this copy of Tally can't look
+  things up (the claude.ai artifact); the step says which. The lead can type over it (**Look up
+  again** asks the map once more). No reading from Start job? **Type the miles so far instead**.
+  On the bill: *131 mi driven incl. 30 mi back to the shop*; the job sheet keeps both readings and
+  where the miles back came from (*by GPS*, *from the quote*, *typed in*).
+- Only a local move adds time at the end of the clock; a mileage move adds miles.
 - **Add to the bill and continue** puts it on the bill, then the customer signs and pays as before.
   **Exit** leaves the job open and unbilled.
 - Until the job is paid, the lead can change it from **Bill out › Change**. The job sheet says who

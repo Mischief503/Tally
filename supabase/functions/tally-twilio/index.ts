@@ -528,15 +528,18 @@ export async function runTomorrow(): Promise<J> {
 }
 
 // Quote screen: driving miles and minutes between two addresses (Google Routes API, Essentials tier).
-export async function driveDistance(from: string, to: string): Promise<J> {
+// At bill-out the start is where the truck is (the lead's phone), as a latitude and longitude.
+export async function driveDistance(from: string | { lat: number; lng: number }, to: string): Promise<J> {
   const key = env("GOOGLE_MAPS_KEY");
   if (!key) return { ok: false, setup: true, message: "Distance lookup is not set up yet." };
-  const a = String(from || "").trim().slice(0, 200), b = String(to || "").trim().slice(0, 200);
-  if (!a || !b) return { ok: false, message: "Enter both addresses." };
+  const here = typeof from === "object" && from !== null;
+  const a = here ? "" : String(from || "").trim().slice(0, 200), b = String(to || "").trim().slice(0, 200);
+  if ((!here && !a) || !b) return { ok: false, message: "Enter both addresses." };
+  const origin = here ? { location: { latLng: { latitude: (from as J).lat, longitude: (from as J).lng } } } : { address: a };
   const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key, "X-Goog-FieldMask": "routes.distanceMeters,routes.duration" },
-    body: JSON.stringify({ origin: { address: a }, destination: { address: b }, travelMode: "DRIVE" }),
+    body: JSON.stringify({ origin, destination: { address: b }, travelMode: "DRIVE" }),
   });
   const out = await r.json().catch(() => ({}));
   if (!r.ok) {
@@ -2310,6 +2313,18 @@ async function handleApp(req: Request): Promise<Response> {
     if (b.action === "distance") {
       if (!office) return json({ ok: false, message: "Only the owner and dispatch build quotes." }, 403);
       return json(await driveDistance(b.from, b.to));
+    }
+    if (b.action === "shop_distance") {
+      // bill-out on a mileage move: from where the truck is now back to this company's own shop (the
+      // shop comes from Setup, so the lookup can't be pointed anywhere else)
+      if (!office && me.role !== "lead") return json({ ok: false, message: "Crew leads and the office bill out jobs." }, 403);
+      const lat = Number(b.lat), lng = Number(b.lng);
+      if (!(typeof b.lat === "number" && typeof b.lng === "number" && isFinite(lat) && isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180)) {
+        return json({ ok: false, message: "The phone's location didn't come through." }, 400);
+      }
+      const shop = String(((await getDoc(org, "org/settings")) || {}).shopAddress || "").trim();
+      if (!shop) return json({ ok: false, message: "The shop address isn't in Setup yet." });
+      return json(await driveDistance({ lat, lng }, shop));
     }
     if (b.action === "pay_config") return json(await payConfig(org, b));
     if (b.action === "pay_connect") {
