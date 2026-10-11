@@ -17,9 +17,11 @@ and every phone shows it. A finished job moves to **Paid** when the balance reac
 ## What is set up already
 
 - The database parts: the payments tables, the ledger and the safe-merge function.
-- Your company (**Live company trst**) is turned on for card payments. Only companies listed in
-  **Supabase › Table Editor › pay_orgs** can take cards. Anyone can start a company in Tally, so
-  this list is what keeps a stranger's company from charging cards into your Stripe account.
+- Your company (**Live company trst**) takes cards straight into your own Stripe account. Only
+  companies listed in **Supabase › Table Editor › pay_orgs** do that. Anyone can start a company in
+  Tally, so this list is what keeps a stranger's company from charging cards into your account.
+- Every other company connects **its own** Stripe account from Tally (Stripe Connect, below). Its
+  customers' money goes to that company, not to you, and Tally takes no cut.
 
 ## What you do: two keys into Supabase
 
@@ -95,6 +97,54 @@ back to **Complete**.
 A dispute (a chargeback) shows the same way while the customer's bank decides. If you win it, the
 line comes off again. Answer disputes in Stripe (**Payments › Disputes**).
 
+## Other companies: their own Stripe account (Connect)
+
+Your Stripe account is the *platform*: Tally uses your keys to set up each company's own Stripe
+account and to take payments on it for them. The money lands in the company's account, Stripe pays
+it out to the company's bank, and Stripe's card fee comes out of each payment. Tally takes no cut
+(companies pay you the membership instead). Refunds, disputes and payouts are the company's own, in
+its own Stripe Dashboard at dashboard.stripe.com.
+
+**What the owner of a company does** (owners only; dispatch and crews don't see it):
+
+1. **Setup › Payments › Connect with Stripe.** Stripe's own sign-up page opens (in the phone's
+   browser in the Android app).
+2. On Stripe's page: the business details, the bank account for payouts, and an ID check. About ten
+   minutes. Tally never sees any of it. Have the EIN (or SSN for a sole owner) and the bank account
+   ready.
+3. Back in Tally, **Setup › Payments** shows where it stands: what Stripe still needs (in plain
+   words, with **Continue with Stripe**), *Stripe is checking your details*, and then
+   *Card payments go to your own Stripe account*. It updates by itself when the owner comes back
+   from Stripe, and when Stripe finishes checking.
+
+Until then the payment screen offers cash and checks, and says the owner connects Stripe in Setup.
+If a company disconnects Tally in its Stripe Dashboard, cards stop and Setup says so, with
+**Connect again** (that sets up a new Stripe account; old payments stay in the old one and their
+refunds still show on the jobs).
+
+**On your Stripe side:**
+
+- **Sandbox (test keys): done October 10.** Connect is set up in the *Massive Art ENT. sandbox*
+  (direct charges, Stripe collects its fees from the companies and covers losses, companies use the
+  full Stripe Dashboard). Tally makes a second webhook for the companies' accounts by itself
+  (*Tally payments (companies' own Stripe accounts)*).
+- **Live, before another company takes real cards:** Stripe › **Settings › Connect › Platform
+  profile › View onboarding**, and answer Stripe's questions about Tally as a platform (it starts
+  with sales tax). Add your branding under **Settings › Connect › Onboarding interface** (name,
+  icon, color) so companies see Tally on Stripe's sign-up page. If you use a restricted live key,
+  it also needs Stripe's Connect permissions for accounts and account links.
+
+**Try it in the sandbox:**
+
+1. In Tally, start a second company (any name; you're its owner).
+2. In that company: **Setup › Payments › Connect with Stripe**.
+3. Stripe's sandbox page usually offers test details to fill in. If it asks: phone code `000000`,
+   SSN `000-00-0000`, address line 1 `address_full_match`, bank routing `110000000` and account
+   `000123456789`.
+4. Back in Tally, **Setup › Payments** should turn to *Card payments go to your own Stripe account
+   (test mode)*. Take a test card payment on one of that company's jobs: it shows in the sandbox
+   under **Connect › Connected accounts ›** the company › **Payments**, not in your own payments.
+
 ## Payment methods customers see
 
 Stripe › **Settings › Payment methods**. Cards, Apple Pay and Google Pay are on by default. If you
@@ -132,9 +182,12 @@ payments **0.8% capped at $5**, and **$15** per dispute (returned if you win). N
 
 ## If something's off
 
-- **Setup › Payments** tells you what's missing: no keys, the company isn't turned on, or the
-  publishable key doesn't match the secret key (one test, one live). If the server can't be
-  reached, the payment screen offers cash and checks only, with a **Check again** button.
+- **Setup › Payments** tells you what's missing: no keys, the company's Stripe account isn't
+  connected or checked yet, or the publishable key doesn't match the secret key (one test, one
+  live). If the server can't be reached, the payment screen offers cash and checks only, with a
+  **Check again** button.
+- **Connect with Stripe** shows Stripe's reason when Stripe says no (for example, that your
+  platform questions aren't answered yet in live mode).
 - Server log: Supabase › Edge Functions › **tally-twilio** › Logs.
 - Stripe's side: **Developers › Webhooks › Tally payments** shows every event and whether Tally took
   it. If you ever delete that webhook, the next payment that starts makes a new one.
