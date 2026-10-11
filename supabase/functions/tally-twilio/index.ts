@@ -305,7 +305,7 @@ async function whoIs(req: Request, org: string): Promise<J> {
   if (!u || !u.id) return null;
   const rows = await rest("GET", "members?select=role,staff&org_id=eq." + q(org) + "&user_id=eq." + q(u.id) + "&limit=1");
   if (!rows || !rows[0]) return null;
-  return { uid: u.id, role: rows[0].role, staff: rows[0].staff || "" };
+  return { uid: u.id, role: rows[0].role, staff: rows[0].staff || "", email: String(u.email || "") };
 }
 
 /* ---------- the app's actions ---------- */
@@ -802,8 +802,17 @@ export async function sosText(org: string, me: J, msgId: string, kind: string, c
    One payment starts on a job at a time (pay_locks), and before it starts the job is brought up to
    date with Stripe, so two phones, or a phone and a pay link, can't take the same money twice.
    A pay link is not one Stripe page: when it is opened it asks for what is owed right then, so a bill
-   settled in cash, or lowered, can't be paid again from an old text. */
+   settled in cash, or lowered, can't be paid again from an old text.
+   Whose Stripe account: the keys in Supabase are the platform's (Tally's owner). A company listed in
+   pay_orgs takes payments on that account directly. Every other company connects its own Stripe
+   account (Stripe Connect: Setup > Payments > Connect with Stripe), and its payments are made on that
+   account ("direct charges", the Stripe-Account header): the money is the company's, it pays Stripe's
+   fees, and Stripe carries the risk on it. Tally takes no cut: companies pay Tally a membership instead. pay_accounts says which account is whose, and every payment,
+   pay link and card on file remembers the account it is on (`account`, '' for the platform). */
 export const STRIPE_VERSION = "2026-09-30.endive";
+export const STRIPE_V2_VERSION = "2026-09-30.preview";   // Stripe's v2 API (connected accounts, their sign-up links)
+const ACCT_RE = /^acct_[A-Za-z0-9]{6,40}$/;
+export const CONNECT_EVENTS = ["account.updated", "account.application.deauthorized"];
 export const PAY_EVENTS = ["payment_intent.succeeded", "payment_intent.processing", "payment_intent.payment_failed",
   "payment_intent.canceled", "checkout.session.completed", "checkout.session.expired", "charge.refunded",
   "charge.refund.updated", "charge.dispute.created", "charge.dispute.closed", "charge.dispute.funds_withdrawn",
@@ -845,10 +854,15 @@ class StripeError extends Error {
   status: number; err: J;
   constructor(status: number, err: J) { super((err && err.message) || "Stripe error " + status); this.status = status; this.err = err || {}; }
 }
-async function stripe(method: string, path: string, params?: J, idem?: string): Promise<J> {
+// acct: a company's own (connected) Stripe account; '' for the platform's own
+async function stripe(method: string, path: string, params?: J, idem?: string, acct = ""): Promise<J> {
   const key = env("STRIPE_SECRET_KEY");
   if (!key) throw new StripeError(0, { message: "Stripe is not set up yet." });
   const headers: Record<string, string> = { Authorization: "Bearer " + key, "Stripe-Version": STRIPE_VERSION };
+  if (acct) {
+    if (!ACCT_RE.test(acct)) throw new StripeError(0, { message: "Unknown Stripe account" });
+    headers["Stripe-Account"] = acct;
+  }
   let url = "https://api.stripe.com/v1/" + path, body: string | undefined;
   if (params) {
     const f = stripeForm(params).toString();
@@ -857,6 +871,18 @@ async function stripe(method: string, path: string, params?: J, idem?: string): 
   }
   if (idem) headers["Idempotency-Key"] = idem;
   const r = await fetch(url, { method, headers, body });
+  const out = await r.json().catch(() => ({}));
+  if (!r.ok) throw new StripeError(r.status, out && out.error);
+  return out;
+}
+// Stripe's v2 API: JSON both ways. Used to make a company's own Stripe account and its sign-up link.
+async function stripeV2(method: string, path: string, body?: J, idem?: string): Promise<J> {
+  const key = env("STRIPE_SECRET_KEY");
+  if (!key) throw new StripeError(0, { message: "Stripe is not set up yet." });
+  const headers: Record<string, string> = { Authorization: "Bearer " + key, "Stripe-Version": STRIPE_V2_VERSION };
+  if (body) headers["Content-Type"] = "application/json";
+  if (idem) headers["Idempotency-Key"] = idem;
+  const r = await fetch("https://api.stripe.com/v2/" + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const out = await r.json().catch(() => ({}));
   if (!r.ok) throw new StripeError(r.status, out && out.error);
   return out;
@@ -913,7 +939,7 @@ function paidWithLedger(job: J, ledger: J[]): number {
   return paid;
 }
 async function ledgerFor(org: string, jobId: string): Promise<J[]> {
-  return (await rest("GET", "pay_log?select=pi,amount_cents,refunded_cents,disputed_cents,status,livemode,source&org_id=eq." + q(org) + "&job_id=eq." + q(jobId))) || [];
+  return (await rest("GET", "pay_log?select=pi,amount_cents,refunded_cents,disputed_cents,status,livemode,source,account&org_id=eq." + q(org) + "&job_id=eq." + q(jobId))) || [];
 }
 // What is left to pay: below zero when more was paid than the bill.
 async function balanceCents(org: string, jobId: string, job?: J): Promise<number> {
@@ -978,6 +1004,37 @@ async function payOrgOn(org: string): Promise<boolean> {
   const rows = await rest("GET", "pay_orgs?select=enabled&org_id=eq." + q(org) + "&limit=1");
   return !!(rows && rows[0] && rows[0].enabled);
 }
+// The company's own Stripe account in this mode (test or live), if it has connected one.
+async function acctRow(org: string): Promise<J> {
+  const rows = await rest("GET", "pay_accounts?select=*&org_id=eq." + q(org) + "&livemode=eq." + liveNow() + "&is_current=is.true&limit=1");
+  return (rows && rows[0]) || null;
+}
+// Where a company's card payments go: {on, acct} ('' = the platform's own account), or why not.
+async function payAccount(org: string): Promise<J> {
+  if (await payOrgOn(org)) return { on: true, acct: "" };
+  const row = await acctRow(org);
+  if (!row) return { on: false, reason: "connect" };
+  if (row.disabled_reason === "disconnected") return { on: false, reason: "connect-off", row };
+  if (!row.charges_enabled) return { on: false, reason: "connect-pending", row };
+  return { on: true, acct: row.account_id, row };
+}
+// why a company can't take cards, in words for the person trying
+function payOffWhy(reason: string): string {
+  if (reason === "connect-pending") return "Stripe is still checking this company's details, so cards can't be taken yet. The owner sees what's left in Setup › Payments.";
+  if (reason === "connect-off") return "This company's Stripe account was disconnected from Tally. The owner connects it again in Setup › Payments.";
+  return "Card payments aren't set up for this company yet. The owner connects Stripe in Setup › Payments.";
+}
+// The account a company takes payments on now: '' (the platform's) or its connected account; null when neither.
+async function currentAcct(org: string): Promise<string | null> {
+  if (await payOrgOn(org)) return "";
+  const row = await acctRow(org);
+  return row ? row.account_id : null;
+}
+// A payment made on a company's own Stripe account is only written onto that company's jobs.
+async function acctIsOrgs(org: string, acct: string): Promise<boolean> {
+  const rows = await rest("GET", "pay_accounts?select=account_id&account_id=eq." + q(acct) + "&org_id=eq." + q(org) + "&limit=1");
+  return !!(rows && rows[0]);
+}
 const orgsSeen = new Set<string>();
 async function orgExists(org: string): Promise<boolean> {
   if (orgsSeen.has(org)) return true;
@@ -995,7 +1052,8 @@ const TOO_MANY = "That's a lot of payments this hour. Try again in a little whil
 // Everything a payment needs checked before it starts. Returns {err, status?} or {S, job}.
 async function payContext(org: string, me: J, jobId: string): Promise<J> {
   if (!stripeMode()) return { err: "Card payments are not set up yet." };
-  if (!(await payOrgOn(org))) return { err: "Card payments are not turned on for this company yet." };
+  const pa = await payAccount(org);
+  if (!pa.on) return { err: payOffWhy(pa.reason) };
   const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
   if (!job) return { err: "That job is not available." };
   if (!canTakePay(me, job)) {
@@ -1004,7 +1062,7 @@ async function payContext(org: string, me: J, jobId: string): Promise<J> {
   if (job.test && liveNow()) return { err: "Test job: no real charges." };
   if (job.status === "lost") return { err: "This job is marked lost." };
   if ((job.status === "active" || job.status === "done") && pendingForms(S, job).length) return { err: "The customer signs the required forms first." };
-  return { S, job };
+  return { S, job, acct: pa.acct };
 }
 // `reserved` is a card payment someone else on this job is in the middle of.
 function amountTrouble(c: number, owed: number, reserved = 0): string {
@@ -1050,20 +1108,28 @@ async function withJobLock<T>(org: string, jobId: string, fn: () => Promise<T>, 
   }
 }
 
-/* the server's own webhook: made once per mode (test, live), the first time it is needed */
-async function webhookSecrets(): Promise<string[]> {
+/* the server's own webhooks, made once per mode (test, live) the first time each is needed:
+   - "platform": events on the platform's own Stripe account, at /stripe (table pay_config);
+   - "connect": events on the companies' own (connected) accounts, at /stripe/connect (pay_config_connect),
+     with the company's account in each event. */
+type HookKind = "platform" | "connect";
+const HOOKS: Record<HookKind, J> = {
+  platform: { table: "pay_config", path: "/stripe", events: PAY_EVENTS, description: "Tally payments" },
+  connect: { table: "pay_config_connect", path: "/stripe/connect", events: PAY_EVENTS.concat(CONNECT_EVENTS), description: "Tally payments (companies' own Stripe accounts)" },
+};
+async function webhookSecrets(kind: HookKind = "platform"): Promise<string[]> {
   const out: string[] = [];
-  if (env("STRIPE_WEBHOOK_SECRET")) out.push(env("STRIPE_WEBHOOK_SECRET"));
-  const rows = await rest("GET", "pay_config?select=webhook_secret,status");
+  if (kind === "platform" && env("STRIPE_WEBHOOK_SECRET")) out.push(env("STRIPE_WEBHOOK_SECRET"));
+  const rows = await rest("GET", HOOKS[kind].table + "?select=webhook_secret,status");
   (rows || []).forEach((r: J) => { if (r.status === "ready" && r.webhook_secret) out.push(r.webhook_secret); });
   return out;
 }
-export async function ensureWebhook(): Promise<J> {
-  if (env("STRIPE_WEBHOOK_SECRET")) return { ok: true };
+export async function ensureWebhook(kind: HookKind = "platform"): Promise<J> {
+  if (kind === "platform" && env("STRIPE_WEBHOOK_SECRET")) return { ok: true };
   const mode = stripeMode();
   if (!mode) return { ok: false, message: "Card payments are not set up yet." };
-  const events = PAY_EVENTS.join(",");
-  const rows = await rest("GET", "pay_config?select=*&mode=eq." + mode + "&limit=1");
+  const H = HOOKS[kind], T = H.table, list0: string[] = H.events, events = list0.join(","), url = base() + H.path;
+  const rows = await rest("GET", T + "?select=*&mode=eq." + mode + "&limit=1");
   const row = rows && rows[0];
   if (row && row.status === "ready" && row.webhook_secret) {
     // every few hours, and after an update that listens for more events, check the webhook is still there
@@ -1072,16 +1138,16 @@ export async function ensureWebhook(): Promise<J> {
     let gone = false;
     try {
       const w = await stripe("GET", "webhook_endpoints/" + row.webhook_id);
-      gone = !w || w.status === "disabled" || w.url !== base() + "/stripe";
-      if (!gone && (w.enabled_events || []).slice().sort().join(",") !== PAY_EVENTS.slice().sort().join(",")) {
-        await stripe("POST", "webhook_endpoints/" + row.webhook_id, { enabled_events: PAY_EVENTS });
+      gone = !w || w.status === "disabled" || w.url !== url;
+      if (!gone && (w.enabled_events || []).slice().sort().join(",") !== list0.slice().sort().join(",")) {
+        await stripe("POST", "webhook_endpoints/" + row.webhook_id, { enabled_events: list0 });
       }
     } catch (e) {
       if (!(e instanceof StripeError && e.status === 404)) { console.error("stripe webhook check", e); return { ok: true }; }
       gone = true;
     }
     if (!gone) {
-      await rest("PATCH", "pay_config?mode=eq." + mode, { events, updated_at: nowIso() });
+      await rest("PATCH", T + "?mode=eq." + mode, { events, updated_at: nowIso() });
       return { ok: true };
     }
   }
@@ -1090,23 +1156,24 @@ export async function ensureWebhook(): Promise<J> {
   // claim the job of making it, so two phones starting payments at once don't make two webhooks
   const now = nowIso();
   const claimed = row
-    ? await rest("PATCH", "pay_config?mode=eq." + mode + "&updated_at=eq." + q(row.updated_at), { status: "creating", updated_at: now }, "return=representation")
-    : await rest("POST", "pay_config?on_conflict=mode", { mode, status: "creating", updated_at: now }, "resolution=ignore-duplicates,return=representation");
+    ? await rest("PATCH", T + "?mode=eq." + mode + "&updated_at=eq." + q(row.updated_at), { status: "creating", updated_at: now }, "return=representation")
+    : await rest("POST", T + "?on_conflict=mode", { mode, status: "creating", updated_at: now }, "resolution=ignore-duplicates,return=representation");
   if (!claimed || !claimed.length) return busy;
   try {
-    const url = base() + "/stripe";
     const list = await stripe("GET", "webhook_endpoints", { limit: 100 });
     for (const w of (list && list.data) || []) if (w && w.url === url) await stripe("DELETE", "webhook_endpoints/" + w.id);
-    const w = await stripe("POST", "webhook_endpoints", { url, enabled_events: PAY_EVENTS, api_version: STRIPE_VERSION, description: "Tally payments" });
+    const w = await stripe("POST", "webhook_endpoints", { url, enabled_events: list0, api_version: STRIPE_VERSION, description: H.description, connect: kind === "connect" ? true : undefined });
     if (!w || !w.secret) throw new StripeError(0, { message: "Stripe did not return a webhook secret" });
-    await rest("PATCH", "pay_config?mode=eq." + mode, { webhook_id: w.id, webhook_secret: w.secret, status: "ready", events, updated_at: nowIso() });
+    await rest("PATCH", T + "?mode=eq." + mode, { webhook_id: w.id, webhook_secret: w.secret, status: "ready", events, updated_at: nowIso() });
     return { ok: true, created: true };
   } catch (e) {
-    console.error("stripe webhook setup", e);
-    await rest("PATCH", "pay_config?mode=eq." + mode, { status: "creating", updated_at: new Date(0).toISOString() });
+    console.error("stripe webhook setup", kind, e);
+    await rest("PATCH", T + "?mode=eq." + mode, { status: "creating", updated_at: new Date(0).toISOString() });
     return { ok: false, message: "Could not finish switching on card payments. " + stripeTrouble(e) };
   }
 }
+// the webhook a company's payments need: the platform's, or the one for companies' own accounts
+const hookFor = (acct: string) => ensureWebhook(acct ? "connect" : "platform");
 export async function stripeSignature(raw: string, secret: string, t: string): Promise<string> {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(t + "." + raw)));
@@ -1129,35 +1196,38 @@ export async function stripeSigOk(raw: string, header: string, secrets: string[]
   return false;
 }
 
-/* the Stripe customer behind a Tally customer (one per company, per test/live) */
-async function customerFor(org: string, job: J, jobId: string): Promise<string> {
-  const key = payKeyOf(job, jobId), live = liveNow();
-  const find = () => rest("GET", "pay_customers?select=customer_id&org_id=eq." + q(org) + "&cust_key=eq." + q(key) + "&livemode=eq." + live + "&limit=1");
+/* the Stripe customer behind a Tally customer (one per company, per test/live, per Stripe account: a
+   customer lives on the account its payments are made on, so on a company's own account it is filed
+   under "<account>|<key>") */
+async function customerFor(org: string, job: J, jobId: string, acct = ""): Promise<string> {
+  const key = payKeyOf(job, jobId), live = liveNow(), ck = acct ? acct + "|" + key : key;
+  const find = () => rest("GET", "pay_customers?select=customer_id&org_id=eq." + q(org) + "&cust_key=eq." + q(ck) + "&livemode=eq." + live + "&limit=1");
   const rows = await find();
   if (rows && rows[0]) return rows[0].customer_id;
   const d = job.d || {};
   const c = await stripe("POST", "customers", {
     name: String(d.name || "").trim().slice(0, 200) || undefined, phone: e164(d.phone) || undefined,
     email: validEmail(d.email) || undefined, metadata: { tally_org: org, tally_cust: key.slice(0, 400) },
-  });
-  await rest("POST", "pay_customers?on_conflict=org_id,cust_key,livemode", { org_id: org, cust_key: key, customer_id: c.id, livemode: live }, "resolution=ignore-duplicates");
+  }, undefined, acct);
+  await rest("POST", "pay_customers?on_conflict=org_id,cust_key,livemode", { org_id: org, cust_key: ck, customer_id: c.id, livemode: live, account: acct }, "resolution=ignore-duplicates");
   const again = await find();
   return (again && again[0] && again[0].customer_id) || c.id;
 }
 // The Stripe customer a job's payments go to. The job's first payment that goes through fixes it (see
-// recordIntent), so a name or phone changed afterwards can't point the job at someone else's cards.
-async function jobCustomer(org: string, jobId: string, job: J): Promise<J> {
+// recordIntent), so a name or phone changed afterwards can't point the job at someone else's cards. If the
+// company has moved to another Stripe account since, the customer there is found again the same way.
+async function jobCustomer(org: string, jobId: string, job: J, acct = ""): Promise<J> {
   const live = liveNow();
-  const row = ((await rest("GET", "pay_jobs?select=cust_key,customer_id&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&livemode=eq." + live + "&limit=1")) || [])[0];
-  if (row) return { customer: row.customer_id, key: row.cust_key, bound: true };
-  return { customer: await customerFor(org, job, jobId), key: payKeyOf(job, jobId), bound: false };
+  const row = ((await rest("GET", "pay_jobs?select=cust_key,customer_id,account&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&livemode=eq." + live + "&limit=1")) || [])[0];
+  if (row && (row.account || "") === acct) return { customer: row.customer_id, key: row.cust_key, bound: true };
+  return { customer: await customerFor(org, job, jobId, acct), key: payKeyOf(job, jobId), bound: false };
 }
 
 /* cards kept on file: the server keeps which Stripe card each is (pay_cards); the app's list shows the
    brand, last four, expiry and the name on the card, and the jobs it was kept on */
 // the app knows a card by a name of our own, never by Stripe's ids
 export async function cardId(pmId: string): Promise<string> { return "st_" + (await sha("card|" + pmId)).slice(0, 20); }
-async function saveCard(org: string, md: J, pi: J, pm: J, jobId: string): Promise<void> {
+async function saveCard(org: string, md: J, pi: J, pm: J, jobId: string, acct = ""): Promise<void> {
   if (!pm || pm.type !== "card" || !pm.card || !pm.customer) return;
   const opt = pi.payment_method_options && pi.payment_method_options.card;
   if ((pi.setup_future_usage || (opt && opt.setup_future_usage)) !== "off_session") return;
@@ -1182,14 +1252,14 @@ async function saveCard(org: string, md: J, pi: J, pm: J, jobId: string): Promis
     const data = { id, cust, type: "card", brand: BRANDS[card.brand] || "Card", last4: String(card.last4 || ""), exp, name, jobs, via: "stripe", live, ts };
     await rest("POST", "docs?on_conflict=org_id,path", { org_id: org, path: "vault/" + id, collection: "vault", doc_id: id, data, updated_at: nowIso() }, "resolution=merge-duplicates");
   }
-  await rest("POST", "pay_cards?on_conflict=id", { id, org_id: org, cust_key: cust, customer_id: customer, pm_id: pm.id, fingerprint: fp, name, job_id: jobId, livemode: live }, "resolution=merge-duplicates");
+  await rest("POST", "pay_cards?on_conflict=id", { id, org_id: org, cust_key: cust, customer_id: customer, pm_id: pm.id, fingerprint: fp, name, job_id: jobId, livemode: live, account: acct }, "resolution=merge-duplicates");
   if (!newer) for (const r of dupes) if (r.id !== id) await rest("DELETE", "docs?org_id=eq." + q(org) + "&path=eq." + q("vault/" + r.id));
 }
 
 /* writing a payment down */
 const WITHHELD = ["needs_response", "under_review", "lost"];   // disputes where Stripe has taken the money back
-async function disputeOf(pid: string): Promise<J> {
-  const list = await stripe("GET", "disputes", { payment_intent: pid, limit: 10 });
+async function disputeOf(pid: string, acct = ""): Promise<J> {
+  const list = await stripe("GET", "disputes", { payment_intent: pid, limit: 10 }, undefined, acct);
   let c = 0, lost = false;
   for (const d of (list && list.data) || []) {
     if (WITHHELD.indexOf(d.status) < 0) continue;
@@ -1203,34 +1273,44 @@ function sameEntry(a: J, b: J): boolean {
 }
 // The one place a Stripe payment is written down: the ledger; the job (the payment, and any refund or
 // dispute as its own line taking money off); the card, when the customer agreed to keep it on file.
-// Safe to call any number of times for the same payment, in any order.
-export async function recordIntent(pi0: J): Promise<J> {
+// Safe to call any number of times for the same payment, in any order. acct: the Stripe account the payment is
+// on ('' for the platform's own).
+export async function recordIntent(pi0: J, acct = ""): Promise<J> {
   let pi = pi0 || {};
   if (!pi.id || !/^pi_[A-Za-z0-9_]+$/.test(String(pi.id))) return { ok: false, skipped: "no-intent" };
   const whole = pi.metadata && pi.payment_method !== undefined && typeof pi.payment_method !== "string" &&
     pi.latest_charge !== undefined && typeof pi.latest_charge !== "string";
-  if (!whole) pi = await stripe("GET", "payment_intents/" + pi.id, { expand: ["payment_method", "latest_charge"] });
+  if (!whole) pi = await stripe("GET", "payment_intents/" + pi.id, { expand: ["payment_method", "latest_charge"] }, undefined, acct);
   const md = pi.metadata || {};
   const org = String(md.tally_org || ""), jobId = String(md.tally_job || "");
   if (!/^[0-9A-Fa-f-]{36}$/.test(org) || !/^[A-Za-z0-9_-]{1,40}$/.test(jobId)) return { ok: false, skipped: "not-tally" };
   if (!(await orgExists(org))) return { ok: false, skipped: "no-company" };
+  // a company's own Stripe account can write a payment's details itself (its owner has the Stripe
+  // dashboard): its payments only ever land on that company's jobs
+  if (acct && !(await acctIsOrgs(org, acct))) return { ok: false, skipped: "other-account" };
   const pm = pi.payment_method && typeof pi.payment_method === "object" ? pi.payment_method : null;
   const ch = pi.latest_charge && typeof pi.latest_charge === "object" ? pi.latest_charge : null;
   const status = String(pi.status || ""), live = !!pi.livemode, paidNow = status === "succeeded" || status === "processing";
   const label = methodLabel(pm) + (md.tally_src === "link" ? " (pay link)" : "") + (live ? "" : " · test");
   const amtC = status === "succeeded" ? (Number(pi.amount_received) || Number(pi.amount) || 0) : (Number(pi.amount) || 0);
   const refunded = paidNow && ch ? Math.min(amtC, Number(ch.amount_refunded) || 0) : 0;
-  const dispute = paidNow && ch && ch.disputed ? await disputeOf(pi.id) : { cents: 0, lost: false };
+  const dispute = paidNow && ch && ch.disputed ? await disputeOf(pi.id, acct) : { cents: 0, lost: false };
   const disputed = Math.min(amtC - refunded, dispute.cents);
   const err = pi.last_payment_error ? String(pi.last_payment_error.message || pi.last_payment_error.code || "").slice(0, 300) : null;
   await rest("POST", "pay_log?on_conflict=pi", {
     pi: pi.id, org_id: org, job_id: jobId, amount_cents: amtC, refunded_cents: refunded, disputed_cents: disputed, status,
     source: String(md.tally_src || ""), method: label, cust_key: String(md.tally_cust || ""), by_staff: String(md.tally_by || ""),
-    livemode: live, error: err, updated_at: nowIso(),
+    livemode: live, error: err, updated_at: nowIso(), account: acct,
   }, "resolution=merge-duplicates");
   const cus = typeof pi.customer === "string" ? pi.customer : pi.customer && pi.customer.id;
   if (paidNow && cus) {
-    await rest("POST", "pay_jobs?on_conflict=org_id,job_id,livemode", { org_id: org, job_id: jobId, livemode: live, cust_key: String(md.tally_cust || ""), customer_id: cus }, "resolution=ignore-duplicates");
+    const bind = { cust_key: String(md.tally_cust || ""), customer_id: cus, account: acct };
+    await rest("POST", "pay_jobs?on_conflict=org_id,job_id,livemode", { org_id: org, job_id: jobId, livemode: live, ...bind }, "resolution=ignore-duplicates");
+    // the company moved to another Stripe account since the job's first payment: its first payment there binds it
+    // again (a refund on an old payment, written down later, doesn't move it back)
+    if (acct === await currentAcct(org)) {
+      await rest("PATCH", "pay_jobs?org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&livemode=eq." + live + "&account=neq." + q(acct), bind);
+    }
   }
   const job = await getDoc(org, "jobs/" + jobId);
   if (!job) return { ok: false, reason: "no-job" };
@@ -1263,7 +1343,7 @@ export async function recordIntent(pi0: J): Promise<J> {
       : "The customer disputed the " + money(amtC) + " payment (" + label + "). Stripe holds " + money(disputed) + " until the bank decides",
     "Dispute closed: the " + money(Math.abs(cents(dp && dp.amt))) + " Stripe held came back (" + label + ")");
   if (!changes.length) {
-    if (status === "succeeded") await saveCard(org, md, pi, pm, jobId);
+    if (status === "succeeded") await saveCard(org, md, pi, pm, jobId, acct);
     return { ok: true, org, job: jobId, recorded: false, status, label, amount: amtC / 100, owed: await owedCents(org, jobId, job) };
   }
   // the bill once these are on it
@@ -1282,17 +1362,17 @@ export async function recordIntent(pi0: J): Promise<J> {
     const ts = now + changes.length, ev = "Back to Complete: " + money(bal) + " is owed again";
     await rest("POST", "rpc/pay_reopen", { o: org, job: jobId, log_key: logKey(ts, ev), log_entry: { ts, ev } });
   }
-  if (status === "succeeded") await saveCard(org, md, pi, pm, jobId);
+  if (status === "succeeded") await saveCard(org, md, pi, pm, jobId, acct);
   return { ok: true, org, job: jobId, recorded: true, status, label, amount: amtC / 100, owed: Math.max(0, bal) };
 }
 // A card payment that was started and never finished: cancelled, so it can't be finished later on top of
 // another payment.
-async function cancelIntent(pi: J): Promise<void> {
+async function cancelIntent(pi: J, acct = ""): Promise<void> {
   try {
-    await recordIntent(await stripe("POST", "payment_intents/" + pi.id + "/cancel", { cancellation_reason: "abandoned", expand: ["payment_method", "latest_charge"] }));
+    await recordIntent(await stripe("POST", "payment_intents/" + pi.id + "/cancel", { cancellation_reason: "abandoned", expand: ["payment_method", "latest_charge"] }, undefined, acct), acct);
   } catch (e) {
     if (!stripeNo(e)) throw e;
-    await recordIntent({ id: pi.id });   // it moved on (paid, or already cancelled): write down where it is now
+    await recordIntent({ id: pi.id }, acct);   // it moved on (paid, or already cancelled): write down where it is now
   }
 }
 // Ledger payments that are missing from the job (a phone's save got there first) go back on.
@@ -1304,7 +1384,7 @@ async function repairJob(org: string, jobId: string): Promise<number> {
   for (const r of await ledgerFor(org, jobId)) {
     if (!!r.livemode !== live || (r.status !== "succeeded" && r.status !== "processing")) continue;
     const missing = !pays["st_" + r.pi] || (Number(r.refunded_cents) > 0 && !pays["rf_" + r.pi]) || (Number(r.disputed_cents) > 0 && !pays["dp_" + r.pi]);
-    if (missing) { await recordIntent({ id: r.pi }); n++; }
+    if (missing) { await recordIntent({ id: r.pi }, r.account || ""); n++; }
   }
   return n;
 }
@@ -1319,13 +1399,14 @@ async function mintSession(o: J): Promise<J> {
   const md = { ...payMeta(o.org, o.jobId, o.job, o.by, "link"), tally_link: o.token };
   const nowS = Math.floor(Date.now() / 1000);
   const exp = Math.max(nowS + 31 * 60, Math.min(nowS + PAGE_HOURS * 3600, Math.floor((o.until || Infinity) / 1000)));
+  const acct = o.acct || "";
   const s = await stripe("POST", "checkout/sessions", {
     mode: "payment", customer: o.cus, client_reference_id: o.jobId,
     line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: o.amt, product_data: { name: (company(o.S) + ": moving services").slice(0, 120), description: gsm(d.name || "Moving job").slice(0, 200) } } }],
     payment_intent_data: { metadata: md, description: payWhat(o.S, o.job), receipt_email: validEmail(d.email) || undefined },
     payment_method_options: o.save ? { card: { setup_future_usage: "off_session" } } : undefined,
     metadata: md, success_url: base() + "/pay/done", expires_at: exp,
-  });
+  }, undefined, acct);
   if (!s.expires_at) s.expires_at = exp;
   return s;
 }
@@ -1333,18 +1414,19 @@ async function mintSession(o: J): Promise<J> {
 async function sessionPaid(l: J, s: J): Promise<void> {
   await rest("PATCH", "pay_links?token=eq." + q(l.token) + "&status=eq.open", { status: "paid" });
   const pid = typeof s.payment_intent === "string" ? s.payment_intent : s.payment_intent && s.payment_intent.id;
-  if (pid) await recordIntent({ id: pid });
+  if (pid) await recordIntent({ id: pid }, l.account || "");
 }
 // Stops a Stripe page. "closed"; "paid" when the customer had just paid on it (written down now); or "open"
 // when Stripe wouldn't stop it, most likely because a payment on it is going through.
 async function closeSession(l: J): Promise<string> {
+  const acct = l.account || "";
   try {
-    await stripe("POST", "checkout/sessions/" + l.session_id + "/expire");
+    await stripe("POST", "checkout/sessions/" + l.session_id + "/expire", undefined, undefined, acct);
     return "closed";
   } catch (e) {
     if (!stripeNo(e)) throw e;
     let s: J = null;
-    try { s = await stripe("GET", "checkout/sessions/" + l.session_id); } catch (e2) { if (!stripeNo(e2)) throw e2; }
+    try { s = await stripe("GET", "checkout/sessions/" + l.session_id, undefined, undefined, acct); } catch (e2) { if (!stripeNo(e2)) throw e2; }
     if (s && s.status === "complete") { await sessionPaid(l, s); return "paid"; }
     return s && s.status === "open" ? "open" : "closed";
   }
@@ -1369,22 +1451,24 @@ async function retireLink(l: J): Promise<string> {
   if (r === "closed") await rest("PATCH", "pay_links?token=eq." + q(l.token) + "&status=eq.open", { status: "expired" });
   return r;
 }
-// A new Stripe page behind a pay link, for amt.
-async function renewPage(l: J, job: J, S: J, amt: number): Promise<J> {
+// A new Stripe page behind a pay link, for amt, on the Stripe account the company takes payments on now (acct).
+async function renewPage(l: J, job: J, S: J, amt: number, acct = ""): Promise<J> {
   if (pageUsable(l)) {
     const r = await closeSession(l);
     if (r !== "closed") return { state: r };
   }
-  const cus = (await jobCustomer(l.org_id, l.job_id, job)).customer;
-  const s = await mintSession({ org: l.org_id, jobId: l.job_id, job, S, by: l.created_by || "", token: l.token, amt, save: !!l.save_card, cus, until: Date.parse(l.expires_at) });
-  const patch = { session_id: s.id, url: s.url, amount_cents: amt, session_expires: new Date(s.expires_at * 1000).toISOString() };
+  const cus = (await jobCustomer(l.org_id, l.job_id, job, acct)).customer;
+  const s = await mintSession({ org: l.org_id, jobId: l.job_id, job, S, by: l.created_by || "", token: l.token, amt, save: !!l.save_card, cus, until: Date.parse(l.expires_at), acct });
+  const patch = { session_id: s.id, url: s.url, amount_cents: amt, session_expires: new Date(s.expires_at * 1000).toISOString(), account: acct };
   const kept = await rest("PATCH", "pay_links?token=eq." + q(l.token) + "&status=eq.open", patch, "return=representation");
   if (!kept || !kept.length) {   // the link was replaced or paid meanwhile: its new page must not stay open
-    await stripe("POST", "checkout/sessions/" + s.id + "/expire").catch(() => {});
+    await stripe("POST", "checkout/sessions/" + s.id + "/expire", undefined, undefined, acct).catch(() => {});
     return { state: "gone" };
   }
   return { state: "ready", link: { ...l, ...patch } };
 }
+// a pay link's current page is on the account the company takes payments on now
+const pageOn = (l: J, acct: string) => (l.account || "") === acct;
 
 /* bringing a job up to date with Stripe */
 const OPEN_PI = ["requires_payment_method", "requires_confirmation", "requires_action"];
@@ -1396,33 +1480,34 @@ async function settleJob(org: string, jobId: string, o: { me?: J; reserve?: bool
   const live = liveNow();
   let reserved = 0;
   const inflight: J[] = [];
-  const rows = (await rest("GET", "pay_log?select=pi,status,livemode&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) +
+  const rows = (await rest("GET", "pay_log?select=pi,status,livemode,account&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) +
     "&status=in.(requires_payment_method,requires_confirmation,requires_action,processing)")) || [];
   for (const r of rows) {
     if (!!r.livemode !== live) continue;   // the other mode's payments can't be looked up with this key
+    const acct = r.account || "";
     let pi: J;
     try {
-      pi = await stripe("GET", "payment_intents/" + r.pi, { expand: ["payment_method", "latest_charge"] });
+      pi = await stripe("GET", "payment_intents/" + r.pi, { expand: ["payment_method", "latest_charge"] }, undefined, acct);
     } catch (e) {
       if (!(e instanceof StripeError && e.status === 404)) throw e;
       await rest("PATCH", "pay_log?pi=eq." + q(r.pi), { status: "canceled", updated_at: nowIso() });
       continue;
     }
-    await recordIntent(pi);
+    await recordIntent(pi, acct);
     const md = pi.metadata || {};
     // a pay link's payment belongs to its Stripe page, which is stopped by closing the page (Stripe
     // doesn't let Checkout's payments be cancelled on their own)
     if (OPEN_PI.indexOf(pi.status) < 0 || md.tally_src === "link") continue;
     const stale = Date.now() - (Number(pi.created) || 0) * 1000 > STALE_MS;
     const mine = !!o.me && (md.tally_uid ? md.tally_uid === o.me.uid : md.tally_by === who(o.me));
-    if (stale || md.tally_src === "saved" || pi.last_payment_error || mine) await cancelIntent(pi);
-    else if (o.me || o.reserve) { reserved += Number(pi.amount) || 0; inflight.push(pi); }
+    if (stale || md.tally_src === "saved" || pi.last_payment_error || mine) await cancelIntent(pi, acct);
+    else if (o.me || o.reserve) { reserved += Number(pi.amount) || 0; inflight.push({ pi, acct }); }
   }
   const links = (await rest("GET", "pay_links?select=*&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&status=eq.open")) || [];
   for (const l of links) {
     if (!pageUsable(l)) continue;
     let s: J = null;
-    try { s = await stripe("GET", "checkout/sessions/" + l.session_id); } catch (e) { if (!stripeNo(e)) throw e; }
+    try { s = await stripe("GET", "checkout/sessions/" + l.session_id, undefined, undefined, l.account || ""); } catch (e) { if (!stripeNo(e)) throw e; }
     if (s && s.status === "complete") await sessionPaid(l, s);
     else if (!s || s.status === "expired") await rest("PATCH", "pay_links?token=eq." + q(l.token), { session_expires: nowIso() });
   }
@@ -1447,12 +1532,84 @@ async function readyToCharge(org: string, jobId: string, me: J, amt: number, job
   return { ok: true, job, owed, reserved };
 }
 
+/* a company's own Stripe account (Stripe Connect) */
+// what the app shows about it, from Stripe's account (the v1 view of it, which Stripe keeps for v2 accounts too)
+export function acctState(a: J): J {
+  const req = (a && a.requirements) || {};
+  const due = ([] as string[]).concat(req.past_due || [], req.currently_due || []).map(String).filter((x, i, l) => l.indexOf(x) === i).slice(0, 30);
+  return { charges_enabled: !!(a && a.charges_enabled), payouts_enabled: !!(a && a.payouts_enabled), details_submitted: !!(a && a.details_submitted),
+    due, disabled_reason: String(req.disabled_reason || "").slice(0, 200) };
+}
+// brings the row up to date with Stripe when it is older than minAge ms; the old row if Stripe can't say
+async function acctRefresh(row: J, minAge = 20e3): Promise<J> {
+  if (Date.now() - (Number(Date.parse(row.updated_at)) || 0) < minAge) return row;
+  try {
+    const st = { ...acctState(await stripe("GET", "accounts/" + row.account_id)), updated_at: nowIso() };
+    await rest("PATCH", "pay_accounts?account_id=eq." + q(row.account_id), st);
+    return { ...row, ...st };
+  } catch (e) {
+    console.error("stripe account", e);
+    return row;
+  }
+}
+function connectView(row: J): J {
+  const state = row.disabled_reason === "disconnected" ? "disconnected" : row.charges_enabled ? "ready" : row.details_submitted ? "review" : "started";
+  return { state, due: row.due || [], disabled: row.disabled_reason || "", payouts: !!row.payouts_enabled };
+}
+
 /* the app's payment actions */
-export async function payConfig(org: string): Promise<J> {
+// Whether this company can take cards now, on which account, and (for a company's own account) where its
+// Stripe sign-up stands. refresh: ask Stripe now (the owner just came back from Stripe's sign-up).
+export async function payConfig(org: string, b: J = {}): Promise<J> {
+  const mode = stripeMode(), test = mode === "test";
+  if (!mode) return { ok: true, ready: false, test: false, publishableKey: "", reason: "no-key" };
+  const pk = publishableKey();
+  if (await payOrgOn(org)) return { ok: true, ready: true, test, publishableKey: pk, account: "", via: "platform", reason: pk ? "" : "no-pk" };
+  let row = await acctRow(org);
+  if (!row) return { ok: true, ready: false, test, publishableKey: "", reason: "connect", connect: { state: "none", due: [] } };
+  // asked to (the owner is back from Stripe's sign-up, or pressed Check again): at most every 3 seconds
+  if ((!row.charges_enabled || b.refresh) && row.disabled_reason !== "disconnected") row = await acctRefresh(row, b.refresh ? 3e3 : 20e3);
+  const connect = connectView(row);
+  if (connect.state === "disconnected") return { ok: true, ready: false, test, publishableKey: "", reason: "connect-off", connect };
+  if (!row.charges_enabled) return { ok: true, ready: false, test, publishableKey: "", reason: "connect-pending", connect };
+  return { ok: true, ready: true, test, publishableKey: pk, account: row.account_id, via: "connect", reason: pk ? "" : "no-pk", connect };
+}
+// The owner connects the company's own Stripe account: Tally asks Stripe to make one (or picks up the one
+// started before) and hands back Stripe's own sign-up page, where the owner gives Stripe the business
+// details, the bank account for payouts and an ID check. Tally never sees those.
+export async function payConnect(org: string, me: J): Promise<J> {
+  if (me.role !== "owner") return { ok: false, status: 403, message: "Only the owner connects the company's Stripe account." };
   const mode = stripeMode();
-  const on = mode ? await payOrgOn(org) : false;
-  const pk = on ? publishableKey() : "";
-  return { ok: true, ready: !!mode && on, test: mode === "test", publishableKey: pk, reason: !mode ? "no-key" : !on ? "org-off" : !pk ? "no-pk" : "" };
+  if (!mode) return { ok: false, message: "Card payments are not set up yet." };
+  if (await payOrgOn(org)) return { ok: false, message: "This company already takes card payments on Tally's own Stripe account." };
+  const wh = await ensureWebhook("connect");
+  if (!wh.ok) return wh;
+  let row = await acctRow(org);
+  if (row && row.disabled_reason === "disconnected") {   // disconnected from Tally in Stripe: start again with a new account
+    await rest("PATCH", "pay_accounts?account_id=eq." + q(row.account_id), { is_current: false });
+    row = null;
+  }
+  if (!row) {
+    const live = liveNow(), S = await getDoc(org, "org/settings");
+    const tries = ((await rest("GET", "pay_accounts?select=account_id&org_id=eq." + q(org) + "&livemode=eq." + live)) || []).length;
+    const a = await stripeV2("POST", "core/accounts", {
+      display_name: company(S).slice(0, 100), contact_email: validEmail(me.email) || undefined, dashboard: "full",
+      identity: { country: "us" },
+      configuration: { merchant: { capabilities: { card_payments: { requested: true } } } },
+      defaults: { currency: "usd", responsibilities: { fees_collector: "stripe", losses_collector: "stripe" }, locales: ["en-US"] },
+    }, "tally-acct-" + org + "-" + mode + "-" + tries);   // two taps make one account
+    if (!a || !ACCT_RE.test(String(a.id || ""))) return { ok: false, message: "Stripe did not make the account. Try again in a minute." };
+    await rest("POST", "pay_accounts?on_conflict=account_id", { account_id: a.id, org_id: org, livemode: live, is_current: true, created_by: who(me), updated_at: new Date(0).toISOString() }, "resolution=ignore-duplicates");
+    row = (await acctRow(org)) || { account_id: a.id, updated_at: new Date(0).toISOString() };
+  }
+  row = await acctRefresh(row, 0);
+  if (row.charges_enabled && row.details_submitted) return { ok: true, done: true, message: "Your Stripe account is connected. Manage it at dashboard.stripe.com." };
+  const link = await stripeV2("POST", "core/account_links", {
+    account: row.account_id,
+    use_case: { type: "account_onboarding", account_onboarding: { configurations: ["merchant"], refresh_url: base() + "/connect/again", return_url: base() + "/connect/done" } },
+  });
+  if (!link || !/^https:\/\//.test(String(link.url || ""))) return { ok: false, message: "Stripe did not give a sign-up link. Try again in a minute." };
+  return { ok: true, url: link.url };
 }
 async function textedLately(org: string, jobId: string): Promise<boolean> {
   const since = new Date(Date.now() - 120e3).toISOString();
@@ -1464,9 +1621,9 @@ async function textedLately(org: string, jobId: string): Promise<boolean> {
 export async function payLink(org: string, me: J, jobId: string, b: J): Promise<J> {
   const c = await payContext(org, me, jobId);
   if (c.err) return { ok: false, message: c.err, status: c.status };
-  const amt = cents(b.amount), save = !!b.save, by = who(me);
+  const amt = cents(b.amount), save = !!b.save, by = who(me), acct = c.acct;
   if (!(amt > 0)) return { ok: false, message: "Enter an amount." };
-  const wh = await ensureWebhook();
+  const wh = await hookFor(acct);
   if (!wh.ok) return wh;
   const res = await withJobLock(org, jobId, async (): Promise<J> => {
     const { reserved } = await settleJob(org, jobId, { me });
@@ -1478,8 +1635,8 @@ export async function payLink(org: string, me: J, jobId: string, b: J): Promise<
     // the same request again (a second tap, the screen redrawn) gets the same link back
     const again = open.find((l: J) => capOf(l) === amt && !!l.save_card === save && Date.parse(l.expires_at) > Date.now() + 3600e3);
     if (again) {
-      if (again.amount_cents === amt && Date.parse(pageEnds(again)) > Date.now() + 15 * 60e3 && sessionLive(again.session_id) === liveNow()) return { ok: true, link: again };
-      const r = await renewPage(again, job, c.S, amt);
+      if (again.amount_cents === amt && Date.parse(pageEnds(again)) > Date.now() + 15 * 60e3 && sessionLive(again.session_id) === liveNow() && pageOn(again, acct)) return { ok: true, link: again };
+      const r = await renewPage(again, job, c.S, amt, acct);
       if (r.state === "paid") return { ok: false, message: "That link was just paid. Check the bill." };
       if (r.state === "open") return { ok: false, message: PAYING };
       if (r.state === "gone") return { ok: false, message: BUSY };
@@ -1498,12 +1655,12 @@ export async function payLink(org: string, me: J, jobId: string, b: J): Promise<
       bad = amountTrouble(amt, owed, reserved);
       if (bad) return { ok: false, message: bad };
     }
-    const cus = (await jobCustomer(org, jobId, job)).customer;
+    const cus = (await jobCustomer(org, jobId, job, acct)).customer;
     const token = randToken(), until = Date.now() + LINK_DAYS * 86400e3;
-    const s = await mintSession({ org, jobId, job, S: c.S, by, token, amt, save, cus, until });
+    const s = await mintSession({ org, jobId, job, S: c.S, by, token, amt, save, cus, until, acct });
     const link = {
       token, org_id: org, job_id: jobId, session_id: s.id, url: s.url, amount_cents: amt, cap_cents: amt, save_card: save, created_by: by,
-      status: "open", expires_at: new Date(until).toISOString(), session_expires: new Date(s.expires_at * 1000).toISOString(),
+      status: "open", expires_at: new Date(until).toISOString(), session_expires: new Date(s.expires_at * 1000).toISOString(), account: acct,
     };
     await rest("POST", "pay_links", link);
     return { ok: true, link };
@@ -1533,25 +1690,26 @@ export async function payLink(org: string, me: J, jobId: string, b: J): Promise<
 export async function payIntent(org: string, me: J, jobId: string, b: J): Promise<J> {
   const c = await payContext(org, me, jobId);
   if (c.err) return { ok: false, message: c.err, status: c.status };
-  const amt = cents(b.amount), save = !!b.save, by = who(me);
+  const amt = cents(b.amount), save = !!b.save, by = who(me), acct = c.acct;
   if (!(amt > 0)) return { ok: false, message: "Enter an amount." };
   if (!publishableKey()) return { ok: false, message: "Typing a card in needs STRIPE_PUBLISHABLE_KEY in Supabase. Use a pay link for now." };
   if (await tooManyPays(org, by)) return { ok: false, message: TOO_MANY };
-  const wh = await ensureWebhook();
+  const wh = await hookFor(acct);
   if (!wh.ok) return wh;
   const res = await withJobLock(org, jobId, async (): Promise<J> => {
     const ready = await readyToCharge(org, jobId, me, amt, c.job);
     if (!ready.ok) return ready;
-    const job = ready.job, cus = (await jobCustomer(org, jobId, job)).customer;
+    const job = ready.job, cus = (await jobCustomer(org, jobId, job, acct)).customer;
     const md = payMeta(org, jobId, job, by, "card", me.uid);
     const pi = await stripe("POST", "payment_intents", {
       amount: amt, currency: "usd", customer: cus, allowed_payment_method_types: ["card"],
       payment_method_options: { card: { setup_future_usage: save ? "off_session" : "none" } },
       metadata: md, description: payWhat(c.S, job), receipt_email: validEmail((job.d || {}).email) || undefined,
-    });
+    }, undefined, acct);
     await rest("POST", "pay_log?on_conflict=pi", { pi: pi.id, org_id: org, job_id: jobId, amount_cents: amt, status: pi.status || "requires_payment_method",
-      source: "card", cust_key: md.tally_cust, by_staff: by, livemode: !!pi.livemode, updated_at: nowIso() }, "resolution=merge-duplicates");
-    return { ok: true, clientSecret: pi.client_secret, returnUrl: base() + "/pay/done", amount: amt / 100 };
+      source: "card", cust_key: md.tally_cust, by_staff: by, livemode: !!pi.livemode, updated_at: nowIso(), account: acct }, "resolution=merge-duplicates");
+    // the card box on the phone works on the same Stripe account the payment is on
+    return { ok: true, clientSecret: pi.client_secret, returnUrl: base() + "/pay/done", amount: amt / 100, account: acct };
   });
   return res || { ok: false, message: BUSY };
 }
@@ -1560,7 +1718,7 @@ export async function payIntent(org: string, me: J, jobId: string, b: J): Promis
 export async function paySaved(org: string, me: J, jobId: string, b: J): Promise<J> {
   const c = await payContext(org, me, jobId);
   if (c.err) return { ok: false, message: c.err, status: c.status };
-  const amt = cents(b.amount), by = who(me), live = liveNow();
+  const amt = cents(b.amount), by = who(me), live = liveNow(), acct = c.acct;
   if (!(amt > 0)) return { ok: false, message: "Enter an amount." };
   const vid = String(b.vaultId || "");
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(vid)) return { ok: false, message: "Pick a saved card." };
@@ -1568,8 +1726,9 @@ export async function paySaved(org: string, me: J, jobId: string, b: J): Promise
   if (!card || !card.pm_id) return { ok: false, message: "That saved card can't be charged here. Use a pay link or the card itself." };
   if (!(await getDoc(org, "vault/" + vid))) return { ok: false, message: "That card is no longer on file." };
   if (!!card.livemode !== live) return { ok: false, message: "That card was saved in Stripe " + (card.livemode ? "live" : "test") + " mode and can't be used now." };
+  if ((card.account || "") !== acct) return { ok: false, message: "That card was kept on file on a different Stripe account, so it can't be charged here. Use a pay link or the card itself." };
   if (await tooManyPays(org, by)) return { ok: false, message: TOO_MANY };
-  const wh = await ensureWebhook();
+  const wh = await hookFor(acct);
   if (!wh.ok) return wh;
   const res = await withJobLock(org, jobId, async (): Promise<J> => {
     // the same amount charged to a card on this job a moment ago: most likely a double tap
@@ -1579,7 +1738,7 @@ export async function paySaved(org: string, me: J, jobId: string, b: J): Promise
     const ready = await readyToCharge(org, jobId, me, amt, c.job);
     if (!ready.ok) return ready;
     const job = ready.job;
-    if ((await jobCustomer(org, jobId, job)).customer !== card.customer_id) return { ok: false, message: "That card belongs to a different customer." };
+    if ((await jobCustomer(org, jobId, job, acct)).customer !== card.customer_id) return { ok: false, message: "That card belongs to a different customer." };
     if (me.role === "lead" && card.job_id !== jobId) {
       const here = card.fingerprint ? await rest("GET", "pay_cards?select=id&org_id=eq." + q(org) + "&customer_id=eq." + q(card.customer_id) + "&fingerprint=eq." + q(card.fingerprint) + "&job_id=eq." + q(jobId) + "&limit=1") : [];
       if (!(here && here.length)) return { ok: false, message: "This card was kept on file on another job. The office can charge it, or send a pay link." };
@@ -1597,22 +1756,22 @@ export async function paySaved(org: string, me: J, jobId: string, b: J): Promise
     }
     // one charge however many times this is sent: the key names the job, the card, the amount, the bill so far
     const tries = (await rest("GET", "pay_log?select=pi&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&source=eq.saved")) || [];
-    const idem = "tally-saved-" + await sha([org, jobId, card.pm_id, amt, jobTotalCents(job) - ready.owed, tries.length, live].join("|"));
+    const idem = "tally-saved-" + await sha([org, jobId, card.pm_id, amt, jobTotalCents(job) - ready.owed, tries.length, live, acct].join("|"));
     const md = payMeta(org, jobId, job, by, "saved", me.uid);
     try {
       const pi = await stripe("POST", "payment_intents", {
         amount: amt, currency: "usd", customer: card.customer_id, payment_method: card.pm_id, off_session: true, confirm: true,
         metadata: md, description: payWhat(c.S, job), receipt_email: validEmail((job.d || {}).email) || undefined,
         expand: ["payment_method", "latest_charge"],
-      }, idem);
-      await recordIntent(pi);
+      }, idem, acct);
+      await recordIntent(pi, acct);
       const what = methodLabel(pi.payment_method && typeof pi.payment_method === "object" ? pi.payment_method : null);
       if (pi.status === "succeeded") return { ok: true, message: "Charged " + money(amt) + " to " + what + "." };
       if (pi.status === "processing") return { ok: true, message: "Payment of " + money(amt) + " is processing." };
       return { ok: false, message: "The card was not charged." };
     } catch (e) {
       if (e instanceof StripeError && e.err && e.err.type === "card_error") {
-        if (e.err.payment_intent && e.err.payment_intent.id) await recordIntent({ id: e.err.payment_intent.id }).catch(() => {});
+        if (e.err.payment_intent && e.err.payment_intent.id) await recordIntent({ id: e.err.payment_intent.id }, acct).catch(() => {});
         if (e.err.code === "authentication_required") {
           return { ok: false, needLink: true, message: "The customer's bank wants them to approve this one. Send them a pay link instead." };
         }
@@ -1630,28 +1789,29 @@ export async function paySaved(org: string, me: J, jobId: string, b: J): Promise
 // say what is still owed.
 export async function payCheck(org: string, me: J, jobId: string, b: J): Promise<J> {
   if (!stripeMode()) return { ok: false, message: "Card payments are not set up yet." };
-  if (!(await payOrgOn(org))) return { ok: false, message: "Card payments are not turned on for this company yet." };
+  const pa = await payAccount(org);
+  if (!pa.on) return { ok: false, message: payOffWhy(pa.reason) };
   const job = await getDoc(org, "jobs/" + jobId);
   if (!job) return { ok: false, message: "That job is not available." };
   if (!canTakePay(me, job)) return { ok: false, status: 403, message: "Crew leads and the office take payments." };
   const pid = String(b.pi || "");
   if (pid) {
     if (!/^pi_[A-Za-z0-9_]+$/.test(pid)) return { ok: false, message: "Unknown payment." };
-    const md = (await stripe("GET", "payment_intents/" + pid)).metadata || {};
+    const md = (await stripe("GET", "payment_intents/" + pid, undefined, undefined, pa.acct)).metadata || {};
     if (md.tally_org !== org || md.tally_job !== jobId) return { ok: false, message: "That payment belongs to another job." };
   }
   const out = await withJobLock(org, jobId, async () => {
     // looked up again inside the lock, so an older state of the same payment can't be written over a newer one
-    const rec = pid ? await recordIntent({ id: pid }) : null;
+    const rec = pid ? await recordIntent({ id: pid }, pa.acct) : null;
     const { inflight } = await settleJob(org, jobId, { reserve: true });
     const fixed = await repairJob(org, jobId);
     // a card payment going through on another phone that no longer fits the bill (cash came in, or the
     // bill was lowered) is called off; the ones that still fit hold their amount back from pay link pages
     const owed = await owedCents(org, jobId);
     let reserved = 0;
-    for (const pi of inflight) {
-      const a = Number(pi.amount) || 0;
-      if (a > owed - reserved) await cancelIntent(pi);
+    for (const f of inflight) {
+      const a = Number(f.pi.amount) || 0;
+      if (a > owed - reserved) await cancelIntent(f.pi, f.acct);
       else reserved += a;
     }
     await trimSessions(org, jobId, owed - reserved);
@@ -1670,12 +1830,12 @@ export async function payForget(org: string, me: J, b: J): Promise<J> {
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(vid)) return { ok: false, message: "Unknown card." };
   const card = ((await rest("GET", "pay_cards?select=*&org_id=eq." + q(org) + "&id=eq." + q(vid) + "&limit=1")) || [])[0];
   const all = !card || !card.pm_id ? [] : card.fingerprint
-    ? (await rest("GET", "pay_cards?select=id,pm_id,livemode&org_id=eq." + q(org) + "&customer_id=eq." + q(card.customer_id) + "&fingerprint=eq." + q(card.fingerprint))) || []
+    ? (await rest("GET", "pay_cards?select=id,pm_id,livemode,account&org_id=eq." + q(org) + "&customer_id=eq." + q(card.customer_id) + "&fingerprint=eq." + q(card.fingerprint))) || []
     : [card];
   for (const r of all) {
     if (!r.pm_id) continue;
     if (stripeMode() && !!r.livemode === liveNow()) {
-      try { await stripe("POST", "payment_methods/" + r.pm_id + "/detach"); } catch (e) { if (!stripeNo(e)) throw e; }
+      try { await stripe("POST", "payment_methods/" + r.pm_id + "/detach", undefined, undefined, r.account || ""); } catch (e) { if (!stripeNo(e)) throw e; }
     }
     // the entry stays behind, emptied, so writing an old payment down again can't put the card back
     await rest("PATCH", "pay_cards?id=eq." + q(r.id) + "&org_id=eq." + q(org), { pm_id: "", job_id: "", name: "" });
@@ -1702,7 +1862,8 @@ async function payRedirect(token: string): Promise<Response> {
     if ((await owedCents(l.org_id, l.job_id, job)) <= 0) return text("This bill is paid. Thank you!");
     return text("This payment link has expired. Ask " + co + " for a new one.", 410);
   }
-  if (!stripeMode() || !(await payOrgOn(l.org_id)) || (job.test && liveNow())) return text("Card payments are paused right now. Ask " + co + " how to pay.", 503);
+  const pa = stripeMode() ? await payAccount(l.org_id) : { on: false };
+  if (!pa.on || (job.test && liveNow())) return text("Card payments are paused right now. Ask " + co + " how to pay.", 503);
   const out = await withJobLock(l.org_id, l.job_id, async (): Promise<J> => {
     const { reserved } = await settleJob(l.org_id, l.job_id, { reserve: true });
     const cur = ((await rest("GET", "pay_links?select=*&token=eq." + q(token) + "&limit=1")) || [])[0] || l;
@@ -1717,8 +1878,8 @@ async function payRedirect(token: string): Promise<Response> {
         ? { msg: "A payment on this bill is going through right now. Try the link again in a few minutes.", status: 409 }
         : { msg: "What's left on this bill (" + money(owed) + ") is too small to pay by card. Pay " + co + " directly.", status: 409 };
     }
-    if (cur.amount_cents === want && Date.parse(pageEnds(cur)) > Date.now() + 10 * 60e3 && sessionLive(cur.session_id) === liveNow()) return { url: cur.url };
-    const r = await renewPage(cur, (await getDoc(l.org_id, "jobs/" + l.job_id)) || job, S, want);
+    if (cur.amount_cents === want && Date.parse(pageEnds(cur)) > Date.now() + 10 * 60e3 && sessionLive(cur.session_id) === liveNow() && pageOn(cur, pa.acct)) return { url: cur.url };
+    const r = await renewPage(cur, (await getDoc(l.org_id, "jobs/" + l.job_id)) || job, S, want, pa.acct);
     if (r.state === "paid") return { msg: "This payment is done. Thank you!" };
     if (r.state === "open") return { msg: "This payment is going through. Check back in a minute.", status: 409 };
     if (r.state === "gone") return { msg: "This payment link has expired. Ask " + co + " for a new one.", status: 410 };
@@ -1728,9 +1889,9 @@ async function payRedirect(token: string): Promise<Response> {
   if (out.msg) return text(out.msg, out.status || 200);
   return new Response(null, { status: 302, headers: { Location: out.url, "Cache-Control": "no-store" } });
 }
-async function handleStripe(req: Request): Promise<Response> {
+async function handleStripe(req: Request, kind: HookKind = "platform"): Promise<Response> {
   const raw = await req.text();
-  const secrets = await webhookSecrets();
+  const secrets = await webhookSecrets(kind);
   if (!secrets.length || !(await stripeSigOk(raw, req.headers.get("stripe-signature") || "", secrets))) return text("Bad signature", 400);
   let ev: J;
   try { ev = JSON.parse(raw); } catch { return text("Bad request", 400); }
@@ -1738,7 +1899,19 @@ async function handleStripe(req: Request): Promise<Response> {
   if (!stripeMode() || !!(ev && ev.livemode) !== liveNow()) return json({ received: true, skipped: "other-mode" });
   const o = (ev && ev.data && ev.data.object) || {}, type = String((ev && ev.type) || "");
   const idOf = (x: J) => typeof x === "string" ? x : x && x.id;
+  // events from a company's own Stripe account say which account; the platform's own never do
+  const acct = kind === "connect" ? String((ev && ev.account) || "") : "";
+  if (kind === "connect" && !ACCT_RE.test(acct)) return json({ received: true, skipped: "no-account" });
   try {
+    if (kind === "connect" && type === "account.updated") {
+      await rest("PATCH", "pay_accounts?account_id=eq." + q(acct), { ...acctState(o), updated_at: nowIso() });
+      return json({ received: true });
+    }
+    if (kind === "connect" && type === "account.application.deauthorized") {
+      // the company disconnected Tally in its Stripe dashboard: no more card payments until it connects again
+      await rest("PATCH", "pay_accounts?account_id=eq." + q(acct), { charges_enabled: false, disabled_reason: "disconnected", updated_at: nowIso() });
+      return json({ received: true });
+    }
     let pid = "";
     if (/^payment_intent\./.test(type)) pid = o.id;
     else if (type === "checkout.session.completed") {
@@ -1750,17 +1923,17 @@ async function handleStripe(req: Request): Promise<Response> {
     if (pid) {
       // which job: from the event when it says, otherwise from the payment itself
       const md = (o.object === "payment_intent" || o.object === "checkout.session") && o.metadata ? o.metadata
-        : ((await stripe("GET", "payment_intents/" + pid)) || {}).metadata || {};
+        : ((await stripe("GET", "payment_intents/" + pid, undefined, undefined, acct)) || {}).metadata || {};
       const org = String(md.tally_org || ""), job = String(md.tally_job || "");
-      if (/^[0-9A-Fa-f-]{36}$/.test(org) && /^[A-Za-z0-9_-]{1,40}$/.test(job) && await orgExists(org)) {
+      if (/^[0-9A-Fa-f-]{36}$/.test(org) && /^[A-Za-z0-9_-]{1,40}$/.test(job) && await orgExists(org) && (!acct || await acctIsOrgs(org, acct))) {
         // written down inside the job's lock, so a check running at the same moment can't write an older
         // state of this payment over it; pay link pages that now ask for more than is left are closed
         const work = async () => {
-          const rec = await recordIntent({ id: pid });
+          const rec = await recordIntent({ id: pid }, acct);
           if (rec.ok && rec.org) await trimSessions(rec.org, rec.job, rec.owed);
           return rec;
         };
-        if ((await withJobLock(org, job, work, 5000)) === null) await recordIntent({ id: pid });   // still busy: write it down anyway
+        if ((await withJobLock(org, job, work, 5000)) === null) await recordIntent({ id: pid }, acct);   // still busy: write it down anyway
       }
     }
   } catch (e) {
@@ -1787,7 +1960,18 @@ async function handleApp(req: Request): Promise<Response> {
       if (!office) return json({ ok: false, message: "Only the owner and dispatch build quotes." }, 403);
       return json(await driveDistance(b.from, b.to));
     }
-    if (b.action === "pay_config") return json(await payConfig(org));
+    if (b.action === "pay_config") return json(await payConfig(org, b));
+    if (b.action === "pay_connect") {
+      try {
+        const out = await payConnect(org, me);
+        const st = out.status;
+        delete out.status;
+        return json(out, typeof st === "number" ? st : 200);
+      } catch (e) {
+        console.error("pay_connect", e);
+        return json({ ok: false, message: stripeTrouble(e) });
+      }
+    }
     if (b.action === "sos") {
       const out = await sosText(org, me, String(b.msgId || ""), String(b.kind || ""), b.now);
       const st = out.status;
@@ -1981,10 +2165,14 @@ export async function handle(req: Request): Promise<Response> {
       if (pl) return await payRedirect(pl[1]);
     } catch (e) { console.error(e); return text("Something went wrong. Try the link again in a minute.", 500); }
     if (/^\/pay\/done\/?$/.test(sub)) return text("Payment received. Thank you!\n\nYou can close this page.");
+    // where Stripe's sign-up for a company's own account sends the owner back to
+    if (/^\/connect\/done\/?$/.test(sub)) return text("Thanks, that's all Stripe needed for now.\n\nGo back to Tally: Setup › Payments shows when Stripe has finished checking your details and card payments are on.");
+    if (/^\/connect\/again\/?$/.test(sub)) return text("This Stripe sign-up link has expired or was already used.\n\nGo back to Tally and press Continue with Stripe in Setup › Payments for a fresh one.");
   }
   if (req.method !== "POST") return json({ ok: false, message: "POST only" }, 405);
   if (sub === "/app" || sub === "/app/") return handleApp(req);
   if (sub === "/stripe" || sub === "/stripe/") return handleStripe(req);
+  if (sub === "/stripe/connect" || sub === "/stripe/connect/") return handleStripe(req, "connect");
   if (/^\/cron\/tomorrow\/?$/.test(sub)) {
     const secret = env("TALLY_CRON_SECRET");
     if (!secret || !same(secret, req.headers.get("x-tally-cron") || "")) return json({ ok: false, message: "Forbidden" }, 403);

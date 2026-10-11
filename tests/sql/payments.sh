@@ -148,5 +148,21 @@ check $OWN "st_pi_5" "$(q4 "(select string_agg(k,',' order by k) from jsonb_obje
 srv "select public.pay_record('$O','j4','rf_pi_5','{\"id\":\"rf_pi_5\",\"amt\":-50,\"method\":\"Refund\",\"stripe\":\"pi_5\"}', null, null, false)" >/dev/null
 same "$(srv "select data->'payments'->'rf_pi_5'->>'amt' from docs where path='jobs/j4'")" "-50" "the server still writes refunds"
 
+# ---- Stripe Connect: companies' own Stripe accounts, closed to the app like the other pay_ tables
+$P -d t -c "insert into pay_accounts(account_id,org_id,livemode) values ('acct_1TestAAA','$O',false)"
+$P -d t -c "insert into pay_config_connect(mode,webhook_secret,status) values ('test','whsec_c','ready')"
+check $OWN 0 "select count(*) from pay_accounts" "the owner can't read the company's Stripe account row"
+check $OWN 0 "select count(*) from pay_config_connect" "or the companies' webhook secret"
+says $OWN "insert into pay_accounts(account_id,org_id) values ('acct_1Mine000','$O2')" "row-level security" "nobody can point a company at a Stripe account of their choosing"
+check $OWN "" "update pay_accounts set charges_enabled=true returning 1" "or switch card payments on for it"
+same "$(srv "select is_current::text||','||charges_enabled::text||','||due::text from pay_accounts where account_id='acct_1TestAAA'")" "true,false,[]" "a new account starts current, not yet taking cards, nothing listed as due"
+got=$($P -d t -tA -c "insert into pay_accounts(account_id,org_id,livemode) values ('acct_1TestBBB','$O',false)" 2>&1|tr '\n' ' '); case "$got" in *"pay_accounts_current_idx"*) echo "PASS one current account per company and mode";; *) echo "FAIL second current account: $got"; FAILS=1;; esac
+srv "update pay_accounts set is_current=false where account_id='acct_1TestAAA'" >/dev/null
+same "$(srv "insert into pay_accounts(account_id,org_id,livemode) values ('acct_1TestBBB','$O',false) returning account_id")" "acct_1TestBBB" "after the old one stops being current, a new one can be connected (the old one stays for its payments)"
+same "$(srv "insert into pay_accounts(account_id,org_id,livemode) values ('acct_1TestCCC','$O',true) returning account_id")" "acct_1TestCCC" "and live mode has its own"
+got=$($P -d t -tA -c "insert into pay_accounts(account_id,org_id) values ('cus_123','$O')" 2>&1|tr '\n' ' '); case "$got" in *"check"*) echo "PASS only Stripe account ids are kept";; *) echo "FAIL account id check: $got"; FAILS=1;; esac
+same "$(srv "select account from pay_log where pi='pi_1'")" "" "older ledger rows are on the platform's own account"
+same "$(srv "select string_agg(table_name,',' order by table_name) from information_schema.columns where column_name='account' and table_schema='public'")" "pay_cards,pay_customers,pay_jobs,pay_links,pay_log" "every payment table says which Stripe account a row is on"
+
 echo
 [ $FAILS -eq 0 ] && echo "payments sql: all passed" || { echo "payments sql: FAILURES"; exit 1; }

@@ -75,6 +75,7 @@ main{padding:10px 12px calc(70px + env(safe-area-inset-bottom));max-width:960px;
 .grow{flex:1;min-width:0}
 .hint{color:var(--muted);font-size:13px;margin:6px 0 0}
 .note{background:var(--accSoft);border:var(--bw) solid var(--tape-edge);border-radius:10px;padding:8px 10px;font-size:13px;margin-bottom:10px}
+.duelist{margin:4px 0 0;padding-left:20px;font-size:14px}.duelist li{margin:2px 0}
 .empty{text-align:center;padding:22px 12px;color:var(--muted)}
 .empty h3{color:var(--text);margin-bottom:4px;font-size:18px}
 
@@ -876,7 +877,8 @@ window.tallyPeople={
 window.tallyMaps={distance:function(from,to){return commsPost({action:'distance',from:from,to:to})}};
 /* ---------- card payments (Stripe, through the same Edge Function) ---------- */
 window.tallyPay={
-  config:function(){return commsPost({action:'pay_config'})},
+  config:function(refresh){return commsPost(refresh?{action:'pay_config',refresh:true}:{action:'pay_config'})},
+  connect:function(){return commsPost({action:'pay_connect'})},
   link:function(id,amount,save,text){return commsPost({action:'pay_link',jobId:id,amount:amount,save:!!save,text:!!text})},
   intent:function(id,amount,save){return commsPost({action:'pay_intent',jobId:id,amount:amount,save:!!save})},
   saved:function(id,vaultId,amount,nonce){return commsPost({action:'pay_saved',jobId:id,vaultId:vaultId,amount:amount,nonce:nonce})},
@@ -4152,15 +4154,19 @@ function qrSvg(text){
    Stripe's own card box, and a card on file is charged by the server. The server, not this
    screen, decides what is still owed. */
 var STRIPE_JS='https://js.stripe.com/endive/stripe.js',MIN_PAY=50;
-var pay={cfg:null,loading:null,stripe:null,js:null,elements:null,el:null,elJob:'',busy:false,links:{},poll:null,
+var pay={cfg:null,cfgAt:0,loading:null,stripe:null,stripeKey:'',js:null,elements:null,el:null,elJob:'',busy:false,links:{},poll:null,
+  connecting:false,connectWait:false,connectUrl:'',connectMsg:'',
   lastTest:(function(){try{return localStorage.getItem('tally.payTest')==='1'}catch(e){return false}})()};
 function payOn(){return !!(window.tallyPay&&sync.mode==='shared'&&sync.identity.status==='ok'&&pay.cfg&&pay.cfg.ready)}
 function payCardOn(){return payOn()&&!!pay.cfg.publishableKey}
-function payLoad(force){
+// refresh: ask Stripe now how the company's own Stripe account stands (back from Stripe's sign-up)
+function payLoad(force,refresh){
   if(!window.tallyPay||sync.mode!=='shared')return Promise.resolve(null);
   if(pay.cfg&&!force)return Promise.resolve(pay.cfg);
   if(pay.loading)return pay.loading;
-  pay.loading=Promise.resolve(window.tallyPay.config()).then(function(c){pay.cfg=c&&c.ok?c:{ready:false,reason:'down'};
+  pay.cfgAt=Date.now();
+  pay.loading=Promise.resolve(window.tallyPay.config(!!refresh)).then(function(c){pay.cfg=c&&c.ok?c:{ready:false,reason:'down'};
+      if(pay.cfg.ready||pay.cfg.reason==='connect-off')pay.connectWait=false;
       if(pay.cfg.ready){pay.lastTest=pay.cfg.test===true;try{localStorage.setItem('tally.payTest',pay.lastTest?'1':'0')}catch(e){}}},function(){pay.cfg={ready:false,reason:'down'}})
     .then(function(){pay.loading=null;if(ui.flow)renderFlow();if(ui.jobId)renderSheet();softSettings();return pay.cfg});
   return pay.loading;
@@ -4199,7 +4205,9 @@ function cardMount(j){
   if(!$('#stripeCard'))return;
   var cents=Math.round(flowAmt()*100),keepCard=!!(d0('#saveCard')||{}).checked;
   stripeJs().then(function(S){
-    if(!pay.stripe)pay.stripe=S(pay.cfg.publishableKey);
+    // a company on its own Stripe account (Connect): the card box works on that account, where the server makes the payment
+    var acct=pay.cfg.account||'',key=pay.cfg.publishableKey+'|'+acct;
+    if(!pay.stripe||pay.stripeKey!==key){cardDrop();pay.stripe=acct?S(pay.cfg.publishableKey,{stripeAccount:acct}):S(pay.cfg.publishableKey);pay.stripeKey=key}
     var box=$('#stripeCard');if(!box)return;
     if(!pay.elements||pay.elJob!==j.id){
       cardDrop();
@@ -4335,16 +4343,69 @@ function officeLinkHtml(j){
       '<button class="btn sm" data-act="pay:copy" data-url="'+esc(l.url)+'">Copy</button><button class="btn sm" data-act="pl:qr">'+(ui.plQr?'Hide the QR code':'QR code')+'</button></div>'+
       (ui.plQr?'<div class="qrwrap">'+qrSvg(l.url)+'</div>':''):'');
 }
+// What Stripe still needs for a company's own account, in plain words (Stripe's names for them are on the left).
+var STRIPE_DUE=[[/^external_account/,'The bank account Stripe pays out to'],[/^tos_acceptance/,'Accepting Stripe’s terms'],[/verification\.(additional_)?document/,'A photo of an ID or a business document'],
+  [/^business_type/,'The kind of business (company, sole owner…)'],[/^business_profile/,'What the business does (industry, website or a short description)'],
+  [/^company\./,'Company details (legal name, EIN, address, phone)'],[/^(representative|individual)\./,'Your own details (name, date of birth, home address, SSN)'],
+  [/^(owners|directors|executives|person_)/,'The business owners’ details'],[/^settings\./,'What shows on customers’ card statements']];
+function stripeDue(list){var out=[];(list||[]).forEach(function(k){var hit=STRIPE_DUE.filter(function(x){return x[0].test(String(k))})[0],t=hit?hit[1]:'Something else Stripe asks for';if(out.indexOf(t)<0)out.push(t)});return out}
 function payCardHtml(){
   if(!window.tallyPay)return '<section class="card"><h2>Payments</h2><p class="sub">Card payments run on the hosted edition of Tally (the website and the Android app), through Stripe. This copy records payments but does not charge cards.</p></section>';
-  var c=pay.cfg,st;
+  var c=pay.cfg,st,cn=(c&&c.connect)||{},due=stripeDue(cn.due),btn='<button class="btn sm" data-act="pay:reload">Check again</button>',test=c&&c.test?' (test mode)':'';
+  // a company's own Stripe account: what is next, and the button to Stripe's sign-up
+  var go=function(label){return '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="pay:connect"'+(pay.connecting?' disabled':'')+'>'+(pay.connecting?'Opening Stripe…':label)+'</button>'+btn+'</div>'+
+    (pay.connectUrl?'<p class="hint">Your browser kept Stripe’s page from opening. <a href="'+esc(pay.connectUrl)+'" target="_blank" rel="noopener">Open Stripe’s sign-up page</a> (the link works for a few minutes).</p>':'')+
+    (pay.connectMsg?'<p class="hint" role="alert" style="color:var(--bad)">'+esc(pay.connectMsg)+'</p>':'')+
+    (pay.connectWait?'<p class="hint">Finished with Stripe? Come back here; this updates by itself.</p>':'')};
+  var dueList=due.length?'<p class="hint" style="margin-bottom:0">Stripe still needs:</p><ul class="duelist">'+due.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul>':'';
   if(!c)st='<p class="hint">Checking…</p>';
-  else if(c.ready)st='<div class="note"><b>Stripe is connected'+(c.test?' (test mode)':'')+'.</b><br><small>Pay links and cards on file are on'+(c.publishableKey?', and cards can be typed in':'. Typing a card in needs STRIPE_PUBLISHABLE_KEY in Supabase')+'. '+(c.test?'No real money moves until Supabase has your live keys.':'Payments are real.')+'</small></div>';
-  else if(c.reason==='org-off')st='<div class="note"><b>Stripe is set up, but this company is not turned on for card payments yet.</b><br><small>Add it to the pay_orgs table in Supabase (the payments setup guide shows how).</small></div>';
-  else if(c.reason==='no-key')st='<div class="note"><b>Not connected yet.</b><br><small>Add STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY under Supabase › Edge Functions › Secrets. The payments setup guide walks through it.</small></div>';
-  else st='<div class="note"><b>The payment service did not answer.</b></div>';
-  return '<section class="card"><h2>Payments</h2>'+st+'<p class="sub">Card numbers never touch Tally. Customers pay on Stripe’s own page or in Stripe’s card box, and only the brand, last four digits, expiry and name of a card kept on file are saved here.</p><button class="btn sm" data-act="pay:reload">Check again</button></section>';
+  else if(c.ready&&c.via==='connect')st='<div class="note"><b>Card payments go to your own Stripe account'+test+'.</b><br><small>Pay links, cards on file and typed cards are on'+(c.publishableKey?'':' (typing a card in needs STRIPE_PUBLISHABLE_KEY in Supabase)')+'. Stripe pays the money out to your bank'+(cn.payouts===false?' once it has finished checking the bank account':'')+'. Tally takes no cut; Stripe’s card fee comes out of each payment. Refunds, disputes and payouts are in your Stripe Dashboard at dashboard.stripe.com.'+(c.test?' Test mode: no real money moves.':'')+'</small></div>'+(due.length?dueList+go('Continue with Stripe'):'')+'<div class="row" style="margin-top:8px">'+btn+'</div>';
+  else if(c.ready)st='<div class="note"><b>Stripe is connected'+test+'.</b><br><small>Pay links and cards on file are on'+(c.publishableKey?', and cards can be typed in':'. Typing a card in needs STRIPE_PUBLISHABLE_KEY in Supabase')+'. '+(c.test?'No real money moves until Supabase has your live keys.':'Payments are real.')+'</small></div>'+btn;
+  else if(c.reason==='connect')st='<div class="note"><b>Take card payments with your company’s own Stripe account'+test+'.</b><br><small>Customers’ payments go straight to your Stripe account, and Stripe pays them out to your bank. Tally takes no cut; Stripe’s card fee comes out of each payment.</small></div>'+
+    '<p class="hint">Stripe asks for your business details, the bank account for payouts and an ID check, on Stripe’s own page. It takes about 10 minutes, and Tally never sees those details. Have your EIN (or SSN if you’re a sole owner) and your bank account ready.'+(c.test?' Test mode: Stripe’s page offers test details to fill in, and no real money moves.':'')+'</p>'+go('Connect with Stripe');
+  else if(c.reason==='connect-pending'){
+    var rejected=/^rejected/.test(cn.disabled||'');
+    st=rejected?'<div class="note"><b>Stripe turned this account down, so cards can’t be taken.</b><br><small>Stripe emails the reason. Ask Stripe’s support at support.stripe.com.</small></div>'+btn:
+      due.length?'<div class="note"><b>Stripe needs a few more details before cards can be taken.</b></div>'+dueList+go('Continue with Stripe'):
+      '<div class="note"><b>Stripe is checking your details.</b><br><small>This usually takes a few minutes, sometimes a day or two. Card payments turn on by themselves when Stripe is done; Stripe emails you if it needs anything.</small></div>'+btn;
+  }
+  else if(c.reason==='connect-off')st='<div class="note"><b>Your Stripe account was disconnected from Tally, so cards can’t be taken.</b><br><small>Connecting again sets up a new Stripe account for Tally’s payments. Payments already taken stay in the old one.</small></div>'+go('Connect again');
+  else if(c.reason==='org-off')st='<div class="note"><b>Stripe is set up, but this company is not turned on for card payments yet.</b><br><small>Add it to the pay_orgs table in Supabase (the payments setup guide shows how).</small></div>'+btn;
+  else if(c.reason==='no-key')st='<div class="note"><b>Not connected yet.</b><br><small>Add STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY under Supabase › Edge Functions › Secrets. The payments setup guide walks through it.</small></div>'+btn;
+  else st='<div class="note"><b>The payment service did not answer.</b></div>'+btn;
+  return '<section class="card"><h2>Payments</h2>'+st+'<p class="sub">Card numbers never touch Tally. Customers pay on Stripe’s own page or in Stripe’s card box, and only the brand, last four digits, expiry and name of a card kept on file are saved here.</p></section>';
 }
+// The owner connects the company's own Stripe account: the server makes it (or picks up the one started
+// before) and hands back Stripe's sign-up page, which opens outside Tally (in the phone's browser in the app).
+function payConnect(){
+  if(pay.connecting||!window.tallyPay)return;
+  var android=/TallyAndroid\//.test(navigator.userAgent||''),tab=null;
+  // in a browser the new tab is opened now, while the tap still counts (so it isn't blocked), and Stripe's page loads into it
+  if(!android){try{tab=window.open('','_blank')}catch(e){}
+    if(tab){try{tab.opener=null;tab.document.title='Opening Stripe…';tab.document.body.innerHTML='<p style="font:16px system-ui,sans-serif;padding:24px">Opening Stripe…</p>'}catch(e){}}}
+  pay.connecting=true;pay.connectUrl='';pay.connectMsg='';renderSettings();
+  window.tallyPay.connect().then(function(r){
+    pay.connecting=false;
+    var u=r&&r.ok&&!r.done?String(r.url||''):'';
+    if(r&&r.ok&&!r.done&&!/^https:\/\/[a-z0-9.-]*stripe\.com\//i.test(u)){r={ok:false,message:'Stripe did not give a sign-up page. Try again.'};u=''}
+    if(!u&&tab){try{tab.close()}catch(e){}}
+    if(!r||!r.ok){pay.connectMsg=(r&&r.message)||'Could not reach Stripe. Try again.';softSettings();return}
+    if(r.done){toast(r.message||'Your Stripe account is connected.');payLoad(true,true);return}
+    pay.connectWait=true;pay.cfgAt=0;   // the first time back in Tally asks again
+    if(android){softSettings();location.href=u;return}   // the app opens it in the phone's browser
+    var opened=false;
+    if(tab&&!tab.closed){try{tab.location.href=u;opened=true}catch(e){}}
+    if(!opened){var w=null;try{w=window.open(u,'_blank')}catch(e){}if(w){try{w.opener=null}catch(e){}opened=true}}
+    if(!opened)pay.connectUrl=u;
+    softSettings();
+  });
+}
+// back in Tally from Stripe's page (or after a while away): ask Stripe how the account stands
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden||!window.tallyPay||!pay.cfg)return;
+  var c=pay.cfg,waiting=pay.connectWait||(!c.ready&&/^connect/.test(c.reason||''))||(c.connect&&(c.connect.due||[]).length);
+  if(waiting&&Date.now()-(pay.cfgAt||0)>4e3)payLoad(true,true);
+});
 
 /* ---------- signing and payment flow ---------- */
 function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.emp||ui.sosOpen||ui.sosStart));navSync()}
@@ -4400,7 +4461,11 @@ function formStep(j,form){
 // think a card was charged when it wasn't.
 function payStepOffline(j){
   var bal=balOf(j),c=pay.cfg,why=sync.mode!=='shared'?'Card payments need the connection to your company’s data.':!c||pay.loading?'Checking whether card payments are on…':
-    c.reason==='no-key'?'Card payments are not set up yet.':c.reason==='org-off'?'Card payments are not turned on for this company yet.':'The payment service did not answer, so cards can’t be taken right now.';
+    c.reason==='no-key'?'Card payments are not set up yet.':c.reason==='org-off'?'Card payments are not turned on for this company yet.':
+    c.reason==='connect'?'Card payments aren’t set up for this company yet. The owner connects Stripe in Setup › Payments.':
+    c.reason==='connect-pending'?'Stripe is still checking this company’s details, so cards can’t be taken yet.':
+    c.reason==='connect-off'?'This company’s Stripe account was disconnected from Tally, so cards can’t be taken. The owner connects it again in Setup › Payments.':
+    'The payment service did not answer, so cards can’t be taken right now.';
   return '<h2>Collect payment</h2><div class="note">'+why+' Cash and checks can still be recorded. <button class="btn sm" data-act="pay:retry">Check again</button></div>'+
     '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paidOf(j)>0?' paid':'')+'"><b>'+money(paidOf(j))+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>Due now</span></div></div>'+
     fld('Amount','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(bal*100))+'">')+
@@ -4678,7 +4743,8 @@ document.addEventListener('click',function(e){
     case 'pay:check':{var cj=ui.flow&&byId(ui.flow.jobId);if(!cj||pay.busy)break;payBusy(true,'Checking…');
       window.tallyPay.check(cj.id).then(function(r){payBusy(false);if(!r||!r.ok){toast((r&&r.message)||'Could not check.');return}
         if(r.owed<balOf(cj)-0.004){toast('Payment found.');window.tallyPay.refresh()}else toast('Nothing paid yet.')});break}
-    case 'pay:reload':pay.cfg=null;payLoad(true);renderSettings();break;
+    case 'pay:reload':pay.cfg=null;payLoad(true,true);renderSettings();break;
+    case 'pay:connect':payConnect();break;
     case 'pay:retry':pay.cfg=null;payLoad(true);renderFlow();break;
     case 'pl:make':case 'pl:text':{var oj=byId(ui.jobId);if(!oj||pay.busy)break;var ol=pay.links[oj.id];
       var oa=a==='pl:make'?round2(+t.dataset.v):ol&&ol.amount,ok2=a==='pl:make'?t.dataset.save==='1':ol&&ol.save;if(!oa)break;

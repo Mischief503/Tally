@@ -14,8 +14,8 @@ let failures = 0, passes = 0;
 function ok(c: unknown, m: string) { if (c) { passes++; console.log("PASS", m); } else { failures++; console.log("FAIL", m); } }
 
 /* ---------- in-memory database ---------- */
-const DB: Record<string, any[]> = { docs: [], members: [], orgs: [], comm_lines: [], comm_log: [], comm_job_state: [], pay_orgs: [], pay_customers: [], pay_links: [], pay_log: [], pay_config: [], pay_cards: [], pay_jobs: [], pay_locks: [] };
-const KEYS: Record<string, string[]> = { docs: ["org_id", "path"], orgs: ["id"], pay_orgs: ["org_id"], pay_customers: ["org_id", "cust_key", "livemode"], pay_links: ["token"], pay_log: ["pi"], pay_config: ["mode"], pay_cards: ["id"], pay_jobs: ["org_id", "job_id", "livemode"], pay_locks: ["org_id", "job_id"] };
+const DB: Record<string, any[]> = { docs: [], members: [], orgs: [], comm_lines: [], comm_log: [], comm_job_state: [], pay_orgs: [], pay_customers: [], pay_links: [], pay_log: [], pay_config: [], pay_cards: [], pay_jobs: [], pay_locks: [], pay_accounts: [], pay_config_connect: [] };
+const KEYS: Record<string, string[]> = { docs: ["org_id", "path"], orgs: ["id"], pay_orgs: ["org_id"], pay_customers: ["org_id", "cust_key", "livemode"], pay_links: ["token"], pay_log: ["pi"], pay_config: ["mode"], pay_cards: ["id"], pay_jobs: ["org_id", "job_id", "livemode"], pay_locks: ["org_id", "job_id"], pay_accounts: ["account_id"], pay_config_connect: ["mode"] };
 let nextId = 1;
 const clone = (o: any) => o === undefined ? undefined : JSON.parse(JSON.stringify(o));
 function getField(row: any, key: string) {
@@ -381,11 +381,11 @@ ok(!r.body.ok && /not set up/.test(r.body.message) && stripeCalls.length === 0, 
 Deno.env.set("STRIPE_SECRET_KEY", "sk_test_123");
 Deno.env.set("STRIPE_PUBLISHABLE_KEY", "pk_test_456");
 r = await app("tok-marcus", { action: "pay_config", org: ORG });
-ok(r.body.ready === false && r.body.reason === "org-off" && !r.body.publishableKey, "key added, company not turned on: still off");
+ok(r.body.ready === false && r.body.reason === "connect" && !r.body.publishableKey && r.body.connect && r.body.connect.state === "none", "key added, company neither on the platform's account nor connected: still off, and it can connect its own");
 r = await app("tok-marcus", { action: "pay_link", org: ORG, jobId: "j1", amount: 100 });
-ok(!r.body.ok && /not turned on/.test(r.body.message), "a company Richie hasn't turned on can't take cards");
+ok(!r.body.ok && /aren't set up for this company yet\. The owner connects Stripe in Setup › Payments/.test(r.body.message), "a company Richie hasn't turned on can't take cards: " + r.body.message);
 r = await app("tok-marcus", { action: "pay_check", org: ORG, jobId: "j1" });
-ok(!r.body.ok && /not turned on/.test(r.body.message), "or check payments");
+ok(!r.body.ok && /aren't set up for this company yet/.test(r.body.message), "or check payments");
 DB.pay_orgs.push({ org_id: ORG, enabled: true });
 r = await app("tok-kim", { action: "pay_config", org: ORG });
 ok(r.body.ready === true && r.body.test === true && r.body.publishableKey === "pk_test_456", "turned on: ready, test mode, publishable key handed out");
@@ -402,7 +402,7 @@ ok(r.status === 403 && /your own jobs/.test(r.body.message), "a lead not on the 
 r = await app("tok-stranger", { action: "pay_link", org: ORG, jobId: "j1", amount: 100 });
 ok(r.status === 401, "someone from another company is turned away");
 r = await app("tok-stranger", { action: "pay_link", org: ORG2, jobId: "s1", amount: 100 });
-ok(!r.body.ok && /not turned on/.test(r.body.message), "and their own company can't charge into this Stripe account");
+ok(!r.body.ok && /aren't set up for this company yet/.test(r.body.message), "and their own company can't charge into this Stripe account");
 ok(stripeCalls.length === 0, "none of that reached Stripe");
 
 /* ---------- amounts ---------- */

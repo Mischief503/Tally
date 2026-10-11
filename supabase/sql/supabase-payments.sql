@@ -25,6 +25,11 @@
 --                         payments, refunds and disputes stay as the server wrote them.
 -- pay_reopen(...)         moves a Paid job back to Complete when money comes off it again (a bank
 --                         payment that bounced, a refund, a dispute), with a line in its history.
+-- pay_accounts            Stripe Connect: each company's own Stripe account (connected from Setup >
+--                         Payments). A company listed in pay_orgs takes payments on the platform's own
+--                         account instead. The account column on pay_log, pay_links, pay_cards, pay_jobs
+--                         and pay_customers says which Stripe account each one is on ('' = the platform's).
+-- pay_config_connect      the server's webhook for events on the companies' own accounts.
 --
 -- Only the Edge Function (service role) touches the pay_ tables: row level security is on and they
 -- have no policies, so the app can neither read nor write them directly.
@@ -268,3 +273,41 @@ create or replace trigger jobs_guard before update on public.docs
 grant execute on function public.jsonb_merge_patch(jsonb, jsonb), public.doc_patch(uuid, text, jsonb) to authenticated;
 grant all on public.pay_orgs, public.pay_customers, public.pay_links, public.pay_log, public.pay_config,
   public.pay_cards, public.pay_jobs, public.pay_locks to service_role;
+
+-- ---------- Stripe Connect: companies with their own Stripe account ----------
+-- Added October 10, 2026. Only adds tables and columns; nothing existing changes.
+create table if not exists public.pay_accounts (
+  account_id         text primary key check (account_id ~ '^acct_[A-Za-z0-9]{6,40}$'),
+  org_id             uuid not null references public.orgs(id) on delete cascade,
+  livemode           boolean not null default false,
+  is_current         boolean not null default true,
+  charges_enabled    boolean not null default false,
+  payouts_enabled    boolean not null default false,
+  details_submitted  boolean not null default false,
+  due                jsonb not null default '[]'::jsonb,
+  disabled_reason    text not null default '',
+  created_by         text not null default '',
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+-- one account at a time per company and mode; an account it disconnected stays on file for its old payments
+create unique index if not exists pay_accounts_current_idx on public.pay_accounts(org_id, livemode) where is_current;
+
+create table if not exists public.pay_config_connect (
+  mode            text primary key check (mode in ('test','live')),
+  webhook_id      text not null default '',
+  webhook_secret  text not null default '',
+  status          text not null default 'creating' check (status in ('creating','ready')),
+  events          text not null default '',
+  updated_at      timestamptz not null default now()
+);
+
+alter table public.pay_log       add column if not exists account text not null default '';
+alter table public.pay_links     add column if not exists account text not null default '';
+alter table public.pay_cards     add column if not exists account text not null default '';
+alter table public.pay_jobs      add column if not exists account text not null default '';
+alter table public.pay_customers add column if not exists account text not null default '';
+
+alter table public.pay_accounts       enable row level security;
+alter table public.pay_config_connect enable row level security;
+grant all on public.pay_accounts, public.pay_config_connect to service_role;
