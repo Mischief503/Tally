@@ -47,6 +47,28 @@ When the crew finishes the job, Tally bills by the clock:
 - The difference from the quote is one line on the bill, for example *By the clock: 7h 0m loading
   and unloading, billed 7 h, 120 mi driven (quoted 6.5 h, 110 mi)*. The customer pays the total.
 
+### The drive back to the shop, at bill-out
+
+The crew bills out at the customer's, before the drive back. So when the bill counts the drive from
+the shop, **Finish job** (and **Collect payment** once the truck is unloaded) first opens
+**Drive back to the shop**, before the customer signs and pays:
+
+- **Local move:** the minutes back, starting at the quote's estimate (the miles from the delivery to
+  the shop at the rate card's average speed). −5 / +5, quick picks from 10 to 90 minutes, or
+  **Already back**. The bill underneath changes as the lead picks, for example *3h 30m on the job +
+  45m back = 4.25 h, $640*. On the bill: *By the clock: 3h 30m on the job + 45m back to the shop,
+  billed 4.25 h (quoted 3.5 h)*.
+- **Mileage move:** the miles so far (the odometer since the truck left the shop, or what the lead
+  already typed in **Miles driven**) plus the miles back (the quote's to start with). The miles
+  driven become the two added up: *131 mi driven incl. 30 mi back to the shop*.
+- **Add to the bill and continue** puts it on the bill, then the customer signs and pays as before.
+  **Exit** leaves the job open and unbilled.
+- Until the job is paid, the lead can change it from **Bill out › Change**. The job sheet says who
+  put it in (*plus 45m back to the shop (from Marcus at bill-out)*); without it, the bill uses the
+  quote's estimate (*plus about 30m back to the shop*).
+- The office's own ways skip the step: finishing or collecting from the job sheet, **Update the
+  bill** with the hours or miles, and **Bill at the quote**.
+
 The job sheet shows how the bill was worked out. The office can:
 
 - type the hours or miles to bill (**Update the bill**), and go back to the clock (**Use the clock

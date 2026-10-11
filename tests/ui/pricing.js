@@ -203,12 +203,14 @@ const H = 36e5;
   const t4 = Date.now() - 6 * H;
   finish(LJ4, { loadStart: t4 + 0.5 * H, loadEnd: t4 + 1.5 * H, unloadStart: t4 + 2 * H, unloadEnd: t4 + 3.5 * H }, t4);
   await more('crew');
-  click('[data-act="cr:finish"][data-id="' + LJ4.id + '"]'); await sleep(20); click('#flow [data-act="flow:close"]'); await sleep(5);
+  click('[data-act="cr:finish"][data-id="' + LJ4.id + '"]'); await sleep(20);
+  ok(/Drive back to the shop/.test($('#flow').textContent) && $('#backOut').textContent === '30min', L('with the shop, Finish job asks for the drive back first, starting at the quote’s 30 min (driveback.js has the rest)'));
+  click('[data-act="back:ok"]'); await sleep(20); click('#flow [data-act="flow:close"]'); await sleep(5);
   cl = LJ4.extras.find((e) => e.id === 'clock');
-  ok(cl && cl.amt === 70 && cl.label === 'By the clock: 4h 0m on the job, billed 4 h (quoted 3.5 h)', L('3.5 h from leaving the shop + 0.5 h back: billed 4 h, +$70: ' + (cl && cl.label)));
+  ok(cl && cl.amt === 70 && cl.label === 'By the clock: 3h 30m on the job + 30m back to the shop, billed 4 h (quoted 3.5 h)', L('3.5 h from leaving the shop + 0.5 h back: billed 4 h, +$70: ' + (cl && cl.label)));
   click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);
   click('[data-act="job:open"][data-id="' + LJ4.id + '"]'); await sleep(15);
-  ok(/Local move/.test($('#sheet').textContent) && /On the clock 3h 30m, plus about 30m back to the shop: billed 4 h\. Bill \$605 \(\+\$70 on the quote\)\./.test($('#sheet').textContent) && !$('#clkMi_' + LJ4.id), L('sheet: how the local bill was worked out, with no miles box'));
+  ok(/Local move/.test($('#sheet').textContent) && /On the clock 3h 30m, plus 30m back to the shop \(from Marcus at bill-out\): billed 4 h\. Bill \$605 \(\+\$70 on the quote\)\./.test($('#sheet').textContent) && !$('#clkMi_' + LJ4.id), L('sheet: how the local bill was worked out, with no miles box'));
   click('[data-act="sheet:close"]'); await sleep(5);
   st().settings.shopAddress = '';
   // the office finishes a job from the sheet, with no load and unload taps: Start job to Finish

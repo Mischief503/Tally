@@ -433,6 +433,8 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .phz .ps.now i{background:var(--warn);border-color:var(--warn)}
 .phz .ps.now{font-weight:var(--w-mid)}
 .phz .ps.todo{color:var(--muted)}
+.phz .ps.est{color:var(--muted)}
+.phz .ps.est i{border-style:dashed}
 .tblwrap{overflow-x:auto;margin:0 -2px}
 /* job messages */
 .jmsg{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:11px 13px;margin-bottom:8px;display:grid;gap:7px;box-shadow:var(--cardShadow)}
@@ -1181,8 +1183,10 @@ function clockBill(j){
   if(mileage){
     if(p.loadStart&&p.loadEnd&&p.unloadStart&&p.unloadEnd){var ld=Math.max(0,p.loadEnd-p.loadStart),ul=Math.max(0,p.unloadEnd-p.unloadStart);h=(ld+ul)/36e5;parts={load:ld,unload:ul}}
   }else{
-    var end=p.unloadEnd||j.finishedAt,start=q.shopTravel?(j.startedAt||p.loadStart):(p.loadStart||j.startedAt),back=q.shopTravel?num(q.backH):0;
-    if(start&&end&&end>start){h=(end-start)/36e5+back;parts={span:end-start,back:back*36e5}}
+    // the drive back: what the crew lead put in at bill-out (j.back), or else the quote's estimate
+    var crewBack=!!q.shopTravel&&!!j.back&&j.back.mins!=null;
+    var end=p.unloadEnd||j.finishedAt,start=q.shopTravel?(j.startedAt||p.loadStart):(p.loadStart||j.startedAt),back=q.shopTravel?(crewBack?Math.max(0,num(j.back.mins))/60:num(q.backH)):0;
+    if(start&&end&&end>start){h=(end-start)/36e5+back;parts={span:end-start,back:back*36e5,backSet:crewBack}}
   }
   var setH=num(fix.hours)>0,setMi=mileage&&fix.miles!=null&&fix.miles!=='';
   if(h==null&&!setH)return {missing:true};
@@ -1198,17 +1202,24 @@ function fmtHrs(h){return (Math.round(h*100)/100)+' h'}
 // the time a quote's hours stand for: a mileage move's quote covers loading and unloading only
 function bidActual(j){var p=j.phases||{};if(j.quote&&j.quote.kind==='mileage')return p.loadStart&&p.loadEnd&&p.unloadStart&&p.unloadEnd?Math.round(((p.loadEnd-p.loadStart)+(p.unloadEnd-p.unloadStart))/36e5*10)/10:0;return j.actualHours||0}
 function clockLabel(j,c){
-  var q=j.quote,mileage=q.kind==='mileage';
-  var hrs=c.setH?fmtHrs(c.billed)+' set by the office':c.worked!=null?fmtDur(c.worked*36e5)+(mileage?' loading and unloading':' on the job')+', billed '+fmtHrs(c.billed):'billed '+fmtHrs(c.billed);
-  return 'By the clock: '+hrs+(mileage?', '+fmtMi(c.miles)+' mi'+(c.setMi||c.driven?' driven':''):'')+' (quoted '+fmtHrs(q.hours)+(mileage?', '+fmtMi(q.miles)+' mi':'')+')'+(c.capped?', held to the not-to-exceed price':'');
+  var q=j.quote,mileage=q.kind==='mileage',pt=c.parts||{};
+  var hrs=c.setH?fmtHrs(c.billed)+' set by the office'
+    :!mileage&&pt.backSet?fmtDur(pt.span)+' on the job'+(pt.back>0?' + '+fmtDur(pt.back)+' back to the shop':'')+', billed '+fmtHrs(c.billed)
+    :c.worked!=null?fmtDur(c.worked*36e5)+(mileage?' loading and unloading':' on the job')+', billed '+fmtHrs(c.billed):'billed '+fmtHrs(c.billed);
+  return 'By the clock: '+hrs+(mileage?', '+fmtMi(c.miles)+' mi'+(c.setMi||c.driven?' driven':'')+(backMiles(j,c)>0?' incl. '+fmtMi(backMiles(j,c))+' mi back to the shop':''):'')+' (quoted '+fmtHrs(q.hours)+(mileage?', '+fmtMi(q.miles)+' mi':'')+')'+(c.capped?', held to the not-to-exceed price':'');
 }
+// a mileage move's miles back to the shop, from bill-out, while the miles driven are still the ones
+// worked out there (so far + back); 0 once someone types other miles
+function backMiles(j,c){var b=j.back;if(!b||b.mi==null||b.soFar==null||!c||c.setMi||!c.driven)return 0;return Math.abs(num(j.milesDriven)-(num(b.soFar)+num(b.mi)))<0.05?num(b.mi):0}
 // what the bill line was worked out from. Stored with it (j.clockSig), so a phone that gets the job
 // from the database can tell when two phones changed it at once, and work the line out again.
 var CLOCK_V='c1';
 function clockSig(j){
   var q=j.quote||{},p=j.phases||{},f=j.clockFix||{},v=function(x){return x==null?'':String(x)};
   return CLOCK_V+':'+[q.kind,q.total,q.hours,q.cf,q.rate,q.miles,q.mileRate,q.fixed,q.taxPct,q.minHours,q.nte,q.capNte,q.shopTravel,q.backH,
-    j.startedAt,j.finishedAt,p.loadStart,p.loadEnd,p.unloadStart,p.unloadEnd,j.milesDriven,f.hours,f.miles,f.off].map(v).join('|');
+    j.startedAt,j.finishedAt,p.loadStart,p.loadEnd,p.unloadStart,p.unloadEnd,j.milesDriven,f.hours,f.miles,f.off].map(v).join('|')+
+    // the drive back from bill-out, only when there is one (older jobs keep the signature they have)
+    (j.back?'|b:'+[j.back.mins,j.back.mi,j.back.soFar].map(v).join(','):'');
 }
 // writes the bill line; returns what it worked out ({off:true} when the office bills at the quote),
 // or null for a job billed at its quote
@@ -1249,10 +1260,10 @@ function clockHtml(j){
   else{
     var pt=c.parts,how=c.setH?'Hours set by the office: '+fmtHrs(c.billed)+'.'
       :mileage?'Loading '+fmtDur(pt.load)+' and unloading '+fmtDur(pt.unload)+': '+fmtDur(c.worked*36e5)+', billed '+fmtHrs(c.billed)+'.'
-      :'On the clock '+fmtDur(pt.span)+(pt.back?', plus about '+fmtDur(pt.back)+' back to the shop':'')+': billed '+fmtHrs(c.billed)+'.';
+      :'On the clock '+fmtDur(pt.span)+(pt.backSet?(pt.back?', plus '+fmtDur(pt.back)+' back to the shop':', no drive back added')+' (from '+esc(j.back.by||'the crew')+' at bill-out)':pt.back?', plus about '+fmtDur(pt.back)+' back to the shop':'')+': billed '+fmtHrs(c.billed)+'.';
     var diff=Math.abs(c.adj)>=0.01?' ('+(c.adj>0?'+':'\u2212')+money(Math.abs(c.adj))+' on the quote)':', the same as the quote';
     var bill=money(c.total)+(c.capped?', held to the not-to-exceed price':'')+diff;
-    body=how+(mileage?' '+fmtMi(c.miles)+' mi '+(c.setMi?'set by the office':c.driven?'driven, from the crew':'from the quote')+'.':'')+
+    body=how+(mileage?' '+fmtMi(c.miles)+' mi '+(c.setMi?'set by the office':c.driven?'driven, from the crew'+(backMiles(j,c)>0?' ('+fmtMi(j.back.soFar)+' so far and '+fmtMi(j.back.mi)+' back to the shop, put in by '+esc(j.back.by||'the crew')+' at bill-out)':''):'from the quote')+'.':'')+
       (off?' Billed at the quote, set by the office. By the clock it would be '+bill+'.'
        :applied?' Bill '+bill+'.'
        :fin?' This job was closed at its quoted price. By the clock it would be '+bill+'.'
@@ -1849,7 +1860,9 @@ function crewKit(me){
   function billPanel(j){
     var bal=balOf(j),pend=formsPending(j),req=formsRequired();
     var extras=(j.extras||[]).map(function(e){return '<tr><td>'+esc(e.label)+'</td><td>'+(e.amt<0?'−':'')+money(Math.abs(e.amt))+'</td></tr>'}).join('');
-    return '<div><table class="lines"><tr><td>Quote</td><td>'+money(j.quote.total)+'</td></tr>'+matRows(j)+extras+'<tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+
+    var bq=j.quote||{},bk=backApplies(j)?'<p class="hint" style="margin:8px 0 0">'+(j.back?(bq.kind==='mileage'?'Miles back to the shop: '+fmtMi(num(j.back.mi))+' mi':'Drive back to the shop: '+(num(j.back.mins)>0?fmtDur(num(j.back.mins)*60000):'none'))+' ('+esc(j.back.by||'')+') <button class="btn sm ghost" data-act="back:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Change</button>'
+      :(bq.kind==='mileage'?'The miles back to the shop go':'The drive back to the shop goes')+' on the bill when you bill out.')+'</p>':'';
+    return '<div><table class="lines"><tr><td>Quote</td><td>'+money(j.quote.total)+'</td></tr>'+matRows(j)+extras+'<tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+bk+
       '<div class="grid2 stack" style="margin-top:8px">'+fld('Add a charge or credit','<input id="ce_l_'+j.id+'" placeholder="Stairs, parking, damage credit">','span2')+fld('Amount','<input id="ce_a_'+j.id+'" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00">')+fld('Type','<select id="ce_t_'+j.id+'"><option value="charge">Charge</option><option value="credit">Credit</option></select>')+'</div><button class="btn" style="margin-top:6px" data-act="cr:charge" data-id="'+j.id+'">Add to bill</button>'+
       (req.length?'<p class="hint">Forms signed: '+(req.length-pend.length)+' of '+req.length+'</p>':'')+
       (bal>0?'<p class="hint money-due" style="margin:6px 0 0">'+money(bal)+' still to collect</p>':'<p class="hint money-paid" style="margin:6px 0 0">Paid in full</p>')+((bal>0||pend.length)?'<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>':'<p class="hint">Paid in full.</p>')+'</div>';
@@ -2809,7 +2822,7 @@ function jobDoc(j){
   var dd=Object.assign({},j.d);
   dd.items=Object.keys(j.d.items||{}).map(function(k){return {id:k,q:j.d.items[k]}});
   var o={id:j.id,status:j.status,createdAt:j.createdAt,d:dd,quote:j.quote,items:j.items||[],assign:j.assign||{truckId:'',crew:[]},tally:j.tally||{}};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
   o.payments=toMap(j.payments,function(x){return x.id});
   o.signed=toMap(j.signed,function(x){return x.id});
   o.extras=toMap(j.extras,function(x){return x.id});
@@ -2832,7 +2845,7 @@ function docToJob(v){
     photos:mapArr(v.photos,'ts').map(function(p){return {id:p.id,kind:p.kind,ts:p.ts,data:sync.photoCache[p.id]}}),
     materials:mapArr(v.materials,'ts'),costs:mapArr(v.costs,'ts'),confirm:(v.confirm&&typeof v.confirm==='object')?v.confirm:{},
     log:mapArr(v.log,'ts').slice(-60)};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
   return j;
 }
 function jobDiff(prev,cur){
@@ -4127,11 +4140,12 @@ function phaseRows(j){
   var p=j.phases||{},now=Date.now(),live=j.status==='active';
   var segs=[['On the way',j.startedAt,p.loadStart],['Loading',p.loadStart,p.loadEnd],['Driving to delivery',p.loadEnd,p.unloadStart],['Unloading',p.unloadStart,p.unloadEnd]];
   if(p.unloadEnd&&(j.finishedAt||live))segs.push(['Sign-off and wrap-up',p.unloadEnd,j.finishedAt]);
+  var q=j.quote||{},bm=j.back&&q.kind==='local'&&q.shopTravel?num(j.back.mins):0;
   return segs.map(function(s){
     var a=s[1],b=s[2],st=a&&b?'done':(a&&live?'now':'todo');
     var right=st==='done'?fmtClock(a)+' – '+fmtClock(b)+' · <b>'+fmtDur(b-a)+'</b>':st==='now'?'since '+fmtClock(a)+' · <b>'+fmtDur(now-a)+'</b>':'—';
     return '<div class="ps '+st+'"><span><i></i>'+s[0]+'</span><span>'+right+'</span></div>';
-  }).join('');
+  }).join('')+(bm>0?'<div class="ps est"><span><i></i>Drive back to the shop</span><span>about <b>'+fmtDur(bm*60000)+'</b>, at bill-out</span></div>':'');
 }
 /* ---------- test pack ----------
    Made-up jobs for trying every part of Tally. Same crew and trucks as the company, two
@@ -4211,13 +4225,18 @@ function demoPhases(j){
   [.11+k,.36-k,.13,.30+k/2].forEach(function(f,i){t+=Math.round(T*f);p[PHASES[i][0]]=t});
   return p;
 }
-function finishJob(j,who){
+// office: finished from the job sheet, where the office can set the hours itself (no drive-back step)
+function finishJob(j,who,office){
+  if(!office&&needsBack(j)){startFlow(j.id,who,false,{finishAfter:true});return}   // the drive back to the shop goes on the bill first
+  finishNow(j,who);
+}
+function finishNow(j,who){
   // the bill from the clock first, so it is right before the customer signs and pays
   var c=applyClock(j);if(c&&!c.missing)save();
   var billed=function(){var b=clockBill(j);return j.clockAt&&b&&!b.missing&&!(j.clockFix||{}).off?' Billed by the clock: '+money(totalOf(j))+'.':''};
-  if(formsPending(j).length){startFlow(j.id,who,true);toast('The customer signs before the job can close.'+billed());return}
+  if(formsPending(j).length){startFlow(j.id,who,true,{noBack:true});toast('The customer signs before the job can close.'+billed());return}
   setStatus(j,'done');save();renderTab();if(ui.jobId)renderSheet();
-  toast((j.actualHours?'Finished in '+j.actualHours+' h.':'Job finished.')+billed());startFlow(j.id,who);
+  toast((j.actualHours?'Finished in '+j.actualHours+' h.':'Job finished.')+billed());startFlow(j.id,who,false,{noBack:true});
 }
 function phaseCard(list){
   var done=list.filter(function(j){var p=j.phases||{};return j.startedAt&&p.loadStart&&p.loadEnd&&p.unloadStart&&p.unloadEnd});
@@ -4721,8 +4740,99 @@ window.addEventListener('popstate',function(){
   navSync();
 });
 document.addEventListener('click',function(){setTimeout(navSync,0)});
-function startFlow(id,who,finishing){ui.flow={jobId:id,who:who||'',method:'',finishing:!!finishing};renderFlow();payLoad(!!(pay.cfg&&pay.cfg.reason==='down'))}
-function closeFlow(){var fl=ui.flow,fj=fl&&byId(fl.jobId);if(fl&&fl.finishing&&fj&&fj.status==='active'&&formsPending(fj).length)toast('The job stays open until the customer signs.');ui.flow=null;cardDrop();renderFlow();renderTab();renderSheet();if(fj)commsFormsCheck(fj)}
+// opts.back: open on the drive-back step (Change, from Bill out); opts.finishAfter: finish the job once it's in;
+// opts.noBack: straight to signing and payment (the job was just finished, with its drive back if it needed one)
+function startFlow(id,who,finishing,opts){
+  opts=opts||{};var j=byId(id);
+  ui.flow={jobId:id,who:who||'',method:'',finishing:!!finishing};
+  if(j&&(opts.back?backApplies(j):!opts.noBack&&who!=='Office'&&needsBack(j))){backInit(j);ui.flow.finishAfter=!!opts.finishAfter}
+  renderFlow();payLoad(!!(pay.cfg&&pay.cfg.reason==='down'))
+}
+function closeFlow(){var fl=ui.flow,fj=fl&&byId(fl.jobId);if(fl&&fl.step==='back'&&fl.finishAfter&&fj&&fj.status==='active')toast('The job stays open until you bill out.');else if(fl&&fl.finishing&&fj&&fj.status==='active'&&formsPending(fj).length)toast('The job stays open until the customer signs.');ui.flow=null;cardDrop();renderFlow();renderTab();renderSheet();if(fj)commsFormsCheck(fj)}
+
+/* ---------- the drive back to the shop, at bill-out ----------
+   When the bill counts the drive from the shop, the crew lead is still at the customer's when the job is
+   billed, before the drive back. So before the customer signs and pays, the lead puts the drive back in:
+   a local move's minutes (to start with, the quote's estimate from the delivery to the shop), or a
+   mileage move's miles so far plus the miles back. It goes on the bill (j.back), and can be changed from
+   Bill out until the job is paid. The office's own hours or miles, or Bill at the quote, take over. */
+function backApplies(j){
+  var q=j.quote||{},fx=j.clockFix||{};
+  if(!(q.kind==='local'||q.kind==='mileage')||!q.shopTravel||fx.off||j.status==='paid')return false;
+  var c=clockBill(j);if(!c||c.missing)return false;
+  return !(q.kind==='mileage'?c.setMi:c.setH);
+}
+function needsBack(j){var p=j.phases||{};return !j.back&&backApplies(j)&&(j.status==='done'||(j.status==='active'&&!!p.unloadEnd))}
+function backInit(j){
+  var q=j.quote||{},b=j.back||{};ui.flow.step='back';
+  if(q.kind==='mileage'){
+    var qb=Math.round(num(j.d.milesBack)*10)/10,had=j.milesDriven!=null&&j.milesDriven!=='';
+    ui.flow.back={mi:b.mi!=null?num(b.mi):qb,soFar:b.soFar!=null?num(b.soFar):had?num(j.milesDriven):Math.max(0,Math.round((num(q.miles)-qb)*10)/10)};
+  }else ui.flow.back={mins:b.mins!=null?num(b.mins):Math.round(num(q.backH)*12)*5};
+}
+// the bill with the numbers on the drive-back step, without touching the job
+function backTry(j,fb){
+  var q=j.quote||{},t={quote:q,phases:j.phases,startedAt:j.startedAt,finishedAt:j.finishedAt,clockFix:j.clockFix,milesDriven:j.milesDriven};
+  if(q.kind==='mileage'){t.back={mins:null,mi:num(fb.mi),soFar:num(fb.soFar)};t.milesDriven=Math.round((num(fb.soFar)+num(fb.mi))*10)/10}
+  else t.back={mins:Math.max(0,num(fb.mins)),mi:null,soFar:null};
+  var c=clockBill(t);if(!c||c.missing)return null;
+  var other=(j.extras||[]).filter(function(e){return e.id!=='clock'}).reduce(function(a,e){return a+e.amt},0);
+  return {c:c,total:round2(q.total+other+(Math.abs(c.adj)>=0.01?c.adj:0)+matTotal(j))};
+}
+function backBill(j,fb){
+  var q=j.quote||{},r=backTry(j,fb),p=j.phases||{};if(!r)return '';
+  var c=r.c,pt=c.parts||{},rows;
+  if(q.kind==='mileage')rows='<tr><td>Loading and unloading</td><td>'+fmtDur(c.worked*36e5)+'</td></tr><tr><td>Billed hours</td><td>'+fmtHrs(c.billed)+'</td></tr>'+
+    '<tr><td>Miles: '+fmtMi(num(fb.soFar))+' so far + '+fmtMi(num(fb.mi))+' back</td><td>'+fmtMi(c.miles)+' mi</td></tr>';
+  else rows='<tr><td>On the job<br><small>'+(j.startedAt?'Left the shop '+fmtClock(j.startedAt)+' · ':'')+'done unloading '+fmtClock(p.unloadEnd||j.finishedAt)+'</small></td><td>'+fmtDur(pt.span)+'</td></tr>'+
+    '<tr><td>Drive back to the shop</td><td>'+(pt.back>0?fmtDur(pt.back):'None')+'</td></tr><tr><td>Billed hours'+(c.billed>c.worked+0.25-1e-6?' <small>(the '+fmtHrs(num(q.minHours))+' minimum)</small>':'')+'</td><td>'+fmtHrs(c.billed)+'</td></tr>';
+  var diff=round2(r.total-totalOf(j));
+  return '<table class="lines">'+rows+'<tr class="total"><td>Bill</td><td>'+money(r.total)+'</td></tr></table>'+
+    '<p class="hint">'+(c.capped?'Held to the not-to-exceed price of '+money(q.nte)+'. ':'')+'The quote was '+money(q.total)+'.'+(Math.abs(diff)>=0.01&&(j.clockAt||j.status==='done')?' This changes the bill by '+(diff>0?'+':'−')+money(Math.abs(diff))+'.':'')+'</p>';
+}
+function backStep(j,f){
+  var q=j.quote||{},fb=f.back,nm=esc(j.d.name||'the customer');
+  if(q.kind==='mileage'){
+    return '<h2>Miles back to the shop</h2><p class="hint">The bill counts the miles from the shop and back, and the truck isn’t back yet. Put in the miles back now, so the bill is right before '+nm+' signs and pays.</p>'+
+      '<div class="grid2 stack" style="margin-top:10px">'+fld('Miles so far','<input id="backSoFar" type="number" inputmode="decimal" min="0" step="0.1" value="'+esc(String(fb.soFar))+'">')+
+      fld('Miles back to the shop','<input id="backMi" type="number" inputmode="decimal" min="0" step="0.1" value="'+esc(String(fb.mi))+'">')+'</div>'+
+      '<p class="hint">Miles so far: the odometer since the truck left the shop. '+(num(j.d.milesBack)>0?'The quote has '+fmtMi(num(j.d.milesBack))+' mi from the delivery to the shop. ':'')+'Already back at the shop? Put 0 for the miles back.</p>'+
+      '<div class="card" id="backBill" style="margin-top:10px">'+backBill(j,fb)+'</div>'+
+      '<button class="btn primary bigbtn" data-act="back:ok">Add to the bill and continue</button><p class="hint" id="flowErr" role="alert"></p>';
+  }
+  var est=Math.round(num(q.backH)*12)*5;
+  var chips=[[0,'Already back'],[10],[15],[20],[30],[45],[60],[90]].map(function(x){var m=x[0],on=num(fb.mins)===m;return '<button class="chip'+(on?' on':'')+'" data-act="back:set" data-m="'+m+'" aria-pressed="'+on+'">'+(x[1]||m+' min')+'</button>'}).join('');
+  return '<h2>Drive back to the shop</h2><p class="hint">The crew still has the drive back to make. Put it in now, so the bill is right before '+nm+' signs and pays.</p>'+
+    '<div class="row" style="justify-content:center;gap:16px;margin:12px 0 8px"><button class="btn" data-act="back:mins" data-d="-5" aria-label="5 minutes less">−5</button><output class="eta-out" id="backOut">'+num(fb.mins)+'<small>min</small></output><button class="btn" data-act="back:mins" data-d="5" aria-label="5 minutes more">+5</button></div>'+
+    '<div class="chips" style="justify-content:center">'+chips+'</div>'+
+    '<p class="hint" style="text-align:center">'+(est>0?'The quote estimated about '+est+' min ('+fmtMi(num(j.d.milesBack))+' mi from the delivery to the shop).':'The quote has no drive back yet. Pick about how long it takes.')+'</p>'+
+    '<div class="card" id="backBill" style="margin-top:10px">'+backBill(j,fb)+'</div>'+
+    '<button class="btn primary bigbtn" data-act="back:ok">Add to the bill and continue</button><p class="hint" id="flowErr" role="alert"></p>';
+}
+// the step's numbers changed: redraw the bill under them, leaving the boxes alone
+function backRedraw(){var f=ui.flow,j=f&&byId(f.jobId),el=$('#backBill');if(!j||!el)return;el.innerHTML=backBill(j,f.back);var o=$('#backOut');if(o)o.innerHTML=num(f.back.mins)+'<small>min</small>'}
+function backSave(){
+  var f=ui.flow,j=f&&byId(f.jobId);if(!j||f.step!=='back')return;
+  var q=j.quote||{},fb=f.back,who=f.who||myName()||'the crew',was=j.back;
+  if(q.kind==='mileage'){
+    var so=num(fb.soFar),bm=num(fb.mi);
+    if(!(so>0)){flowFail('Put in the miles so far, from the odometer.');return}
+    if(bm<0){flowFail('The miles back can’t be less than 0.');return}
+    so=Math.round(so*10)/10;bm=Math.round(bm*10)/10;
+    j.back={mins:null,mi:bm,soFar:so,by:who,ts:Date.now()};j.milesDriven=Math.round((so+bm)*10)/10;
+    logEv(j,'Miles back to the shop: '+fmtMi(bm)+' mi, '+fmtMi(so+bm)+' mi in all ('+who+')');
+  }else{
+    var m=Math.max(0,Math.round(num(fb.mins)));
+    j.back={mins:m,mi:null,soFar:null,by:who,ts:Date.now()};
+    logEv(j,m>0?'Drive back to the shop: '+fmtDur(m*60000)+' ('+who+')':'No drive back to the shop ('+who+')');
+  }
+  f.step='';
+  if(f.finishAfter){f.finishAfter=false;finishNow(j,who);return}
+  // billed now, so the payment is for the right amount; the job closes when the lead finishes it
+  var c=rebill(j,(was?'drive back changed':'drive back')+' by '+who);
+  save();renderFlow();renderTab();if(ui.jobId)renderSheet();
+  toast(c&&!c.missing?'Bill: '+money(totalOf(j))+'.':'Saved.');
+}
 function vaultFor(j){return state.vault.filter(function(x){return x.cust===custKey(j)})}
 function flowMethod(j){var v=vaultFor(j),m=ui.flow.method;if(m==='vault'&&!v.length)m='';return m||(v.length?'vault':'card')}
 var sigDirty=false;
@@ -4789,18 +4899,20 @@ function doneStep(j){
 function renderFlow(){
   var el=$('#flow'),f=ui.flow,j=f?byId(f.jobId):null;
   if(!j||state.ui.role==='crew'){ui.flow=null;el.hidden=true;el.innerHTML='';syncLock();return}
-  if(f.finishing&&j.status==='active'&&!formsPending(j).length){f.finishing=false;setStatus(j,'done');save();toast('Signed. Job finished'+(j.actualHours?' in '+j.actualHours+' h':'')+'.')}
+  if(f.step==='back'&&!backApplies(j))f.step='';   // the office took over the bill meanwhile
+  if(f.step!=='back'&&f.finishing&&j.status==='active'&&!formsPending(j).length){f.finishing=false;setStatus(j,'done');save();toast('Signed. Job finished'+(j.actualHours?' in '+j.actualHours+' h':'')+'.')}
   var req=formsRequired(),pend=formsPending(j),bal=balOf(j),body,label;
-  if(pend.length){body=formStep(j,pend[0]);label=(f.finishing?'Sign to close the job · ':'')+'Form '+(req.length-pend.length+1)+' of '+req.length}
+  if(f.step==='back'){body=backStep(j,f);label='Before you bill out'}
+  else if(pend.length){body=formStep(j,pend[0]);label=(f.finishing?'Sign to close the job · ':'')+'Form '+(req.length-pend.length+1)+' of '+req.length}
   else if(bal>0){body=payStep(j);label='Payment'}
   else{body=doneStep(j);label='Done'}
   var prev=$('.flow-body',el),keep=prev?prev.scrollTop:0;
   el.innerHTML='<div class="flow-head"><div><b>'+esc(j.d.name)+'</b><br><small>'+label+'</small></div><button class="btn sm" data-act="flow:close">Exit</button></div><div class="flow-body">'+body+'</div>';
   el.hidden=false;syncLock();
   var nb=$('.flow-body',el);if(nb&&prev)nb.scrollTop=keep;
-  if(pend.length)initSig();
+  if(f.step!=='back'&&pend.length)initSig();
   f.paidSeen=paidOf(j);f.pendSeen=pend.length;
-  if(!pend.length&&bal>0&&payCardOn()&&flowMethodStripe(j)==='card')cardMount(j);
+  if(f.step!=='back'&&!pend.length&&bal>0&&payCardOn()&&flowMethodStripe(j)==='card')cardMount(j);
   payPoll();
 }
 
@@ -4895,7 +5007,7 @@ document.addEventListener('click',function(e){
     case 'day':ui.day=t.dataset.d;renderDispatch();break;
     case 'sh:next':j=byId(ui.jobId);if(!j)break;
       if(j.status==='booked'){openStart(j.id,myName());break}
-      if(j.status==='active'){finishJob(j,myName());break}
+      if(j.status==='active'){finishJob(j,myName(),true);break}
       if(j.status==='quoted'){setStatus(j,'booked');save();renderSheet()}break;
     case 'sh:requote':j=byId(ui.jobId);if(!j)break;state.draft=Object.assign(blankDraft(),clone(j.d),{editId:j.id});ui.qstep=1;save();ui.jobId=null;ui.tab='quote';render();window.scrollTo(0,0);break;
     case 'sh:crew':{j=byId(ui.jobId);if(!j){toast('This job is not available any more. Close it and open it again.');break}var nm=t.dataset.n,ix=j.assign.crew.indexOf(nm);if(!nm||assignable().indexOf(nm)<0){toast('That person is not on the list any more. Check Setup.');break}if(ix>=0){j.assign.crew.splice(ix,1);dropConfirm(j,nm)}else j.assign.crew.push(nm);save();renderSheet();toast(nm+(ix>=0?' removed from':' added to')+' the job.');break}
@@ -5030,6 +5142,10 @@ document.addEventListener('click',function(e){
     case 'theme:set':state.ui.theme=t.dataset.t;save();saveNow();applyTheme();renderPick();toast((THEME_BY[t.dataset.t]||{}).name+' it is.');break;
     case 'theme:mode':state.ui.mode=t.dataset.m;save();saveNow();applyTheme();renderPick();break;
     case 'flow:open':startFlow(t.dataset.id,t.dataset.who);break;
+    case 'back:open':startFlow(t.dataset.id,t.dataset.who,false,{back:true});break;
+    case 'back:mins':if(ui.flow&&ui.flow.back){ui.flow.back.mins=Math.min(600,Math.max(0,num(ui.flow.back.mins)+num(t.dataset.d)));$$('[data-act="back:set"]').forEach(function(b){var on=num(b.dataset.m)===ui.flow.back.mins;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});backRedraw()}break;
+    case 'back:set':if(ui.flow&&ui.flow.back){ui.flow.back.mins=num(t.dataset.m);$$('[data-act="back:set"]').forEach(function(b){var on=b===t;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});backRedraw()}break;
+    case 'back:ok':backSave();break;
     case 'flow:close':closeFlow();break;
     case 'flow:clearsig':clearSig();break;
     case 'flow:method':ui.flow.method=t.dataset.m;renderFlow();break;
@@ -5151,6 +5267,7 @@ document.addEventListener('input',function(e){
   else if(t.id==='clockNote'){ui.clockNote=t.value}
   else if(t.id==='qSearch'){filterItems(t.value)}
   else if(t.id==='hSearch'){ui.hq=t.value;ui.hShow=50;ui.hOpen='';histFill()}
+  else if((t.id==='backSoFar'||t.id==='backMi')&&ui.flow&&ui.flow.back){ui.flow.back[t.id==='backSoFar'?'soFar':'mi']=t.value;backRedraw()}
   else if(t.dataset.s){var val=t.dataset.t==='num'?num(t.value):t.dataset.t==='bool'?t.checked:t.value;setPath(S,t.dataset.s,val);if(t.dataset.s==='company')$('#brandCo').textContent=val||'Your Moving Co.';save()}
   else if(t.dataset.j){var jj=canEditJobs()?byId(ui.jobId):null;if(jj){jj.d[t.dataset.j]=t.value;save()}}
   else if(t.dataset.jcf){var j2=canEditJobs()?byId(ui.jobId):null;if(j2){j2.d.custom[t.dataset.jcf]=t.value;save()}}
