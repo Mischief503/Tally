@@ -419,9 +419,9 @@ r = await app("tok-marcus", { action: "pay_link", org: ORG, jobId: "j1", amount:
 ok(r.body.ok && /^https:\/\/proj\.supabase\.co\/functions\/v1\/tally-twilio\/p\/[A-Za-z0-9]{10}$/.test(r.body.url), "a short link comes back: " + r.body.url);
 const hookMade = lastCall("/v1/webhook_endpoints");
 const hookEvents = Object.keys(hookMade.p).filter((k) => /^enabled_events/.test(k)).map((k) => hookMade.p[k]);
-ok(hookMade && hookMade.p.url === BASE + "/stripe" && hookMade.p.api_version === fn.STRIPE_VERSION && hookEvents.length === fn.PAY_EVENTS.length, "the server made its own Stripe webhook, pinned to our API version");
+ok(hookMade && hookMade.p.url === BASE + "/stripe" && hookMade.p.api_version === fn.STRIPE_VERSION && hookEvents.length === fn.PAY_EVENTS.length + fn.MEMBER_EVENTS.length && fn.MEMBER_EVENTS.every((e: string) => hookEvents.indexOf(e) >= 0), "the server made its own Stripe webhook, pinned to our API version, for payments and memberships");
 ok(["payment_intent.succeeded", "charge.refunded", "charge.dispute.created", "charge.dispute.closed"].every((e) => hookEvents.indexOf(e) >= 0), "it listens for refunds and disputes too");
-ok(DB.pay_config.length === 1 && DB.pay_config[0].status === "ready" && DB.pay_config[0].webhook_secret === ST.hooks[0].secret && DB.pay_config[0].events === fn.PAY_EVENTS.join(","), "and keeps its signing secret where only the server can read it");
+ok(DB.pay_config.length === 1 && DB.pay_config[0].status === "ready" && DB.pay_config[0].webhook_secret === ST.hooks[0].secret && DB.pay_config[0].events === fn.PAY_EVENTS.concat(fn.MEMBER_EVENTS).join(","), "and keeps its signing secret where only the server can read it");
 const cs = lastCall("/v1/checkout/sessions");
 ok(cs && cs.p.mode === "payment" && cs.p["line_items[0][price_data][unit_amount]"] === "30000" && cs.p["line_items[0][price_data][currency]"] === "usd", "Stripe page for $300.00");
 ok(cs.p["payment_intent_data[metadata][tally_org]"] === ORG && cs.p["payment_intent_data[metadata][tally_job]"] === "j1" && cs.p["payment_intent_data[metadata][tally_by]"] === "Marcus" && cs.p["payment_intent_data[metadata][tally_src]"] === "link" && cs.p["metadata[tally_link]"] === tokenOf(r.body.url), "the payment carries the company, job, link and who started it");
@@ -769,7 +769,7 @@ r = await app("tok-owner", { action: "pay_link", org: ORG, jobId: "j4", amount: 
 ok(r.body.ok && calls("/v1/webhook_endpoints") === nb && stripeCalls.some((c) => c.method === "GET" && c.path === "/v1/webhook_endpoints/" + testCfg().webhook_id) && Date.now() - Date.parse(testCfg().updated_at) < 60e3, "every few hours the webhook is checked; a healthy one is left alone");
 testCfg().events = "payment_intent.succeeded"; testHook().enabled_events = ["payment_intent.succeeded"];
 r = await app("tok-owner", { action: "pay_link", org: ORG, jobId: "j4", amount: 21 });
-ok(r.body.ok && testHook().enabled_events.length === fn.PAY_EVENTS.length && testCfg().events === fn.PAY_EVENTS.join(","), "a webhook made by an older version is told about the new events (refunds, disputes) right away");
+ok(r.body.ok && testHook().enabled_events.length === fn.PAY_EVENTS.length + fn.MEMBER_EVENTS.length && testCfg().events === fn.PAY_EVENTS.concat(fn.MEMBER_EVENTS).join(","), "a webhook made by an older version is told about the new events (refunds, disputes, memberships) right away");
 testCfg().updated_at = new Date(Date.now() - 7 * 3600e3).toISOString();
 ST.hooks = ST.hooks.filter((w: any) => w.livemode);
 r = await app("tok-owner", { action: "pay_link", org: ORG, jobId: "j4", amount: 22 });

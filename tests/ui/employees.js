@@ -189,7 +189,7 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
   A = await load(HOSTED, { db, me: { uid: 'u-marcus', email: 'marcus@x.com' } });
   await sleep(50);
   ok(A.w.localStorage.getItem('tally.org') === ORG, 'a profile linked at sign-in takes Marcus straight into his company, no code or picker');
-  ok(A.calls.rpc.map((x) => x.name).slice(0, 2).join() === 'claim_invites,my_orgs', 'claim first, then the company list');
+  ok(A.calls.rpc.map((x) => x.name).slice(0, 3).join() === 'claim_invites,claim_company_invites,my_orgs', 'claim first (profiles, then companies Tally added for this email), then the company list');
 
   /* ================= on-device copy (claude.ai artifact) ================= */
   const B = await load(ARTIFACT, {});

@@ -76,6 +76,11 @@ main{padding:10px 12px calc(70px + env(safe-area-inset-bottom));max-width:960px;
 .hint{color:var(--muted);font-size:13px;margin:6px 0 0}
 .note{background:var(--accSoft);border:var(--bw) solid var(--tape-edge);border-radius:10px;padding:8px 10px;font-size:13px;margin-bottom:10px}
 .duelist{margin:4px 0 0;padding-left:20px;font-size:14px}.duelist li{margin:2px 0}
+.testtag{display:inline-block;background:var(--tape);color:var(--tape-ink);border-radius:4px;padding:0 5px;font:700 10px/1.6 var(--font);letter-spacing:.8px;vertical-align:1px}
+.adm-co h3{font-size:17px;margin-bottom:2px}.adm-co.is-test{border-style:dashed}
+.adm-edit{border-top:1px solid var(--line2);margin-top:10px;padding-top:8px}
+.member-nudge .btn{margin-top:6px}
+.pulse .pbox{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:9px 10px;box-shadow:var(--cardShadow);min-height:62px}
 .empty{text-align:center;padding:22px 12px;color:var(--muted)}
 .empty h3{color:var(--text);margin-bottom:4px;font-size:18px}
 
@@ -814,7 +819,8 @@ function onSession(session){
   me.id=session.user.id;me.email=session.user.email||'';
   if(window.__tallyBooted){reload();return}   // a different person signed in on this device: start clean
   // a profile the owner set up with this email links now, so the person walks straight in
-  sb.rpc('claim_invites').then(function(){},function(){}).then(function(){return sb.rpc('my_orgs')}).then(function(r){
+  // and a company Tally's admin added for this email becomes theirs
+  sb.rpc('claim_invites').then(function(){},function(){}).then(function(){return sb.rpc('claim_company_invites')}).then(function(){},function(){}).then(function(){return sb.rpc('my_orgs')}).then(function(r){
     var list=r.data||[],hit=list.filter(function(o){return o.id===ORG})[0],ready=list.filter(function(o){return !o.pending});
     if(!hit&&!ORG&&ready.length===1){useOrg(ready[0].id);return}
     if(!hit){pick.orgs=list;pick.mode='list';pick.msg='';hideLoginOnly();renderPicker();return}
@@ -885,6 +891,18 @@ window.tallyPay={
   check:function(id,pi){return commsPost({action:'pay_check',jobId:id,pi:pi||''})},
   forget:function(vaultId){return commsPost({action:'pay_forget',vaultId:vaultId})},
   refresh:function(){Object.keys(watchers).forEach(function(k){if(k.indexOf('jobs|')===0||k.indexOf('vault|')===0)bump(k)})}
+};
+/* ---------- the membership each company pays Tally, and Tally admin (Tally's own admins only) ---------- */
+window.tallyMember={
+  status:function(refresh){return commsPost(refresh?{action:'member_status',refresh:true}:{action:'member_status'})},
+  start:function(){return commsPost({action:'member_start'})},
+  portal:function(){return commsPost({action:'member_portal'})}
+};
+window.tallyAdmin={
+  list:function(){return commsPost({action:'admin_list'})},
+  set:function(target,patch){return commsPost(Object.assign({action:'admin_set',target:target},patch))},
+  plan:function(patch){return commsPost(Object.assign({action:'admin_plan'},patch))},
+  add:function(name,email,test){return commsPost({action:'admin_add',name:name,email:email,test:!!test})}
 };
 var readyGo,ready=new Promise(function(r){readyGo=r});   // the app waits here until we know who is signed in
 window.claude={use:function(what){
@@ -1387,15 +1405,17 @@ var ICON={
   chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
   reports:'<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>',
   settings:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>',
-  sos:'<svg viewBox="0 0 24 24"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4.5M12 17.2v.1"/></svg>'
+  sos:'<svg viewBox="0 0 24 24"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4.5M12 17.2v.1"/></svg>',
+  admin:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>'
 };
-var TABS=[{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'}];
+var TABS=[{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
 var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['today','chat'],crew:['today','chat']};
 function navTabs(){var ids=NAV[state.ui.role]||NAV.owner;return ids.map(function(id){return TABS.filter(function(t){return t.id===id})[0]})}
 function allowedTabs(role){
-  if(role==='crew'||role==='lead')return TABS.filter(function(t){return ['today','crew','chat'].indexOf(t.id)>=0});
-  if(role==='dispatch')return TABS.filter(function(t){return ['today','quote','jobs','dispatch','crew','chat','reports'].indexOf(t.id)>=0});
-  return TABS;
+  var ids=role==='crew'||role==='lead'?['today','crew','chat']:role==='dispatch'?['today','quote','jobs','dispatch','crew','chat','reports']:
+    ['today','quote','jobs','dispatch','crew','chat','reports','settings'];
+  if(typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // Tally's own admins, in any company
+  return TABS.filter(function(t){return ids.indexOf(t.id)>=0});
 }
 function fieldRoster(){
   var role=state.ui.role,S=state.settings,lk=lockedStaff();
@@ -1494,7 +1514,7 @@ function renderToday(){
   var soon=state.jobs.filter(function(j){return j.d.moveDate>t&&j.d.moveDate<=addDays(t,7)&&['booked','active'].indexOf(j.status)>=0}).sort(function(a,b){return (a.d.moveDate+a.d.time)<(b.d.moveDate+b.d.time)?-1:1}).slice(0,4);
   var soonHtml=soon.length?'<div class="secline"><h2>Coming up</h2><button data-act="tab" data-tab="dispatch">Board ›</button></div>'+soon.map(function(j){
     return '<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span><span class="r">'+esc(fmtDate(j.d.moveDate))+'</span></div><div class="route">'+jobLine(j)+'</div></button>'}).join(''):'';
-  v.innerHTML=head+pulse+liveHtml+alerts+todayHtml+soonHtml;
+  v.innerHTML=head+memberNudge()+pulse+liveHtml+alerts+todayHtml+soonHtml;
 }
 function renderFieldToday(head){
   var v=$('#view'),me=fieldMe(),t=todayISO();
@@ -1530,6 +1550,7 @@ function renderMore(){
     items.push(['crew','My jobs','Clock, tally, photos, billing']);
   }
   if(role==='owner')items.push(['settings','Setup','Rates, crew, forms, access']);
+  if(isTallyAdmin())items.push(['admin','Tally admin','Every company, fees and trials']);
   var btns=items.map(function(x){return '<button data-act="more:go" data-tab="'+x[0]+'">'+(ICON[x[0]]||ICON.more)+'<b>'+esc(x[1])+'</b><small>'+esc(x[2])+'</small></button>'}).join('');
   if(ui.moreMode==='preview'&&canPreview()){
     el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="See it their way">'+previewSheet()+'</div>';
@@ -1962,7 +1983,7 @@ function renderReports(){
 function renderSettings(){
   renderSettingsRaw();accordify($('#view'),'section.card','H2','st',[]);
   var v=$('#view'),cards={};$$('details.acc.card',v).forEach(function(d){cards[d.dataset.k]=d});
-  var groups=[['Business',['Company','Time clock','Bid accuracy']],['People',['Employees','App access','Texts and calls','Roles']],['Pricing and jobs',['Rate card','Materials and job costs','Fleet','Inventory catalog','Custom job fields','Lead sources']],['Paperwork and payments',['Forms to sign','Payments','Saved payment methods']],['Data',['Your data']]];
+  var groups=[['Business',['Company','Membership','Time clock','Bid accuracy']],['People',['Employees','App access','Texts and calls','Roles']],['Pricing and jobs',['Rate card','Materials and job costs','Fleet','Inventory catalog','Custom job fields','Lead sources']],['Paperwork and payments',['Forms to sign','Payments','Saved payment methods']],['Data',['Your data']]];
   var frag=document.createDocumentFragment(),used={};
   groups.forEach(function(g){var present=g[1].filter(function(t){return cards['st:'+t]});if(!present.length)return;var lb=document.createElement('div');lb.className='glabel';lb.textContent=g[0];frag.appendChild(lb);present.forEach(function(t){frag.appendChild(cards['st:'+t]);used['st:'+t]=1})});
   Object.keys(cards).forEach(function(k){if(!used[k])frag.appendChild(cards[k])});
@@ -1994,7 +2015,7 @@ function renderSettingsRaw(){
   var arm=function(a,label){return '<button class="btn '+(ui.armed===a?'danger':'')+'" data-act="'+a+'">'+(ui.armed===a?'Tap again to confirm':label)+'</button>'};
   v.innerHTML=(sync.mode==='shared'&&!sync.isAdmin?'<div class="note">You can look around here, but saving changes needs editor access to this workspace.</div>':'')+'<section class="card"><h2>Company</h2>'+fld('Name','<input data-s="company" data-t="text" value="'+esc(S.company)+'">')+
      '<div style="margin-top:8px">'+fld('Shop address (where trucks start and end the day)','<input data-s="shopAddress" data-t="text" autocomplete="street-address" placeholder="1200 Industrial Blvd, Austin, TX" value="'+esc(S.shopAddress||'')+'">')+'</div>'+
-     '<p class="hint">Quotes add the drive from here to the pickup and from the delivery back here.</p></section>'+accessCard()+pricing+
+     '<p class="hint">Quotes add the drive from here to the pickup and from the delivery back here.</p></section>'+memberCardHtml()+accessCard()+pricing+
    '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="grid-template-columns:2fr 1fr auto"><input id="nTruckName" placeholder="Name" aria-label="New truck name" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><input id="nTruckCf" type="number" placeholder="Cu ft" aria-label="New truck cubic feet" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn sm" data-act="st:addtruck">Add</button></div></section>'+
    employeesCard()+
    materialsCard()+
@@ -2020,13 +2041,14 @@ function renderSettingsRaw(){
 
 /* ---------- render core ---------- */
 function renderTab(){
-  var fn={today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,chat:renderChat,reports:renderReports,settings:renderSettings}[ui.tab];
+  var fn={today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,chat:renderChat,reports:renderReports,settings:renderSettings,admin:renderAdmin}[ui.tab];
   if(fn)fn();
 }
 function render(){
   applyIdentityUI();
   var role=state.ui.role,tabs=allowedTabs(role);
-  $('#brandCo').textContent=(window.tallyOrg&&window.tallyOrg.name)||state.settings.company||'Your Company';
+  brandLine();
+  if(window.tallyMember&&!member.st&&!member.loading)memberLoad();
   $('#role').value=role;
   if(!tabs.some(function(t){return t.id===ui.tab}))ui.tab=tabs[0].id;
   renderTabs();
@@ -2887,7 +2909,7 @@ function pullSettings(snap){
 function stopData(){
   sync.unsubs.forEach(function(u){try{u()}catch(e){}});sync.unsubs=[];
   sync.started=false;sync.got={settings:false,jobs:false,shifts:false,vault:false};sync.settingsSeen=false;
-  sync.lastJobs={};sync.lastShifts={};sync.lastVault={};sync.lastSettings='';chat.db=null;chat.mode='local';chat.sos=[];pay.cfg=null;
+  sync.lastJobs={};sync.lastShifts={};sync.lastVault={};sync.lastSettings='';chat.db=null;chat.mode='local';chat.sos=[];pay.cfg=null;member.st=null;member.wait=false;adm.data=null;
   if(sos.id)sosGeoStop();sosWake(false);sosAlarm(false);
 }
 function startData(){
@@ -4155,7 +4177,7 @@ function qrSvg(text){
    screen, decides what is still owed. */
 var STRIPE_JS='https://js.stripe.com/endive/stripe.js',MIN_PAY=50;
 var pay={cfg:null,cfgAt:0,loading:null,stripe:null,stripeKey:'',js:null,elements:null,el:null,elJob:'',busy:false,links:{},poll:null,
-  connecting:false,connectWait:false,connectUrl:'',connectMsg:'',
+  conn:{busy:false,wait:false,url:'',msg:''},
   lastTest:(function(){try{return localStorage.getItem('tally.payTest')==='1'}catch(e){return false}})()};
 function payOn(){return !!(window.tallyPay&&sync.mode==='shared'&&sync.identity.status==='ok'&&pay.cfg&&pay.cfg.ready)}
 function payCardOn(){return payOn()&&!!pay.cfg.publishableKey}
@@ -4166,7 +4188,7 @@ function payLoad(force,refresh){
   if(pay.loading)return pay.loading;
   pay.cfgAt=Date.now();
   pay.loading=Promise.resolve(window.tallyPay.config(!!refresh)).then(function(c){pay.cfg=c&&c.ok?c:{ready:false,reason:'down'};
-      if(pay.cfg.ready||pay.cfg.reason==='connect-off')pay.connectWait=false;
+      if(pay.cfg.ready||pay.cfg.reason==='connect-off')pay.conn.wait=false;
       if(pay.cfg.ready){pay.lastTest=pay.cfg.test===true;try{localStorage.setItem('tally.payTest',pay.lastTest?'1':'0')}catch(e){}}},function(){pay.cfg={ready:false,reason:'down'}})
     .then(function(){pay.loading=null;if(ui.flow)renderFlow();if(ui.jobId)renderSheet();softSettings();return pay.cfg});
   return pay.loading;
@@ -4353,10 +4375,10 @@ function payCardHtml(){
   if(!window.tallyPay)return '<section class="card"><h2>Payments</h2><p class="sub">Card payments run on the hosted edition of Tally (the website and the Android app), through Stripe. This copy records payments but does not charge cards.</p></section>';
   var c=pay.cfg,st,cn=(c&&c.connect)||{},due=stripeDue(cn.due),btn='<button class="btn sm" data-act="pay:reload">Check again</button>',test=c&&c.test?' (test mode)':'';
   // a company's own Stripe account: what is next, and the button to Stripe's sign-up
-  var go=function(label){return '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="pay:connect"'+(pay.connecting?' disabled':'')+'>'+(pay.connecting?'Opening Stripe…':label)+'</button>'+btn+'</div>'+
-    (pay.connectUrl?'<p class="hint">Your browser kept Stripe’s page from opening. <a href="'+esc(pay.connectUrl)+'" target="_blank" rel="noopener">Open Stripe’s sign-up page</a> (the link works for a few minutes).</p>':'')+
-    (pay.connectMsg?'<p class="hint" role="alert" style="color:var(--bad)">'+esc(pay.connectMsg)+'</p>':'')+
-    (pay.connectWait?'<p class="hint">Finished with Stripe? Come back here; this updates by itself.</p>':'')};
+  var go=function(label){return '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="pay:connect"'+(pay.conn.busy?' disabled':'')+'>'+(pay.conn.busy?'Opening Stripe…':label)+'</button>'+btn+'</div>'+
+    (pay.conn.url?'<p class="hint">Your browser kept Stripe’s page from opening. <a href="'+esc(pay.conn.url)+'" target="_blank" rel="noopener">Open Stripe’s sign-up page</a> (the link works for a few minutes).</p>':'')+
+    (pay.conn.msg?'<p class="hint" role="alert" style="color:var(--bad)">'+esc(pay.conn.msg)+'</p>':'')+
+    (pay.conn.wait?'<p class="hint">Finished with Stripe? Come back here; this updates by itself.</p>':'')};
   var dueList=due.length?'<p class="hint" style="margin-bottom:0">Stripe still needs:</p><ul class="duelist">'+due.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul>':'';
   if(!c)st='<p class="hint">Checking…</p>';
   else if(c.ready&&c.via==='connect')st='<div class="note"><b>Card payments go to your own Stripe account'+test+'.</b><br><small>Pay links, cards on file and typed cards are on'+(c.publishableKey?'':' (typing a card in needs STRIPE_PUBLISHABLE_KEY in Supabase)')+'. Stripe pays the money out to your bank'+(cn.payouts===false?' once it has finished checking the bank account':'')+'. Tally takes no cut; Stripe’s card fee comes out of each payment. Refunds, disputes and payouts are in your Stripe Dashboard at dashboard.stripe.com.'+(c.test?' Test mode: no real money moves.':'')+'</small></div>'+(due.length?dueList+go('Continue with Stripe'):'')+'<div class="row" style="margin-top:8px">'+btn+'</div>';
@@ -4375,37 +4397,201 @@ function payCardHtml(){
   else st='<div class="note"><b>The payment service did not answer.</b></div>'+btn;
   return '<section class="card"><h2>Payments</h2>'+st+'<p class="sub">Card numbers never touch Tally. Customers pay on Stripe’s own page or in Stripe’s card box, and only the brand, last four digits, expiry and name of a card kept on file are saved here.</p></section>';
 }
-// The owner connects the company's own Stripe account: the server makes it (or picks up the one started
-// before) and hands back Stripe's sign-up page, which opens outside Tally (in the phone's browser in the app).
-function payConnect(){
-  if(pay.connecting||!window.tallyPay)return;
+// Opens a Stripe page the server hands back (Connect sign-up, membership checkout, billing page). In a
+// browser a tab is opened on the tap itself (so it isn't blocked) and the page loads into it; the Android
+// app hands it to the phone's browser. st keeps {busy,url,msg,wait}: url is a link to tap when the browser
+// blocked the tab anyway, wait means "back from Stripe? this updates". Only https Stripe pages open.
+function stripeOpen(call,st,draw){
   var android=/TallyAndroid\//.test(navigator.userAgent||''),tab=null;
-  // in a browser the new tab is opened now, while the tap still counts (so it isn't blocked), and Stripe's page loads into it
   if(!android){try{tab=window.open('','_blank')}catch(e){}
     if(tab){try{tab.opener=null;tab.document.title='Opening Stripe…';tab.document.body.innerHTML='<p style="font:16px system-ui,sans-serif;padding:24px">Opening Stripe…</p>'}catch(e){}}}
-  pay.connecting=true;pay.connectUrl='';pay.connectMsg='';renderSettings();
-  window.tallyPay.connect().then(function(r){
-    pay.connecting=false;
+  st.busy=true;st.url='';st.msg='';draw(true);
+  return Promise.resolve(call()).then(null,function(){return null}).then(function(r){
+    st.busy=false;
     var u=r&&r.ok&&!r.done?String(r.url||''):'';
-    if(r&&r.ok&&!r.done&&!/^https:\/\/[a-z0-9.-]*stripe\.com\//i.test(u)){r={ok:false,message:'Stripe did not give a sign-up page. Try again.'};u=''}
+    if(r&&r.ok&&!r.done&&!/^https:\/\/[a-z0-9.-]*stripe\.com\//i.test(u)){r={ok:false,message:'Stripe did not give a page to open. Try again.'};u=''}
     if(!u&&tab){try{tab.close()}catch(e){}}
-    if(!r||!r.ok){pay.connectMsg=(r&&r.message)||'Could not reach Stripe. Try again.';softSettings();return}
-    if(r.done){toast(r.message||'Your Stripe account is connected.');payLoad(true,true);return}
-    pay.connectWait=true;pay.cfgAt=0;   // the first time back in Tally asks again
-    if(android){softSettings();location.href=u;return}   // the app opens it in the phone's browser
+    if(!r||!r.ok){st.msg=(r&&r.message)||'Could not reach Stripe. Try again.';draw();return r}
+    if(r.done){draw();return r}
+    st.wait=true;
+    if(android){draw();location.href=u;return r}   // the app opens it in the phone's browser
     var opened=false;
     if(tab&&!tab.closed){try{tab.location.href=u;opened=true}catch(e){}}
     if(!opened){var w=null;try{w=window.open(u,'_blank')}catch(e){}if(w){try{w.opener=null}catch(e){}opened=true}}
-    if(!opened)pay.connectUrl=u;
-    softSettings();
+    if(!opened)st.url=u;
+    draw();return r;
+  });
+}
+// The owner connects the company's own Stripe account: the server makes it (or picks up the one started
+// before) and hands back Stripe's sign-up page, which opens outside Tally (in the phone's browser in the app).
+function payConnect(){
+  if(pay.conn.busy||!window.tallyPay)return;
+  stripeOpen(function(){return window.tallyPay.connect()},pay.conn,function(now){if(now)renderSettings();else softSettings()}).then(function(r){
+    if(!r||!r.ok)return;
+    if(r.done){toast(r.message||'Your Stripe account is connected.');payLoad(true,true);return}
+    pay.cfgAt=0;   // the first time back in Tally asks again
   });
 }
 // back in Tally from Stripe's page (or after a while away): ask Stripe how the account stands
 document.addEventListener('visibilitychange',function(){
   if(document.hidden||!window.tallyPay||!pay.cfg)return;
-  var c=pay.cfg,waiting=pay.connectWait||(!c.ready&&/^connect/.test(c.reason||''))||(c.connect&&(c.connect.due||[]).length);
+  var c=pay.cfg,waiting=pay.conn.wait||(!c.ready&&/^connect/.test(c.reason||''))||(c.connect&&(c.connect.due||[]).length);
   if(waiting&&Date.now()-(pay.cfgAt||0)>4e3)payLoad(true,true);
 });
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden||!window.tallyMember||!member.st||state.ui.role!=='owner')return;
+  var w=member.wait||/^(trial|ended|past_due)$/.test(member.st.state||'');
+  if(w&&Date.now()-(member.at||0)>4e3)memberLoad(true,true);
+});
+
+/* ---------- the membership each company pays Tally (hosted edition) ----------
+   The server says where the company stands (member_status): a free trial, a membership on Stripe, the
+   fee waived or a test company. The owner starts it on Stripe's checkout page and manages the card and
+   invoices on Stripe's billing page. Nobody is locked out when a trial ends: the owner is reminded. */
+var member={st:null,at:0,loading:null,busy:false,url:'',msg:'',wait:false};
+function memberLoad(force,refresh){
+  if(!window.tallyMember||sync.mode!=='shared'||sync.identity.status!=='ok')return Promise.resolve(null);
+  if(member.st&&!force)return Promise.resolve(member.st);
+  if(member.loading)return member.loading;
+  member.at=Date.now();
+  member.loading=Promise.resolve(window.tallyMember.status(!!refresh)).then(function(r){
+      if(r&&r.ok){member.st=r;if(!/^(trial|ended)$/.test(r.state||''))member.wait=false}else if(!member.st)member.st={ok:false}},function(){if(!member.st)member.st={ok:false}})
+    .then(function(){member.loading=null;memberApply();return member.st});
+  return member.loading;
+}
+function isTallyAdmin(){return !!(member.st&&member.st.admin)}
+function memberTest(){return !!(member.st&&member.st.test)}
+// after the server answers: the company's name (with TEST), the menus, and the screens that show it
+function memberApply(){
+  brandLine();renderTabs();renderMore();
+  var a=document.activeElement,typing=a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+  if(typing)return;
+  if(ui.tab==='settings')renderSettings();
+  else if(ui.tab==='today')renderToday();
+  else if(ui.tab==='admin')renderAdmin();
+}
+function brandLine(){
+  var el=$('#brandCo');if(!el)return;
+  el.innerHTML=esc((window.tallyOrg&&window.tallyOrg.name)||state.settings.company||'Your Company')+(memberTest()?' <b class="testtag" title="A test company: never charged a membership">TEST</b>':'');
+}
+function shortDay(iso){var d=iso?new Date(iso):null;return d&&!isNaN(d)?d.toLocaleDateString('en-US',{month:'short',day:'numeric'}):''}
+function daysLeft(iso){var t=Date.parse(iso||'');return t?Math.max(0,Math.ceil((t-Date.now())/864e5)):0}
+function memberPrice(m){return money((m.price_cents||0)/100)+'/month'+(m.discount_pct>0?' ('+m.discount_pct+'% off '+money((m.list_cents||0)/100)+', from Tally)':'')}
+// Today, for the owner: a reminder near the end of the trial, after it, or when a payment failed
+function memberNudge(){
+  var m=member.st;if(!m||!m.ok||state.ui.role!=='owner'||!m.payments)return '';
+  var t='';
+  if(m.state==='trial'&&daysLeft(m.trial_ends)<=3)t='Your free trial ends '+(daysLeft(m.trial_ends)<=0?'today':'in '+daysLeft(m.trial_ends)+' day'+(daysLeft(m.trial_ends)===1?'':'s'))+'. Start the membership to keep going: '+memberPrice(m)+'.';
+  else if(m.state==='ended')t='Your free trial has ended. Start the membership to keep using Tally: '+memberPrice(m)+'.';
+  else if(m.state==='past_due')t='Your last Tally membership payment didn’t go through. Update the card on Stripe’s billing page.';
+  if(!t)return '';
+  return '<div class="note member-nudge"><b>Membership</b><br>'+esc(t)+' <button class="btn sm" data-act="mem:go">Open Membership</button></div>';
+}
+function memberCardHtml(){
+  if(!window.tallyMember)return '';
+  var m=member.st,body,btn='',chk='<button class="btn sm" data-act="mem:reload">Check again</button>';
+  var go=function(act,label){return '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="'+act+'"'+(member.busy?' disabled':'')+'>'+(member.busy?'Opening Stripe…':label)+'</button>'+chk+'</div>'+
+    (member.url?'<p class="hint">Your browser kept Stripe’s page from opening. <a href="'+esc(member.url)+'" target="_blank" rel="noopener">Open it here</a>.</p>':'')+
+    (member.msg?'<p class="hint" role="alert" style="color:var(--bad)">'+esc(member.msg)+'</p>':'')+
+    (member.wait?'<p class="hint">Done on Stripe’s page? Come back here; this updates by itself.</p>':'')};
+  if(!m)body='<p class="hint">Checking…</p>';
+  else if(!m.ok)body='<div class="note"><b>The membership service did not answer.</b></div>'+chk;
+  else if(m.state==='test')body='<div class="note"><b>This is a test company.</b><br><small>Tally never charges it a membership. Use it to try things out.</small></div>';
+  else if(m.state==='waived')body='<div class="note"><b>Tally waived your membership.</b><br><small>There’s nothing to pay.</small></div>';
+  else if(!m.payments)body='<div class="note"><b>'+(m.state==='trial'?'Free trial until '+esc(shortDay(m.trial_ends)):'Your free trial has ended')+'.</b><br><small>Membership payments aren’t switched on yet, so there’s nothing to do.</small></div>';
+  else if(m.state==='trial')body='<div class="note"><b>Free trial until '+esc(shortDay(m.trial_ends))+' ('+daysLeft(m.trial_ends)+' day'+(daysLeft(m.trial_ends)===1?'':'s')+' left).</b><br><small>After that, '+esc(memberPrice(m))+'. Start now and the card isn’t charged until the trial ends'+(daysLeft(m.trial_ends)<=2?' (with less than two days left, Stripe starts it today)':'')+'. Cancel any time.</small></div>'+go('mem:start','Start membership');
+  else if(m.state==='ended')body='<div class="note"><b>Your free trial ended'+(m.trial_ends?' on '+esc(shortDay(m.trial_ends)):'')+'.</b><br><small>'+esc(memberPrice(m))+'. Cancel any time.</small></div>'+go('mem:start','Start membership');
+  else if(m.state==='trialing')body='<div class="note"><b>Membership set up.</b><br><small>Free until '+esc(shortDay(m.billing_trial_end||m.period_end))+', then '+esc(memberPrice(m))+', charged to the card on file.'+(m.cancel_at_period_end?' It’s set to end then.':'')+'</small></div>'+go('mem:portal','Manage billing');
+  else if(m.state==='active')body='<div class="note"><b>Membership active: '+esc(memberPrice(m))+'.</b><br><small>'+(m.cancel_at_period_end?'It ends on '+esc(shortDay(m.period_end))+'.':'Renews '+esc(shortDay(m.period_end))+'.')+'</small></div>'+go('mem:portal','Manage billing');
+  else if(m.state==='past_due')body='<div class="note"><b>Your last membership payment didn’t go through.</b><br><small>Update the card on Stripe’s billing page; Stripe tries again.</small></div>'+go('mem:portal','Manage billing');
+  else body='<div class="note"><b>Membership paused.</b></div>'+go('mem:portal','Manage billing');
+  return '<section class="card"><h2>Membership</h2>'+body+'<p class="sub">What your company pays for Tally. Card details stay with Stripe: changing the card, invoices and cancelling are on Stripe’s own billing page.</p></section>';
+}
+function memberOpen(kind){
+  if(member.busy||!window.tallyMember)return;
+  stripeOpen(function(){return kind==='portal'?window.tallyMember.portal():window.tallyMember.start()},member,function(now){if(now)renderSettings();else softSettings()}).then(function(r){
+    if(!r)return;
+    if(r.ok&&r.done){toast(r.message||'Your membership is set up.');memberLoad(true,true);return}
+    if(!r.ok&&r.portal){member.msg='';memberLoad(true,true)}
+    if(r.ok)member.at=0;   // the first time back in Tally asks again
+  });
+}
+
+/* ---------- Tally admin: every company on Tally (Tally's own admins only) ---------- */
+var adm={data:null,loading:null,msg:'',addMsg:'',open:''};
+function adminLoad(){
+  if(!window.tallyAdmin)return Promise.resolve(null);
+  if(adm.loading)return adm.loading;
+  adm.loading=Promise.resolve(window.tallyAdmin.list()).then(function(r){adm.data=r&&r.ok?r:{ok:false,message:(r&&r.message)||'Tally admin did not answer.'}},function(){adm.data={ok:false,message:'Tally admin did not answer.'}})
+    .then(function(){adm.loading=null;if(ui.tab==='admin')renderAdmin();return adm.data});
+  return adm.loading;
+}
+var MSTATE={trial:'Free trial',ended:'Trial over, no membership',trialing:'Membership set up (still free)',active:'Paying',past_due:'Payment failed',paused:'Paused',waived:'Fee waived',test:'Test company'};
+function admCompany(c){
+  var m=c.member||{},id=esc(c.id);
+  var who=c.owners.length?esc(c.owners.join(', ')):c.invited.length?'Waiting for '+esc(c.invited.join(', '))+' to sign in':'No owner yet';
+  var st=MSTATE[m.state]||m.state||'';
+  var detail=m.state==='trial'?' until '+shortDay(m.trial_ends):m.state==='active'?' '+memberPrice(m):m.state==='trialing'?', billing starts '+shortDay(m.billing_trial_end||m.period_end):'';
+  var cards={platform:'Cards: Tally’s own Stripe account',connected:'Cards: its own Stripe account',connecting:'Cards: Stripe still checking',disconnected:'Cards: Stripe disconnected',none:'Cards: not set up'}[c.cards]||'';
+  var open=adm.open===c.id;
+  return '<div class="card adm-co'+(c.test?' is-test':'')+'"><div class="row between" style="align-items:flex-start"><div class="grow"><h3>'+esc(c.name)+(c.test?' <b class="testtag">TEST</b>':'')+'</h3>'+
+    '<small>'+who+'</small><br><small>'+esc(st+detail)+' · '+c.members+' '+(c.members===1?'person':'people')+' · since '+esc(shortDay(c.created))+'</small><br><small>'+esc(cards)+'</small>'+(c.note?'<br><small>Note: '+esc(c.note)+'</small>':'')+'</div>'+
+    '<button class="btn sm" data-act="adm:open" data-id="'+id+'" aria-expanded="'+open+'">'+(open?'Close':'Change')+'</button></div>'+
+    (open?'<div class="adm-edit"><label class="check"><input type="checkbox" id="admT_'+id+'"'+(c.test?' checked':'')+'> Test company (never charged)</label>'+
+      '<label class="check"><input type="checkbox" id="admW_'+id+'"'+(c.waived?' checked':'')+'> Waive the membership fee</label>'+
+      '<div class="grid2 stack">'+fld('Discount (%)','<input id="admD_'+id+'" type="number" inputmode="numeric" min="0" max="100" step="1" value="'+(c.discount_pct||0)+'">')+fld('Note (only you see it)','<input id="admN_'+id+'" maxlength="500" value="'+esc(c.note||'')+'">')+'</div>'+
+      '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="adm:save" data-id="'+id+'">Save</button></div>'+
+      '<p class="hint">A running membership follows right away: waived and test companies stop being charged, a discount is taken off every month.</p></div>':'')+'</div>';
+}
+function renderAdmin(){
+  var v=$('#view');
+  if(!isTallyAdmin()){v.innerHTML='<div class="empty"><h3>Tally admin</h3><p>Only Tally’s admins see this.</p></div>';return}
+  if(!adm.data&&!adm.loading)adminLoad();
+  var d=adm.data,head='<div class="hero-day"><h1>Tally admin</h1><div class="sub">Every company on Tally. Only Tally’s admins see this.</div></div>';
+  if(!d){v.innerHTML=head+'<p class="hint">Loading…</p>';return}
+  if(!d.ok){v.innerHTML=head+'<div class="note">'+esc(d.message||'Tally admin did not answer.')+' <button class="btn sm" data-act="adm:reload">Try again</button></div>';return}
+  var cos=d.companies||[],paying=cos.filter(function(c){return c.member&&c.member.state==='active'}),trial=cos.filter(function(c){return c.member&&/^(trial|trialing)$/.test(c.member.state)});
+  var mrr=paying.reduce(function(a,c){return a+(c.member.price_cents||0)},0);
+  var p=d.plan||{};
+  var sum='<div class="pulse"><div class="pbox"><b>'+cos.length+'</b><span>compan'+(cos.length===1?'y':'ies')+'</span></div><div class="pbox"><b>'+paying.length+'</b><span>paying · '+esc(money(mrr/100))+'/mo</span></div><div class="pbox"><b>'+trial.length+'</b><span>on a free trial</span></div></div>';
+  var plan='<section class="card"><h2>Membership price</h2><div class="grid2 stack">'+fld('Monthly price ($)','<input id="admPrice" type="number" inputmode="decimal" min="1" step="1" value="'+((p.monthly_cents||0)/100)+'">')+fld('Free trial for new companies (days)','<input id="admTrial" type="number" inputmode="numeric" min="0" max="365" step="1" value="'+(p.trial_days==null?14:p.trial_days)+'">')+'</div>'+
+    '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="adm:plan">Save</button></div><p class="hint">New memberships use it; companies already paying keep their price. '+(d.payments?'Stripe is in '+esc(d.payments)+' mode.':'Stripe isn’t set up, so nobody can be charged yet.')+'</p>'+(adm.msg?'<p class="hint" role="status">'+esc(adm.msg)+'</p>':'')+'</section>';
+  var add='<section class="card"><h2>Add a company</h2><p class="sub">For a company you’re signing up yourself. Anyone can also start one in the app, with the free trial.</p><div class="grid2 stack">'+
+    fld('Company name','<input id="admName" maxlength="120" autocomplete="off">')+fld('Owner’s email','<input id="admEmail" type="email" autocomplete="off" placeholder="owner@company.com">')+'</div>'+
+    '<label class="check"><input type="checkbox" id="admTest"> Test company (never charged)</label><div class="row"><button class="btn primary" data-act="adm:add">Add company</button></div>'+
+    '<p class="hint">The owner goes straight in when they sign in to Tally with that email. Use your own email to be its owner yourself.</p>'+(adm.addMsg?'<p class="hint" role="status">'+esc(adm.addMsg)+'</p>':'')+'</section>';
+  v.innerHTML=head+sum+'<div class="secline"><h2>Companies</h2><button data-act="adm:reload">Refresh</button></div>'+(cos.length?cos.map(admCompany).join(''):'<p class="hint">No companies yet.</p>')+plan+add;
+}
+function adminSave(id){
+  var g=function(k){return $('#'+k+'_'+id)};
+  if(!g('admT'))return;
+  var dsc=Number(g('admD').value||0);
+  if(!(dsc>=0&&dsc<=100)||Math.round(dsc)!==dsc){toast('A discount is a whole percent from 0 to 100.');return}
+  window.tallyAdmin.set(id,{test:g('admT').checked,waived:g('admW').checked,discount:dsc,note:g('admN').value||''}).then(function(r){
+    if(!r||!r.ok){toast((r&&r.message)||'Could not save.');return}
+    if(r.company&&adm.data&&adm.data.companies)adm.data.companies=adm.data.companies.map(function(c){return c.id===id?r.company:c});
+    adm.open='';toast(r.message||'Saved.');renderAdmin();
+    if(window.tallyOrg&&id===window.tallyOrg.id)memberLoad(true);
+  });
+}
+function adminPlanSave(){
+  var price=Number(($('#admPrice')||{}).value||0),days=Number(($('#admTrial')||{}).value||0);
+  if(!(price>=1))return toast('The monthly price is at least $1.');
+  if(!(days>=0&&days<=365)||Math.round(days)!==days)return toast('The free trial is 0 to 365 days.');
+  window.tallyAdmin.plan({monthly:price,trialDays:days}).then(function(r){
+    if(!r||!r.ok){toast((r&&r.message)||'Could not save.');return}
+    adm.msg=r.message||'Saved.';if(adm.data&&r.plan)adm.data.plan=r.plan;renderAdmin();memberLoad(true);
+  });
+}
+function adminAddCompany(){
+  var n=(($('#admName')||{}).value||'').trim(),e=(($('#admEmail')||{}).value||'').trim(),t=!!($('#admTest')||{}).checked;
+  if(!n)return toast('Give the company a name.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))return toast('Enter the owner’s email.');
+  window.tallyAdmin.add(n,e,t).then(function(r){
+    if(!r||!r.ok){toast((r&&r.message)||'Could not add the company.');return}
+    adm.addMsg=r.message||'Added.';adminLoad().then(renderAdmin);
+  });
+}
 
 /* ---------- signing and payment flow ---------- */
 function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.emp||ui.sosOpen||ui.sosStart));navSync()}
@@ -4745,6 +4931,15 @@ document.addEventListener('click',function(e){
         if(r.owed<balOf(cj)-0.004){toast('Payment found.');window.tallyPay.refresh()}else toast('Nothing paid yet.')});break}
     case 'pay:reload':pay.cfg=null;payLoad(true,true);renderSettings();break;
     case 'pay:connect':payConnect();break;
+    case 'mem:start':memberOpen('start');break;
+    case 'mem:portal':memberOpen('portal');break;
+    case 'mem:reload':member.msg='';member.url='';memberLoad(true,true);break;
+    case 'mem:go':ui.tab='settings';ui.armed='';render();setTimeout(function(){var d=$$('#view details.acc.card').filter(function(x){return /^\s*Membership/.test((x.querySelector('summary')||{}).textContent||'')})[0];if(d){d.open=true;try{d.scrollIntoView({block:'start'})}catch(e){}}},0);break;
+    case 'adm:open':adm.open=adm.open===t.dataset.id?'':t.dataset.id;renderAdmin();break;
+    case 'adm:save':adminSave(t.dataset.id);break;
+    case 'adm:plan':adminPlanSave();break;
+    case 'adm:add':adminAddCompany();break;
+    case 'adm:reload':adm.data=null;adm.msg='';adminLoad();renderAdmin();break;
     case 'pay:retry':pay.cfg=null;payLoad(true);renderFlow();break;
     case 'pl:make':case 'pl:text':{var oj=byId(ui.jobId);if(!oj||pay.busy)break;var ol=pay.links[oj.id];
       var oa=a==='pl:make'?round2(+t.dataset.v):ol&&ol.amount,ok2=a==='pl:make'?t.dataset.save==='1':ol&&ol.save;if(!oa)break;

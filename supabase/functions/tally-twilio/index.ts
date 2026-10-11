@@ -1,6 +1,7 @@
 // Tally — the server side of the app (Supabase Edge Function, named tally-twilio for history)
 // Text alerts, masked calling, callbacks to the office, the call/text log, quote distances,
-// emergency alert texts and card payments through Stripe.
+// emergency alert texts, card payments through Stripe (on the platform's account or each company's
+// own), and the membership each company pays Tally, with Tally admin.
 //
 // Secrets this function reads (Supabase › Edge Functions › Secrets):
 //   TWILIO_ACCOUNT_SID   your Twilio Account SID (starts with AC)
@@ -20,9 +21,13 @@
 // Routes:
 //   POST /app            the Tally app: {action:'job'|'forms'|'call'|'line'|'pay_…', org, jobId}
 //                        and {action:'sos', org, msgId, kind:'start'|'end'} for emergency alerts
-//   POST /stripe         Stripe events (payments finishing or failing, pay links used, refunds, disputes)
+//   POST /stripe         Stripe events (payments finishing or failing, pay links used, refunds, disputes,
+//                        memberships)
+//   POST /stripe/connect Stripe events on the companies' own (connected) accounts
 //   GET  /p/<code>       a short payment link: sends the customer to a Stripe page for what they owe now
 //   GET  /pay/done       where the customer lands after paying
+//   GET  /connect/done, /connect/again   back from Stripe's sign-up for a company's own account
+//   GET  /member/done, /member/back      back from Stripe's membership checkout and billing pages
 //   /twilio/bridge       masked call: your phone answered, ask for "press 1"
 //   /twilio/connect      masked call: you pressed 1, dial the customer from the company number
 //   /twilio/dialed       masked call: how the customer leg ended
@@ -817,6 +822,9 @@ export const PAY_EVENTS = ["payment_intent.succeeded", "payment_intent.processin
   "payment_intent.canceled", "checkout.session.completed", "checkout.session.expired", "charge.refunded",
   "charge.refund.updated", "charge.dispute.created", "charge.dispute.closed", "charge.dispute.funds_withdrawn",
   "charge.dispute.funds_reinstated"];
+// the membership companies pay Tally: subscriptions on the platform's own account
+export const MEMBER_EVENTS = ["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted",
+  "invoice.paid", "invoice.payment_failed"];
 const PAY_PER_HOUR = 40;
 const MIN_CENTS = 50;
 const LINK_DAYS = 7;            // how long a pay link works
@@ -1114,7 +1122,7 @@ async function withJobLock<T>(org: string, jobId: string, fn: () => Promise<T>, 
      with the company's account in each event. */
 type HookKind = "platform" | "connect";
 const HOOKS: Record<HookKind, J> = {
-  platform: { table: "pay_config", path: "/stripe", events: PAY_EVENTS, description: "Tally payments" },
+  platform: { table: "pay_config", path: "/stripe", events: PAY_EVENTS.concat(MEMBER_EVENTS), description: "Tally payments" },
   connect: { table: "pay_config_connect", path: "/stripe/connect", events: PAY_EVENTS.concat(CONNECT_EVENTS), description: "Tally payments (companies' own Stripe accounts)" },
 };
 async function webhookSecrets(kind: HookKind = "platform"): Promise<string[]> {
@@ -1611,6 +1619,348 @@ export async function payConnect(org: string, me: J): Promise<J> {
   if (!link || !/^https:\/\//.test(String(link.url || ""))) return { ok: false, message: "Stripe did not give a sign-up link. Try again in a minute." };
   return { ok: true, url: link.url };
 }
+/* ---------- the membership: what each company pays Tally every month ----------
+   A company starts with a free trial (tally_plan.trial_days, set when it is made). The owner starts the
+   membership on Stripe's own checkout page (a Stripe subscription on the platform's account, with the
+   rest of the trial still free) and manages the card and invoices on Stripe's billing page. Tally's
+   admins (tally_admins) see every company and set, per company, a test company (never pays), the fee
+   waived, or a discount; they also set the price and the trial for new companies. A discount is a
+   Stripe coupon on the subscription; waived and test companies get the 100% coupon, so a membership
+   already running stops charging and starts again by itself if the switch goes off. Nobody is locked
+   out when a trial ends: the owner is reminded. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const LIVE_SUB = ["active", "trialing", "past_due", "unpaid", "incomplete", "paused"];
+const toIso = (s: unknown) => (Number(s) > 0 ? new Date(Number(s) * 1000).toISOString() : null);
+async function isAdmin(uid: string): Promise<boolean> {
+  if (!UUID_RE.test(String(uid || ""))) return false;
+  const rows = await rest("GET", "tally_admins?select=user_id&user_id=eq." + q(uid) + "&limit=1");
+  return !!(rows && rows[0]);
+}
+async function planRow(): Promise<J> {
+  const rows = await rest("GET", "tally_plan?select=monthly_cents,trial_days&id=eq.1&limit=1");
+  const p = (rows && rows[0]) || {};
+  return { monthly_cents: Number(p.monthly_cents) || 14900, trial_days: p.trial_days == null ? 14 : Number(p.trial_days) };
+}
+async function dealOf(org: string): Promise<J> {
+  const rows = await rest("GET", "member_deals?select=*&org_id=eq." + q(org) + "&limit=1");
+  return (rows && rows[0]) || { org_id: org, is_test: false, waived: false, discount_pct: 0, note: "" };
+}
+async function subOf(org: string, live = liveNow()): Promise<J> {
+  const rows = await rest("GET", "member_subs?select=*&org_id=eq." + q(org) + "&livemode=eq." + live + "&limit=1");
+  return (rows && rows[0]) || null;
+}
+async function orgRow(org: string): Promise<J> {
+  const rows = await rest("GET", "orgs?select=id,name,created_at,trial_ends&id=eq." + q(org) + "&limit=1");
+  return (rows && rows[0]) || null;
+}
+// Where a company stands. Pure, so the app's wording and the tests agree with the server.
+export function memberState(org: J, deal: J, sub: J, plan: J, now = Date.now()): J {
+  const d = deal || {}, s = sub || {};
+  const pct = Math.max(0, Math.min(100, Math.round(Number(d.discount_pct) || 0)));
+  const list = Number(plan && plan.monthly_cents) || 14900;
+  const out: J = { list_cents: list, discount_pct: pct, price_cents: Math.round(list * (100 - pct) / 100), trial_ends: (org && org.trial_ends) || null };
+  if (d.is_test) return { ...out, state: "test" };
+  if (d.waived) return { ...out, state: "waived" };
+  const st = String(s.status || "");
+  if (s.subscription_id && LIVE_SUB.indexOf(st) >= 0) {
+    return { ...out, state: st === "trialing" ? "trialing" : st === "active" ? "active" : st === "paused" ? "paused" : "past_due",
+      period_end: s.current_period_end || null, cancel_at_period_end: !!s.cancel_at_period_end, billing_trial_end: s.trial_end || null };
+  }
+  const ends = Date.parse(String((org && org.trial_ends) || "")) || 0;
+  return { ...out, state: ends > now ? "trial" : "ended", canceled: st === "canceled" };
+}
+// the subscription as Stripe has it, written down for the company it belongs to
+async function memberFromSub(org: string, s: J): Promise<void> {
+  if (!UUID_RE.test(org) || !s || !/^sub_/.test(String(s.id || ""))) return;
+  const live = !!s.livemode, cur = await subOf(org, live);
+  const curLive = cur && cur.subscription_id && cur.subscription_id !== s.id && LIVE_SUB.indexOf(String(cur.status)) >= 0;
+  if (curLive && LIVE_SUB.indexOf(String(s.status)) >= 0) {
+    // a second membership for the same company (two checkout pages paid): stop it, keep the first
+    console.error("second membership subscription for", org, s.id, "kept", cur.subscription_id);
+    await stripe("DELETE", "subscriptions/" + s.id).catch((e) => console.error("cancel second membership", e));
+    return;
+  }
+  if (curLive) return;   // an old subscription's late event: the current one stays
+  const it = (s.items && s.items.data && s.items.data[0]) || {};
+  const row: J = { org_id: org, livemode: live, customer_id: String(typeof s.customer === "string" ? s.customer : (s.customer && s.customer.id) || ""),
+    subscription_id: s.id, status: String(s.status || ""), price_id: String((it.price && it.price.id) || ""),
+    current_period_end: toIso(it.current_period_end || s.current_period_end), cancel_at_period_end: !!s.cancel_at_period_end,
+    trial_end: toIso(s.trial_end), updated_at: nowIso() };
+  if (LIVE_SUB.indexOf(row.status) >= 0) Object.assign(row, { checkout_id: "", checkout_url: "", checkout_expires: null });
+  await rest("POST", "member_subs?on_conflict=org_id,livemode", row, "resolution=merge-duplicates");
+}
+async function memberFromSession(org: string, cs: J): Promise<void> {
+  const sid = typeof cs.subscription === "string" ? cs.subscription : cs.subscription && cs.subscription.id;
+  if (!sid) return;
+  await memberFromSub(org, await stripe("GET", "subscriptions/" + sid));
+}
+// Which company a Stripe subscription or customer is: our own label on it, else the customer we filed.
+async function memberOrgOf(o: J): Promise<string> {
+  const md = (o && o.metadata) || {};
+  if (UUID_RE.test(String(md.tally_member || ""))) return String(md.tally_member);
+  const cus = typeof o.customer === "string" ? o.customer : o.customer && o.customer.id;
+  if (!/^cus_/.test(String(cus || ""))) return "";
+  const rows = await rest("GET", "member_subs?select=org_id&customer_id=eq." + q(cus) + "&limit=1");
+  return (rows && rows[0] && rows[0].org_id) || "";
+}
+// Stripe events about memberships (on the platform's own webhook). True when it was one.
+async function memberEvent(type: string, o: J): Promise<boolean> {
+  if (type === "checkout.session.completed" || type === "checkout.session.expired") {
+    if (o.mode !== "subscription" && !(o.metadata && o.metadata.tally_member)) return false;
+    const org = await memberOrgOf(o);
+    if (!org || !(await orgExists(org))) return true;
+    if (type === "checkout.session.completed") await memberFromSession(org, o);
+    else await rest("PATCH", "member_subs?org_id=eq." + q(org) + "&checkout_id=eq." + q(String(o.id || "")), { checkout_id: "", checkout_url: "", checkout_expires: null, updated_at: nowIso() });
+    return true;
+  }
+  if (/^customer\.subscription\./.test(type)) {
+    const org = await memberOrgOf(o);
+    if (org && await orgExists(org)) await memberFromSub(org, await stripe("GET", "subscriptions/" + o.id));
+    return true;
+  }
+  if (type === "invoice.paid" || type === "invoice.payment_failed") {
+    const det = (o.parent && o.parent.subscription_details) || {};
+    const sid = typeof det.subscription === "string" ? det.subscription : (det.subscription && det.subscription.id) || (typeof o.subscription === "string" ? o.subscription : "");
+    if (!/^sub_/.test(String(sid || ""))) return true;
+    const s = await stripe("GET", "subscriptions/" + sid);
+    const org = await memberOrgOf(s);
+    if (org && await orgExists(org)) await memberFromSub(org, s);
+    return true;
+  }
+  return false;
+}
+// what the server made in Stripe for the membership, per mode
+async function planId(mode: string, kind: string): Promise<string> {
+  const rows = await rest("GET", "tally_plan_stripe?select=stripe_id&mode=eq." + mode + "&kind=eq." + q(kind) + "&limit=1");
+  return (rows && rows[0] && rows[0].stripe_id) || "";
+}
+async function planKeep(mode: string, kind: string, id: string): Promise<void> {
+  await rest("POST", "tally_plan_stripe?on_conflict=mode,kind", { mode, kind, stripe_id: id, updated_at: nowIso() }, "resolution=merge-duplicates");
+}
+async function planPrice(mode: string, cents: number): Promise<string> {
+  const kind = "price:" + cents, have = await planId(mode, kind);
+  if (have) return have;
+  let product = await planId(mode, "product");
+  if (!product) {
+    const p = await stripe("POST", "products", { name: "Tally membership", description: "Tally moving-company software, per company, monthly", metadata: { tally: "membership" } }, "tally-product-" + mode);
+    product = p.id;
+    await planKeep(mode, "product", product);
+  }
+  const pr = await stripe("POST", "prices", { product, unit_amount: cents, currency: "usd", recurring: { interval: "month" }, nickname: "Tally membership " + money(cents) + "/month", metadata: { tally: "membership" } }, "tally-price-" + mode + "-" + cents);
+  await planKeep(mode, kind, pr.id);
+  return pr.id;
+}
+async function planCoupon(mode: string, pct: number): Promise<string> {
+  const kind = "coupon:" + pct, have = await planId(mode, kind);
+  if (have) return have;
+  const id = "tally-pct-" + pct;
+  try {
+    await stripe("POST", "coupons", { id, percent_off: pct, duration: "forever", name: pct === 100 ? "Tally: no charge" : "Tally discount " + pct + "%" });
+  } catch (e) {
+    if (!(e instanceof StripeError && e.status === 400 && /already exists/i.test(e.message))) throw e;
+  }
+  await planKeep(mode, kind, id);
+  return id;
+}
+// The company's membership subscription takes the discount it should have now (100% when waived or test).
+async function memberSyncDiscount(org: string): Promise<void> {
+  const mode = stripeMode();
+  if (!mode) return;
+  const sub = await subOf(org);
+  if (!sub || !sub.subscription_id || LIVE_SUB.indexOf(String(sub.status)) < 0) return;
+  const d = await dealOf(org);
+  const pct = d.is_test || d.waived ? 100 : Math.max(0, Math.min(100, Math.round(Number(d.discount_pct) || 0)));
+  const s = await stripe("POST", "subscriptions/" + sub.subscription_id, { discounts: pct > 0 ? [{ coupon: await planCoupon(mode, pct) }] : "", proration_behavior: "none" });
+  await memberFromSub(org, s);
+}
+// Any member: whether this is a test company and whether you're a Tally admin. The owner also gets the
+// membership. refresh: ask Stripe now (the owner is back from Stripe's page).
+export async function memberStatus(org: string, me: J, b: J = {}): Promise<J> {
+  const admin = await isAdmin(me.uid), o = await orgRow(org);
+  if (!o) return { ok: false, message: "Company not found." };
+  const [deal, plan] = await Promise.all([dealOf(org), planRow()]);
+  const out: J = { ok: true, admin, test: !!deal.is_test, name: o.name };
+  if (me.role !== "owner") return out;
+  let sub = stripeMode() ? await subOf(org) : null;
+  if (b.refresh && sub && stripeMode()) {
+    try {
+      if (sub.subscription_id) await memberFromSub(org, await stripe("GET", "subscriptions/" + sub.subscription_id));
+      else if (sub.checkout_id) {
+        const cs = await stripe("GET", "checkout/sessions/" + sub.checkout_id);
+        if (cs && cs.status === "complete") await memberFromSession(org, cs);
+      }
+      sub = await subOf(org);
+    } catch (e) { console.error("membership refresh", e); }
+  }
+  return { ...out, ...memberState(o, deal, sub, plan), billing: !!(sub && sub.customer_id), payments: !!stripeMode() };
+}
+// The owner starts the membership on Stripe's checkout page.
+export async function memberStart(org: string, me: J): Promise<J> {
+  if (me.role !== "owner") return { ok: false, status: 403, message: "Only the owner starts the membership." };
+  const mode = stripeMode();
+  if (!mode) return { ok: false, message: "Membership payments aren't set up yet." };
+  const o = await orgRow(org);
+  if (!o) return { ok: false, message: "Company not found." };
+  const [deal, plan] = await Promise.all([dealOf(org), planRow()]);
+  let sub = await subOf(org);
+  const m = memberState(o, deal, sub, plan);
+  if (m.state === "test") return { ok: false, message: "This is a test company: there's no membership to pay." };
+  if (m.state === "waived") return { ok: false, message: "Tally waived this company's membership, so there's nothing to pay." };
+  if (["active", "trialing", "past_due", "paused"].indexOf(m.state) >= 0) return { ok: false, portal: true, message: "The membership is already set up. Use Manage billing to change it." };
+  const wh = await ensureWebhook("platform");
+  if (!wh.ok) return wh;
+  // a checkout page already open for this company: the same page again
+  if (sub && sub.checkout_id && sub.checkout_url && Date.parse(sub.checkout_expires) > Date.now() + 5 * 60e3) {
+    const cs = await stripe("GET", "checkout/sessions/" + sub.checkout_id).catch(() => null);
+    if (cs && cs.status === "open") return { ok: true, url: sub.checkout_url };
+    if (cs && cs.status === "complete") {
+      await memberFromSession(org, cs);
+      return { ok: true, done: true, message: "Your membership is set up." };
+    }
+  }
+  const live = liveNow(), S = await getDoc(org, "org/settings");
+  let cus = sub && sub.customer_id;
+  if (!cus) {
+    const c = await stripe("POST", "customers", { name: String(o.name || company(S)).slice(0, 200), email: validEmail(me.email) || undefined,
+      description: "Tally company " + org, metadata: { tally_member: org } }, "tally-member-cus-" + org + "-" + mode);
+    cus = c.id;
+    await rest("POST", "member_subs?on_conflict=org_id,livemode", { org_id: org, livemode: live, customer_id: cus, updated_at: nowIso() }, "resolution=merge-duplicates");
+  }
+  const price = await planPrice(mode, plan.monthly_cents);
+  const coupon = m.discount_pct > 0 ? await planCoupon(mode, m.discount_pct) : "";
+  // what's left of the free trial carries over (Stripe needs at least two days of it)
+  const trialEnd = Math.floor((Date.parse(String(o.trial_ends || "")) || 0) / 1000);
+  const cs = await stripe("POST", "checkout/sessions", {
+    mode: "subscription", customer: cus, client_reference_id: org,
+    line_items: [{ price, quantity: 1 }],
+    discounts: coupon ? [{ coupon }] : undefined,
+    subscription_data: { metadata: { tally_member: org }, trial_end: trialEnd > Date.now() / 1000 + 49 * 3600 ? trialEnd : undefined,
+      description: "Tally membership: " + String(o.name || "your company").slice(0, 100) },
+    metadata: { tally_member: org },
+    success_url: base() + "/member/done", cancel_url: base() + "/member/back",
+  }, "tally-member-" + org + "-" + mode + "-" + strHash([cus, price, coupon, trialEnd].join("|")) + "-" + Math.floor(Date.now() / 60e3));   // a double tap gets the same page
+  if (!cs || !/^https:\/\//.test(String(cs.url || ""))) return { ok: false, message: "Stripe did not give a checkout page. Try again in a minute." };
+  await rest("POST", "member_subs?on_conflict=org_id,livemode", { org_id: org, livemode: live, customer_id: cus, checkout_id: cs.id, checkout_url: cs.url,
+    checkout_expires: toIso(cs.expires_at) || new Date(Date.now() + 23 * 3600e3).toISOString(), updated_at: nowIso() }, "resolution=merge-duplicates");
+  return { ok: true, url: cs.url };
+}
+// The owner's Stripe billing page: card, invoices, cancelling.
+export async function memberPortal(org: string, me: J): Promise<J> {
+  if (me.role !== "owner") return { ok: false, status: 403, message: "Only the owner manages the membership." };
+  const mode = stripeMode();
+  if (!mode) return { ok: false, message: "Membership payments aren't set up yet." };
+  const sub = await subOf(org);
+  if (!sub || !sub.customer_id) return { ok: false, message: "Start the membership first." };
+  let conf = await planId(mode, "portal");
+  if (!conf) {
+    const c = await stripe("POST", "billing_portal/configurations", {
+      business_profile: { headline: "Tally membership" },
+      features: { invoice_history: { enabled: true }, payment_method_update: { enabled: true }, subscription_cancel: { enabled: true, mode: "at_period_end" } },
+      default_return_url: base() + "/member/back",
+    }, "tally-portal-" + mode);
+    conf = c.id;
+    await planKeep(mode, "portal", conf);
+  }
+  const s = await stripe("POST", "billing_portal/sessions", { customer: sub.customer_id, configuration: conf, return_url: base() + "/member/back" });
+  if (!s || !/^https:\/\//.test(String(s.url || ""))) return { ok: false, message: "Stripe did not give a billing page. Try again in a minute." };
+  return { ok: true, url: s.url };
+}
+
+/* Tally admin: every company, and what each pays */
+const adminOnly = (): J => ({ ok: false, status: 403, message: "Only Tally's admins can do that." });
+function adminCompany(o: J, ctx: J): J {
+  const deal = ctx.deals[o.id] || {}, sub = ctx.subs[o.id] || null;
+  const st = memberState(o, deal, sub, ctx.plan);
+  const acct = ctx.accts[o.id];
+  const cards = ctx.payOrgs[o.id] ? "platform" : !acct ? "none" : acct.disabled_reason === "disconnected" ? "disconnected" : acct.charges_enabled ? "connected" : "connecting";
+  return { id: o.id, name: o.name, created: o.created_at, trial_ends: o.trial_ends, owners: ctx.owners[o.id] || [], invited: ctx.invited[o.id] || [],
+    members: ctx.count[o.id] || 0, test: !!deal.is_test, waived: !!deal.waived, discount_pct: Number(deal.discount_pct) || 0, note: deal.note || "",
+    member: st, cards };
+}
+async function adminContext(): Promise<J> {
+  const live = liveNow();
+  const [orgs, mem, deals, subs, inv, accts, payOrgs, plan] = await Promise.all([
+    rest("GET", "orgs?select=id,name,created_at,trial_ends&order=created_at.desc&limit=1000"),
+    rest("GET", "members?select=org_id,role,email&limit=20000"),
+    rest("GET", "member_deals?select=*&limit=1000"),
+    rest("GET", "member_subs?select=*&livemode=eq." + live + "&limit=1000"),
+    rest("GET", "member_invites?select=org_id,email,claimed_at&limit=2000"),
+    rest("GET", "pay_accounts?select=org_id,charges_enabled,disabled_reason&is_current=is.true&livemode=eq." + live + "&limit=1000"),
+    rest("GET", "pay_orgs?select=org_id,enabled&limit=1000"),
+    planRow(),
+  ]);
+  const ctx: J = { orgs: orgs || [], plan, deals: {}, subs: {}, owners: {}, invited: {}, count: {}, accts: {}, payOrgs: {} };
+  (mem || []).forEach((m: J) => { ctx.count[m.org_id] = (ctx.count[m.org_id] || 0) + 1; if (m.role === "owner") (ctx.owners[m.org_id] = ctx.owners[m.org_id] || []).push(m.email || ""); });
+  (deals || []).forEach((d: J) => { ctx.deals[d.org_id] = d; });
+  (subs || []).forEach((s: J) => { ctx.subs[s.org_id] = s; });
+  (inv || []).forEach((i: J) => { if (!i.claimed_at) (ctx.invited[i.org_id] = ctx.invited[i.org_id] || []).push(i.email); });
+  (accts || []).forEach((a: J) => { ctx.accts[a.org_id] = a; });
+  (payOrgs || []).forEach((p: J) => { if (p.enabled) ctx.payOrgs[p.org_id] = true; });
+  return ctx;
+}
+export async function adminList(me: J): Promise<J> {
+  if (!(await isAdmin(me.uid))) return adminOnly();
+  const ctx = await adminContext();
+  return { ok: true, plan: ctx.plan, payments: stripeMode() || "", companies: ctx.orgs.map((o: J) => adminCompany(o, ctx)) };
+}
+// One company's deal: test company, fee waived, discount, note. Any running membership follows at once.
+export async function adminSet(me: J, b: J): Promise<J> {
+  if (!(await isAdmin(me.uid))) return adminOnly();
+  const org = String(b.target || "");
+  if (!UUID_RE.test(org) || !(await orgRow(org))) return { ok: false, message: "Company not found." };
+  const row: J = { org_id: org, updated_by: String(me.email || "admin").slice(0, 200), updated_at: nowIso() };
+  if (b.test !== undefined) row.is_test = !!b.test;
+  if (b.waived !== undefined) row.waived = !!b.waived;
+  if (b.discount !== undefined) {
+    const pct = Number(b.discount);
+    if (!(pct >= 0 && pct <= 100) || Math.round(pct) !== pct) return { ok: false, message: "A discount is a whole percent from 0 to 100." };
+    row.discount_pct = pct;
+  }
+  if (b.note !== undefined) row.note = String(b.note || "").slice(0, 500);
+  await rest("POST", "member_deals?on_conflict=org_id", row, "resolution=merge-duplicates");
+  let warn = "";
+  try { await memberSyncDiscount(org); } catch (e) { console.error("membership discount", e); warn = " Stripe didn't take the change on the running membership yet: " + stripeTrouble(e); }
+  const ctx = await adminContext(), o = ctx.orgs.find((x: J) => x.id === org);
+  return { ok: true, message: "Saved." + warn, company: o ? adminCompany(o, ctx) : null };
+}
+// The price and the free trial, for memberships started from now on.
+export async function adminPlan(me: J, b: J): Promise<J> {
+  if (!(await isAdmin(me.uid))) return adminOnly();
+  const patch: J = { updated_by: String(me.email || "admin").slice(0, 200), updated_at: nowIso() };
+  if (b.monthly !== undefined) {
+    const c = Math.round(Number(b.monthly) * 100);
+    if (!(c >= 100 && c <= 10000000)) return { ok: false, message: "The monthly price is from $1 to $100,000." };
+    patch.monthly_cents = c;
+  }
+  if (b.trialDays !== undefined) {
+    const d = Number(b.trialDays);
+    if (!(d >= 0 && d <= 365) || Math.round(d) !== d) return { ok: false, message: "The free trial is 0 to 365 days." };
+    patch.trial_days = d;
+  }
+  await rest("PATCH", "tally_plan?id=eq.1", patch);
+  return { ok: true, message: "Saved. New memberships use it; running ones keep their price.", plan: await planRow() };
+}
+// A company for someone: they become its owner when they sign in with this email. With your own email
+// (a test company, say) you're its owner at once.
+export async function adminAdd(me: J, b: J): Promise<J> {
+  if (!(await isAdmin(me.uid))) return adminOnly();
+  const name = String(b.name || "").trim().replace(/\s+/g, " ");
+  if (!name || name.length > 120) return { ok: false, message: "Give the company a name (up to 120 letters)." };
+  const email = validEmail(b.email).toLowerCase();
+  if (!email) return { ok: false, message: "Enter the owner's email." };
+  const plan = await planRow();
+  const code = await rest("POST", "rpc/new_join_code", {});
+  const made = await rest("POST", "orgs", { name, join_code: String(code || randToken().slice(0, 6).toUpperCase()), plan: "trial",
+    trial_ends: new Date(Date.now() + plan.trial_days * 86400e3).toISOString() }, "return=representation");
+  const org = made && made[0] && made[0].id;
+  if (!org) return { ok: false, message: "Could not make the company. Try again." };
+  if (b.test) await rest("POST", "member_deals?on_conflict=org_id", { org_id: org, is_test: true, waived: true, note: "Test company", updated_by: String(me.email || "admin").slice(0, 200), updated_at: nowIso() }, "resolution=merge-duplicates");
+  const mine = email === String(me.email || "").toLowerCase();
+  if (mine) await rest("POST", "members", { org_id: org, user_id: me.uid, email, staff: "", role: "owner" });
+  else await rest("POST", "member_invites", { org_id: org, email, invited_by: String(me.email || "admin").slice(0, 200) });
+  return { ok: true, org, mine, message: mine ? name + " is ready. You're its owner: switch to it from the company list." :
+    name + " is ready. When " + email + " signs in to Tally with that email, they go straight in as its owner." };
+}
 async function textedLately(org: string, jobId: string): Promise<boolean> {
   const since = new Date(Date.now() - 120e3).toISOString();
   const rows = await rest("GET", "comm_log?select=id&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&purpose=eq.paylink&created_at=gte." + q(since) + "&status=neq.failed&limit=1");
@@ -1903,6 +2253,7 @@ async function handleStripe(req: Request, kind: HookKind = "platform"): Promise<
   const acct = kind === "connect" ? String((ev && ev.account) || "") : "";
   if (kind === "connect" && !ACCT_RE.test(acct)) return json({ received: true, skipped: "no-account" });
   try {
+    if (kind === "platform" && await memberEvent(type, o)) return json({ received: true });
     if (kind === "connect" && type === "account.updated") {
       await rest("PATCH", "pay_accounts?account_id=eq." + q(acct), { ...acctState(o), updated_at: nowIso() });
       return json({ received: true });
@@ -1977,6 +2328,23 @@ async function handleApp(req: Request): Promise<Response> {
       const st = out.status;
       delete out.status;
       return json(out, typeof st === "number" ? st : 200);
+    }
+    // the membership, and Tally admin (every company; Tally's admins only)
+    const member: Record<string, (o: string, m: J, x: J) => Promise<J>> = {
+      member_status: memberStatus, member_start: (o: string, m: J) => memberStart(o, m), member_portal: (o: string, m: J) => memberPortal(o, m),
+      admin_list: (_o: string, m: J) => adminList(m), admin_set: (_o: string, m: J, x: J) => adminSet(m, x),
+      admin_plan: (_o: string, m: J, x: J) => adminPlan(m, x), admin_add: (_o: string, m: J, x: J) => adminAdd(m, x),
+    };
+    if (member[b.action]) {
+      try {
+        const out = await member[b.action](org, me, b);
+        const st = out.status;
+        delete out.status;
+        return json(out, typeof st === "number" ? st : 200);
+      } catch (e) {
+        console.error(b.action, e);
+        return json({ ok: false, message: stripeTrouble(e) });
+      }
     }
     const pay: Record<string, (o: string, m: J, j: string, x: J) => Promise<J>> = {
       pay_link: payLink, pay_intent: payIntent, pay_saved: paySaved, pay_check: payCheck,
@@ -2168,6 +2536,9 @@ export async function handle(req: Request): Promise<Response> {
     // where Stripe's sign-up for a company's own account sends the owner back to
     if (/^\/connect\/done\/?$/.test(sub)) return text("Thanks, that's all Stripe needed for now.\n\nGo back to Tally: Setup › Payments shows when Stripe has finished checking your details and card payments are on.");
     if (/^\/connect\/again\/?$/.test(sub)) return text("This Stripe sign-up link has expired or was already used.\n\nGo back to Tally and press Continue with Stripe in Setup › Payments for a fresh one.");
+    // where Stripe's membership checkout and billing pages send the owner back to
+    if (/^\/member\/done\/?$/.test(sub)) return text("Thanks! Your Tally membership is set up.\n\nGo back to Tally: Setup › Membership shows it.");
+    if (/^\/member\/back\/?$/.test(sub)) return text("Go back to Tally: Setup › Membership shows where your membership stands.");
   }
   if (req.method !== "POST") return json({ ok: false, message: "POST only" }, 405);
   if (sub === "/app" || sub === "/app/") return handleApp(req);

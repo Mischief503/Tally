@@ -170,7 +170,7 @@ async function payScreen(A) {
   // a link that isn't Stripe's is never opened
   ctlB.connect = { ok: true, url: 'https://stripe.com.evil.example/setup' };
   B.click('#view [data-act="pay:connect"]'); await sleep(60);
-  ok(/Stripe did not give a sign-up page/.test(say(payCard(B))) && !B.$('#view a[href*="evil"]'), 'a sign-up address that isn’t Stripe’s is never opened');
+  ok(/Stripe did not give a page to open/.test(say(payCard(B))) && !B.$('#view a[href*="evil"]'), 'a sign-up address that isn’t Stripe’s is never opened');
   // already done on Stripe's side
   ctlB.connect = { ok: true, done: true, message: 'Your Stripe account is connected. Manage it at dashboard.stripe.com.' }; ctlB.cfg = CFG.ready;
   B.click('#view [data-act="pay:connect"]'); await sleep(80);
