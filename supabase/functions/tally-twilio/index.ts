@@ -207,6 +207,12 @@ function slotOf(job: J): string {
   const d = job.d || {};
   return (d.moveDate || "") + " " + (d.time || "");
 }
+// The owner's on/off switches (Setup › Options, settings.opt): a missing key is on.
+export function optOff(S: J, k: string): boolean {
+  return !!(S && S.opt && S.opt[k] === false);
+}
+// Crew confirm their jobs: off, nobody is asked to confirm and the office isn't told who hasn't.
+function confirmOn(S: J): boolean { return !optOff(S, "confirm"); }
 export function isConfirmed(job: J, name: string): boolean {
   const c = job && job.confirm && job.confirm[name];
   return !!(c && c.for === slotOf(job));
@@ -366,7 +372,7 @@ export async function checkJob(org: string, jobId: string, origin?: string | nul
       if (d.from) bits.push("Pickup " + gsm(d.from) + ".");
       if (truck) bits.push("Truck " + gsm(truck.name) + ".");
       if (lead && lead !== n) bits.push("Lead " + gsm(lead) + ".");
-      bits.push(link ? "Confirm in Tally: " + link : "Confirm in Tally under Job messages.");
+      if (confirmOn(S)) bits.push(link ? "Confirm in Tally: " + link : "Confirm in Tally under Job messages.");
       out.push(await sendText({ org, line, jobId, purpose: "assigned", staff: n, to: C[n], body: bits.join(" ") }));
     }
     for (const n of removed) {
@@ -379,13 +385,14 @@ export async function checkJob(org: string, jobId: string, origin?: string | nul
     for (const n of stayed) {
       out.push(await sendText({ org, line, jobId, purpose: "moved", staff: n, to: C[n],
         body: co + ": " + name + " moved to " + when(d) + " (was " + when(old) + ")." + (d.from ? " Pickup " + gsm(d.from) + "." : "") +
-          (link ? " Confirm the new time: " + link : " Confirm the new time in Tally.") }));
+          (!confirmOn(S) ? "" : link ? " Confirm the new time: " + link : " Confirm the new time in Tally.") }));
     }
   }
   return { ok: true, sent: out.filter((r) => r.status !== "failed" && r.status !== "no-number").length, log: out.map((r) => r.id) };
 }
 
 function pendingForms(S: J, job: J): J[] {
+  if (optOff(S, "forms")) return [];   // Options › Signatures before payment is off
   const signed: J = job.signed || {};
   const done = Object.keys(signed).map((k) => signed[k] && signed[k].formId);
   return ((S && S.forms) || []).filter((f: J) => f.required && done.indexOf(f.id) < 0);
@@ -461,6 +468,7 @@ async function remindJob(org: string, jobId: string, origin?: string | null): Pr
   if (!line) return { ok: false, message: "The company line is not set up yet." };
   const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
   if (!job) return { ok: false, message: "That job is not available." };
+  if (!confirmOn(S)) return { ok: false, message: "Crew confirmations are off for this company (Setup › Options)." };
   if (job.test) return { ok: false, message: "Test job: its phone numbers are made up, so nothing is sent." };
   const d = job.d || {};
   if (job.status !== "booked" || !d.moveDate || d.moveDate < today()) return { ok: false, message: "Only upcoming booked jobs need confirming." };
@@ -506,9 +514,9 @@ export async function runTomorrow(): Promise<J> {
     for (const n of Object.keys(people)) {
       if (already.indexOf("tomorrow|" + n) >= 0) continue;
       const list = people[n];
-      const need = list.some((x: J) => !isConfirmed(x.job, n));
+      const cfm = confirmOn(S), need = cfm && list.some((x: J) => !isConfirmed(x.job, n));
       const items = list.map((x: J) => { const d = x.job.d || {}; return gsm(d.name || "a job") + " at " + fmtTime(d.time) + (d.from ? " (" + gsm(d.from) + ")" : ""); }).join("; ");
-      const body = co + ": Tomorrow you're on " + items + "." + (need ? (link ? " Please confirm: " + link : " Please confirm in Tally under Job messages.") : " You're confirmed. See you there.");
+      const body = co + ": Tomorrow you're on " + items + "." + (need ? (link ? " Please confirm: " + link : " Please confirm in Tally under Job messages.") : cfm ? " You're confirmed. See you there." : " See you there.");
       const r = await sendText({ org, line, jobId: list.length === 1 ? list[0].id : undefined, purpose: "tomorrow", staff: n, to: C[n], body: body.slice(0, 600) });
       if (r.status !== "failed" && r.status !== "no-number") sent++;
     }
@@ -516,7 +524,7 @@ export async function runTomorrow(): Promise<J> {
     jobs.forEach((x: J) => ((x.job.assign && x.job.assign.crew) || []).forEach((n: string) => { if (!isConfirmed(x.job, n)) unconf.push(n + " (" + ((x.job.d || {}).name || "a job") + ")"); }));
     const noCrew = jobs.filter((x: J) => !((x.job.assign && x.job.assign.crew) || []).length).map((x: J) => (x.job.d || {}).name || "a job");
     const summary = co + ": Tomorrow: " + jobs.length + " job" + (jobs.length === 1 ? "" : "s") + ", " + Object.keys(people).length + " people." +
-      (unconf.length ? " Not confirmed yet: " + gsm(unconf.join(", ")) + "." : " Everyone has confirmed.") +
+      (!confirmOn(S) ? "" : unconf.length ? " Not confirmed yet: " + gsm(unconf.join(", ")) + "." : " Everyone has confirmed.") +
       (noCrew.length ? " No crew yet: " + gsm(noCrew.join(", ")) + "." : "");
     for (const n of officeNames(S)) {
       if (already.indexOf("tomorrow-office|" + n) >= 0 || people[n]) continue;
@@ -1007,9 +1015,11 @@ export function methodLabel(pm: J): string {
 /* who may take payments, and on which company */
 // the name a payment is filed under: the person's staff name, or their role when they have none
 function who(me: J): string { return String((me && me.staff) || "#" + ((me && me.role) || "staff")).slice(0, 200); }
-function canTakePay(me: J, job: J): boolean {
-  if (me.role === "owner" || me.role === "dispatch") return true;
-  return me.role === "lead" && ((job.assign && job.assign.crew) || []).indexOf(me.staff) >= 0;
+// S given: the owner's switches too (Dispatch can take payments, Crew leads collect payment)
+function canTakePay(me: J, job: J, S?: J): boolean {
+  if (me.role === "owner") return true;
+  if (me.role === "dispatch") return !(S && optOff(S, "dispatchPay"));
+  return me.role === "lead" && ((job.assign && job.assign.crew) || []).indexOf(me.staff) >= 0 && !(S && optOff(S, "leadPay"));
 }
 async function payOrgOn(org: string): Promise<boolean> {
   const rows = await rest("GET", "pay_orgs?select=enabled&org_id=eq." + q(org) + "&limit=1");
@@ -1067,8 +1077,10 @@ async function payContext(org: string, me: J, jobId: string): Promise<J> {
   if (!pa.on) return { err: payOffWhy(pa.reason) };
   const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
   if (!job) return { err: "That job is not available." };
-  if (!canTakePay(me, job)) {
-    return { status: 403, err: me.role === "lead" ? "You can only take payments on your own jobs." : "Crew leads and the office take payments." };
+  if (!canTakePay(me, job, S)) {
+    const off = (me.role === "lead" && optOff(S, "leadPay")) || (me.role === "dispatch" && optOff(S, "dispatchPay"));
+    return { status: 403, err: off ? (me.role === "lead" ? "The office collects payments in this company." : "Only the owner takes payments in this company.")
+      : me.role === "lead" ? "You can only take payments on your own jobs." : "Crew leads and the office take payments." };
   }
   if (job.test && liveNow()) return { err: "Test job: no real charges." };
   if (job.status === "lost") return { err: "This job is marked lost." };

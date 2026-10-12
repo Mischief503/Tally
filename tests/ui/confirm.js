@@ -6,7 +6,7 @@ const file = process.argv[2], label = process.argv[3] || 'confirm';
   const { w, $, $$, click, text, T } = A;
   const st = () => T.state();
   const job = st().jobs.find((j) => j.d.name === 'Priya Nair');
-  const more = async (tab) => { click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:go"][data-tab="' + tab + '"]'); await sleep(15); };
+  const more = async (tab) => { await A.go(tab); };
   const preview = async (role, staff) => { click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:preview"]'); await sleep(5); click($$('#more [data-act="pv:set"]').find((b) => b.dataset.role === role && b.dataset.staff === staff)); await sleep(15); };
   const endPreview = async () => { click('[data-act="pv:end"]'); await sleep(15); };
 
@@ -61,8 +61,8 @@ const file = process.argv[2], label = process.argv[3] || 'confirm';
   await endPreview();
 
   // ---- Setup
-  await more('settings');
-  ok(!!$('input[data-s="comms.alerts.tomorrow"]') && /evening before/.test(text()), label + ': Setup has the evening-before switch');
+  await A.go('settings', 'comms');
+  ok(!!$('input[data-s="comms.alerts.tomorrow"]') && /evening before/.test(text()), label + ': Setup › Texts and calls has the evening-before switch');
 
   // ---- a text link opens Job messages
   const B = await load(file, { hash: '#messages' });

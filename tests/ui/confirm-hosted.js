@@ -27,7 +27,7 @@ function seed() {
   A.click(rb); await sleep(60);
   ok(A.calls.fn.some((c) => c.body.action === 'remind' && c.body.jobId === 'c1'), 'reminder goes to the Edge Function');
   ok(/Reminder texted to 1 person/.test(A.$('#toast').textContent), 'office told it went out');
-  A.click('[data-act="more:open"]'); await sleep(5); A.click('[data-act="more:go"][data-tab="settings"]'); await sleep(30);
+  await A.go('settings', 'comms'); await sleep(10);
   ok(A.$('input[data-s="comms.appUrl"]') && A.$('input[data-s="comms.appUrl"]').value === 'https://tally.example.com/', 'link in texts fills itself in from the hosted site');
   await sleep(400);
   const sw = A.calls.writes.filter((x) => x.row.path === 'org/settings').pop();

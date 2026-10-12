@@ -442,6 +442,56 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .jmsg .txt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
 .jmsg .bigbtn{margin-top:2px}
 .cfm{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:13px}
+/* lists of rows: Setup's sections and the More sheet */
+.navlist{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);overflow:hidden;margin:0 0 var(--gapy);box-shadow:var(--cardShadow)}
+.navrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line2);padding:10px 14px;min-height:56px;color:var(--text);cursor:pointer;font:inherit;text-decoration:none}
+.navrow:first-child{border-top:0}
+@media (hover:hover){ .navrow:hover{background:var(--line2)} }
+.navrow .ic{width:32px;height:32px;border-radius:9px;background:var(--line2);color:var(--text);display:flex;align-items:center;justify-content:center;flex:none}
+.navrow .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.navrow .tx{flex:1;min-width:0}
+.navrow .tx b{display:block;font-weight:var(--w-mid);font-size:15px;line-height:1.25}
+.navrow .tx small{display:block;font-size:12.5px;line-height:1.3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.navrow .go{color:var(--muted);font-size:20px;flex:none}
+.navrow.sosrow{color:var(--sos)}
+.navrow.sosrow .ic{background:color-mix(in srgb, var(--sos) 14%, transparent);color:var(--sos)}
+.navrow.lead .ic{background:var(--tape);color:var(--tape-ink)}
+.setsearch{width:100%;min-height:44px;border:var(--bw) solid var(--line);border-radius:var(--r2);padding:8px 12px;background:var(--field);color:var(--text);font-size:16px;margin:0 0 4px}
+.setsearch:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px var(--focusRing)}
+.setback{display:flex;align-items:center;gap:4px;background:none;border:0;color:var(--muted);font:600 14px var(--font);padding:6px 2px;margin:0 0 6px;cursor:pointer;min-height:40px}
+/* on/off switches */
+.opt{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line2)}
+.opt:first-child{border-top:0}
+.opt .tx{flex:1;min-width:0}
+.opt .tx b{display:block;font-weight:var(--w-mid);font-size:15px;line-height:1.3}
+.opt .tx small{display:block;font-size:12.5px;line-height:1.38;margin-top:2px}
+.opt .optn{margin-top:8px;max-width:280px}
+.opt.off .tx b{color:var(--muted)}
+.sw{position:relative;flex:none;width:50px;height:30px;margin-top:1px}
+.sw input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;z-index:1}
+.sw span{position:absolute;inset:0;border-radius:99px;background:var(--line);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent);transition:background .15s}
+.sw span::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:99px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.sw input:checked+span{background:var(--ok)}
+.sw input:checked+span::after{transform:translateX(20px)}
+.sw input:focus-visible+span{outline:2px solid var(--focus);outline-offset:2px}
+.optgrp{margin:0 0 var(--gapy)}
+.optgrp>h3{font-size:15px;margin:0 0 2px}
+.optcount{font:600 12px var(--font);color:var(--muted)}
+/* the crew job card: its sections behind one row of buttons, one open at a time */
+.segs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.seg{flex:none;border:var(--bw) solid var(--line);background:var(--card);color:var(--text);border-radius:var(--rpill);padding:4px 12px;min-height:36px;font:var(--w-mid) 13.5px var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.seg small{font-weight:400;font-size:12px}
+.seg[aria-expanded="true"]{background:var(--text);color:var(--card);border-color:var(--text)}
+.seg[aria-expanded="true"] small{color:inherit;opacity:.8}
+.seg .money-due,.seg .money-paid{font-weight:var(--w-mid)}
+.seg[aria-expanded="true"] .money-due,.seg[aria-expanded="true"] .money-paid{color:inherit!important}
+.segbody{border-top:1px solid var(--line2);margin-top:10px;padding-top:10px}
+.ccmini{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:10px 14px;margin:0 0 8px;cursor:pointer;color:var(--text);font:inherit;box-shadow:var(--cardShadow)}
+.ccmini .tx{flex:1;min-width:0}
+.ccmini .tx b{display:block;font:700 17px/1.15 var(--display)}
+.ccmini .tx small{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ccmini .go{color:var(--muted);font-size:20px;flex:none}
+.cc-less{background:none;border:0;color:var(--muted);font:600 13px var(--font);padding:4px 0;cursor:pointer;min-height:32px}
 @media (max-width:340px){ .grid2.stack{grid-template-columns:1fr} }
 @media (max-width:420px){ nav.tabs button{font-size:10px} }
 @media (min-width:520px){ .stats b{font-size:24px} .kpis{grid-template-columns:repeat(4,1fr)} .kpi b{font-size:24px} }
@@ -1020,7 +1070,7 @@ function defaultSettings(){return {
     {id:'m_tape',name:'Packing tape',unit:'roll',price:5,cost:1.5},{id:'m_paper',name:'Packing paper',unit:'lb',price:3,cost:1},
     {id:'m_wrap',name:'Bubble wrap',unit:'10 ft',price:4,cost:1.5},{id:'m_stretch',name:'Stretch wrap',unit:'roll',price:16,cost:7},
     {id:'m_mbag',name:'Mattress bag',unit:'each',price:14,cost:4}
-  ],costCats:['Dump fee','Fuel','Tolls','Parking','Supplies bought','Other'],comms:{alerts:{assigned:true,moved:true,forms:true,tomorrow:true},ring:[],appUrl:''},
+  ],costCats:['Dump fee','Fuel','Tolls','Parking','Supplies bought','Other'],comms:{alerts:{assigned:true,moved:true,forms:true,tomorrow:true},ring:[],appUrl:''},opt:{},
   catalog:[
     {id:'sofa3',name:'Sofa (3-seat)',cf:55,cat:'Living room'},{id:'loveseat',name:'Loveseat',cf:38,cat:'Living room'},
     {id:'chair',name:'Armchair',cf:22,cat:'Living room'},{id:'recliner',name:'Recliner',cf:30,cat:'Living room'},
@@ -1041,7 +1091,7 @@ function defaultSettings(){return {
 function blankDraft(){return {name:'',phone:'',email:'',source:'Google',moveDate:'',time:'08:00',from:'',to:'',miles:'',milesOut:'',milesBack:'',flights:'',pack:false,crew:'',truckId:'',hoursOverride:'',discount:'',notes:'',custom:{},items:{},editId:'',moveKind:''}}
 
 /* ---------- state ---------- */
-var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',hq:'',hf:'all',hShow:50,hOpen:'',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null,sosOpen:false,sosStart:null,sosArm:'',sosDraft:{},sosShown:{},sosWant:false,sosBusy:{}};
+var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',hq:'',hf:'all',hShow:50,hOpen:'',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null,sosOpen:false,sosStart:null,sosArm:'',sosDraft:{},sosShown:{},sosWant:false,sosBusy:{},setSec:'',setQ:'',seg:{},ccOpen:{}};
 var sync={mode:'local',db:null,user:null,uid:'',meName:'',isOwner:false,isAdmin:false,gate:'',identity:{status:'',role:'',staff:''},started:false,keepLocal:false,inited:false,requested:false,
   got:{settings:false,jobs:false,shifts:false,vault:false},settingsSeen:false,lastJobs:{},lastShifts:{},lastVault:{},lastSettings:'',inflight:{},q:{},unsubs:[],
   photoCache:{},pageCache:{},fetching:{},photoUp:{},requests:[],users:[],names:{},retryMs:5000,warned:false,userSub:null,reqSub:null};
@@ -1062,6 +1112,60 @@ function loadState(){try{var r=localStorage.getItem(KEY);if(r)return JSON.parse(
 var STATUS=['lead','quoted','booked','active','done','paid','lost'];
 var LABEL={lead:'Lead',quoted:'Quoted',booked:'Booked',active:'In progress',done:'Complete',paid:'Paid',lost:'Lost'};
 var RANK={active:0,booked:1,quoted:2,lead:3,done:4,paid:5,lost:6};
+
+/* ---------- Options: the owner's on/off switches ----------
+   Setup › Options lists every switch, grouped; each Setup section also shows its own. Most live in
+   settings.opt, where a missing key means the default, so a company that never touched them keeps
+   the app as it was. A few are older settings with their own place (p). A number a switch needs
+   (the deposit %, the radius) shows under it while it is on. A switch that changes the price only
+   changes quotes made or saved after it. */
+var OPT_GROUPS=[['field','Crew and field'],['bill','Billing out'],['clock','Time clock'],['price','Quotes and pricing'],['forms','Paperwork'],['pay','Payments'],['texts','Texts'],['office','Office']];
+var OPTS=[
+  {g:'field',k:'eta',t:'Arrival text at Start job',h:'Crew leads can text the customer how long until the crew arrives.'},
+  {g:'field',k:'confirm',t:'Crew confirm their jobs',h:'Everyone booked on a job taps “Confirm I’ll be there”, and the office sees who hasn’t.'},
+  {g:'field',k:'tally',t:'Load tally',h:'Check items off on the job card as they’re loaded and delivered.'},
+  {g:'field',k:'updates',t:'Quick updates',h:'“On my way”, “Arrived at pickup” and more, sent to the office and crew from the job card.'},
+  {g:'field',k:'callCust',t:'Crew members can call the customer',h:'The Call button on a crew member’s job card. Crew leads can always call.'},
+  {g:'field',k:'materials',t:'Crew add materials and costs',h:'Boxes, tape, dump fees and other costs, added from the job card. The office can always add them.'},
+  {g:'field',k:'photosReq',def:false,t:'Photos before finishing',h:'Finish job waits for at least one pickup photo and one delivery photo.'},
+  {g:'field',k:'truckDown',t:'Truck down button',h:'The crew can tell the office a truck broke down, and where it is.'},
+  {g:'bill',k:'leadPay',t:'Crew leads collect payment',h:'Leads take the payment at the end of the job. Off: leads get the signatures, and the office collects.'},
+  {g:'bill',k:'leadCharges',t:'Crew leads add charges and credits',h:'Stairs, parking or a damage credit, added to the bill on the job.'},
+  {g:'bill',k:'gpsMiles',t:'Miles back to the shop by GPS',h:'On mileage moves, the phone looks up the miles from the truck to the shop at bill-out. Off: the quote’s miles, which the lead can change.'},
+  {g:'clock',k:'clock',t:'Time clock',h:'Crew clock in and out for job days, warehouse work and dump runs.'},
+  {g:'clock',k:'lateNote',t:'Note for late clock-outs',h:'Clocking out long after the day’s last job needs a note.',n:{p:'lateMins',l:'After this many minutes',step:'5'}},
+  {g:'clock',k:'clockGps',t:'Location while clocked in',h:'The office sees where the crew is while they’re on the clock, and only then.'},
+  {g:'clock',p:'payMin',t:'Pay the minimum hours',h:function(S){return 'When a job runs short, the crew is paid the '+num(S.minHours)+'-hour minimum (set in the Rate card).'}},
+  {g:'price',k:'mileage',t:'Mileage moves',h:'Moves past the local radius are charged by the mile, plus loading and unloading time. Off: every move is charged by the hour.',n:{p:'includedMiles',l:'Local radius (driving miles from the shop)'}},
+  {g:'price',p:'shopTravel',t:'Count the drive from the shop',h:'The drive from the shop to the pickup and back from the delivery goes in the price: in the hours on local moves, in the miles on mileage moves.'},
+  {g:'price',k:'byClock',t:'Final bill by the clock',h:'The bill follows the crew’s times and the miles driven. Off: new quotes are a flat price, and the bill is the quote.'},
+  {g:'price',p:'nteCap',t:'Not-to-exceed price',h:'Quotes show a not-to-exceed price, and the final bill never goes over it.',n:{p:'ntePct',l:'Not-to-exceed cushion (%)'}},
+  {g:'price',k:'deposit',t:'Deposit to book',h:'Quotes ask for a deposit when the job is booked.',n:{p:'depositPct',l:'Deposit (%)'}},
+  {g:'price',k:'tax',t:'Sales tax',h:'Adds sales tax to quotes.',n:{p:'taxPct',l:'Tax (%)',step:'0.01'}},
+  {g:'price',k:'truckFee',t:'Truck and fuel fee',h:'A fee for each truck on every quote.',n:{p:'truckFee',l:'Truck and fuel, per truck ($)'}},
+  {g:'price',k:'stairs',t:'Stair fee',h:'A charge for each flight of stairs.',n:{p:'stairFee',l:'Per stair flight ($)'}},
+  {g:'price',k:'packing',t:'Packing',h:'Offer packing on quotes, charged per box.',n:{p:'packPerBox',l:'Packing, per box ($)'}},
+  {g:'forms',k:'forms',t:'Signatures before payment',h:'The customer signs the forms marked Required before paying. Off: no forms are asked for.'},
+  {g:'pay',k:'payLink',t:'Pay links and QR codes',h:'The customer pays on their own phone.'},
+  {g:'pay',k:'payCard',t:'Typing a card in',h:'The lead types the customer’s card in.'},
+  {g:'pay',k:'payVault',t:'Cards on file',h:'Keep a customer’s card to charge later.'},
+  {g:'pay',k:'payCash',t:'Cash, checks and Zelle',h:'Record payments taken outside the app. With every other way off, this stays on.'},
+  {g:'texts',p:'comms.alerts.assigned',t:'Text crew when they’re put on a job',h:'And when they’re taken off one.'},
+  {g:'texts',p:'comms.alerts.moved',t:'Text the crew when a job moves',h:'To a new day or time.'},
+  {g:'texts',p:'comms.alerts.tomorrow',t:'Texts the evening before',h:'Everyone gets their jobs for tomorrow, and the office gets who hasn’t confirmed.'},
+  {g:'texts',p:'comms.alerts.forms',t:'Unsigned forms alert',h:'Text the office when a finished job is still waiting on a signature.'},
+  {g:'office',k:'dispatchPay',t:'Dispatch can take payments',h:'Dispatch can collect payments and send pay links.'},
+  {g:'office',k:'dispatchMoney',t:'Dispatch sees revenue',h:'The Revenue screen and what’s still owed. Off: dispatch schedules without the company’s totals.'}
+];
+// is a switch on? (settings.opt, else its default; sales tax starts on when a tax % is set)
+function opt(k,S0){
+  var S=S0||(state&&state.settings)||{},o=S.opt||{};
+  if(o[k]===true||o[k]===false)return o[k];
+  if(k==='tax')return num(S.taxPct)>0;
+  for(var i=0;i<OPTS.length;i++)if(OPTS[i].k===k)return OPTS[i].def!==false;
+  return true;
+}
+function optOn(x){return x.k?opt(x.k):getPath(state.settings,x.p)!==false}
 var byId=function(id){return state.jobs.find(function(j){return j.id===id})};
 function truckName(id){var t=state.settings.trucks.find(function(x){return x.id===id});return t?t.name:(id?'Removed truck':'No truck')}
 // What counts toward a bill, the same way the server counts it: a payment the server wrote down, or one
@@ -1088,7 +1192,7 @@ function lastJobEnd(who,outAt){
 }
 function lateInfo(who,outAt){
   var e=lastJobEnd(who,outAt);if(!e)return null;
-  var late=outAt-e;return {end:e,lateMs:late,needNote:late>state.settings.lateMins*60000};
+  var late=outAt-e;return {end:e,lateMs:late,needNote:opt('lateNote')&&late>state.settings.lateMins*60000};
 }
 
 /* ---------- pricing engine ----------
@@ -1107,6 +1211,7 @@ function moveKind(d,S){
 }
 function moveKindAuto(d,S){
   var r=num(S.includedMiles),shop=!!String(S.shopAddress||'').trim(),has=function(k){return String(d[k]==null?'':d[k]).trim()!==''};
+  if(!opt('mileage',S))return {kind:'local',why:'off'};   // Options › Mileage moves is off: every move by the hour
   if(!(r>0))return {kind:'local',why:'none'};
   if(shop&&(has('milesOut')||has('milesBack'))){
     var out=has('milesOut')?num(d.milesOut):null,back=has('milesBack')?num(d.milesBack):null,mv=has('miles')?num(d.miles):null;
@@ -1122,6 +1227,7 @@ function kindLine(d,S){
   var a=moveKindAuto(d,S),k=moveKind(d,S),r=num(S.includedMiles),R=fmtMi(r)+'-mile';
   var head='<b>'+(k==='mileage'?'Mileage move':'Local move')+'</b>',what=k==='mileage'?'per mile for the drive, plus loading and unloading time':'by the hour with the drive included, no mileage';
   if(d.moveKind==='local'||d.moveKind==='mileage')return head+', set by hand: '+what+'.'+(r>0&&a.why!=='unknown'&&a.kind!==k?' By your '+R+' radius it would be a '+a.kind+' move.':'');
+  if(a.why==='off')return head+': '+what+'. Mileage moves are off in Setup \u203a Options, so every move is local.';
   if(a.why==='none')return head+': '+what+'. No local radius is set in Setup \u203a Rate card, so every move is local.';
   if(a.why==='unknown')return '';
   var why;
@@ -1150,20 +1256,22 @@ function calc(d,S){
   var add=function(label,amt,k){lines.push({label:label,amt:amt,k:k});if(k==='fixed')fixed+=amt};
   if(cf){
     add(crew+' movers, '+hours+' hr'+(mileage?' loading and unloading':'')+' at '+money(rate)+'/hr',Math.round(rate*hours),'hours');
-    add((nTrucks>1?nTrucks+' trucks':'Truck')+' and fuel',Math.round(S.truckFee*nTrucks),'fixed');
+    if(opt('truckFee',S))add((nTrucks>1?nTrucks+' trucks':'Truck')+' and fuel',Math.round(S.truckFee*nTrucks),'fixed');
     if(mileage&&miles>0)add('Mileage: '+fmtMi(miles)+' mi'+(legMi?' from the shop and back':'')+' at '+money(mileRate)+'/mi',Math.round(billMi*mileRate),'miles');
-    if(flights>0)add('Stairs: '+flights+' flight'+(flights===1?'':'s'),Math.round(flights*S.stairFee),'fixed');
-    if(d.pack&&boxes>0)add('Packing and materials: '+boxes+' boxes',Math.round(boxes*S.packPerBox),'fixed');
+    if(flights>0&&opt('stairs',S))add('Stairs: '+flights+' flight'+(flights===1?'':'s'),Math.round(flights*S.stairFee),'fixed');
+    if(d.pack&&boxes>0&&opt('packing',S))add('Packing and materials: '+boxes+' boxes',Math.round(boxes*S.packPerBox),'fixed');
     if(fees>0)add('Specialty items',Math.round(fees),'fixed');
     if(num(d.discount)>0)add('Discount',-Math.round(num(d.discount)),'fixed');
   }
   var subtotal=lines.reduce(function(a,l){return a+l.amt},0);
-  var tax=Math.round(subtotal*S.taxPct/100);
-  if(tax>0)lines.push({label:'Tax ('+S.taxPct+'%)',amt:tax,k:'tax'});
+  var taxPct=opt('tax',S)?num(S.taxPct):0,tax=Math.round(subtotal*taxPct/100);
+  if(tax>0)lines.push({label:'Tax ('+taxPct+'%)',amt:tax,k:'tax'});
   var total=Math.max(0,subtotal+tax);
-  return {cf:cf,count:count,lbs:cf*7,crew:crew,hours:hours,truckId:truck.id,truckName:truck.name,truckCf:truck.cf,nTrucks:nTrucks,pct:pct,lines:lines,total:total,nte:Math.ceil(total*(1+S.ntePct/100)/5)*5,deposit:Math.ceil(total*S.depositPct/100),
+  return {cf:cf,count:count,lbs:cf*7,crew:crew,hours:hours,truckId:truck.id,truckName:truck.name,truckCf:truck.cf,nTrucks:nTrucks,pct:pct,lines:lines,total:total,nte:Math.ceil(total*(1+S.ntePct/100)/5)*5,deposit:opt('deposit',S)?Math.ceil(total*S.depositPct/100):0,
     // what the final bill is worked out from (clockBill)
-    kind:kind,rate:rate,miles:mileage?billMi:0,mileRate:mileRate,fixed:fixed,taxPct:num(S.taxPct),minHours:num(S.minHours),
+    kind:kind,rate:rate,miles:mileage?billMi:0,mileRate:mileRate,fixed:fixed,taxPct:taxPct,minHours:num(S.minHours),
+    // Options › Final bill by the clock off: a flat price, and the bill is the quote
+    flat:!opt('byClock',S),
     shopTravel:shopTravel,backH:shopTravel&&S.mph>0?Math.round(num(d.milesBack)/S.mph*100)/100:0,capNte:S.nteCap!==false,
     // the drive a mileage quote's hours leave out, so the day's length on the board is still right
     driveH:mileage&&S.mph>0?Math.round(miles/S.mph*100)/100:0};
@@ -1179,7 +1287,7 @@ function calc(d,S){
    when the office corrects the hours or miles (j.clockFix). Jobs quoted before move kinds keep
    their quoted price. */
 function clockBill(j){
-  var q=j.quote||{};if(!(q.kind==='local'||q.kind==='mileage')||!(q.rate>0)||!q.cf)return null;
+  var q=j.quote||{};if(!(q.kind==='local'||q.kind==='mileage')||!(q.rate>0)||!q.cf||q.flat)return null;
   var p=j.phases||{},fix=j.clockFix||{},mileage=q.kind==='mileage',h=null,parts=null;
   if(mileage){
     if(p.loadStart&&p.loadEnd&&p.unloadStart&&p.unloadEnd){var ld=Math.max(0,p.loadEnd-p.loadStart),ul=Math.max(0,p.unloadEnd-p.unloadStart);h=(ld+ul)/36e5;parts={load:ld,unload:ul}}
@@ -1255,7 +1363,7 @@ function clockHtml(j){
   var q=j.quote||{};if(!(q.kind==='local'||q.kind==='mileage'))return '';
   var mileage=q.kind==='mileage',c=clockBill(j),fin=j.status==='done'||j.status==='paid',off=!!(j.clockFix||{}).off,applied=!!j.clockAt&&!off,ed=canEditJobs()&&(fin||!!j.clockAt);
   var head='<h3 style="font-size:15px;margin:10px 0 2px">'+(mileage?'Mileage move':'Local move')+'</h3>';
-  var kindTxt=mileage?'Billed per mile for the drive, plus loading and unloading time.':'Billed by the hour, the drive included. No mileage.';
+  var kindTxt=q.flat?'Flat price: the bill is the quote (Final bill by the clock was off in Options when it was quoted).':mileage?'Billed per mile for the drive, plus loading and unloading time.':'Billed by the hour, the drive included. No mileage.';
   if(!c)return head+'<p class="hint" style="margin:0">'+kindTxt+'</p>';
   if(!fin&&!j.clockAt&&(!j.startedAt||c.missing))return head+'<p class="hint" style="margin:0">'+kindTxt+' The final bill comes from the crew\u2019s times'+(mileage?' and the miles driven':'')+'.</p>';
   var body;
@@ -1307,7 +1415,8 @@ function payLine(j,you){
   var p=payHoursFor(j),t=topUpFor(j);
   return (you?'You’re paid ':'Crew paid ')+p+' h'+(you?'':' each')+(t?' (the '+jobMinPaid(j)+'-hour minimum; the job took '+j.actualHours+' h)':' (job time)');
 }
-function formsRequired(){return (state.settings.forms||[]).filter(function(f){return f.required})}
+// Options › Signatures before payment off: no form is asked for
+function formsRequired(){return opt('forms')?(state.settings.forms||[]).filter(function(f){return f.required}):[]}
 function isSigned(j,fid){return (j.signed||[]).some(function(x){return x.formId===fid})}
 function formsPending(j){return formsRequired().filter(function(f){return !isSigned(j,f.id)})}
 function payLocked(j){return (j.status==='active'||j.status==='done')&&formsPending(j).length>0}
@@ -1424,10 +1533,10 @@ var ICON={
   history:'<svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.7h3.7"/><path d="M12 8v4.3l2.8 1.7"/></svg>'
 };
 var TABS=[{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
-var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['today','chat'],crew:['today','chat']};
+var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['today','crew','chat'],crew:['today','crew','chat']};
 function navTabs(){var ids=NAV[state.ui.role]||NAV.owner;return ids.map(function(id){return TABS.filter(function(t){return t.id===id})[0]})}
 function allowedTabs(role){
-  var ids=role==='crew'||role==='lead'?['today','crew','history','chat']:role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat','reports']:
+  var ids=role==='crew'||role==='lead'?['today','crew','history','chat']:role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
     ['today','quote','jobs','dispatch','crew','history','chat','reports','settings'];
   if(typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // Tally's own admins, in any company
   return TABS.filter(function(t){return ids.indexOf(t.id)>=0});
@@ -1445,7 +1554,7 @@ function fieldMe(){
   var roster=fieldRoster();
   return roster.indexOf(state.ui.me)>=0?state.ui.me:(roster[0]||'');
 }
-function tabLabel(t){return t.id==='reports'&&state.ui.role==='dispatch'?'Revenue':(t.id==='crew'&&(state.ui.role==='owner'||state.ui.role==='dispatch')?'Field view':t.label)}
+function tabLabel(t){var r=state.ui.role;return t.id==='reports'&&r==='dispatch'?'Revenue':t.id==='crew'?(r==='owner'||r==='dispatch'?'Field view':'My jobs'):t.label}
 var isLead=function(n){return state.settings.leads.indexOf(n)>=0};
 var officeRec=function(n){return (state.settings.office||[]).filter(function(o){return o.name===n})[0]||null};
 var isOfficeName=function(n){return !!officeRec(n)};
@@ -1500,8 +1609,10 @@ function renderToday(){
   var dueToday=state.jobs.filter(function(j){return ['booked','active','done'].indexOf(j.status)>=0}).reduce(function(a,j){return a+balOf(j)},0);
   var pulse='<div class="pulse">'+
     '<button data-act="tab" data-tab="dispatch"><b>'+today.length+'</b><span>job'+(today.length===1?'':'s')+' today</span></button>'+
-    '<button data-act="tab" data-tab="reports"><b>'+onClock.length+'</b><span>on the clock</span></button>'+
-    '<button class="'+(dueToday>0?'due':'paid')+'" data-act="tab" data-tab="jobs"><b>'+money(dueToday)+'</b><span>still owed</span></button></div>';
+    (opt('clock')?'<button data-act="tab" data-tab="'+(allowedTabs(role).some(function(x){return x.id==='reports'})?'reports':'dispatch')+'"><b>'+onClock.length+'</b><span>on the clock</span></button>'
+      :'<button data-act="tab" data-tab="dispatch"><b>'+live.length+'</b><span>running now</span></button>')+
+    (role==='owner'||opt('dispatchMoney')?'<button class="'+(dueToday>0?'due':'paid')+'" data-act="tab" data-tab="jobs"><b>'+money(dueToday)+'</b><span>still owed</span></button>'
+      :'<button data-act="tab" data-tab="dispatch"><b>'+state.jobs.filter(needsSched).length+'</b><span>to schedule</span></button>')+'</div>';
   var liveHtml=live.length?'<div class="secline"><h2>Running now</h2></div>'+live.map(function(j){
     var pend=formsPending(j).length;
     return '<button class="job live" data-act="job:open" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span><span class="el">'+elapsed(j)+'</span></div><div class="route">'+esc((j.assign.crew.join(', ')||'no crew')+' · '+truckName(j.assign.truckId))+'</div><div>'+pill('active')+' <span class="pill">'+esc(phaseNow(j))+' · '+fmtDur(Date.now()-phaseSince(j))+'</span>'+(pend?' <span class="pill warn">'+pend+' form'+(pend===1?'':'s')+' to sign</span>':'')+'</div></button>'}).join(''):'';
@@ -1550,12 +1661,12 @@ function renderFieldToday(head){
   // a booking whose day already went by is the office's to sort out, not "next up" (it still shows in My jobs)
   var mine=state.jobs.filter(function(j){return ['booked','active'].indexOf(j.status)>=0&&j.assign.crew.indexOf(me)>=0&&!datePassed(j,t)}).sort(function(a,b){return ((a.d.moveDate||'9999')+a.d.time)<((b.d.moveDate||'9999')+b.d.time)?-1:1});
   var todayJobs=mine.filter(function(j){return j.d.moveDate===t}),next=mine[0];
-  var sh=openShift(me),clock=sh?
+  var sh=openShift(me),clock=!opt('clock')?'':sh?
     '<button class="alert" data-act="tab" data-tab="crew"><span class="ic ok">●</span><span class="tx"><b>On the clock · '+fmtDur(Date.now()-sh.inAt)+'</b><small>'+esc(sh.activity)+' since '+fmtClock(sh.inAt)+'</small></span><span class="go">›</span></button>':
     '<button class="alert" data-act="tab" data-tab="crew"><span class="ic warn">○</span><span class="tx"><b>Not clocked in</b><small>Tap to start your day</small></span><span class="go">›</span></button>';
   var list=(todayJobs.length?todayJobs:(next?[next]:[])).map(function(j){
     var done=j.items.reduce(function(a,i){return a+((j.tally[i.id]||{}).d?i.qty:0)},0),tot=j.items.reduce(function(a,i){return a+i.qty},0);
-    return '<button class="job" data-act="field:go" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span>'+pill(j.status)+'</div><div class="route">'+(j.d.moveDate===t?'Today':esc(fmtDate(j.d.moveDate)))+' · '+jobLine(j)+'</div><div class="route">'+esc(truckName(j.assign.truckId))+' · delivered '+done+'/'+tot+'</div></button>'}).join('');
+    return '<button class="job" data-act="field:go" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span>'+pill(j.status)+'</div><div class="route">'+(j.d.moveDate===t?'Today':esc(fmtDate(j.d.moveDate)))+' · '+jobLine(j)+'</div><div class="route">'+esc(truckName(j.assign.truckId))+(opt('tally')?' · delivered '+done+'/'+tot:'')+'</div></button>'}).join('');
   var rest=mine.filter(function(j){return todayJobs.indexOf(j)<0&&j!==next});
   var restHtml=rest.length?'<div class="secline"><h2>Later</h2></div>'+rest.map(function(j){
     return '<button class="job" data-act="field:go" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span><span class="r">'+esc(fmtDate(j.d.moveDate))+'</span></div><div class="route">'+jobLine(j)+'</div></button>'}).join(''):'';
@@ -1570,30 +1681,29 @@ function renderFieldToday(head){
 function renderMore(){
   var el=$('#more');if(!el)return;
   var role=state.ui.role,office=canEditJobs();
-  var items=[];
-  if(office){
-    items.push(['quote','New quote','Build and book a move']);
-    items.push(['history','Job history','Paid and lost jobs']);
-    items.push(['crew','Field view','Work a job like the crew']);
-    items.push(['reports',role==='dispatch'?'Revenue':'Reports','Money, hours and accuracy']);
-  }else{
-    items.push(['crew','My jobs','Clock, tally, photos, billing']);
-    items.push(['history','Job history','Jobs you worked']);
-  }
-  if(role==='owner')items.push(['settings','Setup','Rates, crew, forms, access']);
-  if(isTallyAdmin())items.push(['admin','Tally admin','Every company, fees and trials']);
-  var btns=items.map(function(x){return '<button data-act="more:go" data-tab="'+x[0]+'">'+(ICON[x[0]]||ICON.more)+'<b>'+esc(x[1])+'</b><small>'+esc(x[2])+'</small></button>'}).join('');
   if(ui.moreMode==='preview'&&canPreview()){
     el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="See it their way">'+previewSheet()+'</div>';
     el.hidden=!ui.more;syncLock();return;
   }
-  el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="More"><div class="row between"><h2>More</h2><button class="btn sm" data-act="more:close">Done</button></div><div class="mlist">'+btns+
-    '<button class="sosm" data-act="sos:open">'+ICON.sos+'<b>Truck down</b><small>Tell the office where you are</small></button>'+
-    (canPreview()?'<button data-act="more:preview">'+ICON.crew+'<b>See it their way</b><small>'+(previewing()?'Previewing '+esc(ui.preview.staff||ui.preview.role):'Owner, dispatch, lead or crew')+'</small></button>':'')+
-    (canMyProfile()?'<button data-act="me:open">'+ICON.crew+'<b>My profile</b><small>Your details and documents</small></button>':'')+
-    '<button data-act="more:theme">'+ICON.settings+'<b>Change the look</b><small>24 themes, light or dark</small></button>'+
-    (window.tallySwitchCompany?'<button data-act="more:company">'+ICON.board+'<b>Switch company</b><small>'+esc((window.tallyOrg||{}).name||'')+'</small></button>':'')+
-    (window.tallySignOut?'<button data-act="more:signout">'+ICON.crew+'<b>Sign out</b><small>'+esc(sync.meName||'')+'</small></button>':'')+'</div></div>';
+  // a list in three groups (Work, Company, You), with Truck down set apart at the bottom
+  var row=function(act,attrs,ic,title,sub,cls){return '<button class="navrow'+(cls?' '+cls:'')+'" data-act="'+act+'"'+(attrs||'')+'><span class="ic">'+ic+'</span><span class="tx"><b>'+esc(title)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span><span class="go">›</span></button>'};
+  var go=function(tab,title,sub){return row('more:go',' data-tab="'+tab+'"',ICON[tab]||ICON.more,title,sub)};
+  var grp=function(label,rows){rows=rows.filter(Boolean);return rows.length?'<div class="glabel">'+esc(label)+'</div><div class="navlist">'+rows.join('')+'</div>':''};
+  var tabs=allowedTabs(role).map(function(t){return t.id});
+  var work=office?[go('quote','New quote','Build and book a move'),go('crew','Field view','Work a job like the crew'),go('history','Job history','Paid and lost jobs'),
+      tabs.indexOf('reports')>=0?go('reports',role==='dispatch'?'Revenue':'Reports','Money, hours and accuracy'):'']
+    :[go('history','Job history','Jobs you worked')];
+  var company=role==='owner'?[go('settings','Setup','Rates, crew, forms, payments'),
+      row('more:go',' data-tab="settings" data-sec="options"',SICON.options,'Options',optsOnCount()+' of '+OPTS.length+' switches on')]:[];
+  if(isTallyAdmin())company.push(go('admin','Tally admin','Every company, fees and trials'));
+  var you=[canMyProfile()?row('me:open','',SICON.profile,'My profile','Your details and documents'):'',
+    canPreview()?row('more:preview','',SICON.eye,'See it their way',previewing()?'Previewing '+(ui.preview.staff||ui.preview.role):'Owner, dispatch, lead or crew'):'',
+    row('more:theme','',SICON.theme,'Change the look','24 themes, light or dark'),
+    window.tallySwitchCompany?row('more:company','',SICON.swap,'Switch company',(window.tallyOrg||{}).name||''):'',
+    window.tallySignOut?row('more:signout','',SICON.signout,'Sign out',sync.meName||''):''];
+  var sosRow=opt('truckDown')||sosActive().length?'<div class="navlist" style="margin-top:16px">'+row('sos:open','',ICON.sos,'Truck down','Tell the office a truck broke down, and where','sosrow')+'</div>':'';
+  el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="More"><div class="row between"><h2>More</h2><button class="btn sm" data-act="more:close">Done</button></div>'+
+    grp('Work',work)+grp('Company',company)+grp('You',you)+sosRow+'</div>';
   el.hidden=!ui.more;syncLock();
 }
 
@@ -1629,18 +1739,18 @@ function renderQuote(){
      fld('Pickup address','<input data-d="from" value="'+dv('from')+'">','span2')+
      fld('Delivery address','<input data-d="to" value="'+dv('to')+'">','span2')+
      fld(S.shopAddress?'Pickup to delivery (miles)':'Distance (miles)','<input data-d="miles" type="number" inputmode="decimal" value="'+dv('miles')+'">')+
-     fld('Stair flights (total)','<input data-d="flights" type="number" inputmode="numeric" value="'+dv('flights')+'">')+
+     (opt('stairs')?fld('Stair flights (total)','<input data-d="flights" type="number" inputmode="numeric" value="'+dv('flights')+'">'):'')+
      '<div class="span2 hint" id="distNote" aria-live="polite" style="margin:-2px 0 2px"></div>'+
      (S.shopAddress?fld('From the shop to pickup (miles)','<input data-d="milesOut" type="number" inputmode="decimal" value="'+dv('milesOut')+'">')+
        fld('Delivery back to the shop (miles)','<input data-d="milesBack" type="number" inputmode="decimal" value="'+dv('milesBack')+'">')+
        '<div class="span2 hint" id="shopNote" aria-live="polite" style="margin:-2px 0 2px"></div>':'')+
      '<div class="span2 hint" id="kindNote" aria-live="polite" style="margin:-2px 0 2px"></div>'+
      cfs+
-     '<label class="check span2"><input type="checkbox" data-d="pack"'+(d.pack?' checked':'')+'> Packing service for boxes</label>'+
+     (opt('packing')?'<label class="check span2"><input type="checkbox" data-d="pack"'+(d.pack?' checked':'')+'> Packing service for boxes</label>':'')+
    '</div></section>':'')+
    (step===2?'<section class="card"><h2>What is moving</h2><label class="f"><span>Search items</span><input id="qSearch" type="search" placeholder="Sofa, bed, piano" autocomplete="off"></label><div id="qGroups" style="margin-top:8px">'+groups+'</div></section>':'')+
    (step===3?'<section class="card"><h2>Price</h2><details class="acc" data-k="q:adj"'+(ui.open['q:adj']?' open':'')+'><summary><span>Adjust move type, crew, truck, hours or discount</span></summary><div class="acc-body"><div class="grid2 stack">'+
-     fld('Move type','<select data-d="moveKind"><option value="">'+(num(S.includedMiles)>0?'Auto, by your '+fmtMi(num(S.includedMiles))+'-mile radius':'Auto (no radius set: local)')+'</option><option value="local"'+(d.moveKind==='local'?' selected':'')+'>Local: by the hour</option><option value="mileage"'+(d.moveKind==='mileage'?' selected':'')+'>Mileage: per mile, plus loading and unloading</option></select>','span2')+
+     fld('Move type','<select data-d="moveKind"><option value="">'+(!opt('mileage')?'Auto (mileage moves are off: local)':num(S.includedMiles)>0?'Auto, by your '+fmtMi(num(S.includedMiles))+'-mile radius':'Auto (no radius set: local)')+'</option><option value="local"'+(d.moveKind==='local'?' selected':'')+'>Local: by the hour</option><option value="mileage"'+(d.moveKind==='mileage'?' selected':'')+'>Mileage: per mile, plus loading and unloading</option></select>','span2')+
      fld('Crew size','<select data-d="crew"><option value="">Auto</option>'+[2,3,4].map(function(n){return '<option value="'+n+'"'+(String(d.crew)===String(n)?' selected':'')+'>'+n+' movers</option>'}).join('')+'</select>')+
      fld('Truck','<select data-d="truckId">'+truckOpts+'</select>')+
      fld('Hours (leave blank for auto)','<input data-d="hoursOverride" type="number" inputmode="decimal" step="0.5" value="'+dv('hoursOverride')+'">')+
@@ -1662,7 +1772,7 @@ function updateQuote(){
   $('#qStats').innerHTML=st(fmtInt(q.cf),'cu ft')+st(fmtInt(q.lbs),'est. lb')+st(q.cf?q.crew+' · '+q.hours+'h':'—','crew · hours')+st(Math.round(q.pct*100)+'%',q.cf?(q.nTrucks>1?q.nTrucks+' × ':'')+esc(q.truckName):'truck fill');
   $('#qHint').textContent=q.cf?'':(ui.qstep===2?'Add items below to fill the truck.':'');
   var lines=$('#qLines'),rows=q.lines.map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('');
-  if(q.cf)rows+='<tr class="total"><td>Total</td><td>'+money(q.total)+'</td></tr>'+(S.nteCap===false?'':'<tr><td><small>Not-to-exceed (+'+S.ntePct+'%)</small></td><td><small>'+money(q.nte)+'</small></td></tr>')+'<tr><td><small>Deposit at booking ('+S.depositPct+'%)</small></td><td><small>'+money(q.deposit)+'</small></td></tr>';
+  if(q.cf)rows+='<tr class="total"><td>Total</td><td>'+money(q.total)+'</td></tr>'+(S.nteCap===false||q.flat?'':'<tr><td><small>Not-to-exceed (+'+S.ntePct+'%)</small></td><td><small>'+money(q.nte)+'</small></td></tr>')+(q.deposit>0?'<tr><td><small>Deposit at booking ('+S.depositPct+'%)</small></td><td><small>'+money(q.deposit)+'</small></td></tr>':'')+(q.flat?'<tr><td colspan="2"><small>Flat price: the bill is this quote.</small></td></tr>':'');
   else rows='<tr><td><small>Prices appear once you add items.</small></td><td></td></tr>';
   if(lines)lines.innerHTML=rows;
   var kn=$('#kindNote');if(kn)kn.innerHTML=kindLine(d,S);
@@ -1754,13 +1864,16 @@ function renderSheet(){
   var signedRows=(j.signed||[]).map(function(x){return '<div class="who"><span><b>'+esc(x.title)+'</b><br><small>'+(x.waived?'Waived. '+esc(x.reason||''):'Signed by '+esc(x.name))+' · '+fmtStamp(x.ts)+'</small></span>'+(!x.waived&&x.sig&&x.sig.length>20?'<img alt="Signature" src="'+x.sig+'" style="height:40px;background:#fff;border-radius:4px;border:1px solid var(--line)">':'')+'</div>'}).join('');
   var pendRows=pend.map(function(f){return '<div class="who"><span><b>'+esc(f.title)+'</b><br><small>Waiting for signature</small></span>'+(state.ui.role==='owner'?'<button class="btn sm ghost" data-act="sh:waive" data-fid="'+f.id+'">Waive</button>':'')+'</div>'}).join('');
   var fsec='<div class="sec" data-meta="'+(formsRequired().length?(formsRequired().length-pend.length)+' of '+formsRequired().length+' signed':'')+'"><h3>Forms</h3>'+(signedRows+pendRows||'<small>No forms are required. Add them in Setup.</small>')+'</div>';
+  // who takes payments follows Options (Dispatch can take payments; the ways to pay)
+  var coll=canCollect(),recOk=coll&&opt('payCash');
   var payHtml='<div class="sec" data-meta="'+money(paid)+' paid"><h3>Payments</h3><table class="lines">'+pays+'</table>'+
-     '<button class="btn primary" style="margin-top:8px;width:100%" data-act="flow:open" data-id="'+j.id+'" data-who="Office">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>'+officeLinkHtml(j)+
-     '<h3 style="margin:16px 0 6px;font-size:16px">Record a deposit, cash or check</h3>'+
+     (coll?'<button class="btn primary" style="margin-top:8px;width:100%" data-act="flow:open" data-id="'+j.id+'" data-who="Office">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>'+(opt('payLink')?officeLinkHtml(j):'')
+       :'<p class="hint">The owner takes payments on this job.</p>')+
+     (recOk?'<h3 style="margin:16px 0 6px;font-size:16px">Record a deposit, cash or check</h3>'+
      (payLocked(j)?'<p class="hint">Forms must be signed before payment on a job that has started.</p>':'')+
-     '<div class="row" style="margin-top:8px"><button class="btn sm" data-act="sh:fillpay" data-v="'+q.deposit+'">Deposit '+money(q.deposit)+'</button><button class="btn sm" data-act="sh:fillpay" data-v="'+bal+'">Balance '+money(bal)+'</button></div>'+
+     '<div class="row" style="margin-top:8px">'+(q.deposit>0?'<button class="btn sm" data-act="sh:fillpay" data-v="'+q.deposit+'">Deposit '+money(q.deposit)+'</button>':'')+'<button class="btn sm" data-act="sh:fillpay" data-v="'+bal+'">Balance '+money(bal)+'</button></div>'+
      '<div class="grid2" style="margin-top:8px">'+fld('Amount','<input id="payAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00">')+fld('Method','<select id="payMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option><option>Card (taken elsewhere)</option></select>')+'</div>'+
-     '<button class="btn" style="margin-top:8px;width:100%" data-act="sh:addpay">Record payment</button></div>';
+     '<button class="btn" style="margin-top:8px;width:100%" data-act="sh:addpay">Record payment</button>':'')+'</div>';
   var cnotes=(j.crewNotes||[]).map(function(n){return '<div class="who" style="display:block"><div class="row between"><small>'+esc(n.who)+' · '+fmtStamp(n.ts)+'</small>'+(state.ui.role==='owner'?'<button class="btn sm ghost" data-act="sh:rmnote" data-nid="'+n.id+'">Remove</button>':'')+'</div><div style="white-space:pre-wrap">'+esc(n.text)+'</div></div>'}).join('')||'<small>No crew notes yet.</small>';
   var statusOpts=STATUS.map(function(s){return '<option value="'+s+'"'+(j.status===s?' selected':'')+'>'+LABEL[s]+'</option>'}).join('');
   var steps=[['Quoted',['quoted','booked','active','done','paid']],['Scheduled',['booked','active','done','paid']],['On the job',['active','done','paid']],['Signed',['done','paid']],['Paid',['paid']]];
@@ -1856,21 +1969,43 @@ function renderDispatch(){
 }
 
 /* ---------- CREW ---------- */
-/* The field card for one job, as the crew member or lead `me` sees it (used by Field and Job history). */
+/* The field card for one job, as the crew member or lead `me` sees it (used by My jobs and Job history):
+   when and where, the office's note, the next step, then the job's parts (Notes, Load tally,
+   Materials, Photos, Bill out) behind one row of buttons, one open at a time (ui.seg). */
+// who can take a customer's payment: the owner, and dispatch and crew leads unless Options turns it off
+function canCollect(){var r=state.ui.role;return r==='owner'||(r==='dispatch'&&opt('dispatchPay'))||(r==='lead'&&opt('leadPay'))}
+function canCharge(){var r=state.ui.role;return r==='owner'||r==='dispatch'||(r==='lead'&&opt('leadCharges'))}
+// Options › Photos before finishing: what's still missing ('' when nothing is, or the switch is off)
+function photosMissing(j){
+  if(!opt('photosReq'))return '';
+  var has=function(k){return (j.photos||[]).some(function(p){return p.kind===k})},p=has('Pickup'),d=has('Delivery');
+  return p&&d?'':'Take '+(!p&&!d?'a pickup photo and a delivery photo':!p?'a pickup photo':'a delivery photo')+' before you finish the job.';
+}
+// open the part the card's row of buttons points at, without redrawing the card
+function segApply(id){
+  var k=ui.seg[id]||'';
+  $$('[data-segs="'+id+'"] .seg').forEach(function(b){b.setAttribute('aria-expanded',b.dataset.k===k?'true':'false')});
+  $$('[data-segp]').forEach(function(p){var sp=p.dataset.segp.split('|');if(sp[0]===id)p.hidden=sp[1]!==k});
+}
 function crewKit(me){
   var S=state.settings,role=state.ui.role,t=todayISO();
   var asLead=role==='owner'||role==='dispatch'||(role==='lead'&&isLead(me));
   function billPanel(j){
-    var bal=balOf(j),pend=formsPending(j),req=formsRequired();
+    var bal=balOf(j),pend=formsPending(j),req=formsRequired(),coll=canCollect();
     var extras=(j.extras||[]).map(function(e){return '<tr><td>'+esc(e.label)+'</td><td>'+(e.amt<0?'−':'')+money(Math.abs(e.amt))+'</td></tr>'}).join('');
     var bq=j.quote||{},bk=backApplies(j)?'<p class="hint" style="margin:8px 0 0">'+(j.back?(bq.kind==='mileage'?'Miles: '+fmtMi(num(j.back.soFar))+(j.back.odoEnd!=null?' on the odometer':' so far')+' + '+fmtMi(num(j.back.mi))+' back to the shop '+(BACK_HOW[j.back.src]||'typed in'):'Drive back to the shop: '+(num(j.back.mins)>0?fmtDur(num(j.back.mins)*60000):'none'))+' ('+esc(j.back.by||'')+') <button class="btn sm ghost" data-act="back:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Change</button>'
       :(bq.kind==='mileage'?'The miles back to the shop go':'The drive back to the shop goes')+' on the bill when you bill out.')+'</p>':'';
-    return '<div><table class="lines"><tr><td>Quote</td><td>'+money(j.quote.total)+'</td></tr>'+matRows(j)+extras+'<tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+bk+
-      '<div class="grid2 stack" style="margin-top:8px">'+fld('Add a charge or credit','<input id="ce_l_'+j.id+'" placeholder="Stairs, parking, damage credit">','span2')+fld('Amount','<input id="ce_a_'+j.id+'" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00">')+fld('Type','<select id="ce_t_'+j.id+'"><option value="charge">Charge</option><option value="credit">Credit</option></select>')+'</div><button class="btn" style="margin-top:6px" data-act="cr:charge" data-id="'+j.id+'">Add to bill</button>'+
+    var charge=canCharge()?'<div class="grid2 stack" style="margin-top:8px">'+fld('Add a charge or credit','<input id="ce_l_'+j.id+'" placeholder="Stairs, parking, damage credit">','span2')+fld('Amount','<input id="ce_a_'+j.id+'" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00">')+fld('Type','<select id="ce_t_'+j.id+'"><option value="charge">Charge</option><option value="credit">Credit</option></select>')+'</div><button class="btn" style="margin-top:6px" data-act="cr:charge" data-id="'+j.id+'">Add to bill</button>':'';
+    var act=!(bal>0||pend.length)?'<p class="hint">Paid in full.</p>'
+      :coll?'<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>'
+      :pend.length?'<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Get signatures</button>'
+      :'<p class="hint">The office collects the payment.</p>';
+    return '<div><table class="lines"><tr><td>Quote</td><td>'+money(j.quote.total)+'</td></tr>'+matRows(j)+extras+'<tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+bk+charge+
       (req.length?'<p class="hint">Forms signed: '+(req.length-pend.length)+' of '+req.length+'</p>':'')+
-      (bal>0?'<p class="hint money-due" style="margin:6px 0 0">'+money(bal)+' still to collect</p>':'<p class="hint money-paid" style="margin:6px 0 0">Paid in full</p>')+((bal>0||pend.length)?'<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>':'<p class="hint">Paid in full.</p>')+'</div>';
+      (bal>0?'<p class="hint money-due" style="margin:6px 0 0">'+money(bal)+' still to collect</p>':'<p class="hint money-paid" style="margin:6px 0 0">Paid in full</p>')+act+'</div>';
   }
-  function card(j){
+  // less: a job shown in full because someone opened its short row, with a way to fold it again
+  function card(j,less){
     var tl=j.items.reduce(function(a,i){return a+i.qty},0);
     var ld=j.items.reduce(function(a,i){return a+((j.tally[i.id]||{}).l?i.qty:0)},0),dl=j.items.reduce(function(a,i){return a+((j.tally[i.id]||{}).d?i.qty:0)},0);
     var map=function(a){return a?'<a href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(a)+'" target="_blank" rel="noopener">'+esc(a)+'</a>':'<small>Not set</small>'};
@@ -1882,41 +2017,49 @@ function crewKit(me){
       else if(j.status==='active'){var pn=phaseNext(j);
         main=pn<4?'<button class="btn primary big" data-act="cr:phase" data-id="'+j.id+'" data-k="'+PHASES[pn][0]+'" data-who="'+esc(me)+'">'+PHASES[pn][1]+'</button>'
           :'<button class="btn primary big" data-act="cr:finish" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(formsPending(j).length?'Get signatures and finish':'Finish job')+'</button>'}
-      else if(j.status==='done')main='<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(formsPending(j).length?'Sign forms and collect payment':'Collect payment')+'</button>';
+      else if(j.status==='done'&&(balOf(j)>0||formsPending(j).length)&&(canCollect()||formsPending(j).length))main='<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(formsPending(j).length?(canCollect()?'Sign forms and collect payment':'Get signatures'):'Collect payment')+'</button>';
+      else if(j.status==='done')main='<span class="hint" style="align-self:center;flex:2;margin:0">'+(balOf(j)>0?'Finished. The office collects the payment.':'Finished and paid.')+'</span>';
     }else main='<span class="hint" style="align-self:center;flex:2;margin:0">'+(j.status==='booked'?'Your crew lead starts the job clock.':j.status==='active'?esc(phaseNow(j))+' · '+fmtDur(Date.now()-phaseSince(j)):'Finished. You can still add photos and notes.')+'</span>';
     if(asLead&&j.status==='paid')main='<span class="hint" style="align-self:center;flex:2;margin:0">Paid and closed. You can still add photos and notes.</span>';
+    var call=j.d.phone&&(asLead||opt('callCust'))?'<button class="btn" data-act="call:cust" data-id="'+j.id+'">Call</button>':'';
     var thumbs=j.photos.slice(-8).map(function(p){return !p.data?'<span class="phold" style="width:52px;height:52px">…</span>':'<img src="'+p.data+'" alt="'+esc(p.kind)+' photo" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line)">'}).join('');
     var notes=(j.crewNotes||[]).map(function(n){var mineN=n.who===me||role==='owner';return '<div class="who" style="display:block"><div class="row between"><small>'+esc(n.who)+' · '+fmtStamp(n.ts)+'</small>'+(mineN?'<button class="btn sm ghost" data-act="cr:rmnote" data-id="'+j.id+'" data-nid="'+n.id+'" data-who="'+esc(me)+'">Remove</button>':'')+'</div><div style="white-space:pre-wrap">'+esc(n.text)+'</div></div>'}).join('');
     var crewLine=j.assign.crew.map(function(n){return esc(n)+whoTag(n)}).join(', ');
-    var open=function(k,def){var o=ui.open['c:'+j.id+':'+k];return (o===undefined?def:o)?' open':''};
-    var acc=function(k,title,meta,body,def){return '<details class="acc" data-k="c:'+j.id+':'+k+'"'+open(k,def)+'><summary><span>'+title+'</span>'+(meta?'<small>'+meta+'</small>':'')+'</summary><div class="acc-body">'+body+'</div></details>'};
-    var nmeta=[j.d.notes?'office note':'',(j.crewNotes||[]).length?(j.crewNotes.length+' crew'):''].filter(Boolean).join(' · ');
-    var notesBody=(j.d.notes?'<div><small>Job notes from the office</small><br><span style="white-space:pre-wrap">'+esc(j.d.notes)+'</span></div>':'')+cfs+
-      '<div style="margin-top:8px"><small>Crew notes: your crew and the office can read these</small>'+(notes||'<br><small>None yet.</small>')+'<textarea id="cn_'+j.id+'" style="width:100%;min-height:56px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-top:6px;color:var(--text);font-size:16px" placeholder="Gate code, passcode, or anything the office should know" aria-label="New crew note"></textarea><button class="btn sm" style="margin-top:6px" data-act="cr:note" data-id="'+j.id+'" data-who="'+esc(me)+'">Add note</button></div>';
+    var notesBody=cfs+'<div'+(cfs?' style="margin-top:8px"':'')+'><small>Crew notes: your crew and the office can read these</small>'+(notes||'<br><small>None yet.</small>')+'<textarea id="cn_'+j.id+'" style="width:100%;min-height:56px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-top:6px;color:var(--text);font-size:16px" placeholder="Gate code, passcode, or anything the office should know" aria-label="New crew note"></textarea><button class="btn sm" style="margin-top:6px" data-act="cr:note" data-id="'+j.id+'" data-who="'+esc(me)+'">Add note</button></div>';
     var mediaBody='<div class="row" style="gap:6px"><button class="btn sm" data-act="photo" data-kind="Pickup" data-id="'+j.id+'">Pickup photo</button><button class="btn sm" data-act="photo" data-kind="Delivery" data-id="'+j.id+'">Delivery photo</button><button class="btn sm" data-act="photo" data-kind="Damage" data-id="'+j.id+'">Damage</button></div>'+
       (thumbs?'<div class="row" style="margin-top:8px;gap:6px">'+thumbs+'</div>':'<div class="hint">No photos yet.</div>')+
-      (['done','paid'].indexOf(j.status)>=0?'':'<div style="margin-top:12px"><small>Send an update to the office and crew</small><div class="scrollx" style="margin-top:6px">'+UPDATES.map(function(u,i){return '<button class="chip" data-act="cr:update" data-id="'+j.id+'" data-u="'+i+'" data-who="'+esc(me)+'">'+u+'</button>'}).join('')+'</div></div>');
+      (opt('photosReq')&&j.status==='active'?'<p class="hint">Before Finish job: '+(photosMissing(j)?photosMissing(j).replace(/^Take /,'take ').replace(/ before you finish the job\.$/,'.'):'the pickup and delivery photos are in.')+'</p>':'')+
+      (['done','paid'].indexOf(j.status)>=0||!opt('updates')?'':'<div style="margin-top:12px"><small>Send an update to the office and crew</small><div class="scrollx" style="margin-top:6px">'+UPDATES.map(function(u,i){return '<button class="chip" data-act="cr:update" data-id="'+j.id+'" data-u="'+i+'" data-who="'+esc(me)+'">'+u+'</button>'}).join('')+'</div></div>');
     var nItems=(j.materials||[]).length+(j.costs||[]).length;
     var billIn=asLead&&(j.status==='active'||j.status==='done');
-    var jq=j.quote||{},mdOn=asLead&&jq.kind==='mileage'&&!jq.shopTravel&&(j.status==='active'||j.status==='done'),mdv=j.milesDriven!=null&&j.milesDriven!==''?String(j.milesDriven):'';
+    var jq=j.quote||{},mdOn=asLead&&jq.kind==='mileage'&&!jq.shopTravel&&!jq.flat&&(j.status==='active'||j.status==='done'),mdv=j.milesDriven!=null&&j.milesDriven!==''?String(j.milesDriven):'';
     // a mileage move that counts the drive from the shop: the odometer when the truck left; the rest comes at bill-out
-    var odoOn=asLead&&jq.kind==='mileage'&&jq.shopTravel&&j.status==='active'&&!j.back,odv=j.odo&&j.odo.start!=null?String(j.odo.start):'';
+    var odoOn=asLead&&jq.kind==='mileage'&&jq.shopTravel&&!jq.flat&&j.status==='active'&&!j.back,odv=j.odo&&j.odo.start!=null?String(j.odo.start):'';
     var odoBox=odoOn?'<div style="margin-top:10px">'+fld('Odometer leaving the shop','<input type="number" inputmode="decimal" min="0" step="0.1" data-odo="'+j.id+'" value="'+esc(odv)+'" placeholder="The reading when the truck left">')+
       '<p class="hint" style="margin:4px 0 0">Mileage move: every mile from the shop and back is billed. At bill-out you put in the odometer again, and the miles from there back to the shop are added.</p></div>':'';
     var mdrive=mdOn?'<div style="margin-top:10px">'+fld('Miles driven on this move','<input type="number" inputmode="decimal" min="0" step="0.1" data-mdrive="'+j.id+'" value="'+esc(mdv)+'" placeholder="Quoted '+fmtMi(jq.miles)+' mi">')+
       '<p class="hint" style="margin:4px 0 0">Mileage move: the bill is the miles driven'+(jq.shopTravel?' from the shop and back':'')+' plus loading and unloading time. Leave it blank to bill the quoted '+fmtMi(jq.miles)+' mi.</p></div>':'';
+    var segs=[['notes','Notes',(j.crewNotes||[]).length||'',notesBody]];
+    if(opt('tally'))segs.push(['tally','Tally',tl?(dl?dl:ld)+'/'+tl:'','<p class="hint" style="margin:0 0 4px">Loaded '+ld+' of '+tl+' · delivered '+dl+' of '+tl+'</p>'+(rows||'<div class="hint">No items on this job.</div>')]);
+    if(opt('materials'))segs.push(['mats','Materials',nItems||'',matSection(j,'c',me,asLead)]);
+    segs.push(['media','Photos',j.photos.length||(j.status==='active'&&photosMissing(j)?'needed':''),mediaBody]);
+    if(billIn)segs.push(['bill','Bill',balOf(j)>0?'<span class="money-due">'+money(balOf(j))+' due</span>':'<span class="money-paid">Paid</span>',billPanel(j)]);
+    var cur=ui.seg[j.id];if(cur===undefined)cur=billIn&&j.status==='done'?'bill':'';
+    if(!segs.some(function(s){return s[0]===cur}))cur='';
+    var segRow='<div class="segs" data-segs="'+j.id+'" role="group" aria-label="Job details">'+segs.map(function(s){return '<button class="seg" data-act="cr:seg" data-id="'+j.id+'" data-k="'+s[0]+'" aria-expanded="'+(s[0]===cur)+'">'+s[1]+(s[2]!==''?' <small>'+s[2]+'</small>':'')+'</button>'}).join('')+'</div>';
+    var panels=segs.map(function(s){return '<div class="segbody" data-segp="'+j.id+'|'+s[0]+'"'+(s[0]===cur?'':' hidden')+'>'+s[3]+'</div>'}).join('');
+    var officeNote=j.d.notes?'<div class="note" style="margin:10px 0 0"><b style="font-weight:var(--w-mid)">From the office:</b> <span style="white-space:pre-wrap">'+esc(j.d.notes)+'</span></div>':'';
     return '<section class="card crewcard"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+'</h3><div class="cc-sub">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</div><div class="cc-sub">Crew: '+(crewLine||'none')+'</div>'+(j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+'</div>'+pill(j.status)+'</div>'+
-      '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+
-      '<div class="cc-actions">'+main+(j.d.phone?'<button class="btn" data-act="call:cust" data-id="'+j.id+'">Call</button>':'')+'</div>'+
+      '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+officeNote+
+      '<div class="cc-actions" style="margin-top:10px">'+main+call+'</div>'+
       (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+(asLead&&j.status==='active'&&phaseNext(j)>0?'<button class="btn sm ghost" data-act="cr:phaseundo" data-id="'+j.id+'" data-who="'+esc(me)+'">Undo “'+PHASES[phaseNext(j)-1][1]+'”</button>':'')+'</div>':'')+
-      mdrive+odoBox+
-      acc('notes','Notes',nmeta,notesBody,!!j.d.notes)+
-      acc('tally','Load tally','Loaded '+ld+'/'+tl+' · Delivered '+dl+'/'+tl,rows||'<div class="hint">No items on this job.</div>',false)+
-      acc('mats','Materials and costs',nItems?nItems+(nItems===1?' item':' items'):'',matSection(j,'c',me,asLead),false)+
-      acc('media','Photos and updates',j.photos.length?j.photos.length+(j.photos.length===1?' photo':' photos'):'',mediaBody,['done','paid'].indexOf(j.status)>=0)+
-      (billIn?acc('bill','Bill out',balOf(j)>0?'<span class="money-due">'+money(balOf(j))+' due</span>':'<span class="money-paid">Paid</span>',billPanel(j),j.status==='done'):'')+'</section>';
+      mdrive+odoBox+segRow+panels+(less?'<button class="cc-less" data-act="cr:collapse" data-id="'+j.id+'">Show less</button>':'')+'</section>';
   }
-  return {card:card,asLead:asLead};
+  // a job further out, or finished: one line until it is opened
+  function mini(j){
+    return '<button class="ccmini" data-act="cr:expand" data-id="'+j.id+'"><span class="tx"><b>'+esc(j.d.name)+'</b><small>'+(j.d.moveDate===t?'Today':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</small></span>'+pill(j.status)+'<span class="go">›</span></button>';
+  }
+  return {card:card,mini:mini,asLead:asLead};
 }
 function renderCrew(){
   if(ui.tab==='history'){renderHistory();return}   // a field card opened from Job history redraws there
@@ -1928,7 +2071,7 @@ function renderCrew(){
   if(!me){v.innerHTML='<div class="card empty"><h3>No one here yet</h3><p>Add '+(role==='lead'?'crew leads':'crew members')+' in Setup.</p></div>';return}
   var asLead=role==='owner'||role==='dispatch'||(role==='lead'&&isLead(me));
   var mine=state.jobs.filter(function(j){return ['booked','active'].indexOf(j.status)>=0&&j.assign.crew.indexOf(me)>=0}).sort(function(a,b){return ((a.d.moveDate||'9999')+a.d.time)<((b.d.moveDate||'9999')+b.d.time)?-1:1});
-  var billJobs=asLead?state.jobs.filter(function(j){return j.status==='done'&&j.assign.crew.indexOf(me)>=0&&(balOf(j)>0||formsPending(j).length>0)}):[];
+  var billJobs=asLead?state.jobs.filter(function(j){return j.status==='done'&&j.assign.crew.indexOf(me)>=0&&((balOf(j)>0&&canCollect())||formsPending(j).length>0)}):[];
   var since=Date.now()-60*864e5;
   var sinceDay=iso(new Date(since));
   var older=0;
@@ -1940,24 +2083,29 @@ function renderCrew(){
     return j.finishedAt?j.finishedAt>since:(j.d.moveDate||'')>=sinceDay;
   }).sort(function(a,b){return (b.finishedAt||0)-(a.finishedAt||0)});
   function clockCard(){
+    if(!opt('clock'))return '';
     var sh=openShift(me);
     if(!sh){
-      return '<section class="card clock"><h2>Time clock</h2><p class="sub">Separate from the job timer. Location is shared only while you are clocked in.</p><div class="row"><select id="clkAct" class="grow" aria-label="What are you working on" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)">'+S.activities.map(function(a){return '<option>'+esc(a)+'</option>'}).join('')+'</select><button class="btn primary" data-act="clk:in" data-who="'+esc(me)+'">Clock in</button></div></section>';
+      return '<section class="card clock"><div class="row between"><h2>Time clock</h2><small>'+(opt('clockGps')?'Location shared only while clocked in':'Not clocked in')+'</small></div><div class="row" style="margin-top:8px"><select id="clkAct" class="grow" aria-label="What are you working on" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)">'+S.activities.map(function(a){return '<option>'+esc(a)+'</option>'}).join('')+'</select><button class="btn primary" data-act="clk:in" data-who="'+esc(me)+'">Clock in</button></div></section>';
     }
     var li=lateInfo(me,Date.now()),hint='';
-    if(li)hint=li.needNote?'Your last job ended at '+fmtClock(li.end)+', '+fmtDur(li.lateMs)+' ago. Add a note to clock out.':'Your last job ended at '+fmtClock(li.end)+'. Clocking out more than '+S.lateMins+' min after that needs a note.';
+    if(li&&opt('lateNote'))hint=li.needNote?'Your last job ended at '+fmtClock(li.end)+', '+fmtDur(li.lateMs)+' ago. Add a note to clock out.':'Your last job ended at '+fmtClock(li.end)+'. Clocking out more than '+S.lateMins+' min after that needs a note.';
     return '<section class="card clock on"><div class="row between"><h2>On the clock</h2><span class="pill" data-s="done">'+esc(sh.activity)+'</span></div><div class="elapsed" id="clkElapsed" data-since="'+sh.inAt+'">'+fmtDur(Date.now()-sh.inAt)+'</div><small>Since '+fmtClock(sh.inAt)+'</small>'+
       '<p class="hint" id="geoLine">'+esc(geoText())+'</p>'+
       (hint?'<p class="hint">'+esc(hint)+'</p>':'')+
       '<textarea id="clockNote" class="'+(ui.needNote||(li&&li.needNote)?'need':'')+'" placeholder="'+(li&&li.needNote?'Note (required): why the late clock-out?':'Note (optional)')+'" aria-label="Clock-out note">'+esc(ui.clockNote||'')+'</textarea>'+
       '<button class="btn primary big" style="width:100%;min-height:56px;font-size:18px;margin-top:8px" data-act="clk:out" data-who="'+esc(me)+'">Clock out</button></section>';
   }
-  var card=crewKit(me).card;
+  var kit=crewKit(me),card=kit.card;
+  // today's jobs, a job that's running and a job whose day went by show in full; later ones are one line until opened
+  var full=function(j){return j.status==='active'||!j.d.moveDate||j.d.moveDate<=t};
+  var show=function(j){return full(j)?card(j):ui.ccOpen[j.id]?card(j,true):kit.mini(j)};
+  var showPast=function(j){return ui.ccOpen[j.id]?card(j,true):kit.mini(j)};
   var sv=sosToday();
   v.innerHTML=picker+sv[0]+clockCard()+
-    (mine.length?mine.map(card).join(''):'<div class="card empty"><h3>No jobs assigned to '+esc(me)+'</h3><p>Dispatch assigns crew to booked jobs and they show up here.</p></div>')+sv[1]+
-    (billJobs.length?'<h2 style="margin:6px 0 10px">Finished, needs billing</h2>'+billJobs.map(card).join(''):'')+
-    (pastJobs.length?'<h2 style="margin:16px 0 4px">Finished jobs</h2><p class="hint" style="margin:0 2px 10px">Photos and notes can still be added to these.</p>'+pastJobs.map(card).join(''):'')+
+    (mine.length?mine.map(show).join(''):'<div class="card empty"><h3>No jobs assigned to '+esc(me)+'</h3><p>Dispatch assigns crew to booked jobs and they show up here.</p></div>')+sv[1]+
+    (billJobs.length?'<h2 style="margin:16px 0 10px">Finished, needs billing</h2>'+billJobs.map(function(j){return card(j)}).join(''):'')+
+    (pastJobs.length?'<h2 style="margin:16px 0 4px">Finished jobs</h2><p class="hint" style="margin:0 2px 10px">Photos and notes can still be added to these.</p>'+pastJobs.map(showPast).join(''):'')+
     (older?'<div class="secline"><small>'+older+' past job'+(older===1?'':'s')+(role==='owner'||role==='dispatch'?' with '+esc(me):'')+'</small><button data-act="hist:go"'+(role==='owner'||role==='dispatch'?' data-q="'+esc(me)+'"':'')+'>Job history ›</button></div>':'');
 }
 
@@ -2105,63 +2253,151 @@ function renderReports(){
 }
 
 /* ---------- SETTINGS ---------- */
-function renderSettings(){
-  renderSettingsRaw();accordify($('#view'),'section.card','H2','st',[]);
-  var v=$('#view'),cards={};$$('details.acc.card',v).forEach(function(d){cards[d.dataset.k]=d});
-  var groups=[['Business',['Company','Membership','Time clock','Bid accuracy']],['People',['Employees','App access','Texts and calls','Roles']],['Pricing and jobs',['Rate card','Materials and job costs','Fleet','Inventory catalog','Custom job fields','Lead sources']],['Paperwork and payments',['Forms to sign','Payments','Saved payment methods']],['Data',['Your data']]];
-  var frag=document.createDocumentFragment(),used={};
-  groups.forEach(function(g){var present=g[1].filter(function(t){return cards['st:'+t]});if(!present.length)return;var lb=document.createElement('div');lb.className='glabel';lb.textContent=g[0];frag.appendChild(lb);present.forEach(function(t){frag.appendChild(cards['st:'+t]);used['st:'+t]=1})});
-  Object.keys(cards).forEach(function(k){if(!used[k])frag.appendChild(cards[k])});
-  v.appendChild(frag);
+/* ---------- SETUP ----------
+   The owner's Setup is a list: Options (every on/off switch) first, then the sections in groups,
+   each with a line saying how it is set. A section opens on its own page (‹ Setup, or the phone's
+   Back button, goes back). The search box finds a section, or a switch, by what it's called. Each
+   section page also shows the switches that belong to it. */
+var SET_GROUPS=[['co','Your company'],['price','Pricing'],['people','People'],['jobs','Jobs and paperwork'],['money','Payments and texts'],['data','Data']];
+var SICON=(function(){var p={
+  options:'<rect x="2.5" y="7" width="19" height="10" rx="5"/><circle cx="16.5" cy="12" r="2.8"/>',
+  company:'<path d="M4 20V7l8-3.5L20 7v13"/><path d="M9.5 20v-4.5h5V20"/><path d="M8 9.5h1.5M14.5 9.5H16M8 12.5h1.5M14.5 12.5H16"/>',
+  member:'<path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
+  rates:'<path d="M3.5 12.2V4h8.2l8.8 8.8-8.2 8.2z"/><circle cx="8" cy="8.5" r="1.4"/>',
+  mats:'<path d="M3.5 8L12 3.5 20.5 8v8L12 20.5 3.5 16z"/><path d="M3.5 8L12 12.5 20.5 8M12 12.5v8"/>',
+  catalog:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+  fleet:'<path d="M2.5 6.5h11v9h-11z"/><path d="M13.5 9.5h4l3 3v3h-7z"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
+  employees:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.6a3.1 3.1 0 0 1 0 6.2M18 14.2c1.9.8 3 2.7 3 5.8"/>',
+  access:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/>',
+  roles:'<path d="M12 3l8 3v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  forms:'<path d="M6 3h9l4 4v14H6z"/><path d="M14.5 3v4.5H19"/><path d="M9 13h7M9 17h5"/>',
+  fields:'<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M7.5 10h9M7.5 14h5"/>',
+  sources:'<path d="M4 5h16l-6.2 7.2v5.6L10.2 20v-7.8z"/>',
+  bid:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
+  pay:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 14.5h4"/>',
+  vault:'<path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4z"/><path d="M4 7V5h12v2"/><circle cx="16" cy="13.5" r="1.2"/>',
+  comms:'<path d="M4 5h16v11H9.5L5 20v-4H4z"/>',
+  data:'<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6"/><path d="M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8"/>',
+  profile:'<circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20.5c0-4 3.4-6.8 7.5-6.8s7.5 2.8 7.5 6.8"/>',
+  eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  theme:'<circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="9.5" r="1.2"/><circle cx="15" cy="9.5" r="1.2"/><circle cx="9.5" cy="15" r="1.2"/><path d="M15 13.5c2 0 3.4 1.2 3.4 2.8"/>',
+  swap:'<path d="M5 8h13l-3.5-3.5M19 16H6l3.5 3.5"/>',
+  signout:'<path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/>'
+};var o={};Object.keys(p).forEach(function(k){o[k]='<svg viewBox="0 0 24 24" aria-hidden="true">'+p[k]+'</svg>'});return o})();
+function optHint(x){return typeof x.h==='function'?x.h(state.settings):x.h}
+function optRow(x){
+  var S=state.settings,on=optOn(x),path=x.k?'opt.'+x.k:x.p;
+  var n=x.n?'<div class="optn"'+(on?'':' hidden')+'>'+fld(esc(x.n.l),'<input type="number" inputmode="decimal" step="'+(x.n.step||'any')+'" data-s="'+x.n.p+'" data-t="num" value="'+esc(String(getPath(S,x.n.p)))+'">')+'</div>':'';
+  return '<div class="opt'+(on?'':' off')+'"><div class="tx"><b>'+esc(x.t)+'</b><small>'+esc(optHint(x))+'</small>'+n+'</div>'+
+    '<label class="sw"><input type="checkbox" role="switch" data-s="'+path+'" data-t="bool" aria-label="'+esc(x.t)+'"'+(on?' checked':'')+'><span aria-hidden="true"></span></label></div>';
 }
-function renderSettingsRaw(){
-  var v=$('#view'),S=state.settings,ownerOnly=state.ui.role==='owner';
+function optGroup(g,title,note){
+  var rows=OPTS.filter(function(x){return x.g===g}).map(optRow).join('');
+  return rows?'<section class="card optgrp" data-g="'+g+'"><h3>'+esc(title)+'</h3>'+(note?'<p class="hint" style="margin:2px 0 4px">'+note+'</p>':'')+rows+'</section>':'';
+}
+function optsOnCount(){return OPTS.filter(optOn).length}
+// a switch was flipped (the input handler already saved it): its number shows or hides, and the count
+// and the menus follow
+function optFlipped(t){
+  var row=t.closest&&t.closest('.opt');if(row){row.classList.toggle('off',!t.checked);var n=row.querySelector('.optn');if(n)n.hidden=!t.checked}
+  var c=$('#optCount');if(c)c.textContent=optsOnCount()+' of '+OPTS.length+' on';
+  renderTabs();renderMore();
+}
+function setupSecs(){
+  var S=state.settings,out=[],owner=state.ui.role==='owner';
   var nf=function(label,path,step){return fld(label,'<input type="number" inputmode="decimal" step="'+(step||'any')+'" data-s="'+path+'" data-t="num" value="'+getPath(S,path)+'">')};
-  var pricing='<section class="card"><h2>Rate card</h2><p class="sub">Every quote uses these numbers. Nothing is hidden.</p><div class="grid2 stack">'+
+  var inp='style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"';
+  var chips=function(arr,act){return '<div class="chips">'+arr.map(function(n,i){return '<button class="chip" data-act="'+act+'" data-i="'+i+'" aria-label="Remove '+esc(n)+'">'+esc(n)+' ×</button>'}).join('')+'</div>'};
+  var add=function(id,g,title,sum,html,keys){if(html)out.push({id:id,g:g,title:title,sum:sum||'',html:html,keys:(title+' '+(keys||'')).toLowerCase()})};
+  var rates='<section class="card"><h2>Rate card</h2><p class="sub">Every quote uses these numbers. Nothing is hidden.</p><div class="grid2 stack">'+
     nf('2 movers, per hour ($)','rates.r2')+nf('3 movers, per hour ($)','rates.r3')+nf('4 movers, per hour ($)','rates.r4')+
     nf('Minimum hours (billed, and paid to the crew)','minHours','0.5')+nf('Crew speed (cu ft per mover-hour)','prod')+nf('Drive speed (mph)','mph')+
-    nf('Truck and fuel, per truck ($)','truckFee')+nf('Local radius (driving miles from the shop)','includedMiles')+nf('Per mile on mileage moves ($)','mileRate')+
-    '<p class="hint span2" style="margin:0">Pickup and delivery both inside the radius: a <b>local move</b>, charged by the hour with the drive included, and no mileage. Either one outside it: a <b>mileage move</b>, charged per mile for the whole drive plus loading and unloading time. The final bill uses the crew’s times and the miles driven. A radius of 0 makes every move local.</p>'+
-    '<label class="check span2"><input type="checkbox" data-s="shopTravel" data-t="bool"'+(S.shopTravel!==false?' checked':'')+'> Count the drive from and back to the shop (in the hours on local moves, in the miles on mileage moves)'+(S.shopAddress?'':' (add the shop address under Company)')+'</label>'+
-    nf('Per stair flight ($)','stairFee')+nf('Packing, per box ($)','packPerBox')+nf('Tax (%)','taxPct')+
-    nf('Deposit (%)','depositPct')+nf('Not-to-exceed cushion (%)','ntePct')+nf('Crew cost per mover-hour ($)','crewCost')+
-    '<label class="check span2"><input type="checkbox" data-s="nteCap" data-t="bool"'+(S.nteCap!==false?' checked':'')+'> Hold the final bill to the not-to-exceed price, even when the crew runs long or drives further</label>'+
-  '</div></section>';
-  if(!ownerOnly){v.innerHTML=pricing;return}
-  var trucks=S.trucks.map(function(t,i){return '<div class="grid3" style="grid-template-columns:2fr 1fr auto;margin-bottom:8px"><input aria-label="Truck name" data-s="trucks.'+i+'.name" value="'+esc(t.name)+'" class="f" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><input aria-label="Cubic feet" type="number" data-s="trucks.'+i+'.cf" data-t="num" value="'+t.cf+'" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn sm danger" data-act="st:rmtruck" data-i="'+i+'">Remove</button></div>'}).join('');
-  var chips=function(arr,act){return '<div class="chips">'+arr.map(function(n,i){return '<button class="chip" data-act="'+act+'" data-i="'+i+'" aria-label="Remove '+esc(n)+'">'+esc(n)+' ×</button>'}).join('')+'</div>'};
+    nf('Per mile on mileage moves ($)','mileRate')+nf('Crew cost per mover-hour ($)','crewCost')+'</div>'+
+    '<p class="hint">Pickup and delivery both inside the local radius: a <b>local move</b>, charged by the hour with the drive included, and no mileage. Either one outside it: a <b>mileage move</b>, charged per mile for the whole drive plus loading and unloading time. The final bill uses the crew’s times and the miles driven. A radius of 0 makes every move local.'+(String(S.shopAddress||'').trim()?'':' Add the shop address under Company to measure from the shop.')+'</p></section>'+
+    optGroup('price','What goes in a quote','These change quotes made or saved from now on.');
+  var rateSum=money(num(S.rates.r2))+'/h for 2 movers · '+(opt('mileage')?fmtMi(num(S.includedMiles))+'-mile local radius':'every move local')+' · '+num(S.minHours)+' h minimum';
+  if(!owner){add('rates','price','Rate card',rateSum,rates);return out}
+  var trucks=S.trucks.map(function(t,i){return '<div class="grid3" style="grid-template-columns:2fr 1fr auto;margin-bottom:8px"><input aria-label="Truck name" data-s="trucks.'+i+'.name" value="'+esc(t.name)+'" class="f" '+inp+'><input aria-label="Cubic feet" type="number" data-s="trucks.'+i+'.cf" data-t="num" value="'+t.cf+'" '+inp+'><button class="btn sm danger" data-act="st:rmtruck" data-i="'+i+'">Remove</button></div>'}).join('');
   var formsList=(S.forms||[]).map(function(f){return '<details class="grp"><summary>'+esc(f.title)+' <small>'+(f.required?'required':'optional')+'</small></summary><div class="formbox">'+(f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+pg+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join(''))+'</div><div class="row" style="margin:8px 0"><button class="chip'+(f.required?' on':'')+'" data-act="st:reqform" data-id="'+f.id+'" aria-pressed="'+!!f.required+'">Required before payment</button><button class="btn sm danger" data-act="st:rmform" data-id="'+f.id+'">Remove</button></div></details>'}).join('')||'<p class="hint">No forms yet.</p>';
   // a card kept for a customer without a phone belongs to the job it was kept on
   var vaultWho=function(x){if(!/^job:/.test(x.cust||''))return 'Customer: '+esc(x.cust);var kj=byId(x.cust.slice(4));return kj?'Kept on '+esc(kj.d.name||'a job')+'’s job':'Kept on a job that is no longer here'};
   var vaultList=state.vault.map(function(x){return '<div class="who"><span>'+(x.type==='card'?esc(x.brand)+' ending '+esc(x.last4):'Bank ending '+esc(x.last4))+(x.name?' · '+esc(x.name):'')+(x.via==='stripe'?' <small>· Stripe'+(x.live?'':' test')+'</small>':'')+'<br><small>'+vaultWho(x)+'</small></span><button class="btn sm danger" data-act="st:rmvault" data-id="'+x.id+'">Remove</button></div>'}).join('')||'<p class="hint">Nothing saved yet.</p>';
   var cfl=S.customFields.map(function(f,i){return '<div class="row between" style="margin-bottom:6px"><span>'+esc(f.label)+' <small>('+esc(f.type)+')</small></span><button class="btn sm danger" data-act="st:rmcf" data-i="'+i+'">Remove</button></div>'}).join('');
   var cat=S.catalog.map(function(it,i){return '<tr><td>'+esc(it.name)+'</td><td class="n">'+it.cf+'</td><td class="n">'+(it.fee?money(it.fee):'')+'</td><td class="n"><button class="btn sm ghost" data-act="st:rmitem" data-i="'+i+'" aria-label="Remove '+esc(it.name)+'">×</button></td></tr>'}).join('');
-  var pm=function(label,path){return '<label class="check"><input type="checkbox" data-s="perms.'+path+'" data-t="bool"'+(S.perms[path]?' checked':'')+'> '+label+'</label>'};
   var arm=function(a,label){return '<button class="btn '+(ui.armed===a?'danger':'')+'" data-act="'+a+'">'+(ui.armed===a?'Tap again to confirm':label)+'</button>'};
-  v.innerHTML=(sync.mode==='shared'&&!sync.isAdmin?'<div class="note">You can look around here, but saving changes needs editor access to this workspace.</div>':'')+'<section class="card"><h2>Company</h2>'+fld('Name','<input data-s="company" data-t="text" value="'+esc(S.company)+'">')+
-     '<div style="margin-top:8px">'+fld('Shop address (where trucks start and end the day)','<input data-s="shopAddress" data-t="text" autocomplete="street-address" placeholder="1200 Industrial Blvd, Austin, TX" value="'+esc(S.shopAddress||'')+'">')+'</div>'+
-     '<p class="hint">Quotes add the drive from here to the pickup and from the delivery back here.</p></section>'+memberCardHtml()+accessCard()+pricing+
-   '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="grid-template-columns:2fr 1fr auto"><input id="nTruckName" placeholder="Name" aria-label="New truck name" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><input id="nTruckCf" type="number" placeholder="Cu ft" aria-label="New truck cubic feet" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn sm" data-act="st:addtruck">Add</button></div></section>'+
-   employeesCard()+
-   materialsCard()+
-   '<section class="card"><h2>Forms to sign</h2><p class="sub">When a job is finished, the lead is walked through every required form for the customer to sign, then straight to payment. Payment stays locked until they are signed. Sample wording only: have your attorney review anything you rely on.</p>'+formsList+
-   '<h3 style="margin:14px 0 6px">Add a form</h3><div class="grid2 stack">'+fld('Form name','<input id="nFormTitle" placeholder="Bill of lading">','span2')+fld('Upload a PDF or photos of the form','<input id="nFormFiles" type="file" accept="application/pdf,image/*" multiple>','span2')+fld('Or type the form text','<textarea id="nFormText" placeholder="Paste the wording customers agree to"></textarea>','span2')+'</div><button class="btn primary" style="margin-top:8px" data-act="st:addform">Add form</button><p class="hint">Uploads are stored as page images on this device. Keep forms to a few pages so storage stays roomy.</p></section>'+
-   commsCard()+
-   '<section class="card"><h2>Time clock</h2><p class="sub">If someone clocks out later than this after their last finished job that day, they must add a note.</p>'+nf('Late clock-out note after (minutes)','lateMins','5')+'<label class="check" style="margin-top:6px"><input type="checkbox" data-s="payMin" data-t="bool"'+(S.payMin!==false?' checked':'')+'> Pay the crew the '+esc(String(S.minHours))+'-hour minimum when a job runs short</label>'+'<div class="f" style="margin-top:10px"><span>Work types</span></div>'+chips(S.activities,'st:rmact')+'<div class="row"><input id="nAct" placeholder="Work type" aria-label="New work type" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addact">Add</button></div></section>'+
-   '<section class="card"><h2>Lead sources</h2>'+chips(S.sources,'st:rmsrc')+'<div class="row"><input id="nSrc" placeholder="Source" aria-label="New lead source" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addsrc">Add</button></div></section>'+
-   '<section class="card"><h2>Custom job fields</h2><p class="sub">Add whatever your process needs. They show on quotes, jobs and the crew app.</p>'+cfl+'<div class="grid3" style="grid-template-columns:2fr 1fr auto"><input id="nCfLabel" placeholder="Field name" aria-label="Field name" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><select id="nCfType" aria-label="Field type" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><option value="text">Text</option><option value="number">Number</option><option value="yesno">Yes / no</option></select><button class="btn sm" data-act="st:addcf">Add</button></div></section>'+
-   '<section class="card"><h2>Inventory catalog</h2><details><summary style="cursor:pointer;min-height:44px">Show '+S.catalog.length+' items</summary><table class="tbl"><tr><th>Item</th><th class="n">Cu ft</th><th class="n">Fee</th><th></th></tr>'+cat+'</table></details><div class="grid2 stack" style="margin-top:10px"><input id="nItName" placeholder="Item name" aria-label="Item name" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><input id="nItCf" type="number" placeholder="Cu ft" aria-label="Item cubic feet" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><input id="nItCat" placeholder="Category" list="cats" aria-label="Item category" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><datalist id="cats">'+CATS.map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist><input id="nItFee" type="number" placeholder="Special fee ($)" aria-label="Item fee" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"></div><button class="btn" style="margin-top:8px" data-act="st:additem">Add item</button></section>'+
-   '<section class="card"><h2>Roles</h2><p class="sub">Four levels. Use “View as” at the top to try each one.</p>'+
-   '<div class="who" style="display:block"><b>Crew</b><br><small>Sees the jobs they are on, adds photos, reads job notes, leaves crew notes, ticks off the load tally, and uses the time clock.</small></div>'+
-   '<div class="who" style="display:block"><b>Crew lead</b><br><small>Everything crew can do, plus the job timer, prices, and billing out with extra charges and payments.</small></div>'+
-   '<div class="who" style="display:block"><b>Dispatch</b><br><small>Books quotes, schedules crews and trucks, and sees company revenue and revenue by crew. Can also work in the field with lead-level access, including billing.</small></div>'+
-   '<div class="who" style="display:block"><b>Owner</b><br><small>Everything, plus employee hours, job hours, and bid accuracy for the company and each crew. Can also work in the field and waive a form for a job.</small></div>'+
-   '</section>'+
-   payCardHtml()+
-   '<section class="card"><h2>Saved payment methods</h2><p class="sub">Only the last four digits are kept. Customers find their saved cards and bank accounts when they pay.</p>'+vaultList+'</section>'+
-   '<section class="card"><h2>Bid accuracy</h2>'+nf('A job counts as accurate when actual hours land within this % of the bid','bidTol','1')+'</section>'+
-   '<section class="card"><h2>Your data</h2><p class="sub">'+(sync.mode==='shared'?'This workspace is shared, so these actions change data for everyone.':'Stored on this device. Copy an export to back it up or move it.')+'</p><div class="row"><button class="btn" data-act="st:export">Export data</button><label class="check" style="min-height:44px"><input type="checkbox" id="expPhotos"> Include photos</label></div><textarea class="code" id="dataBox" placeholder="Export appears here. Paste an export here to import." aria-label="Data export or import">'+esc(ui.exportText||'')+'</textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="st:copy">Copy</button><button class="btn primary" data-act="st:import">Import</button></div>'+
-   '<div class="row" style="margin-top:14px">'+arm('st:testpack','Add 3 weeks of test jobs')+(state.jobs.some(function(j){return j.test})?arm('st:rmtest','Remove the '+state.jobs.filter(function(j){return j.test}).length+' test jobs'):'')+'</div>'+'<p class="hint">Test jobs are made up: last week through three weeks out, in every stage, using your crew and trucks. They are tagged “Test”, never send a text or call, and Remove takes out only them.</p>'+'<div class="row" style="margin-top:14px">'+arm('st:demo','Load sample data')+arm('st:clearjobs','Delete all jobs')+arm('st:reset','Reset everything')+'</div></section>';
+  var formsOpt=OPTS.filter(function(x){return x.k==='forms'})[0];
+  var nReq=(S.forms||[]).filter(function(f){return f.required}).length,nIn=assignable().length,shop=String(S.shopAddress||'').trim();
+  var payWord=!window.tallyPay?'Cash and checks here; cards in the hosted app':!pay.cfg?'Card payments':pay.cfg.ready?'Cards on'+(pay.cfg.test?' (test mode)':''):'Cards not set up yet';
+  var line=window.tallyComms&&window.tallyComms.number();
+  add('options','top','Options',optsOnCount()+' of '+OPTS.length+' switches on · turn parts of Tally on or off',
+    '<section class="card"><h2>Options</h2><p class="sub">Turn parts of Tally on or off for everyone in your company. Changes save as you go. The same switches also sit in the Setup section they belong to.</p><p class="optcount" id="optCount">'+optsOnCount()+' of '+OPTS.length+' on</p></section>'+
+    OPT_GROUPS.map(function(g){return optGroup(g[0],g[1],g[0]==='texts'&&!window.tallyComms?'Texts go out from the hosted Tally app once the company line is set up.':g[0]==='price'?'These change quotes made or saved from now on.':'')}).join(''),
+    'switches on off features turn');
+  add('company','co','Company',(S.company||'Your company')+' · '+(shop?'shop: '+shop:'no shop address yet'),
+    '<section class="card"><h2>Company</h2>'+fld('Name','<input data-s="company" data-t="text" value="'+esc(S.company)+'">')+
+    '<div style="margin-top:8px">'+fld('Shop address (where trucks start and end the day)','<input data-s="shopAddress" data-t="text" autocomplete="street-address" placeholder="1200 Industrial Blvd, Austin, TX" value="'+esc(S.shopAddress||'')+'">')+'</div>'+
+    '<p class="hint">Quotes add the drive from here to the pickup and from the delivery back here.</p></section>','name shop address');
+  add('member','co','Membership','Your Tally membership',memberCardHtml(),'billing plan trial subscription');
+  add('rates','price','Rate card',rateSum,rates,'prices hourly rate movers minimum radius mileage per mile deposit tax stairs packing truck fee not-to-exceed');
+  add('mats','price','Materials and job costs',(S.materials||[]).length+' materials · '+(S.costCats||[]).length+' kinds of cost',materialsCard(),'boxes tape supplies costs dump fee');
+  add('catalog','price','Inventory catalog',S.catalog.length+' items',
+    '<section class="card"><h2>Inventory catalog</h2><details><summary style="cursor:pointer;min-height:44px">Show '+S.catalog.length+' items</summary><table class="tbl"><tr><th>Item</th><th class="n">Cu ft</th><th class="n">Fee</th><th></th></tr>'+cat+'</table></details><div class="grid2 stack" style="margin-top:10px"><input id="nItName" placeholder="Item name" aria-label="Item name" '+inp+'><input id="nItCf" type="number" placeholder="Cu ft" aria-label="Item cubic feet" '+inp+'><input id="nItCat" placeholder="Category" list="cats" aria-label="Item category" '+inp+'><datalist id="cats">'+CATS.map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist><input id="nItFee" type="number" placeholder="Special fee ($)" aria-label="Item fee" '+inp+'></div><button class="btn" style="margin-top:8px" data-act="st:additem">Add item</button></section>','furniture items cubic feet');
+  add('fleet','price','Fleet',S.trucks.length+' truck'+(S.trucks.length===1?'':'s')+(S.trucks.length?': '+S.trucks.map(function(t){return t.name}).join(', '):''),
+    '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="grid-template-columns:2fr 1fr auto"><input id="nTruckName" placeholder="Name" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div></section>','trucks');
+  add('employees','people','Employees',nIn+' '+(nIn===1?'person':'people'),employeesCard(),'crew staff people hiring documents phone');
+  add('access','people','App access',sync.mode==='shared'?'Who can sign in, and as what':'Sign-in for your team',accessCard(),'sign in login users approve revoke');
+  add('roles','people','Roles','What crew, crew leads and dispatch can do',
+    '<section class="card"><h2>Roles</h2><p class="sub">Four levels. Use “See it their way” in More to try each one.</p>'+
+    '<div class="who" style="display:block"><b>Crew</b><br><small>Sees the jobs they are on, adds photos, reads job notes, leaves crew notes'+(opt('tally')?', ticks off the load tally':'')+(opt('clock')?', and uses the time clock':'')+'.</small></div>'+
+    '<div class="who" style="display:block"><b>Crew lead</b><br><small>Everything crew can do, plus the job timer, prices, and billing out'+(opt('leadCharges')?' with extra charges':'')+(opt('leadPay')?' and payments':' (the office collects the payment)')+'.</small></div>'+
+    '<div class="who" style="display:block"><b>Dispatch</b><br><small>Books quotes and schedules crews and trucks'+(opt('dispatchMoney')?', and sees company revenue and revenue by crew':'')+'. Can also work in the field with lead-level access'+(opt('dispatchPay')?', including billing':'')+'.</small></div>'+
+    '<div class="who" style="display:block"><b>Owner</b><br><small>Everything, plus employee hours, job hours, and bid accuracy for the company and each crew. Can also work in the field and waive a form for a job.</small></div></section>'+
+    optGroup('field','Crew and field')+optGroup('bill','Billing out')+optGroup('office','Office'),'permissions crew lead dispatch owner can');
+  add('clock','people','Time clock',opt('clock')?'On · '+S.activities.length+' work types'+(opt('lateNote')?' · note after '+num(S.lateMins)+' min':''):'Off',
+    '<section class="card"><h2>Time clock</h2><p class="sub">Separate from the job clock: job days, warehouse work, dump runs and the rest.</p><div class="f" style="margin-top:4px"><span>Work types</span></div>'+chips(S.activities,'st:rmact')+'<div class="row"><input id="nAct" placeholder="Work type" aria-label="New work type" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addact">Add</button></div></section>'+
+    optGroup('clock','Switches'),'clock in out hours late note location minimum pay work types');
+  add('forms','jobs','Forms to sign',(S.forms||[]).length+' form'+((S.forms||[]).length===1?'':'s')+', '+nReq+' required'+(opt('forms')?'':' · signatures off'),
+    '<section class="card"><h2>Forms to sign</h2><div style="margin:2px 0 8px">'+optRow(formsOpt)+'</div><p class="sub">When a job is finished, the lead is walked through every required form for the customer to sign, then straight to payment. Payment stays locked until they are signed. Sample wording only: have your attorney review anything you rely on.</p>'+formsList+
+    '<h3 style="margin:14px 0 6px">Add a form</h3><div class="grid2 stack">'+fld('Form name','<input id="nFormTitle" placeholder="Bill of lading">','span2')+fld('Upload a PDF or photos of the form','<input id="nFormFiles" type="file" accept="application/pdf,image/*" multiple>','span2')+fld('Or type the form text','<textarea id="nFormText" placeholder="Paste the wording customers agree to"></textarea>','span2')+'</div><button class="btn primary" style="margin-top:8px" data-act="st:addform">Add form</button><p class="hint">Uploads are stored as page images on this device. Keep forms to a few pages so storage stays roomy.</p></section>','signatures contract release bill of lading');
+  add('fields','jobs','Custom job fields',S.customFields.length?S.customFields.map(function(f){return f.label}).join(', '):'None yet',
+    '<section class="card"><h2>Custom job fields</h2><p class="sub">Add whatever your process needs. They show on quotes, jobs and the crew app.</p>'+cfl+'<div class="grid3" style="grid-template-columns:2fr 1fr auto"><input id="nCfLabel" placeholder="Field name" aria-label="Field name" '+inp+'><select id="nCfType" aria-label="Field type" '+inp+'><option value="text">Text</option><option value="number">Number</option><option value="yesno">Yes / no</option></select><button class="btn sm" data-act="st:addcf">Add</button></div></section>');
+  add('sources','jobs','Lead sources',S.sources.join(', ')||'None yet',
+    '<section class="card"><h2>Lead sources</h2>'+chips(S.sources,'st:rmsrc')+'<div class="row"><input id="nSrc" placeholder="Source" aria-label="New lead source" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addsrc">Add</button></div></section>','referral google yelp');
+  add('bid','jobs','Bid accuracy','A job counts as accurate within '+num(S.bidTol)+'% of the bid',
+    '<section class="card"><h2>Bid accuracy</h2>'+nf('A job counts as accurate when actual hours land within this % of the bid','bidTol','1')+'</section>','estimate');
+  add('pay','money','Payments',payWord,payCardHtml()+optGroup('pay','Ways to pay'),'stripe cards connect pay links cash checks');
+  add('vault','money','Saved payment methods',state.vault.length+' saved',
+    '<section class="card"><h2>Saved payment methods</h2><p class="sub">Only the last four digits are kept. Customers find their saved cards and bank accounts when they pay.</p>'+vaultList+'</section>','cards on file bank');
+  add('comms','money','Texts and calls',window.tallyComms?(line?'Company line '+fmtPhone(line):'Company line not connected yet'):'Sent from the hosted Tally app',commsCard(),'twilio sms text alerts calls phone line');
+  add('data','data','Your data','Export, import and test jobs',
+    '<section class="card"><h2>Your data</h2><p class="sub">'+(sync.mode==='shared'?'This workspace is shared, so these actions change data for everyone.':'Stored on this device. Copy an export to back it up or move it.')+'</p><div class="row"><button class="btn" data-act="st:export">Export data</button><label class="check" style="min-height:44px"><input type="checkbox" id="expPhotos"> Include photos</label></div><textarea class="code" id="dataBox" placeholder="Export appears here. Paste an export here to import." aria-label="Data export or import">'+esc(ui.exportText||'')+'</textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="st:copy">Copy</button><button class="btn primary" data-act="st:import">Import</button></div>'+
+    '<div class="row" style="margin-top:14px">'+arm('st:testpack','Add 3 weeks of test jobs')+(state.jobs.some(function(j){return j.test})?arm('st:rmtest','Remove the '+state.jobs.filter(function(j){return j.test}).length+' test jobs'):'')+'</div>'+'<p class="hint">Test jobs are made up: last week through three weeks out, in every stage, using your crew and trucks. They are tagged “Test”, never send a text or call, and Remove takes out only them.</p>'+'<div class="row" style="margin-top:14px">'+arm('st:demo','Load sample data')+arm('st:clearjobs','Delete all jobs')+arm('st:reset','Reset everything')+'</div></section>','export import backup test jobs sample reset delete');
+  return out;
+}
+function renderSettings(){
+  var v=$('#view'),secs=setupSecs();
+  if(state.ui.role!=='owner'){v.innerHTML=secs.map(function(s){return s.html}).join('');return}
+  var cur=ui.setSec&&secs.filter(function(s){return s.id===ui.setSec})[0];
+  if(cur){v.innerHTML='<button class="setback" data-act="set:back" aria-label="Back to Setup">‹ Setup</button>'+cur.html;return}
+  ui.setSec='';
+  v.innerHTML=(sync.mode==='shared'&&!sync.isAdmin?'<div class="note">You can look around here, but saving changes needs editor access to this workspace.</div>':'')+
+    '<div class="hero-day" style="padding-bottom:6px"><h1>Setup</h1></div>'+
+    '<input id="setQ" class="setsearch" type="search" placeholder="Find a setting or a switch" aria-label="Find a setting or a switch" autocomplete="off" value="'+esc(ui.setQ||'')+'">'+
+    '<div id="setList" style="margin-top:8px">'+setListHtml(secs)+'</div>';
+}
+function setListHtml(secs){
+  var q=String(ui.setQ||'').trim().toLowerCase();
+  var row=function(s){return '<button class="navrow'+(s.id==='options'?' lead':'')+'" data-act="set:open" data-sec="'+s.id+'"><span class="ic">'+(SICON[s.id]||SICON.options)+'</span><span class="tx"><b>'+esc(s.title)+'</b><small>'+esc(s.sum)+'</small></span><span class="go">›</span></button>'};
+  if(q){
+    var words=q.split(/\s+/),hit=function(txt){txt=String(txt).toLowerCase();return words.every(function(w){return txt.indexOf(w)>=0})};
+    var ss=secs.filter(function(s){return hit(s.keys+' '+s.sum)}),os=OPTS.filter(function(x){return hit(x.t+' '+optHint(x))});
+    if(!ss.length&&!os.length)return '<div class="card empty"><h3>Nothing matches “'+esc(ui.setQ)+'”</h3><p>Try another word, like deposit, tax, clock or texts.</p></div>';
+    return (os.length?'<div class="glabel">Switches</div><section class="card">'+os.map(optRow).join('')+'</section>':'')+
+      (ss.length?'<div class="glabel">Sections</div><div class="navlist">'+ss.map(row).join('')+'</div>':'');
+  }
+  return '<div class="navlist">'+secs.filter(function(s){return s.g==='top'}).map(row).join('')+'</div>'+
+    SET_GROUPS.map(function(g){var list=secs.filter(function(s){return s.g===g[0]});return list.length?'<div class="glabel">'+esc(g[1])+'</div><div class="navlist">'+list.map(row).join('')+'</div>':''}).join('');
 }
 
 /* ---------- render core ---------- */
@@ -2180,17 +2416,18 @@ function render(){
   renderTab();renderSheet();renderFlow();renderMore();renderCall();renderStart();renderPvBar();renderSos();renderSosBar();
 }
 function renderTabs(){
-  var un=unreadTotal(),nav=navTabs(),wide=window.innerWidth>=900;
+  var un=unreadTotal(),nav=navTabs(),wide=window.innerWidth>=900,office=canEditJobs();
   var list=wide?allowedTabs(state.ui.role):nav;
+  // the round button: a new quote for the office, the time clock for the crew (none when the clock is off)
+  var hasFab=office||opt('clock');
   var btn=function(t){return '<button data-act="tab" data-tab="'+t.id+'"'+(t.id===ui.tab?' aria-current="page"':'')+'>'+ICON[t.id]+'<span>'+tabLabel(t)+'</span>'+(t.id==='chat'&&un?'<i class="badge" aria-label="'+un+' unread">'+(un>9?'9+':un)+'</i>':'')+'</button>'};
   var moreBtn='<button data-act="more:open"'+((!wide&&!list.some(function(t){return t.id===ui.tab}))?' aria-current="page"':'')+'>'+ICON.more+'<span>More</span></button>';
-  var html=wide?(list.map(btn).join('')+moreBtn)
+  var html=wide||!hasFab?(list.map(btn).join('')+moreBtn)
     :(list.slice(0,2).map(btn).join('')+'<button class="spacer" tabindex="-1" aria-hidden="true"></button>'+list.slice(2).map(btn).join('')+moreBtn);
-  var el=$('#tabs');el.className='tabs'+(wide?'':' has-fab');el.innerHTML=html;
+  var el=$('#tabs');el.className='tabs'+(wide||!hasFab?'':' has-fab');el.innerHTML=html;
   var fab=$('#fab');
   if(fab){
-    var office=canEditJobs();
-    fab.hidden=false;
+    fab.hidden=!hasFab;
     fab.innerHTML=office?'+':(openShift(fieldMe())?'■':'▶');
     fab.setAttribute('aria-label',office?'New quote':(openShift(fieldMe())?'Clock out':'Clock in'));
     fab.dataset.act=office?'fab:quote':'fab:clock';
@@ -2348,6 +2585,7 @@ function renderChat(){
 var geo={id:null,who:'',last:null,sentAt:0,status:'off',busy:false};
 function distM(a,b){var R=6371000,r=Math.PI/180,dLat=(b.lat-a.lat)*r,dLng=(b.lng-a.lng)*r,x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLng/2)*Math.sin(dLng/2);return 2*R*Math.asin(Math.sqrt(x))}
 function geoText(){
+  if(!opt('clockGps'))return 'Location sharing is off for your company.';
   if(geo.status==='on')return 'Sharing your location with the office while you are clocked in. Last sent '+ago(geo.sentAt||Date.now())+'.';
   if(geo.status==='asking')return 'Sharing your location while you are clocked in. Waiting for your phone to allow it.';
   if(geo.status==='denied')return 'Location is blocked, so updates go without a map pin. Allow location for this page to turn it on.';
@@ -2365,7 +2603,7 @@ function removeLoc(name){
   else if(state.locs&&state.locs[name]){delete state.locs[name];save()}
 }
 function onPos(p){
-  if(!geo.who||!openShift(geo.who)){geoStop(geo.who);return}
+  if(!geo.who||!openShift(geo.who)||!opt('clockGps')){geoStop(geo.who);return}
   var loc={lat:+(+p.coords.latitude).toFixed(5),lng:+(+p.coords.longitude).toFixed(5),acc:Math.round(p.coords.accuracy||0),ts:Date.now()};
   var moved=geo.last?distM(geo.last,loc):1e9;geo.last=loc;geo.status='on';
   if(Date.now()-geo.sentAt>=60000||moved>75){geo.sentAt=Date.now();publishLoc(geo.who,loc)}
@@ -2373,6 +2611,7 @@ function onPos(p){
 }
 function onGeoErr(e){geo.status=e&&e.code===1?'denied':'unavailable';updateGeoLine()}
 function geoStart(who){
+  if(!opt('clockGps')){geoStop(geo.who);updateGeoLine();return}   // Options › Location while clocked in
   if(geo.id!=null&&geo.who===who)return;
   geoStop(geo.who);
   if(!(navigator.geolocation&&navigator.geolocation.watchPosition)){geo.status='unavailable';updateGeoLine();return}
@@ -2386,6 +2625,7 @@ function geoStop(who){
 }
 function resumeGeo(){var me=myName();if(me&&openShift(me))geoStart(me)}
 function locCard(){
+  if(!opt('clockGps'))return '';
   var list=Object.keys(chat.locs||{}).map(function(k){return chat.locs[k]}).filter(function(x){return x&&x.name}).sort(function(a,b){return b.ts-a.ts});
   var rows=list.map(function(x){var stale=Date.now()-x.ts>15*60000;return '<div class="who"><span><b>'+esc(x.name)+'</b>'+(x.activity?' · '+esc(x.activity):'')+'<br><small>'+(stale?'Last seen ':'Updated ')+ago(x.ts)+(x.acc?' · within '+x.acc+' m':'')+'</small></span><a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps?q='+Number(x.lat)+','+Number(x.lng)+'">Map</a></div>'}).join('');
   return '<details class="acc card" data-k="d:locs"'+(ui.open['d:locs']?' open':'')+'><summary><span>Crew locations</span><small>'+list.length+' sharing</small></summary><div class="acc-body">'+(rows||'<p class="hint" style="margin:0">Nobody is sharing a location. Locations only appear while a person is clocked in, and disappear when they clock out.</p>')+'</div></details>';
@@ -2453,7 +2693,7 @@ function sosMyJob(me){
 function sosToday(){
   var me=sosMe(),a=sosActive().filter(function(x){return x.from===me})[0];
   if(a)return ['<button class="alert" data-act="sos:open"><span class="ic bad">!</span><span class="tx"><b>Truck down alert is on</b><small>'+esc(sosTruck(a))+' · sent '+fmtClock(a.ts)+'. Tap to see who got it, or to end it.</small></span><span class="go">›</span></button>',''];
-  return ['','<button class="btn danger bigbtn" style="margin-top:14px" data-act="sos:open">Truck down? Tell the office</button>'];
+  return ['',opt('truckDown')?'<button class="btn danger bigbtn" style="margin-top:14px" data-act="sos:open">Truck down? Tell the office</button>':''];
 }
 
 /* the screens */
@@ -3027,6 +3267,7 @@ function pullSettings(snap){
     v.forms=(v.forms||[]).map(function(f){f.pages=(f.pageIds||[]).map(function(id){return sync.pageCache[id]||''});return f});
     state.settings=Object.assign(defaultSettings(),v);
     if(!state.settings.comms||!state.settings.comms.alerts)state.settings.comms=defaultSettings().comms;
+    if(!state.settings.opt||typeof state.settings.opt!=='object')state.settings.opt={};
     sync.lastSettings=canon(settingsDoc());
     fetchPages();cacheSave();applyIdentityUI();softRefresh();
   }
@@ -3909,10 +4150,8 @@ function commsCard(){
     '<label class="f" style="margin-top:12px"><span>Link in texts (opens Job messages so people can confirm)</span><input data-s="comms.appUrl" data-t="text" inputmode="url" placeholder="https://your-tally-site" value="'+esc(C.appUrl||'')+'"></label>'+
     '<p class="hint">Texts go out 20 seconds after the last change to a job, so a mis-tap can be undone first. Every text and call is logged on the job.</p></section>';
 }
-function commsToggles(C){
-  var a=C.alerts||{},cb=function(k,label){return '<label class="check"><input type="checkbox" data-s="comms.alerts.'+k+'" data-t="bool"'+(a[k]!==false?' checked':'')+'> '+label+'</label>'};
-  return cb('assigned','Text crew when they are put on or taken off a job')+cb('moved','Text the crew when a job moves to a new day or time')+cb('tomorrow','Text everyone the evening before their jobs, and send the office who has not confirmed')+cb('forms','Text the office when a finished job is still waiting on a signature');
-}
+// the text alerts' switches (the same rows as in Setup › Options)
+function commsToggles(){return '<div style="margin-top:6px">'+OPTS.filter(function(x){return x.g==='texts'}).map(optRow).join('')+'</div>'}
 
 /* ---------- quote: driving distance from the two addresses ----------
    Hosted edition asks the Edge Function (Google Routes, key kept on the server). Without it,
@@ -4090,7 +4329,8 @@ function renderShopNote(){
 function slotOf(j){return (j.d.moveDate||'')+' '+(j.d.time||'')}
 function isConfirmed(j,n){var c=j.confirm&&j.confirm[n];return !!(c&&c.for===slotOf(j))}
 function dropConfirm(j,n){if(j.confirm&&j.confirm[n]){j.confirm=Object.assign({},j.confirm);delete j.confirm[n]}}
-function needsConfirm(j){return j.status==='booked'&&!!j.d.moveDate&&j.d.moveDate>=todayISO()}
+// Options › Crew confirm their jobs: off, nobody is asked (and the office isn't told who hasn't)
+function needsConfirm(j){return opt('confirm')&&j.status==='booked'&&!!j.d.moveDate&&j.d.moveDate>=todayISO()}
 function relDay(s){var t=todayISO();if(s===t)return 'today';if(s===addDays(t,1))return 'tomorrow';return fmtDate(s)}
 function jobMsgs(me){
   if(!me)return [];var t=todayISO();
@@ -4106,6 +4346,7 @@ function jobMsgCard(j,me){
     (j.assign.truckId?'\nTruck: '+truckName(j.assign.truckId):'')+(lead?'\n'+(lead===me?'You’re running it.':'Lead: '+lead):'')+
     (j.assign.crew.length>1?'\nWith: '+j.assign.crew.filter(function(x){return x!==me}).join(', '):'');
   var foot=j.status==='active'?'<div><span class="pill" data-s="active">In progress</span></div>'
+    :!opt('confirm')?'<div><span class="pill" data-s="booked">Booked</span></div>'
     :ok?'<div class="row between"><span class="pill" data-s="done">Confirmed</span><small>'+fmtStamp(c.ts)+'</small></div>'
     :'<button class="btn primary bigbtn" data-act="jm:confirm" data-id="'+j.id+'" data-who="'+esc(me)+'">Confirm I’ll be there</button>';
   return '<div class="jmsg'+(needsConfirm(j)&&!ok?' need':'')+'"><div class="row between"><b>'+esc(head)+'</b><small>'+esc(fmtDate(j.d.moveDate))+'</small></div><div class="txt">'+esc(body)+'</div>'+foot+'</div>';
@@ -4113,12 +4354,12 @@ function jobMsgCard(j,me){
 function jobMsgsRow(me){
   var list=jobMsgs(me);if(!list.length)return '';
   var p=jobMsgsPending(me);
-  return '<div class="thread"><button class="open" data-act="chat:open" data-t="jobs"><b>Job messages</b><small>'+(p?p+' job'+(p===1?'':'s')+' to confirm':'All '+list.length+' upcoming job'+(list.length===1?'':'s')+' confirmed')+'</small></button>'+(p?'<span class="dot" aria-label="'+p+' to confirm">'+p+'</span>':'')+'</div>';
+  return '<div class="thread"><button class="open" data-act="chat:open" data-t="jobs"><b>Job messages</b><small>'+(p?p+' job'+(p===1?'':'s')+' to confirm':!opt('confirm')?list.length+' upcoming job'+(list.length===1?'':'s'):'All '+list.length+' upcoming job'+(list.length===1?'':'s')+' confirmed')+'</small></button>'+(p?'<span class="dot" aria-label="'+p+' to confirm">'+p+'</span>':'')+'</div>';
 }
 function jobMsgsView(me){
   var list=jobMsgs(me);
   return '<div class="row between" style="margin-bottom:8px"><button class="btn sm" data-act="chat:back">Back</button><h2 class="grow" style="text-align:center">Job messages</h2><small>'+esc(me)+'</small></div>'+
-    '<p class="hint" style="margin:0 2px 10px">Every job you are booked on. Confirm each one so the office knows you will be there. If a job moves, you confirm the new time.</p>'+
+    '<p class="hint" style="margin:0 2px 10px">Every job you are booked on.'+(opt('confirm')?' Confirm each one so the office knows you will be there. If a job moves, you confirm the new time.':'')+'</p>'+
     (list.length?list.map(function(j){return jobMsgCard(j,me)}).join(''):'<div class="card empty"><h3>No upcoming jobs</h3><p>When the office books you on a job, it shows up here.</p></div>');
 }
 function confirmLine(j){
@@ -4262,7 +4503,7 @@ function phaseCard(list){
       '<p class="hint">Cu ft per mover-hour is the job’s volume divided by the hours each mover spent loading and unloading. Higher is faster. Your rate card assumes '+state.settings.prod+' over the whole job.</p>'
       :'<p class="hint">Jobs show up here once a crew lead taps through loading and unloading and finishes the job.</p>')+'</section>';
 }
-function openStart(id,who){var j=byId(id);if(!j)return;ui.start={jobId:id,who:who||'',mins:state.ui.etaMins||30,text:!!j.d.phone};renderStart()}
+function openStart(id,who){var j=byId(id);if(!j)return;ui.start={jobId:id,who:who||'',mins:state.ui.etaMins||30,text:!!j.d.phone&&opt('eta')};renderStart()}
 function etaGreeting(name){name=String(name||'').trim();if(!name||/&|\b(and|family|inc|llc|law|co|company|corp|group)\b/i.test(name))return 'Hello';return 'Hi '+name.split(/\s+/)[0]}
 function etaText(j,m){return (state.settings.company||'Your movers')+': '+etaGreeting(j.d.name)+', your crew is on the way and should arrive in about '+m+' minutes, around '+fmtClock(Date.now()+m*60000)+'.'}
 function smsHref(phone,body){return 'sms:'+String(phone||'').replace(/[^0-9+]/g,'')+'?&body='+encodeURIComponent(body)}
@@ -4270,7 +4511,7 @@ function renderStart(){
   var el=$('#start');if(!el)return;
   var s=ui.start,j=s&&byId(s.jobId);
   if(!j){ui.start=null;el.hidden=true;el.innerHTML='';syncLock();return}
-  var has=!!j.d.phone,on=has&&s.text,co=commsReady()&&!j.test,msg=etaText(j,s.mins);
+  var etaOk=opt('eta'),has=etaOk&&!!j.d.phone,on=has&&s.text,co=commsReady()&&!j.test,msg=etaText(j,s.mins);
   var chips=[15,20,30,45,60,90].map(function(m){return '<button class="chip'+(s.mins===m?' on':'')+'" data-act="go:set" data-m="'+m+'" aria-pressed="'+(s.mins===m)+'">'+m+' min</button>'}).join('');
   var box=on?'<div class="row" style="justify-content:center;gap:16px;margin:10px 0 8px"><button class="btn" data-act="go:mins" data-d="-5" aria-label="5 minutes sooner">−5</button><output class="eta-out" id="etaOut">'+s.mins+'<small>min</small></output><button class="btn" data-act="go:mins" data-d="5" aria-label="5 minutes later">+5</button></div>'+
     '<div class="chips" style="justify-content:center">'+chips+'</div>'+
@@ -4283,9 +4524,9 @@ function renderStart(){
   el.innerHTML='<div class="scrim" data-act="go:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Start the job">'+
     '<div class="row between"><h2>Start '+esc(j.d.name)+'</h2><button class="btn sm" data-act="go:close">Cancel</button></div>'+
     '<p class="hint" style="margin:2px 0 6px">Pickup: '+esc(j.d.from||'not set')+'</p>'+
-    (j.quote&&j.quote.kind==='mileage'&&j.quote.shopTravel?fld('Odometer leaving the shop','<input id="odoStartIn" type="number" inputmode="decimal" min="0" step="0.1" placeholder="The reading on the truck" value="'+esc(s.odo!=null?String(s.odo):(j.odo&&j.odo.start!=null?String(j.odo.start):''))+'">')+
+    (j.quote&&j.quote.kind==='mileage'&&j.quote.shopTravel&&!j.quote.flat?fld('Odometer leaving the shop','<input id="odoStartIn" type="number" inputmode="decimal" min="0" step="0.1" placeholder="The reading on the truck" value="'+esc(s.odo!=null?String(s.odo):(j.odo&&j.odo.start!=null?String(j.odo.start):''))+'">')+
       '<p class="hint" style="margin:4px 0 8px">Mileage move: every mile from the shop and back is billed. You put in the odometer again at bill-out.</p>':'')+
-    (has?'<label class="check"><input type="checkbox" id="etaOn"'+(on?' checked':'')+'> Text '+esc(j.d.name)+' how long until you arrive</label>':'<p class="hint">No phone number on this job, so no arrival text.</p>')+
+    (has?'<label class="check"><input type="checkbox" id="etaOn"'+(on?' checked':'')+'> Text '+esc(j.d.name)+' how long until you arrive</label>':etaOk?'<p class="hint">No phone number on this job, so no arrival text.</p>':'')+
     box+go+'</div>';
   el.hidden=false;syncLock();
 }
@@ -4335,9 +4576,20 @@ function phoneKey(k){return /^\d{7,}$/.test(String(k||''))}
 function stripeCards(j){var live=!(pay.cfg&&pay.cfg.test),lead=state.ui.role==='lead';return state.vault.filter(function(v){
   if(v.via!=='stripe'||!!v.live!==live)return false;var here=(v.jobs||[]).indexOf(j.id)>=0;return lead?here:(here||(phoneKey(v.cust)&&v.cust===custKey(j)))})}
 function cardFits(j,v){return (v.jobs||[]).indexOf(j.id)>=0}
+// the ways to pay this screen offers (Options › Payments; with every other way off, cash and checks stay)
+function stripeWays(j){
+  var cards=stripeCards(j),w=[];
+  if(cards.length&&opt('payVault'))w.push('vault');
+  if(opt('payLink'))w.push('link');
+  if(payCardOn()&&opt('payCard'))w.push('card');
+  if(opt('payCash')||!w.length)w.push('other');
+  return w;
+}
 function flowMethodStripe(j){
-  var cards=stripeCards(j),m=ui.flow&&ui.flow.method,ok=['link','other'].concat(cards.length?['vault']:[],payCardOn()?['card']:[]);
-  return ok.indexOf(m)>=0?m:(cards.some(function(v){return cardFits(j,v)})?'vault':'link');
+  var w=stripeWays(j),cards=stripeCards(j),m=ui.flow&&ui.flow.method;
+  if(w.indexOf(m)>=0)return m;
+  if(w.indexOf('vault')>=0&&cards.some(function(v){return cardFits(j,v)}))return 'vault';
+  return w.indexOf('link')>=0?'link':w[0];
 }
 function stripeJs(){
   if(window.Stripe)return Promise.resolve(window.Stripe);
@@ -4426,8 +4678,8 @@ function makeLink(j,amt,keep,text){
   });
 }
 function payLinkPanel(j,amt){
-  var dflt=amt<balOf(j)-0.004,keep=ui.flow.saveLink!=null?ui.flow.saveLink:dflt,l=linkFor(j,amt,keep),who=esc(j.d.name||'the customer'),co=commsReady();
-  var h='<label class="check"><input type="checkbox" id="saveLink"'+(keep?' checked':'')+'> Keep the card on file for the rest of the bill</label>';
+  var vaultOk=opt('payVault'),dflt=amt<balOf(j)-0.004,keep=vaultOk&&(ui.flow.saveLink!=null?ui.flow.saveLink:dflt),l=linkFor(j,amt,keep),who=esc(j.d.name||'the customer'),co=commsReady();
+  var h=vaultOk?'<label class="check"><input type="checkbox" id="saveLink"'+(keep?' checked':'')+'> Keep the card on file for the rest of the bill</label>':'';
   if(!l)return h+'<div class="row" style="margin-top:8px"><button class="btn primary grow" data-act="pay:qr" data-busy="1">Show a QR code</button>'+
     (j.d.phone?'<button class="btn grow" data-act="pay:text" data-busy="1">'+(co?'Text it to '+who:'Text it from my phone')+'</button>':'')+'</div>'+
     '<p class="hint">'+who+' pays on their own phone, with Apple Pay, Google Pay or a card. This screen updates when they have paid.</p>';
@@ -4440,7 +4692,7 @@ function payLinkPanel(j,amt){
 function payStepStripe(j){
   var bal=balOf(j),cards=stripeCards(j),m=flowMethodStripe(j),f=ui.flow;
   var amt=f.amt>0?Math.min(round2(f.amt),bal):bal;
-  var methods=[].concat(cards.length?[['vault','Card on file']]:[],[['link','Pay link']],payCardOn()?[['card','Card']]:[],[['other','Cash or check']]);
+  var WAY={vault:'Card on file',link:'Pay link',card:'Card',other:'Cash or check'},methods=stripeWays(j).map(function(k){return [k,WAY[k]]});
   var chips=methods.map(function(x){return '<button class="chip'+(m===x[0]?' on':'')+'" data-act="flow:method" data-m="'+x[0]+'" aria-pressed="'+(m===x[0])+'">'+x[1]+'</button>'}).join('');
   var panel='',btn='';
   if(m==='vault'){
@@ -4450,7 +4702,7 @@ function payStepStripe(j){
     btn='<button class="btn primary bigbtn" data-act="flow:pay" data-busy="1">Charge the card on file</button>';
   }else if(m==='link')panel=payLinkPanel(j,amt);
   else if(m==='card'){
-    panel='<div id="stripeCard" class="stripe-box"><p class="hint">Loading the card form…</p></div><label class="check"><input type="checkbox" id="saveCard"> Keep this card on file for this customer</label>';
+    panel='<div id="stripeCard" class="stripe-box"><p class="hint">Loading the card form…</p></div>'+(opt('payVault')?'<label class="check"><input type="checkbox" id="saveCard"> Keep this card on file for this customer</label>':'');
     btn='<button class="btn primary bigbtn" data-act="flow:pay" data-busy="1">Charge the card</button>';
   }else{
     panel='<div class="grid2 stack">'+fld('Method','<select id="otherMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option></select>')+fld('Check number or reference (optional)','<input id="otherRef">')+'</div>';
@@ -4481,7 +4733,7 @@ function payCheckSoon(id,tries){
 }
 function payPoll(){
   var f=ui.flow,j=f&&byId(f.jobId);
-  var want=!!(j&&payOn()&&balOf(j)>0&&!formsPending(j).length&&flowMethodStripe(j)==='link'&&pay.links[j.id]);
+  var want=!!(j&&payOn()&&balOf(j)>0&&!formsPending(j).length&&canCollect()&&flowMethodStripe(j)==='link'&&pay.links[j.id]);
   if(want&&!pay.poll)pay.poll=setInterval(function(){
     var f2=ui.flow,j2=f2&&byId(f2.jobId);if(!j2||pay.busy)return;
     window.tallyPay.check(j2.id).then(function(r){if(r&&r.ok&&r.owed<balOf(j2)-0.004)window.tallyPay.refresh()});
@@ -4733,7 +4985,7 @@ function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||
    One history entry stands in for "something is open"; Back closes the top screen. */
 var nav={pushed:false};
 function standalone(){try{return !!window.TALLY_STANDALONE||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||String(document.referrer).indexOf('android-app://')===0}catch(e){return false}}
-function topOverlay(){return (ui.sosOpen||ui.sosStart)?'sos':ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':''}
+function topOverlay(){return (ui.sosOpen||ui.sosStart)?'sos':ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':(ui.tab==='settings'&&ui.setSec)?'setsec':''}
 function navSync(){if(!standalone()||nav.pushed||!topOverlay())return;nav.pushed=true;try{history.pushState({tally:1},'')}catch(e){}}
 window.addEventListener('popstate',function(){
   nav.pushed=false;var t=topOverlay();
@@ -4746,6 +4998,7 @@ window.addEventListener('popstate',function(){
   else if(t==='flow')closeFlow();
   else if(t==='sheet')closeSheet();
   else if(t==='thread'){ui.chatThread=null;renderChat()}
+  else if(t==='setsec'){ui.setSec='';renderSettings();window.scrollTo(0,0)}
   navSync();
 });
 document.addEventListener('click',function(){setTimeout(navSync,0)});
@@ -4828,7 +5081,7 @@ function backSrcLine(j,fb){
   if(g.st==='denied')return 'Location is blocked on this phone.'+fall+again;
   if(g.st==='noloc')return 'The phone couldn’t tell where it is.'+fall+again;
   if(g.st==='failed')return esc(g.msg||'The drive back couldn’t be looked up.')+fall+again;
-  if(!canFindShop()&&fb.miSrc==='quote')return 'This copy of Tally can’t look up the drive, so this is the quote’s '+qb+' mi from the delivery to the shop. Change it if the drive is different.';
+  if(!canFindShop()&&fb.miSrc==='quote')return (opt('gpsMiles')?'This copy of Tally can’t look up the drive, so this is the quote’s ':'The quote’s ')+qb+' mi from the delivery to the shop. Change it if the drive is different.';
   return (fb.miSrc==='quote'?'The quote’s '+qb+' mi from the delivery to the shop.':fb.miSrc==='gps'?'From the phone’s location.':'Typed in.')+again;
 }
 function backStep(j,f){
@@ -4865,7 +5118,7 @@ function backRedraw(){
    The phone's location, then the drive from there to the shop in Setup: Google through the Edge
    Function, or OpenStreetMap when Google isn't set up there. The claude.ai artifact can reach
    neither, so it keeps the quote's miles from the delivery to the shop. */
-function canFindShop(){return !!String(state.settings.shopAddress||'').trim()&&(!!(window.tallyMaps&&window.tallyMaps.toShop)||canFree())}
+function canFindShop(){return opt('gpsMiles')&&!!String(state.settings.shopAddress||'').trim()&&(!!(window.tallyMaps&&window.tallyMaps.toShop)||canFree())}
 function hereNow(){
   return new Promise(function(res,rej){
     var g=navigator.geolocation;if(!(g&&g.getCurrentPosition)){rej({code:'none'});return}
@@ -4929,7 +5182,9 @@ function backSave(){
   toast(c&&!c.missing?'Bill: '+money(totalOf(j))+'.':'Saved.');
 }
 function vaultFor(j){return state.vault.filter(function(x){return x.cust===custKey(j)})}
-function flowMethod(j){var v=vaultFor(j),m=ui.flow.method;if(m==='vault'&&!v.length)m='';return m||(v.length?'vault':'card')}
+// the demo payment screen's ways to pay (the claude.ai copy), as Options allows
+function demoWays(j){var w=[];if(vaultFor(j).length&&opt('payVault'))w.push('vault');if(opt('payCard'))w.push('card','ach');if(opt('payCash')||!w.length)w.push('other');return w}
+function flowMethod(j){var w=demoWays(j),m=ui.flow.method;return w.indexOf(m)>=0?m:w[0]}
 var sigDirty=false;
 function initSig(){
   sigDirty=false;var c=$('#sigPad');if(!c)return;
@@ -4973,13 +5228,13 @@ function payStep(j){
   if(payOn())return payStepStripe(j);
   if(window.tallyPay)return payStepOffline(j);
   var bal=balOf(j),vault=vaultFor(j),m=flowMethod(j);
-  var methods=[].concat(vault.length?[['vault','Card on file']]:[],[['card','New card'],['ach','Bank (ACH)'],['other','Cash or check']]);
+  var WAY={vault:'Card on file',card:'New card',ach:'Bank (ACH)',other:'Cash or check'},methods=demoWays(j).map(function(k){return [k,WAY[k]]});
   var chips=methods.map(function(x){return '<button class="chip'+(m===x[0]?' on':'')+'" data-act="flow:method" data-m="'+x[0]+'" aria-pressed="'+(m===x[0])+'">'+x[1]+'</button>'}).join('');
   var inp='style="min-height:44px"';
   var panel='';
   if(m==='vault')panel=vault.map(function(v,i){return '<label class="pick"><input type="radio" name="vaultPick" value="'+v.id+'"'+(i===0?' checked':'')+'><span>'+(v.type==='card'?esc(v.brand)+' ending '+esc(v.last4)+' <small>exp '+esc(v.exp||'')+'</small>':'Bank account ending '+esc(v.last4))+'</span></label>'}).join('');
-  else if(m==='card')panel='<div class="grid2 stack">'+fld('Name on card','<input id="cardName" autocomplete="cc-name" value="'+esc(j.d.name)+'">','span2')+fld('Card number','<input id="cardNum" inputmode="numeric" autocomplete="cc-number" maxlength="23" placeholder="1234-5678-9012-3456">','span2')+fld('Expires (MM/YY)','<input id="cardExp" inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY">')+fld('Security code','<input id="cardCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC">')+fld('Billing ZIP','<input id="cardZip" inputmode="numeric" autocomplete="postal-code">')+'<label class="check"><input type="checkbox" id="saveCard"> Save this card on file</label></div>';
-  else if(m==='ach')panel='<div class="grid2 stack">'+fld('Account holder','<input id="achName" value="'+esc(j.d.name)+'">','span2')+fld('Routing number (9 digits)','<input id="achRoute" inputmode="numeric" autocomplete="off">')+fld('Account number','<input id="achAcct" inputmode="numeric" autocomplete="off">')+fld('Account type','<select id="achType"><option>Checking</option><option>Savings</option></select>')+'<label class="check span2"><input type="checkbox" id="achAuth"> The customer authorizes a one-time bank debit for this amount.</label><label class="check span2"><input type="checkbox" id="saveAch"> Save this bank account on file</label></div><p class="hint">Bank payments take a few business days to clear and show as pending.</p>';
+  else if(m==='card')panel='<div class="grid2 stack">'+fld('Name on card','<input id="cardName" autocomplete="cc-name" value="'+esc(j.d.name)+'">','span2')+fld('Card number','<input id="cardNum" inputmode="numeric" autocomplete="cc-number" maxlength="23" placeholder="1234-5678-9012-3456">','span2')+fld('Expires (MM/YY)','<input id="cardExp" inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY">')+fld('Security code','<input id="cardCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC">')+fld('Billing ZIP','<input id="cardZip" inputmode="numeric" autocomplete="postal-code">')+(opt('payVault')?'<label class="check"><input type="checkbox" id="saveCard"> Save this card on file</label>':'')+'</div>';
+  else if(m==='ach')panel='<div class="grid2 stack">'+fld('Account holder','<input id="achName" value="'+esc(j.d.name)+'">','span2')+fld('Routing number (9 digits)','<input id="achRoute" inputmode="numeric" autocomplete="off">')+fld('Account number','<input id="achAcct" inputmode="numeric" autocomplete="off">')+fld('Account type','<select id="achType"><option>Checking</option><option>Savings</option></select>')+'<label class="check span2"><input type="checkbox" id="achAuth"> The customer authorizes a one-time bank debit for this amount.</label>'+(opt('payVault')?'<label class="check span2"><input type="checkbox" id="saveAch"> Save this bank account on file</label>':'')+'</div><p class="hint">Bank payments take a few business days to clear and show as pending.</p>';
   else panel='<div class="grid2 stack">'+fld('Method','<select id="otherMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option></select>')+fld('Check number or reference (optional)','<input id="otherRef">')+'</div>';
   return '<h2>Collect payment</h2><div class="note">Demo mode: nothing is charged. Card and bank numbers are checked and then thrown away, and only the last four digits are kept. A payment processor plugs in here to charge for real.</div>'+
     '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paidOf(j)>0?' paid':'')+'"><b>'+money(paidOf(j))+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>Due now</span></div></div>'+
@@ -4989,7 +5244,7 @@ function payStep(j){
 function doneStep(j){
   var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+(p.pending?' <small>(pending)</small>':'')+'<br><small>'+esc(p.date)+'</small></td><td>'+money(p.amt)+'</td></tr>'}).join('')||'<tr><td><small>No payments.</small></td><td></td></tr>';
   var forms=(j.signed||[]).map(function(x){return '<div><small>'+esc(x.title)+' · '+(x.waived?'waived':'signed by '+esc(x.name))+'</small></div>'}).join('');
-  return '<div class="card" style="text-align:center;margin-top:8px"><h2>'+(balOf(j)>0?'Forms signed':'Paid in full')+'</h2><p class="hint">Thank you, '+esc(j.d.name)+'.</p></div><section class="card"><h3>Receipt</h3><table class="lines">'+pays+'<tr class="total"><td>Total bill</td><td>'+money(totalOf(j))+'</td></tr></table>'+forms+'</section><button class="btn primary bigbtn" data-act="flow:close">Close</button>';
+  return '<div class="card" style="text-align:center;margin-top:8px"><h2>'+(balOf(j)>0?'Forms signed':'Paid in full')+'</h2><p class="hint">Thank you, '+esc(j.d.name)+'.</p>'+(balOf(j)>0&&!canCollect()?'<p class="hint">'+money(balOf(j))+' is still owed. The office collects the payment.</p>':'')+'</div><section class="card"><h3>Receipt</h3><table class="lines">'+pays+'<tr class="total"><td>Total bill</td><td>'+money(totalOf(j))+'</td></tr></table>'+forms+'</section><button class="btn primary bigbtn" data-act="flow:close">Close</button>';
 }
 function renderFlow(){
   var el=$('#flow'),f=ui.flow,j=f?byId(f.jobId):null;
@@ -4999,15 +5254,15 @@ function renderFlow(){
   var req=formsRequired(),pend=formsPending(j),bal=balOf(j),body,label;
   if(f.step==='back'){body=backStep(j,f);label='Before you bill out'}
   else if(pend.length){body=formStep(j,pend[0]);label=(f.finishing?'Sign to close the job · ':'')+'Form '+(req.length-pend.length+1)+' of '+req.length}
-  else if(bal>0){body=payStep(j);label='Payment'}
-  else{body=doneStep(j);label='Done'}
+  else if(bal>0&&canCollect()){body=payStep(j);label='Payment'}
+  else{body=doneStep(j);label='Done'}   // paid, or the office collects (Options: who takes payments)
   var prev=$('.flow-body',el),keep=prev?prev.scrollTop:0;
   el.innerHTML='<div class="flow-head"><div><b>'+esc(j.d.name)+'</b><br><small>'+label+'</small></div><button class="btn sm" data-act="flow:close">Exit</button></div><div class="flow-body">'+body+'</div>';
   el.hidden=false;syncLock();
   var nb=$('.flow-body',el);if(nb&&prev)nb.scrollTop=keep;
   if(f.step!=='back'&&pend.length)initSig();
   f.paidSeen=paidOf(j);f.pendSeen=pend.length;
-  if(f.step!=='back'&&!pend.length&&bal>0&&payCardOn()&&flowMethodStripe(j)==='card')cardMount(j);
+  if(f.step!=='back'&&!pend.length&&bal>0&&canCollect()&&payCardOn()&&flowMethodStripe(j)==='card')cardMount(j);
   payPoll();
 }
 
@@ -5088,7 +5343,12 @@ document.addEventListener('click',function(e){
     case 'hist:open':ui.hOpen=ui.hOpen===t.dataset.id?'':t.dataset.id;histFill();break;
     case 'hist:clear':{ui.hq='';ui.hShow=50;var hs=$('#hSearch');if(hs){hs.value='';histFill();hs.focus()}else renderHistory();break}
     case 'jobs:late':ui.tab='jobs';ui.filter='late';ui.armed='';render();window.scrollTo(0,0);break;
-    case 'tab':if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();ui.tab=t.dataset.tab;ui.armed='';render();var vw=$('#view');vw.classList.remove('view-in');void vw.offsetWidth;vw.classList.add('view-in');window.scrollTo(0,0);break;
+    case 'cr:seg':{var sgi=t.dataset.id,sgk=t.dataset.k,sgc=ui.seg[sgi];if(sgc===undefined){var sgb=$('[data-segs="'+sgi+'"] .seg[aria-expanded="true"]');sgc=sgb?sgb.dataset.k:''}ui.seg[sgi]=sgc===sgk?'':sgk;segApply(sgi);break}
+    case 'cr:expand':ui.ccOpen[t.dataset.id]=true;renderCrew();break;
+    case 'cr:collapse':delete ui.ccOpen[t.dataset.id];renderCrew();break;
+    case 'set:open':ui.setSec=t.dataset.sec||'';renderSettings();window.scrollTo(0,0);break;
+    case 'set:back':ui.setSec='';renderSettings();window.scrollTo(0,0);break;
+    case 'tab':if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();if(t.dataset.tab==='settings'){ui.setSec='';ui.setQ=''}ui.tab=t.dataset.tab;ui.armed='';render();var vw=$('#view');vw.classList.remove('view-in');void vw.offsetWidth;vw.classList.add('view-in');window.scrollTo(0,0);break;
     case 'inc':case 'dec':{var id=t.dataset.id,n=(d.items[id]||0)+(a==='inc'?1:-1);if(n<=0)delete d.items[id];else d.items[id]=n;var o=$('#q_'+id);if(o)o.textContent=n>0?n:0;save();updateQuote();break}
     case 'q:step':ui.qstep=Math.max(1,Math.min(3,+t.dataset.s));renderQuote();window.scrollTo(0,0);break;
     case 'q:save':saveQuote('save');break;
@@ -5107,7 +5367,7 @@ document.addEventListener('click',function(e){
     case 'sh:requote':j=byId(ui.jobId);if(!j)break;state.draft=Object.assign(blankDraft(),clone(j.d),{editId:j.id});ui.qstep=1;save();ui.jobId=null;ui.tab='quote';render();window.scrollTo(0,0);break;
     case 'sh:crew':{j=byId(ui.jobId);if(!j){toast('This job is not available any more. Close it and open it again.');break}var nm=t.dataset.n,ix=j.assign.crew.indexOf(nm);if(!nm||assignable().indexOf(nm)<0){toast('That person is not on the list any more. Check Setup.');break}if(ix>=0){j.assign.crew.splice(ix,1);dropConfirm(j,nm)}else j.assign.crew.push(nm);save();renderSheet();toast(nm+(ix>=0?' removed from':' added to')+' the job.');break}
     case 'sh:fillpay':var pa=$('#payAmt');if(pa)pa.value=fmtCents(Math.round(+t.dataset.v*100));break;
-    case 'sh:addpay':j=byId(ui.jobId);var amt=round2(moneyVal($('#payAmt')));if(addPayment(j,amt,$('#payMethod').value)){save();renderSheet();toast('Payment recorded.')}else toast(payLocked(j)?'Sign the required forms first.':'Enter an amount first.');break;
+    case 'sh:addpay':j=byId(ui.jobId);if(!j||!canCollect()||!$('#payMethod'))break;var amt=round2(moneyVal($('#payAmt')));if(addPayment(j,amt,$('#payMethod').value)){save();renderSheet();toast('Payment recorded.')}else toast(payLocked(j)?'Sign the required forms first.':'Enter an amount first.');break;
     case 'sh:rmphoto':j=byId(ui.jobId);j.photos=j.photos.filter(function(p){return p.id!==t.dataset.pid});save();renderSheet();break;
     case 'sh:delete':if(armed('sh:delete')){state.jobs=state.jobs.filter(function(x){return x.id!==ui.jobId});save();ui.jobId=null;render();toast('Job deleted.')}else renderSheet();break;
     case 'photo':ui.photoKind=t.dataset.kind;ui.photoJob=t.dataset.id||ui.jobId;pickPhotos();break;
@@ -5118,16 +5378,18 @@ document.addEventListener('click',function(e){
       j.phases=Object.assign({},j.phases||{});j.phases[PHASES[pk][0]]=Date.now();logEv(j,PHASES[pk][2]+' · '+t.dataset.who);if(j.clockAt)rebill(j,'times changed');save();renderCrew();
       toast(PHASES[pk][2]+' at '+fmtClock(Date.now())+'.'+(pk===3?' Finish the job when the customer is ready to sign.':''));break}
     case 'cr:phaseundo':{j=byId(t.dataset.id);if(!j||j.status!=='active')break;var pu=phaseNext(j)-1;if(pu<0)break;j.phases=Object.assign({},j.phases);j.phases[PHASES[pu][0]]=null;logEv(j,'Undid: '+PHASES[pu][2]);if(j.clockAt)rebill(j,'times changed');save();renderCrew();toast('Undone.');break}
-    case 'cr:finish':j=byId(t.dataset.id);if(!j)break;if(phaseNext(j)<4){toast('Tap '+PHASES[phaseNext(j)][1]+' first.');break}finishJob(j,t.dataset.who);break;
+    case 'cr:finish':j=byId(t.dataset.id);if(!j)break;if(phaseNext(j)<4){toast('Tap '+PHASES[phaseNext(j)][1]+' first.');break}
+      if(photosMissing(j)){toast(photosMissing(j));ui.seg[j.id]='media';segApply(j.id);break}
+      finishJob(j,t.dataset.who);break;
     case 'go:mins':if(ui.start){ui.start.mins=Math.max(5,Math.min(240,ui.start.mins+(+t.dataset.d)));renderStart()}break;
     case 'go:set':if(ui.start){ui.start.mins=+t.dataset.m;renderStart()}break;
     case 'go:close':ui.start=null;renderStart();break;
     case 'go:copy':{var em=$('#etaMsg');if(!em)break;var etx=em.textContent;var selIt=function(){try{var rg=document.createRange();rg.selectNodeContents(em);var sl=window.getSelection();sl.removeAllRanges();sl.addRange(rg)}catch(x){}toast('Text selected. Copy it from here.')};
       try{navigator.clipboard.writeText(etx).then(function(){toast('Copied.')},selIt)}catch(x){selIt()}break}
     case 'go:start':{var gs=ui.start,sj=gs&&byId(gs.jobId);if(!sj)break;
-      var send=!!(sj.d.phone&&gs.text)&&!sj.test,viaCo=send&&commsReady(),isLink=t.tagName==='A';
+      var send=!!(sj.d.phone&&gs.text&&opt('eta'))&&!sj.test,viaCo=send&&commsReady(),isLink=t.tagName==='A';
       state.ui.etaMins=gs.mins;
-      if(sj.quote&&sj.quote.kind==='mileage'&&sj.quote.shopTravel&&num(gs.odo)>0){sj.odo={start:Math.round(num(gs.odo)*10)/10,by:gs.who||myName()||'',ts:Date.now()};logEv(sj,'Odometer leaving the shop: '+fmtMi(sj.odo.start)+(gs.who?' ('+gs.who+')':''))}
+      if(sj.quote&&sj.quote.kind==='mileage'&&sj.quote.shopTravel&&!sj.quote.flat&&num(gs.odo)>0){sj.odo={start:Math.round(num(gs.odo)*10)/10,by:gs.who||myName()||'',ts:Date.now()};logEv(sj,'Odometer leaving the shop: '+fmtMi(sj.odo.start)+(gs.who?' ('+gs.who+')':''))}
       if(sj.status==='booked'||sj.status==='quoted')setStatus(sj,'active');
       if(send)logEv(sj,viaCo?'Arrival text sent: about '+gs.mins+' min':'Arrival text opened on '+(gs.who||'the')+(gs.who?'’s':'')+' phone: about '+gs.mins+' min');
       save();
@@ -5140,7 +5402,7 @@ document.addEventListener('click',function(e){
     case 'cr:note':{j=byId(t.dataset.id);var ta=$('#cn_'+t.dataset.id),tx=ta?ta.value.trim():'';if(!tx){toast('Write a note first.');break}j.crewNotes=j.crewNotes||[];j.crewNotes.push({id:uid(),who:t.dataset.who,ts:Date.now(),text:tx});logEv(j,'Crew note from '+t.dataset.who);save();renderCrew();toast('Note added.');break}
     case 'cr:rmnote':{j=byId(t.dataset.id);if(!j)break;var nn=(j.crewNotes||[]).find(function(x){return x.id===t.dataset.nid});if(!nn||!(state.ui.role==='owner'||nn.who===t.dataset.who))break;j.crewNotes=j.crewNotes.filter(function(x){return x.id!==t.dataset.nid});save();renderCrew();break}
     case 'sh:rmnote':{j=byId(ui.jobId);if(!j||state.ui.role!=='owner')break;j.crewNotes=(j.crewNotes||[]).filter(function(x){return x.id!==t.dataset.nid});save();renderSheet();break}
-    case 'cr:charge':{j=byId(t.dataset.id);var cl=$('#ce_l_'+j.id).value.trim(),ca=round2(moneyVal($('#ce_a_'+j.id)))*((($('#ce_t_'+j.id)||{}).value)==='credit'?-1:1);if(!cl||!ca){toast('Add a description and an amount.');break}j.extras=j.extras||[];j.extras.push({id:uid(),label:cl,amt:ca,ts:Date.now()});logEv(j,'Charge: '+cl+' '+money(ca));save();renderCrew();toast('Added to the bill.');break}
+    case 'cr:charge':{j=byId(t.dataset.id);if(!j||!canCharge())break;var cl=$('#ce_l_'+j.id).value.trim(),ca=round2(moneyVal($('#ce_a_'+j.id)))*((($('#ce_t_'+j.id)||{}).value)==='credit'?-1:1);if(!cl||!ca){toast('Add a description and an amount.');break}j.extras=j.extras||[];j.extras.push({id:uid(),label:cl,amt:ca,ts:Date.now()});logEv(j,'Charge: '+cl+' '+money(ca));save();renderCrew();toast('Added to the bill.');break}
     case 'sync:init':initOrg(t.dataset.m);break;
     case 'sync:request':if(sync.db&&sync.uid){sync.db.doc('requests/'+sync.uid).set({uid:sync.uid,ts:Date.now()}).then(function(){toast('Request sent.')}).catch(function(){toast('Could not send the request.')})}break;
     case 'acc:approve':{var au=t.dataset.uid,as1=$('#accStaff_'+au),ar1=$('#accRole_'+au);if(!as1||!ar1||!sync.db)break;if(!as1.value){toast('Pick who this person is first.');break}
@@ -5214,7 +5476,7 @@ document.addEventListener('click',function(e){
     case 'more:preview':ui.moreMode='preview';renderMore();break;
     case 'pv:set':ui.more=false;ui.moreMode='list';renderMore();startPreview(t.dataset.role,t.dataset.staff||'');break;
     case 'pv:end':endPreview();break;
-    case 'more:go':ui.more=false;renderMore();if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();ui.tab=t.dataset.tab;ui.armed='';render();window.scrollTo(0,0);break;
+    case 'more:go':ui.more=false;renderMore();if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();if(t.dataset.tab==='settings'){ui.setSec=t.dataset.sec||'';ui.setQ=''}ui.tab=t.dataset.tab;ui.armed='';render();window.scrollTo(0,0);break;
     case 'more:signout':if(window.tallySignOut)window.tallySignOut();break;
     case 'more:company':if(window.tallySwitchCompany)window.tallySwitchCompany();break;
     case 'emp:new':openEmp({});break;
@@ -5229,7 +5491,7 @@ document.addEventListener('click',function(e){
     case 'me:save':mySave();break;
     case 'more:theme':ui.more=false;renderMore();ui.pick=true;renderPick();break;
     case 'fab:quote':ui.tab='quote';ui.qstep=1;ui.armed='';render();window.scrollTo(0,0);break;
-    case 'fab:clock':{var fm=fieldMe();if(!fm){toast('Ask the office to add you to the crew list.');break}
+    case 'fab:clock':{var fm=fieldMe();if(!opt('clock'))break;if(!fm){toast('Ask the office to add you to the crew list.');break}
       if(openShift(fm)){ui.tab='crew';render();toast('Clock out on your job screen, so you can add a note.');window.scrollTo(0,0);break}
       state.shifts.push({id:uid(),who:fm,inAt:Date.now(),outAt:0,activity:S.activities[0],note:'',late:0});save();geoStart(fm);render();toast('Clocked in.');break}
     case 'field:go':ui.tab='crew';ui.armed='';render();window.scrollTo(0,0);break;
@@ -5237,7 +5499,7 @@ document.addEventListener('click',function(e){
     case 'theme:close':ui.pick=false;renderPick();break;
     case 'theme:set':state.ui.theme=t.dataset.t;save();saveNow();applyTheme();renderPick();toast((THEME_BY[t.dataset.t]||{}).name+' it is.');break;
     case 'theme:mode':state.ui.mode=t.dataset.m;save();saveNow();applyTheme();renderPick();break;
-    case 'flow:open':startFlow(t.dataset.id,t.dataset.who);break;
+    case 'flow:open':{var fo=byId(t.dataset.id);if(fo&&!canCollect()&&!formsPending(fo).length&&balOf(fo)>0){toast('The office collects the payment.');break}startFlow(t.dataset.id,t.dataset.who);break}
     case 'back:open':startFlow(t.dataset.id,t.dataset.who,false,{back:true});break;
     case 'back:mins':if(ui.flow&&ui.flow.back){ui.flow.back.mins=Math.min(600,Math.max(0,num(ui.flow.back.mins)+num(t.dataset.d)));$$('[data-act="back:set"]').forEach(function(b){var on=num(b.dataset.m)===ui.flow.back.mins;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});backRedraw()}break;
     case 'back:set':if(ui.flow&&ui.flow.back){ui.flow.back.mins=num(t.dataset.m);$$('[data-act="back:set"]').forEach(function(b){var on=b===t;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});backRedraw()}break;
@@ -5260,7 +5522,7 @@ document.addEventListener('click',function(e){
     case 'mem:start':memberOpen('start');break;
     case 'mem:portal':memberOpen('portal');break;
     case 'mem:reload':member.msg='';member.url='';memberLoad(true,true);break;
-    case 'mem:go':ui.tab='settings';ui.armed='';render();setTimeout(function(){var d=$$('#view details.acc.card').filter(function(x){return /^\s*Membership/.test((x.querySelector('summary')||{}).textContent||'')})[0];if(d){d.open=true;try{d.scrollIntoView({block:'start'})}catch(e){}}},0);break;
+    case 'mem:go':ui.tab='settings';ui.setSec='member';ui.setQ='';ui.armed='';render();window.scrollTo(0,0);break;
     case 'adm:open':adm.open=adm.open===t.dataset.id?'':t.dataset.id;renderAdmin();break;
     case 'adm:save':adminSave(t.dataset.id);break;
     case 'adm:plan':adminPlanSave();break;
@@ -5290,14 +5552,14 @@ document.addEventListener('click',function(e){
         if(!ex){flowFail('Enter a valid expiration date that has not passed (MM/YY).');break}
         var need=brandOf(cn)==='Amex'?4:3;if(cv.length!==need){flowFail('Enter the '+need+'-digit security code.');break}
         var br=brandOf(cn),l4=cn.slice(-4);plabel=br+' ••'+l4;
-        if($('#saveCard').checked)state.vault.push({id:uid(),cust:custKey(pj),type:'card',brand:br,last4:l4,exp:ex,ts:Date.now()})}
+        if(($('#saveCard')||{}).checked)state.vault.push({id:uid(),cust:custKey(pj),type:'card',brand:br,last4:l4,exp:ex,ts:Date.now()})}
       else if(pm==='ach'){var rt=$('#achRoute').value.replace(/\D/g,''),ac=$('#achAcct').value.replace(/\D/g,'');
         if(!$('#achName').value.trim()){flowFail('Enter the account holder name.');break}
         if(!abaOk(rt)){flowFail('That routing number is not valid. It should be 9 digits.');break}
         if(ac.length<4||ac.length>17){flowFail('Account numbers are 4 to 17 digits.');break}
         if(!$('#achAuth').checked){flowFail('The customer must authorize the bank debit.');break}
         plabel='ACH ••'+ac.slice(-4);pextra={pending:true};
-        if($('#saveAch').checked)state.vault.push({id:uid(),cust:custKey(pj),type:'ach',brand:'Bank',last4:ac.slice(-4),exp:'',ts:Date.now()})}
+        if(($('#saveAch')||{}).checked)state.vault.push({id:uid(),cust:custKey(pj),type:'ach',brand:'Bank',last4:ac.slice(-4),exp:'',ts:Date.now()})}
       else{plabel=$('#otherMethod').value;var rf=$('#otherRef').value.trim();if(rf)plabel+=' '+rf}
       if(!addPayment(pj,pamt,plabel,pextra)){flowFail('Sign the required forms first.');break}
       save();toast('Payment recorded: '+money(pamt)+' · '+plabel);renderFlow();renderTab();
@@ -5316,7 +5578,7 @@ document.addEventListener('click',function(e){
       if(!fx){toast('Type the form text or choose a file.');break}
       S.forms.push({id:uid(),title:ft,kind:'text',text:fx,pages:[],required:true});save();renderSettings();toast('Form added.');break}
     case 'applyprod':S.prod=+t.dataset.v;save();toast('Crew speed updated. New quotes use it.');renderReports();break;
-    case 'clk:in':{var who=t.dataset.who;if(openShift(who)){toast(who+' is already clocked in.');break}var ac=$('#clkAct');state.shifts.push({id:uid(),who:who,inAt:Date.now(),outAt:0,activity:ac?ac.value:S.activities[0],note:'',late:0});ui.clockNote='';ui.needNote=false;save();renderCrew();toast('Clocked in. Your location is shared only while you are clocked in.');geoStart(who);break}
+    case 'clk:in':{var who=t.dataset.who;if(openShift(who)){toast(who+' is already clocked in.');break}var ac=$('#clkAct');state.shifts.push({id:uid(),who:who,inAt:Date.now(),outAt:0,activity:ac?ac.value:S.activities[0],note:'',late:0});ui.clockNote='';ui.needNote=false;save();renderCrew();toast(opt('clockGps')?'Clocked in. Your location is shared only while you are clocked in.':'Clocked in.');geoStart(who);break}
     case 'clk:out':{var w2=t.dataset.who,sh=openShift(w2);if(!sh)break;var out=Date.now(),li=lateInfo(w2,out),cn=$('#clockNote'),nt=cn?cn.value.trim():'';ui.clockNote=nt;
       if(li&&li.needNote&&!nt){ui.needNote=true;renderCrew();toast('Add a note first. It has been '+fmtDur(li.lateMs)+' since your last job ended.');var c2=$('#clockNote');if(c2)c2.focus();break}
       sh.outAt=out;sh.note=nt;sh.late=li&&li.needNote?Math.round(li.lateMs/60000):0;ui.clockNote='';ui.needNote=false;save();renderCrew();toast('Clocked out after '+fmtDur(out-sh.inAt)+'.');geoStop(w2);break}
@@ -5367,7 +5629,8 @@ document.addEventListener('input',function(e){
   else if(t.id==='hSearch'){ui.hq=t.value;ui.hShow=50;ui.hOpen='';histFill()}
   else if(/^(backSoFar|backMi|odoA|odoB)$/.test(t.id)&&ui.flow&&ui.flow.back){var fbk=ui.flow.back;fbk[{backSoFar:'soFar',backMi:'mi',odoA:'odoStart',odoB:'odoEnd'}[t.id]]=t.value;if(t.id==='backMi')fbk.miSrc='typed';backRedraw()}
   else if(t.id==='odoStartIn'&&ui.start){ui.start.odo=t.value}
-  else if(t.dataset.s){var val=t.dataset.t==='num'?num(t.value):t.dataset.t==='bool'?t.checked:t.value;setPath(S,t.dataset.s,val);if(t.dataset.s==='company')$('#brandCo').textContent=val||'Your Moving Co.';save()}
+  else if(t.id==='setQ'){ui.setQ=t.value;var sl=$('#setList');if(sl)sl.innerHTML=setListHtml(setupSecs())}
+  else if(t.dataset.s){var val=t.dataset.t==='num'?num(t.value):t.dataset.t==='bool'?t.checked:t.value;if(/^opt\./.test(t.dataset.s)&&!S.opt)S.opt={};setPath(S,t.dataset.s,val);if(t.dataset.s==='company')$('#brandCo').textContent=val||'Your Moving Co.';save();if(t.getAttribute('role')==='switch')optFlipped(t)}
   else if(t.dataset.j){var jj=canEditJobs()?byId(ui.jobId):null;if(jj){jj.d[t.dataset.j]=t.value;save()}}
   else if(t.dataset.jcf){var j2=canEditJobs()?byId(ui.jobId):null;if(j2){j2.d.custom[t.dataset.jcf]=t.value;save()}}
 });
@@ -5445,7 +5708,7 @@ state.ui.realRole=null;if(state.ui.role!=='owner')state.ui.role='owner';
 })();
 (function migrate6(){if(!state.ui.callPrefs)state.ui.callPrefs={}})();
 (function migrate8(){if(state.demo)state.jobs.forEach(function(j){if(!j.phases&&j.startedAt&&j.finishedAt&&(j.log||[]).some(function(l){return l.ev==='Sample job'}))j.phases=demoPhases(j)})})();
-(function migrate7(){var S=state.settings,D=defaultSettings();if(!S.comms)S.comms=D.comms;S.comms.alerts=Object.assign({},D.comms.alerts,S.comms.alerts||{});if(!Array.isArray(S.comms.ring))S.comms.ring=[]})();
+(function migrate7(){var S=state.settings,D=defaultSettings();if(!S.comms)S.comms=D.comms;S.comms.alerts=Object.assign({},D.comms.alerts,S.comms.alerts||{});if(!Array.isArray(S.comms.ring))S.comms.ring=[];if(!S.opt||typeof S.opt!=='object')S.opt={}})();
 (function migrate5(){var S=state.settings,D=defaultSettings();if(!S.materials)S.materials=D.materials;if(!S.costCats)S.costCats=D.costCats;state.jobs.forEach(function(j){if(!j.materials)j.materials=[];if(!j.costs)j.costs=[]})})();
 window.addEventListener('resize',function(){renderTabs()});
 setInterval(function(){var el=$('#clkElapsed');if(!el||!el.dataset.since)return;var typing=document.activeElement&&document.activeElement.id==='clockNote';if(typing||ui.tab!=='crew')el.textContent=fmtDur(Date.now()-(+el.dataset.since));else renderCrew()},30000);

@@ -13,7 +13,8 @@ from the shop)*, 20 to start with).
 - **Without a shop address**, the move's own distance (pickup to delivery) decides.
 - A drive from the shop that isn't in yet counts as at least the move's length less the other drive.
   A 110-mile move from a pickup 5 miles out is a mileage move even before the drive back is known.
-- A radius of **0** makes every move local.
+- A radius of **0** makes every move local, and so does switching off **Mileage moves** in
+  **Setup › Options** (the quote says so).
 - The office can set a quote to Local or Mileage by hand: **Price › Adjust › Move type**.
 
 The quote screen says which kind the move is and why, under the miles and under the price.
@@ -29,9 +30,16 @@ The truck fee, stairs, packing, specialty items, discount and tax are the same f
 Dispatch board a mileage move still takes its hours plus the drive, so double-booking checks stay
 right.
 
+The truck and fuel fee, stairs, packing, the deposit and sales tax each have a switch in **Setup ›
+Options › Quotes and pricing** (also in the Rate card). Switched off, they leave the quote; stairs
+and packing leave the quote form too. Sales tax also needs a tax %. All of them are listed in
+[OPTIONS.md](OPTIONS.md).
+
 ## The final bill
 
-When the crew finishes the job, Tally bills by the clock:
+When the crew finishes the job, Tally bills by the clock (with **Final bill by the clock** switched
+off in Setup › Options, new quotes are a flat price instead: the bill is the quote, with no
+not-to-exceed price and no drive-back step):
 
 - **Local:** from **Start job** to **Done unloading**, plus the drive back to the shop when Setup
   counts the drive from the shop. When it doesn't, the clock starts at **Start loading**.
@@ -42,8 +50,8 @@ When the crew finishes the job, Tally bills by the clock:
   120 miles.
 - Hours are billed in 15-minute steps, with the minimum hours as the least.
 - The bill is held to the quote's not-to-exceed price. To bill the full time and miles even past it,
-  switch off **Hold the final bill to the not-to-exceed price** in the Rate card. With it off, quotes
-  stop showing a not-to-exceed price.
+  switch off **Not-to-exceed price** in Setup › Options (or the Rate card). With it off, quotes stop
+  showing a not-to-exceed price.
 - The difference from the quote is one line on the bill, for example *By the clock: 7h 0m loading
   and unloading, billed 7 h, 120 mi driven (quoted 6.5 h, 110 mi)*. The customer pays the total.
 

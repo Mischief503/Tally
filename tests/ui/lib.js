@@ -159,7 +159,18 @@ async function load(file, opts = {}) {
   const $$ = (s) => Array.from(w.document.querySelectorAll(s));
   const click = (el) => { if (typeof el === 'string') el = $(el); if (!el) throw new Error('no element to click'); el.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); };
   const text = () => w.document.body.textContent.replace(/\s+/g, ' ');
-  return { dom, w, $, $$, click, text, errors, calls, T: w.__tally };
+  // a screen the way a person reaches it: its bottom-bar tab when it has one, else through More;
+  // `sec` opens that Setup section (Setup is a list of sections, each on its own page)
+  const go = async (tab, sec) => {
+    const bar = $('#tabs [data-act="tab"][data-tab="' + tab + '"]');
+    if (bar && !sec) { click(bar); await sleep(15); return; }
+    click('[data-act="more:open"]'); await sleep(5);
+    click('[data-act="more:go"][data-tab="' + tab + '"]' + (tab === 'settings' ? ':not([data-sec])' : '')); await sleep(25);
+    if (sec) { click('[data-act="set:open"][data-sec="' + sec + '"]'); await sleep(20); }
+  };
+  // a job further out shows as one line on My jobs until it is opened
+  const openCard = async (id) => { const m = $('[data-act="cr:expand"][data-id="' + id + '"]'); if (m) { click(m); await sleep(10); } };
+  return { dom, w, $, $$, click, text, go, openCard, errors, calls, T: w.__tally };
 }
 
 let passes = 0, failures = 0;

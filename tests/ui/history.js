@@ -17,7 +17,7 @@ const OPEN = ['Priya Nair', 'Hollis & Reed Law', 'Nadia Farouk', 'Ortega family'
   const view = () => $('#view').textContent.replace(/\s+/g, ' ');
   const names = (sel) => $$(sel || '#view [data-act="job:open"]').map((b) => (st().jobs.find((j) => j.id === b.dataset.id) || { d: { name: '?' } }).d.name);
   const tab = async (t) => { click('[data-act="tab"][data-tab="' + t + '"]'); await sleep(15); };
-  const more = async (t) => { click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:go"][data-tab="' + t + '"]'); await sleep(15); };
+  const more = async (t) => { await A.go(t); };
   const preview = async (role, staff) => { click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:preview"]'); await sleep(5); click($$('#more [data-act="pv:set"]').find((b) => b.dataset.role === role && b.dataset.staff === staff)); await sleep(15); };
   const endPreview = async () => { click('[data-act="pv:end"]'); await sleep(15); };
   const type = (sel, v) => { const e = $(sel); e.focus(); e.value = v; e.dispatchEvent(new w.Event('input', { bubbles: true })); return e; };
@@ -160,7 +160,8 @@ const OPEN = ['Priya Nair', 'Hollis & Reed Law', 'Nadia Farouk', 'Ortega family'
   ok(!/Wes Park/.test(view()), L('Dee’s Today does not offer a booking whose day went by as next up'));
   click('[data-act="more:open"]'); await sleep(5);
   ok(!!$('#more [data-act="more:go"][data-tab="history"]') && /Jobs you worked/.test($('#more').textContent), L('Dee’s More has Job history'));
-  click('[data-act="more:go"][data-tab="crew"]'); await sleep(15);
+  ok(!$('#more [data-act="more:go"][data-tab="crew"]') && /My jobs/.test($('#tabs').textContent), L('My jobs is on Dee’s bottom bar, not in More'));
+  click('[data-act="more:close"]'); await sleep(5); click('#tabs [data-act="tab"][data-tab="crew"]'); await sleep(15);
   ok(/Wes Park/.test(view()), L('Wes Park is still in Dee’s jobs, where the lead can start or finish it'));
   ok(!/Devon Reyes|Owen Patel/.test(view()) && /2 past jobs/.test(view()) && !/ with /.test($$('#view .secline small').map((s) => s.textContent).join(' ')), L('her old paid jobs are not on the Field screen; a line points to Job history'));
   click('#view [data-act="hist:go"]'); await sleep(15);
@@ -168,7 +169,7 @@ const OPEN = ['Priya Nair', 'Hollis & Reed Law', 'Nadia Farouk', 'Ortega family'
   ok(mine.join() === 'Devon Reyes,Owen Patel', L('Dee’s history: just the jobs she worked: ' + mine.join(', ')));
   ok(!/\$/.test(view()) && !/Lost/.test(view()), L('no prices and no lost quotes for the crew'));
   click('[data-act="hist:open"][data-id="' + D.id + '"]'); await sleep(10);
-  ok(!!$('#view .crewcard') && /Photos and updates/.test(view()) && /Finished\. You can still add photos and notes\./.test(view()), L('tapping a job opens the field card'));
+  ok(!!$('#view .crewcard') && !!$('#view .crewcard [data-act="cr:seg"][data-k="media"]') && /Finished\. You can still add photos and notes\./.test(view()), L('tapping a job opens the field card'));
   const note = $('#cn_' + D.id); note.value = 'Left the spare key under the mat.';
   click('[data-act="cr:note"][data-id="' + D.id + '"]'); await sleep(10);
   ok(D.crewNotes.some((n) => n.who === 'Dee' && /spare key/.test(n.text)) && T.ui.tab === 'history' && !!$('#view .crewcard') && /spare key/.test(view()), L('a note added there saves, and the screen stays on history with the card open'));

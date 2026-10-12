@@ -270,6 +270,11 @@ ok(sent.length === n0, "not repeated within 6 hours");
 putDoc(ORG, "jobs/j6", job("j6", { status: "done", signed: { s1: { formId: "f1" } } }));
 n0 = sent.length; r = await app("tok-marcus", { action: "forms", org: ORG, jobId: "j6" });
 ok(sent.length === n0 && r.body.skipped === "signed", "signed jobs never text");
+putDoc(ORG, "org/settings", { ...settings, opt: { forms: false } });
+putDoc(ORG, "jobs/j5b", job("j5b", { status: "done", signed: { s1: { formId: "f2" } } }));
+n0 = sent.length; r = await app("tok-marcus", { action: "forms", org: ORG, jobId: "j5b" });
+ok(sent.length === n0 && !!r.body.skipped, "Signatures before payment off in Setup › Options: no forms text (" + r.body.skipped + ")");
+putDoc(ORG, "org/settings", settings);
 
 /* ---------- masked call ---------- */
 n0 = sent.length;
@@ -417,6 +422,19 @@ c2.confirm = { Marcus: { ts: 1, for: slot(c2) }, Dee: { ts: 1, for: slot(c2) }, 
 putDoc(ORG, "jobs/c2", c2);
 r = await app("tok-owner", { action: "remind", org: ORG, jobId: "c2" });
 ok(/Everyone on this job has confirmed/.test(r.body.message), "all confirmed: nothing to send");
+// Crew confirm their jobs, switched off in Setup › Options: texts stop asking, reminders are refused
+putDoc(ORG, "org/settings", { ...settings, opt: { confirm: false } });
+putDoc(ORG, "jobs/c3", job("c3", { assign: { truckId: "t26", crew: ["Marcus"] } }));
+n0 = sent.length;
+await app("tok-dispatch", { action: "job", org: ORG, jobId: "c3" }, "https://ace.netlify.app");
+ok(sent.length - n0 === 1 && /You're on/.test(sent[sent.length - 1].Body) && !/onfirm/.test(sent[sent.length - 1].Body), "confirmations off: the assignment text doesn't ask to confirm: " + sent[sent.length - 1].Body);
+putDoc(ORG, "jobs/c3", job("c3", { assign: { truckId: "t26", crew: ["Marcus"] }, d: { ...job("c3").d, time: "10:00" } }));
+await app("tok-dispatch", { action: "job", org: ORG, jobId: "c3" }, "https://ace.netlify.app");
+ok(/moved to/.test(sent[sent.length - 1].Body) && !/onfirm/.test(sent[sent.length - 1].Body), "nor does the moved text: " + sent[sent.length - 1].Body);
+c2.confirm = {}; putDoc(ORG, "jobs/c2", c2);
+n0 = sent.length; r = await app("tok-dispatch", { action: "remind", org: ORG, jobId: "c2" });
+ok(!r.body.ok && /Crew confirmations are off/.test(r.body.message) && sent.length === n0, "and reminders are refused: " + r.body.message);
+putDoc(ORG, "org/settings", settings);
 
 // evening before
 const realToday = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
@@ -457,6 +475,13 @@ putDoc(ORG, "org/settings", { ...settings, comms: { ...settings.comms, alerts: {
 DB.comm_log = DB.comm_log.filter((x) => x.purpose !== "tomorrow" && x.purpose !== "tomorrow-office");
 n0 = sent.length; await cron("s3cret");
 ok(sent.length === n0, "switched off in Setup: nothing sent");
+putDoc(ORG, "org/settings", { ...settings, comms: { ...settings.comms, appUrl: "https://ace.netlify.app" }, opt: { confirm: false } });
+t1.confirm = {}; putDoc(ORG, "jobs/t1", t1);
+DB.comm_log = DB.comm_log.filter((x) => x.purpose !== "tomorrow" && x.purpose !== "tomorrow-office");
+n0 = sent.length; await cron("s3cret");
+const ev2 = sent.slice(n0), dT2 = ev2.find((x) => x.To === "+15125550102"), off2 = ev2.find((x) => /Tomorrow: 3 jobs/.test(x.Body));
+ok(!!dT2 && /Tomorrow you're on Priya .*\. See you there\./.test(dT2.Body) && !/onfirm/.test(dT2.Body), "confirmations off: the evening text is a plain reminder: " + (dT2 && dT2.Body));
+ok(!!off2 && !/onfirm/.test(off2.Body) && /No crew yet: Sam K\./.test(off2.Body), "and the office summary leaves confirmations out: " + (off2 && off2.Body));
 putDoc(ORG, "org/settings", settings);
 
 /* ---------- quote distance ---------- */

@@ -45,11 +45,11 @@ function seed(opts = {}) {
   T.comms.SETTLE = 60;
 
   // ---- setup card
-  click('[data-act="more:open"]'); await sleep(10);
-  click('[data-act="more:go"][data-tab="settings"]'); await sleep(30);
-  ok(/Texts and calls/.test(text()) && /Company line \(512\) 555-0000/.test(text()), 'Setup shows the company line');
-  const tg = $('details[data-k="st:Texts and calls"]');
-  ok(!!tg, 'the card sits in Setup like the others');
+  await A.go('settings');
+  ok(/Texts and calls/.test(text()) && /Company line \(512\) 555-0000/.test(text()), 'the Setup list shows the company line');
+  const tg = $('[data-act="set:open"][data-sec="comms"]');
+  ok(!!tg, 'Texts and calls sits in the Setup list like the other sections');
+  click(tg); await sleep(20);
   ok($$('input[data-s^="comms.alerts."]').length === 4 && $$('input[data-s^="comms.alerts."]').every((i) => i.checked), 'four alert switches, all on');
   ok(/No phone number for Luis/.test(text()), 'Setup warns who has no number');
   const ringChips = $$('[data-act="st:ring"]');
@@ -74,7 +74,7 @@ function seed(opts = {}) {
   calls.fn.length = 0;
   const chip = () => $$('#sheet [data-act="sh:crew"]').find((c) => c.dataset.n === 'Luis');
   click(chip()); await sleep(5); click(chip()); await sleep(5); click(chip()); await sleep(20);
-  ok(calls.fn.length === 0, 'nothing sent while still tapping');
+  ok(calls.fn.length === 0, 'nothing sent while still tapping (' + calls.fn.map((c) => c.body.action).join(', ') + ')');
   await sleep(500);
   const pings = calls.fn.filter((c) => c.body.action === 'job');
   ok(pings.length === 1 && pings[0].body.jobId === 'j1' && pings[0].body.org === ORG, 'one check sent for the job once taps settle');
@@ -166,13 +166,13 @@ function seed(opts = {}) {
   const B = await load(FILE, { db: seed(), org: ORG, me: { uid: 'u-marcus', email: 'm@x.com' }, fnReply: (b) => (b.action === 'call' ? { ok: true, message: 'Your phone will ring.' } : b.action === 'eta' ? { ok: true, message: 'Texted Priya Nair: about ' + b.minutes + ' minutes.' } : { ok: true, sent: 0 }) });
   B.T.comms.SETTLE = 30;
   ok(B.T.state().ui.role === 'lead' && /Marcus/.test(B.$('#whoami').textContent), 'lead signs in as himself');
-  B.click('[data-act="more:open"]'); await sleep(10); B.click('[data-act="more:go"][data-tab="crew"]'); await sleep(30);
+  await B.go('crew'); await sleep(15);
   B.click(B.$$('[data-act="call:cust"]')[0]); await sleep(20);
   ok(B.$$('#call .bigbtn')[0].dataset.act === 'call:company', 'crew get the company line too');
   B.click(B.$$('#call [data-act="call:company"]')[0]); await sleep(50);
   ok(B.calls.fn.some((c) => c.body.action === 'call' && c.init.headers.Authorization === 'Bearer tok-u-marcus'), 'call carries the lead\'s own sign-in');
   B.calls.fn.length = 0;
-  B.$('#cn_j1').value = 'Gate 4411'; B.click(B.$$('[data-act="cr:note"]')[0]); await sleep(200);
+  await B.openCard('j1'); B.$('#cn_j1').value = 'Gate 4411'; B.click(B.$$('[data-act="cr:note"]')[0]); await sleep(200);
   ok(B.T.state().jobs.find((j) => j.id === 'j1').crewNotes.length === 1, 'lead adds a crew note');
   ok(B.calls.fn.length === 0, 'crew edits never trigger schedule texts');
   ok(!B.$('#sheet') || B.$('#sheet').hidden, 'crew still have no office job sheet');
@@ -207,7 +207,7 @@ function seed(opts = {}) {
   C.calls.fn.length = 0;
   C.click(C.$$('#sheet [data-act="sh:crew"]').find((c) => c.dataset.n === 'Luis')); await sleep(200);
   ok(C.calls.fn.filter((c) => c.body.action === 'job').length === 0, 'no line, no texting calls');
-  C.click('[data-act="sheet:close"]'); C.click('[data-act="more:open"]'); await sleep(10); C.click('[data-act="more:go"][data-tab="settings"]'); await sleep(30);
+  C.click('[data-act="sheet:close"]'); await C.go('settings', 'comms');
   ok(/Not connected yet/.test(C.text()), 'Setup explains how it switches on');
   ok(C.errors.length === 0, 'no errors without a line (' + C.errors.slice(0, 3).join(' | ') + ')');
 

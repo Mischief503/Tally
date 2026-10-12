@@ -81,7 +81,7 @@ const row = (db, path) => db.docs.find((r) => r.path === path).data;
   await sleep(300);
   ok(!M.T.state().jobs.find((x) => x.id === 'm2').phases.unloadEnd && /Done unloading/.test((M.$('.crewcard [data-id="m2"].primary') || {}).textContent || ''), 'and it stays undone after the database echoes it back');
   // ---- the radius is each company's own: it is saved with the company's settings
-  await go(O, 'settings');
+  await O.go('settings', 'rates');
   const rad = O.$('input[data-s="includedMiles"]');
   rad.value = '35'; rad.dispatchEvent(new O.w.Event('input', { bubbles: true })); await sleep(500);
   const sw = O.calls.writes.filter((x) => x.row.path === 'org/settings').pop();

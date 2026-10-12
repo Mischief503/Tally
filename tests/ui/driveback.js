@@ -14,7 +14,7 @@ const H = 36e5;
   const byName = (n) => st().jobs.find((j) => j.d.name === n);
   const flow = () => $('#flow').hidden ? '' : $('#flow').textContent.replace(/\s+/g, ' ');
   const toastTxt = () => $('#toast').textContent;
-  const more = async (t) => { click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:go"][data-tab="' + t + '"]'); await sleep(15); };
+  const more = async (t) => { await A.go(t); };
   const type = (sel, v, blur) => { const e = $(sel); e.value = v; e.dispatchEvent(new w.Event('input', { bubbles: true })); if (blur) e.dispatchEvent(new w.Event('change', { bubbles: true })); };
   const clockLine = (j) => (j.extras.find((e) => e.id === 'clock') || {});
   const bill = (j) => Math.round((j.quote.total + j.extras.reduce((a, e) => a + e.amt, 0) + (j.materials || []).reduce((a, m) => a + (m.price == null ? 0 : m.qty * m.price), 0)) * 100) / 100;
@@ -142,7 +142,7 @@ const H = 36e5;
   ok(O.quote.kind === 'mileage' && O.quote.miles === 125 && O.quote.shopTravel, L('a mileage move: 10 + 90 + 25 = 125 mi from the shop and back'));
   O.status = 'booked'; delete O.startedAt; O.phases = {}; O.signed.push({ id: 's-o', formId: 'f_deliv', title: 'Delivery receipt and release', name: 'Ortega', sig: '', ts: Date.now(), by: 'Marcus' });
   T.render(); await sleep(10);
-  click('[data-act="cr:start"][data-id="' + O.id + '"]'); await sleep(10);
+  await A.openCard(O.id); click('[data-act="cr:start"][data-id="' + O.id + '"]'); await sleep(10);
   ok(/Odometer leaving the shop/.test($('#start').textContent) && !!$('#odoStartIn'), L('Start job on a mileage move asks for the odometer leaving the shop'));
   type('#odoStartIn', '45210');
   click('#start [data-act="go:set"][data-m="45"]'); await sleep(5);
@@ -212,7 +212,7 @@ const H = 36e5;
   // a local move's Start job has no odometer
   const G2 = setUp('Grace Pham', { milesOut: '5', miles: '6', milesBack: '5', items: { boxm: 60 } }, 1, false);
   G2.status = 'booked'; delete G2.startedAt; G2.phases = {}; T.render(); await sleep(10);
-  click('[data-act="cr:start"][data-id="' + G2.id + '"]'); await sleep(10);
+  await A.openCard(G2.id); click('[data-act="cr:start"][data-id="' + G2.id + '"]'); await sleep(10);
   ok(G2.quote.kind === 'local' && !$('#odoStartIn'), L('a local move’s Start job asks for no odometer'));
   click('#start [data-act="go:close"]'); await sleep(5);
 

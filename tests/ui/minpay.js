@@ -4,7 +4,7 @@ const file = process.argv[2], label = process.argv[3] || 'minpay';
   const A = await load(file, {});
   const { w, $, $$, click, text, T } = A;
   const st = () => T.state();
-  const more = async (tab) => { click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:go"][data-tab="' + tab + '"]'); await sleep(15); };
+  const more = async (tab, sec) => { await A.go(tab, sec); };
   const deeRow = () => { const r = $$('table.tbl tr').find((tr) => /^Dee/.test((tr.cells[0] || {}).textContent || '')); return r ? Array.from(r.cells).map((c) => c.textContent.trim()) : null; };
   await more('reports');
   const before = deeRow();
@@ -36,7 +36,7 @@ const file = process.argv[2], label = process.argv[3] || 'minpay';
   // Dee sees it on her phone
   click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:preview"]'); await sleep(5);
   click($$('#more [data-act="pv:set"]').find((b) => b.dataset.staff === 'Dee')); await sleep(10);
-  await more('crew');
+  await more('crew'); await A.openCard(j.id);
   ok(/You’re paid 3 h \(the 3-hour minimum; the job took 1 h\)/.test(text()), label + ': Dee sees she is paid 3 h for it');
   click('[data-act="pv:end"]'); await sleep(10);
 
@@ -46,10 +46,11 @@ const file = process.argv[2], label = process.argv[3] || 'minpay';
   click('[data-act="sheet:close"]');
 
   // switch it off: new short jobs pay as worked; finished ones keep their minimum
-  await more('settings');
-  const cb = $('input[data-s="payMin"]');
-  ok(cb && cb.checked && /Pay the crew the 3-hour minimum when a job runs short/.test(text()), label + ': Setup has the switch, on');
+  await more('settings', 'rates');
   ok(/Minimum hours \(billed, and paid to the crew\)/.test(text()), label + ': rate card says the minimum is paid too');
+  click('[data-act="set:back"]'); await sleep(10); click('[data-act="set:open"][data-sec="clock"]'); await sleep(15);
+  const cb = $('input[data-s="payMin"]');
+  ok(cb && cb.checked && /Pay the minimum hours/.test(text()) && /the crew is paid the 3-hour minimum/.test(text()), label + ': Setup › Time clock has the switch, on');
   cb.checked = false; cb.dispatchEvent(new w.Event('input', { bubbles: true })); await sleep(5);
   const n3 = await finishShort('Nadia Farouk', 60);
   ok(n3.minPaid === 0 && /Crew paid 1 h each \(job time\)/.test($('#sheet').textContent), label + ': with it off, a 1-hour job pays 1 h');

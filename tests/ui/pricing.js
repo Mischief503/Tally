@@ -8,7 +8,7 @@ const H = 36e5;
   const { w, $, $$, click, T } = A;
   const st = () => T.state();
   const L = (m) => label + ': ' + m;
-  const more = async (tab) => { click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:go"][data-tab="' + tab + '"]'); await sleep(15); };
+  const more = async (tab, sec) => { await A.go(tab, sec); };
   const type = (sel, v, blur) => { const e = typeof sel === 'string' ? $(sel) : sel; e.value = v; e.dispatchEvent(new w.Event('input', { bubbles: true })); if (blur) e.dispatchEvent(new w.Event('change', { bubbles: true })); };
   const toastTxt = () => $('#toast').textContent;
   const blank = (o) => Object.assign({ name: 'X', phone: '', email: '', source: 'Google', moveDate: '', time: '08:00', from: '', to: '', miles: '', milesOut: '', milesBack: '', flights: '', pack: false, crew: '', truckId: '', hoursOverride: '', discount: '', notes: '', custom: {}, items: {}, editId: '', moveKind: '' }, o);
@@ -303,9 +303,9 @@ const H = 36e5;
   ok(T.conflictsFor(B2).some((c) => c.other === B1), L('a 195 mi mileage move at 8 AM (3 h + 6.5 h drive) clashes with a 4 PM job on the same truck'));
   B1.status = 'lost'; B2.status = 'lost';
   // the not-to-exceed cap is the company's choice
-  await more('settings');
+  await more('settings', 'rates');
   const capBox = $('input[data-s="nteCap"]');
-  ok(capBox && capBox.checked && /Hold the final bill to the not-to-exceed price/.test(capBox.closest('label').textContent), L('Rate card: hold the bill to the not-to-exceed price, on by default'));
+  ok(capBox && capBox.checked && /Not-to-exceed price/.test(capBox.closest('.opt').textContent) && /the final bill never goes over it/.test(capBox.closest('.opt').textContent), L('Rate card: the Not-to-exceed price switch, on by default'));
   capBox.checked = false; capBox.dispatchEvent(new w.Event('input', { bubbles: true })); await sleep(5);
   const NC = await mk('No cap', { miles: '8', items: { boxm: 60 } });
   ok(NC.quote.capNte === false, L('switched off: new quotes are not held to it'));
@@ -331,7 +331,7 @@ const H = 36e5;
   ok(/Stairs, parking, damage credit/.test((await more('crew'), $('[id^="ce_l_"]') || {}).placeholder || ''), L('the crew\'s extra-charge box no longer suggests an extra hour (the clock bills the time)'));
 
   // ---------- the rate card ----------
-  await more('settings');
+  await more('settings', 'rates');
   const rad = $('input[data-s="includedMiles"]');
   ok(rad && /Local radius \(driving miles from the shop\)/.test(rad.closest('label').textContent) && /Per mile on mileage moves \(\$\)/.test($('input[data-s="mileRate"]').closest('label').textContent), L('Rate card: the local radius and the per-mile rate'));
   ok(/charged by the hour with the drive included, and no mileage/.test($('#view').textContent) && /A radius of 0 makes every move local\./.test($('#view').textContent), L('Rate card explains local and mileage moves'));
@@ -341,7 +341,7 @@ const H = 36e5;
   if ($('[data-act="q:clear"]')) { click('[data-act="q:clear"]'); await sleep(5); click('[data-act="q:clear"]'); await sleep(5); }
   type('[data-d="miles"]', '110'); await sleep(5);
   ok(/inside your 150-mile radius/.test($('#kindNote').textContent), L('the quote uses the new radius'));
-  type(rad.isConnected ? rad : (await more('settings'), $('input[data-s="includedMiles"]')), '0'); await sleep(5);
+  type(rad.isConnected ? rad : (await more('settings', 'rates'), $('input[data-s="includedMiles"]')), '0'); await sleep(5);
   click('#fab'); await sleep(10);
   ok(/No local radius is set in Setup › Rate card, so every move is local\./.test($('#kindNote').textContent), L('radius 0: the quote says every move is local'));
   ok(A.errors.length === 0, L('no errors (' + A.errors.slice(0, 3).join(' | ') + ')'));

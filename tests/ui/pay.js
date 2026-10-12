@@ -103,6 +103,22 @@ const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
   ok($('#flow [data-act="flow:method"][data-m="vault"]').classList.contains('on') && $$('#flow input[name=vaultPick]').length === 1 && $('#flow input[name=vaultPick]').checked && /Visa ending 4242 · Lena Wu exp 03\/30 · kept on this job/.test(flowText()) && !/1111/.test(flowText()), 'the card Lena kept on this job is picked first, with the name on it; the old demo card (last four only) is not offered');
   ok(!/Bank \(ACH\)|Card number/.test(flowText()), 'no fields for card or bank numbers anywhere in Tally');
 
+  // ---- the owner's Ways to pay switches (Setup › Options › Payments)
+  {
+    const O = T.state().settings.opt, ways = () => $$('#flow [data-act="flow:method"]').map((c) => c.dataset.m).join(), on = () => ($('#flow [data-act="flow:method"].on') || {}).dataset;
+    O.payVault = false; T.render(); await sleep(30);
+    ok(ways() === 'link,card,other' && on().m === 'link' && !$('#saveLink') && !$$('#flow input[name=vaultPick]').length, 'Cards kept on file off: no card on file, the pay link is picked, and no box to keep the card');
+    O.payLink = false; T.render(); await sleep(30);
+    ok(ways() === 'card,other', 'Pay links off too: Card and Cash or check');
+    O.payCard = false; T.render(); await sleep(30);
+    ok(ways() === 'other', 'Card off too: only Cash or check');
+    O.payCash = false; T.render(); await sleep(30);
+    ok(ways() === 'other', 'every way off: Cash or check stays, so a payment can always be recorded');
+    O.payVault = true; O.payLink = true; O.payCard = true; O.payCash = true; T.render(); await sleep(30);
+    click('#flow [data-act="flow:method"][data-m="vault"]'); await sleep(30);
+    ok(ways() === 'vault,link,card,other' && on().m === 'vault', 'all back on: the four ways again');
+  }
+
   // ---- card on file
   click('#flow [data-act="flow:pay"]'); await sleep(60);
   let sc = fnCalls(A, 'pay_saved').pop();
@@ -188,8 +204,11 @@ const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
 
   // ---- Setup
   click('[data-act="sheet:close"]'); await sleep(10);
-  click('[data-act="more:open"]'); await sleep(10); click('[data-act="more:go"][data-tab="settings"]'); await sleep(40);
-  ok(/Stripe is connected \(test mode\)/.test($('#view').textContent) && $('details[data-k="st:Payments"]'), 'Setup › Payments says Stripe is connected, in test mode');
+  await A.go('settings'); await sleep(20);
+  ok(/Cards on \(test mode\)/.test($('#view').textContent), 'the Setup list says cards are on, in test mode');
+  click('[data-act="set:open"][data-sec="pay"]'); await sleep(20);
+  ok(/Stripe is connected \(test mode\)/.test($('#view').textContent) && /Ways to pay/.test($('#view').textContent), 'Setup › Payments says Stripe is connected, in test mode, with the ways-to-pay switches');
+  click('[data-act="set:back"]'); await sleep(10); click('[data-act="set:open"][data-sec="vault"]'); await sleep(20);
   ok(/Visa ending 4242 · Lena Wu · Stripe test/.test($('#view').textContent.replace(/\s+/g, ' ')), 'saved cards say which came from Stripe, with the name on the card');
   click('[data-act="st:rmvault"][data-id="' + CARD + '"]'); await sleep(80);
   ok(fnCalls(A, 'pay_forget').some((c) => c.body.vaultId === CARD) && !/Visa ending 4242/.test($('#view').textContent) && /can't be charged again/.test($('#toast').textContent), 'removing a Stripe card takes it off in Stripe too, through the server');
@@ -199,7 +218,7 @@ const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
   const log2 = [], ctl2 = {};
   const B = await load(FILE, { db: seed({ noLine: true, cardElsewhere: true }), org: ORG, me: { uid: 'u-marcus', email: 'm@x.com' }, fnReply: fnReplies(ctl2), setup: fakeStripe(log2, ctl2) });
   B.click('[data-act="more:open"]'); await sleep(10);
-  const fieldBtn = B.$('[data-act="more:go"][data-tab="crew"]'); if (fieldBtn) { B.click(fieldBtn); await sleep(30); }
+  await B.go('crew'); await sleep(15);
   B.click('.crewcard [data-act="flow:open"][data-id="j2"]'); await sleep(60);
   ok(B.$('#flow [data-act="flow:method"][data-m="link"]').classList.contains('on') && !B.$('#flow [data-act="flow:method"][data-m="vault"]'), 'the lead on the job sees the pay link first; a card kept on another job is not offered to him');
   ok(/Text it from my phone/.test(B.$('#flow').textContent), 'without a company line the text comes from his own phone');
@@ -223,7 +242,7 @@ const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
   const cPay = C.T.state().jobs.find((j) => j.id === 'j2').payments.pop();
   ok(cPay && cPay.amt === 200 && cPay.method === 'Cash', 'cash is recorded as cash: ' + JSON.stringify(cPay));
   C.click('#flow [data-act="flow:close"]'); await sleep(10); C.click('[data-act="sheet:close"]'); await sleep(10);
-  C.click('[data-act="more:open"]'); await sleep(10); C.click('[data-act="more:go"][data-tab="settings"]'); await sleep(40);
+  await C.go('settings', 'pay'); await sleep(20);
   ok(/not turned on for card payments yet/.test(C.$('#view').textContent), 'Setup › Payments says the company is not turned on');
   // the payment service doesn't answer
   const ctlD = { cfg: { ok: false } };
@@ -291,7 +310,7 @@ const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
   K.click('#sheet [data-act="flow:open"]'); await sleep(60);
   ok(!K.$('#flow [data-act="flow:method"][data-m="vault"]') && K.$('#flow [data-act="flow:method"][data-m="link"]').classList.contains('on'), "another customer's card with the same name on it is not offered: without a phone, a card belongs to its own job");
   K.click('#flow [data-act="flow:close"]'); await sleep(10); K.click('[data-act="sheet:close"]'); await sleep(10);
-  K.click('[data-act="more:open"]'); await sleep(10); K.click('[data-act="more:go"][data-tab="settings"]'); await sleep(40);
+  await K.go('settings', 'vault'); await sleep(20);
   ok(/Amex ending 0005 · Lena Wu.*Kept on Priya Nair’s job/.test(K.$('#view').textContent.replace(/\s+/g, ' ')), 'Setup says which job such a card was kept on');
   ok(K.errors.length === 0 && I.errors.length === 0, 'no errors (' + K.errors.concat(I.errors).slice(0, 3).join(' | ') + ')');
 
@@ -317,7 +336,7 @@ const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
   /* ---------------- the artifact edition ---------------- */
   const F = await load(ART, {});
   ok(!F.w.tallyPay, 'the artifact edition has no payment connection');
-  F.click('[data-act="more:open"]'); await sleep(10); F.click('[data-act="more:go"][data-tab="settings"]'); await sleep(40);
+  await F.go('settings', 'pay'); await sleep(20);
   ok(/Card payments run on the hosted edition/.test(F.$('#view').textContent), 'Setup › Payments explains where real payments run');
   ok(F.T.qrSvg('https://example.com/p/abc') && readQr(F.T.qrSvg('https://example.com/p/abc')) === 'https://example.com/p/abc', 'the QR maker works in both editions');
   ok(F.errors.length === 0, 'no errors in the artifact (' + F.errors.slice(0, 3).join(' | ') + ')');

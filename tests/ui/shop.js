@@ -19,12 +19,13 @@ const type = (P, sel, v, blur) => { const e = P.$(sel); e.value = v; e.dispatchE
   P.click('#fab'); await sleep(15);
   ok(!P.$('[data-d="milesOut"]') && /Distance \(miles\)/.test(P.$('#view').textContent), 'no shop address: just the one distance field, as before');
   // set the shop in Setup
-  P.click('[data-act="more:open"]'); await sleep(5); P.click('[data-act="more:go"][data-tab="settings"]'); await sleep(20);
+  await P.go('settings', 'company');
   const sa = P.$('input[data-s="shopAddress"]');
   ok(!!sa && /Shop address \(where trucks start and end the day\)/.test(P.$('#view').textContent), 'Setup › Company has a shop address');
   type(P, 'input[data-s="shopAddress"]', SHOP); await sleep(5);
   ok(P.T.state().settings.shopAddress === SHOP, 'shop address saved');
-  ok(P.$('input[data-s="shopTravel"]').checked, 'counting the drive from and back is on by default');
+  P.click('[data-act="set:back"]'); await sleep(10); P.click('[data-act="set:open"][data-sec="rates"]'); await sleep(15);
+  ok(P.$('input[data-s="shopTravel"]').checked, 'counting the drive from and back is on by default (Setup › Rate card)');
   await sleep(400);
   const sw = P.calls.writes.filter((x) => x.row.path === 'org/settings').pop();
   ok(sw && sw.row.data.shopAddress === SHOP, 'shop address reaches the database, so every phone uses it');
@@ -56,7 +57,7 @@ const type = (P, sel, v, blur) => { const e = P.$(sel); e.value = v; e.dispatchE
   P.click('[data-act="q:useshop"][data-k="out"]'); await sleep(20);
   ok(P.$('[data-d="milesOut"]').value === '12.3', 'Use puts Google\'s number back');
   // the switch
-  P.click('[data-act="more:open"]'); await sleep(5); P.click('[data-act="more:go"][data-tab="settings"]'); await sleep(20);
+  await P.go('settings', 'rates');
   const st = P.$('input[data-s="shopTravel"]'); st.checked = false; st.dispatchEvent(new P.w.Event('input', { bubbles: true })); await sleep(5);
   P.click('#fab'); await sleep(15); P.click('[data-act="q:step"][data-s="3"]'); await sleep(20);
   ok(/2 movers, 3 hr at \$140\/hr\$420/.test(P.$('#qLines').textContent) && !/Mileage/.test(P.$('#qLines').textContent), 'switched off: only the pickup-to-delivery drive is in the hours (1.89 + 0.75 → 3 h): ' + P.$('#qLines').textContent);

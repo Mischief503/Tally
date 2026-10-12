@@ -73,7 +73,7 @@ function browser(rec, opts = {}) {
 const rec0 = () => ({ opened: [], tabs: [], closedTabs: 0, stripe: [], confirm: [] });
 const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
 const say = (el) => (el ? el.textContent.replace(/\s+/g, ' ') : '');
-async function setup(A) { A.click('[data-act="more:open"]'); await sleep(10); A.click('[data-act="more:go"][data-tab="settings"]'); await sleep(40); }
+async function setup(A) { await A.go('settings', 'pay'); await sleep(20); }
 const payCard = (A) => A.$$('#view details.acc.card').find((d) => /^Payments/.test(say(d.querySelector('summary')).trim())) || A.$$('#view section.card').find((s) => /Payments/.test(say(s.querySelector('h2'))));
 async function back(A) {   // the owner comes back to Tally from Stripe's page
   Object.defineProperty(A.w.document, 'hidden', { value: true, configurable: true });
@@ -208,7 +208,7 @@ async function payScreen(A) {
   ok(!G.$('[data-act="more:go"][data-tab="settings"]') && !G.$('[data-act="pay:connect"]'), 'dispatch has no Setup, so no Connect button (the owner connects)');
   const H = await load(FILE, { db: seed(), org: ORG, me: { uid: 'u-marcus', email: 'm@x.com' }, fnReply: fnReplies({ cfg: CFG.none }), setup: browser(rec0()) });
   H.click('[data-act="more:open"]'); await sleep(10);
-  const fieldBtn = H.$('[data-act="more:go"][data-tab="crew"]'); if (fieldBtn) { H.click(fieldBtn); await sleep(30); }
+  await H.go('crew'); await sleep(15);
   H.click('.crewcard [data-act="flow:open"][data-id="j2"]'); await sleep(60);
   ok(/The owner connects Stripe in Setup › Payments/.test(say(H.$('#flow'))), 'the lead on the job is told the owner turns cards on');
   ok(G.errors.length === 0 && H.errors.length === 0 && E.errors.length === 0 && F.errors.length === 0, 'no errors (' + G.errors.concat(H.errors, E.errors, F.errors).slice(0, 3).join(' | ') + ')');

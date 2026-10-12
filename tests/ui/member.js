@@ -69,8 +69,8 @@ function browser(rec, opts = {}) {
 const rec0 = () => ({ opened: [], tabs: [] });
 const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
 const say = (el) => (el ? el.textContent.replace(/\s+/g, ' ') : '');
-async function setup(A) { A.click('[data-act="more:open"]'); await sleep(10); A.click('[data-act="more:go"][data-tab="settings"]'); await sleep(40); }
-const card = (A) => A.$$('#view details.acc.card').find((d) => /^\s*Membership/.test(say(d.querySelector('summary'))));
+async function setup(A) { await A.go('settings', 'member'); await sleep(20); }
+const card = (A) => A.$$('#view details.acc.card').find((d) => /^\s*Membership/.test(say(d.querySelector('summary')))) || A.$$('#view section.card').find((s) => /Membership/.test(say(s.querySelector('h2'))));
 async function back(A) {
   Object.defineProperty(A.w.document, 'hidden', { value: true, configurable: true }); A.w.document.dispatchEvent(new A.w.Event('visibilitychange')); await sleep(10);
   Object.defineProperty(A.w.document, 'hidden', { value: false, configurable: true }); A.w.document.dispatchEvent(new A.w.Event('visibilitychange')); await sleep(60);
@@ -113,7 +113,7 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   await sleep(30);
   ok(/Your free trial ends in 2 days\. Start the membership to keep going: \$149\/month/.test(say(B.$('#view .member-nudge'))), 'two days left: Today reminds the owner');
   B.click('#view [data-act="mem:go"]'); await sleep(40);
-  ok(B.$('#view details.acc.card[open]') && /Membership/.test(say(B.$('#view details.acc.card[open] summary'))), 'Open Membership goes to Setup with the Membership card open');
+  ok(B.T.ui.setSec === 'member' && /Membership/.test(say(B.$('#view section.card h2'))) && !!B.$('#view [data-act="set:back"]'), 'Open Membership goes to Setup › Membership');
   const C = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies({ status: ST.ended() }), setup: browser(rec0()) });
   await sleep(30);
   ok(/Your free trial has ended\. Start the membership to keep using Tally/.test(say(C.$('#view .member-nudge'))) && C.$('#view .pulse'), 'trial over: reminded, and Today still works (nobody is locked out)');
@@ -206,8 +206,8 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   const L = await load(ART, {});
   L.click('[data-act="more:open"]'); await sleep(10);
   ok(!L.w.tallyMember && !L.$('[data-act="more:go"][data-tab="admin"]'), 'the artifact edition has no membership and no Tally admin');
-  L.click('[data-act="more:go"][data-tab="settings"]'); await sleep(40);
-  ok(!/Membership/.test(L.$$('#view details.acc.card summary').map((x) => x.textContent).join('|')), 'and no Membership card in Setup');
+  L.click('[data-act="more:close"]'); await sleep(5); await L.go('settings');
+  ok(!!L.$('[data-act="set:open"][data-sec="company"]') && !L.$('[data-act="set:open"][data-sec="member"]'), 'and no Membership in Setup');
   ok(L.errors.length === 0, 'no errors in the artifact (' + L.errors.slice(0, 3).join(' | ') + ')');
 
   process.exit(summary('membership') ? 1 : 0);

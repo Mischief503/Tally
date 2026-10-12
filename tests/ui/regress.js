@@ -63,8 +63,8 @@ const file = process.argv[2], label = process.argv[3] || file;
   click('[data-act="sheet:close"]');
 
   // setup card on-device
-  click('[data-act="more:open"]'); await sleep(10); click('[data-act="more:go"][data-tab="settings"]'); await sleep(20);
-  ok(/Texts and calls/.test(text()) && /run on the hosted edition/.test(text()), label + ': Setup explains texting runs on the hosted edition');
+  await A.go('settings', 'comms');
+  ok(/Texts and calls/.test(text()) && /run on the hosted edition/.test(text()), label + ': Setup › Texts and calls explains texting runs on the hosted edition');
   ok($$('input[data-s^="comms.alerts."]').length === 4, label + ': alert switches still editable');
 
   // money colours fixed across every theme, and every theme applies cleanly

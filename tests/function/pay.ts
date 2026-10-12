@@ -414,6 +414,24 @@ putDoc(ORG, "jobs/j2", job("j2", { signed: {} }));
 r = await app("tok-marcus", { action: "pay_link", org: ORG, jobId: "j2", amount: 100 });
 ok(!r.body.ok && /signs the required forms first/.test(r.body.message), "a finished job with an unsigned required form can't be paid yet");
 
+/* ---------- the owner's switches (Setup › Options) ---------- */
+// An amount of 0 is refused only after every permission check has passed, so "Enter an amount." means allowed.
+const allowed = (x: any) => x.body.message === "Enter an amount.";
+putDoc(ORG, "org/settings", { ...settings, opt: { leadPay: false } });
+r = await app("tok-marcus", { action: "pay_link", org: ORG, jobId: "j1", amount: 100 });
+ok(r.status === 403 && /The office collects payments in this company/.test(r.body.message), "Crew leads collect payment off: Marcus is turned away on his own job");
+ok(allowed(await app("tok-dispatch", { action: "pay_link", org: ORG, jobId: "j1", amount: 0 })), "while dispatch still can");
+putDoc(ORG, "org/settings", { ...settings, opt: { dispatchPay: false } });
+r = await app("tok-dispatch", { action: "pay_link", org: ORG, jobId: "j1", amount: 100 });
+ok(r.status === 403 && /Only the owner takes payments in this company/.test(r.body.message), "Dispatch can take payments off: dispatch is turned away");
+ok(allowed(await app("tok-owner", { action: "pay_link", org: ORG, jobId: "j1", amount: 0 })) && allowed(await app("tok-marcus", { action: "pay_link", org: ORG, jobId: "j1", amount: 0 })), "the owner and Marcus still can");
+putDoc(ORG, "org/settings", { ...settings, opt: { forms: false } });
+ok(allowed(await app("tok-marcus", { action: "pay_link", org: ORG, jobId: "j2", amount: 0 })), "Signatures before payment off: the job with an unsigned form can be paid");
+putDoc(ORG, "org/settings", { ...settings, opt: { leadPay: true, dispatchPay: true, forms: true } });
+r = await app("tok-marcus", { action: "pay_link", org: ORG, jobId: "j2", amount: 100 });
+ok(/signs the required forms first/.test(r.body.message), "switched back on, it waits for the signature again");
+putDoc(ORG, "org/settings", settings);
+
 /* ---------- a pay link, with the webhook made on first use ---------- */
 r = await app("tok-marcus", { action: "pay_link", org: ORG, jobId: "j1", amount: 300, save: true });
 ok(r.body.ok && /^https:\/\/proj\.supabase\.co\/functions\/v1\/tally-twilio\/p\/[A-Za-z0-9]{10}$/.test(r.body.url), "a short link comes back: " + r.body.url);

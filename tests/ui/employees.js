@@ -43,10 +43,10 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
   ok($('#emp').hidden, 'Close shuts it');
 
   // Setup › Employees
-  click('[data-act="more:open"]'); await sleep(10);
-  click('[data-act="more:go"][data-tab="settings"]'); await sleep(60);
-  ok(!!$('details[data-k="st:Employees"]'), 'Setup has an Employees card');
-  ok(!$('details[data-k="st:Crew"]') && !$('details[data-k="st:Office staff"]'), 'it replaces the old Crew and Office staff cards');
+  await A.go('settings'); await sleep(30);
+  ok(!!$('[data-act="set:open"][data-sec="employees"]'), 'Setup has Employees');
+  ok(!/Office staff/.test($('#setList').textContent) && !$('[data-act="set:open"][data-sec="crew"]'), 'it replaces the old Crew and Office staff cards');
+  click('[data-act="set:open"][data-sec="employees"]'); await sleep(30);
   const rows = $$('.emprow');
   ok(rows.length === 4, 'everyone is listed: Marcus\'s profile plus Dee, Luis and the owner (' + rows.length + ')');
   ok(/Marcus.*Crew lead.*Signed in as marcus@x\.com/.test(rows.map((r) => r.textContent).join('|')), 'Marcus shows as signed in');
@@ -140,6 +140,7 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
   click('[data-act="emp:close"]'); await sleep(20);
 
   // App access: approve a join request as Luis (no profile) -> a linked profile is made
+  click('[data-act="set:back"]'); await sleep(10); click('[data-act="set:open"][data-sec="access"]'); await sleep(20);
   const reqStaff = $('#accStaff_u-new');
   ok(reqStaff && Array.from(reqStaff.options).map((o) => o.value).join() === ',Dee,Luis', 'the approval list offers only people who are not signed in yet');
   reqStaff.value = 'Luis'; reqStaff.dispatchEvent(new w.Event('change', { bubbles: true }));
@@ -193,8 +194,7 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
 
   /* ================= on-device copy (claude.ai artifact) ================= */
   const B = await load(ARTIFACT, {});
-  B.click('[data-act="more:open"]'); await sleep(10);
-  B.click('[data-act="more:go"][data-tab="settings"]'); await sleep(40);
+  await B.go('settings', 'employees'); await sleep(20);
   ok(/profiles stay on this device/.test(B.text()), 'the on-device copy says profiles stay on this device');
   B.click('[data-act="emp:new"]'); await sleep(20);
   set(B, '[data-ek="name"]', 'Pat');
