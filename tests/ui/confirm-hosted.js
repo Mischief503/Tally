@@ -61,6 +61,16 @@ function seed() {
   B.$('#toast').textContent = '';
   await B.w.__sb.from('docs').upsert(c1b); await sleep(700);
   ok(!/updated the notes/.test(B.$('#toast').textContent), 'notes saved under his own name don’t pop up for him');
+  // Marcus adds materials with taps; each reaches the database
+  B.click('[data-act="cr:seg"][data-id="c1"][data-k="mats"]'); await sleep(10);
+  B.click('[data-act="mp:open"][data-id="c1"]'); await sleep(20);
+  const m0 = B.T.state().settings.materials[0];
+  B.click('#matpick [data-act="mp:add"][data-mid="' + m0.id + '"]'); await sleep(5);
+  B.click('#matpick [data-act="mp:add"][data-mid="' + m0.id + '"]'); await sleep(700);
+  const ml = Object.values(db.docs.find((d) => d.path === 'jobs/c1').data.materials || {}).filter((x) => x.itemId === m0.id);
+  ok(ml.length === 1 && ml[0].qty === 2 && ml[0].by === 'Marcus', 'two taps reach the database as 2 on Marcus’s line');
+  B.click('#matpick [data-act="mp:close"].btn'); await sleep(700);
+  ok(Object.values(db.docs.find((d) => d.path === 'jobs/c1').data.log || {}).some((l) => /Materials added by Marcus: .* × 2/.test(l.ev)), 'and closing the list logs it on the job');
   ok(A.errors.length === 0 && B.errors.length === 0, 'no errors (' + A.errors.concat(B.errors).slice(0, 3).join(' | ') + ')');
   process.exit(summary('confirm-hosted') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
