@@ -85,7 +85,13 @@ function seed(opts = {}) {
   calls.fn.length = 0;
   const notes = $('#sheet textarea[data-j="notes"]'); notes.value = 'Gate code 1234'; notes.dispatchEvent(new w.Event('input', { bubbles: true }));
   await sleep(400);
-  ok(calls.fn.length === 0, 'editing notes texts nobody');
+  const j1 = () => T.state().jobs.find((j) => j.id === 'j1');
+  ok(calls.fn.length === 0 && !j1().d.notes && /Not saved yet/.test($('#sheet [data-sv="notes"]').textContent), 'typing job notes saves nothing yet, and says so');
+  const wn = calls.writes.length;
+  click('#sheet [data-act="jed:save"][data-sec="notes"]'); await sleep(400);
+  const nw = calls.writes.slice(wn).filter((x) => x.row && x.row.path === 'jobs/j1').pop();
+  ok(nw && nw.row.data.d.notes === 'Gate code 1234' && nw.row.data.d.notesBy === 'Owner' && nw.row.data.d.notesAt > 0, 'Save notes puts them in the database, with who saved them and when');
+  ok(calls.fn.length === 0, 'saving notes texts nobody');
   const dt = $('#sheet input[data-j="moveDate"]'); dt.value = day(4); dt.dispatchEvent(new w.Event('change', { bubbles: true }));
   await sleep(400);
   ok(calls.fn.filter((c) => c.body.action === 'job').length === 1, 'moving the date sends a check');

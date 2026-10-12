@@ -492,6 +492,15 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .ccmini .tx small{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .ccmini .go{color:var(--muted);font-size:20px;flex:none}
 .cc-less{background:none;border:0;color:var(--muted);font:600 13px var(--font);padding:4px 0;cursor:pointer;min-height:32px}
+/* typed job info is saved with a button: the bar under each part says whether it is saved */
+.savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.savebar .btn{min-width:96px}
+.savebar .svst{flex:1 1 200px;min-width:0;font-size:13px;color:var(--muted);line-height:1.35}
+.savebar .svst.need{color:var(--text);font-weight:var(--w-mid)}
+.svdot{display:inline-block;width:8px;height:8px;border-radius:99px;background:var(--warn);margin-right:6px;vertical-align:1px}
+.leavebar{flex:none;background:var(--card);border-top:2px solid var(--warn);padding:12px 14px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.14);display:grid;gap:10px}
+.leavebar p{margin:0;font-size:14.5px;line-height:1.4}
+.leavebar .row .btn{flex:1 1 120px}
 @media (max-width:340px){ .grid2.stack{grid-template-columns:1fr} }
 @media (max-width:420px){ nav.tabs button{font-size:10px} }
 @media (min-width:520px){ .stats b{font-size:24px} .kpis{grid-template-columns:repeat(4,1fr)} .kpi b{font-size:24px} }
@@ -1091,7 +1100,7 @@ function defaultSettings(){return {
 function blankDraft(){return {name:'',phone:'',email:'',source:'Google',moveDate:'',time:'08:00',from:'',to:'',miles:'',milesOut:'',milesBack:'',flights:'',pack:false,crew:'',truckId:'',hoursOverride:'',discount:'',notes:'',custom:{},items:{},editId:'',moveKind:''}}
 
 /* ---------- state ---------- */
-var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',hq:'',hf:'all',hShow:50,hOpen:'',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null,sosOpen:false,sosStart:null,sosArm:'',sosDraft:{},sosShown:{},sosWant:false,sosBusy:{},setSec:'',setQ:'',seg:{},ccOpen:{}};
+var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',hq:'',hf:'all',hShow:50,hOpen:'',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null,sosOpen:false,sosStart:null,sosArm:'',sosDraft:{},sosShown:{},sosWant:false,sosBusy:{},setSec:'',setQ:'',seg:{},ccOpen:{},jed:{},mf:{},cfm:{},closeAsk:null};
 var sync={mode:'local',db:null,user:null,uid:'',meName:'',isOwner:false,isAdmin:false,gate:'',identity:{status:'',role:'',staff:''},started:false,keepLocal:false,inited:false,requested:false,
   got:{settings:false,jobs:false,shifts:false,vault:false},settingsSeen:false,lastJobs:{},lastShifts:{},lastVault:{},lastSettings:'',inflight:{},q:{},unsubs:[],
   photoCache:{},pageCache:{},fetching:{},photoUp:{},requests:[],users:[],names:{},retryMs:5000,warned:false,userSub:null,reqSub:null};
@@ -1795,7 +1804,9 @@ function saveQuote(kind){
   if(kind==='book'&&!q.cf){toast('Add at least one item before booking.');return}
   var j=d.editId?byId(d.editId):null;
   if(j){
+    var oldNotes=String(j.d.notes||'');
     j.d=clone(d);delete j.d.editId;j.quote=q;j.items=itemsOf(d,S);logEv(j,'Quote updated');
+    if(String(j.d.notes||'')!==oldNotes){j.d.notesBy=myName()||'Office';j.d.notesAt=Date.now();logEv(j,'Job notes updated by '+j.d.notesBy)}
     if(kind==='book'&&(j.status==='lead'||j.status==='quoted'))setStatus(j,'booked');
     else if(j.status==='lead'&&q.cf)setStatus(j,'quoted');
     // a finished job billed by the clock is worked out again against the new quote
@@ -1803,6 +1814,7 @@ function saveQuote(kind){
   }else{
     var s=kind==='book'?'booked':(q.cf?'quoted':'lead');
     j=newJob(d,S,s);logEv(j,'Created as '+LABEL[s]);state.jobs.push(j);
+    if(String(j.d.notes||'').trim()){j.d.notesBy=myName()||'Office';j.d.notesAt=Date.now()}
   }
   state.draft=blankDraft();ui.qstep=1;save();ui.tab='jobs';ui.filter='all';render();openJob(j.id);
   toast(kind==='book'?'Job booked. Add a date, truck and crew.':'Saved.');
@@ -1835,14 +1847,162 @@ function renderJobs(){
       '<div class="card empty"><h3>No jobs here yet</h3><p>Build a quote and it lands in this list.</p><button class="btn primary" data-act="tab" data-tab="quote">New quote</button></div>'))+
     histLine;
 }
-function openJob(id){if(!canEditJobs())return;ui.jobId=id;ui.armed='';ui.open['sh:Schedule']=true;renderSheet();commsLoadLog(id)}
-function closeSheet(){ui.jobId=null;renderSheet();renderTab()}
+function openJob(id,force){
+  if(!canEditJobs())return;
+  if(!force&&ui.jobId&&ui.jobId!==id){var cj=byId(ui.jobId);if(cj&&sheetDirty(cj).length){leaveSheet(function(){openJob(id,true)});return}}
+  ui.jobId=id;ui.armed='';ui.closeAsk=null;ui.open['sh:Schedule']=true;renderSheet();commsLoadLog(id);
+}
+function closeSheet(){ui.jobId=null;ui.closeAsk=null;renderSheet();renderTab()}
+
+/* ---------- typed job info is saved with a button ----------
+   What the office types on the job sheet (the customer and route, its own fields, the job notes) is
+   held as a draft for that job (ui.jed[jobId]) until Save, so nothing half-typed reaches the crew,
+   and so a change arriving from another phone can't wipe what is being typed. The picks in the
+   material and cost forms are kept the same way (ui.mf, ui.cfm), on the sheet and the crew card. */
+var JED_SECS={cust:{keys:['name','phone','from','to'],cf:true,label:'Customer and route'},notes:{keys:['notes'],label:'Job notes'}};
+var JED_NAMES={name:'name',phone:'phone',from:'pickup',to:'delivery',notes:'job notes'};
+function jedSaved(j,k){return String((k.indexOf('cf:')===0?(j.d.custom||{})[k.slice(3)]:j.d[k])||'')}
+function jv(j,k){var e=ui.jed[j.id];return e&&Object.prototype.hasOwnProperty.call(e,k)?e[k]:jedSaved(j,k)}
+function jedSecOf(k){return k.indexOf('cf:')===0?'cust':JED_SECS.notes.keys.indexOf(k)>=0?'notes':'cust'}
+function jedDirty(j,sec){var e=ui.jed[j.id]||{};return Object.keys(e).filter(function(k){return jedSecOf(k)===sec&&e[k]!==jedSaved(j,k)})}
+function jedSet(j,k,v){
+  var e=ui.jed[j.id]||(ui.jed[j.id]={});
+  if(String(v)===jedSaved(j,k))delete e[k];else e[k]=String(v);
+  if(!Object.keys(e).length)delete ui.jed[j.id];
+  jedBars(j);
+}
+function matKey(ctx,id){return ctx+'_'+id}
+// the small text on the right of a part's header on the job sheet
+var SEC_TITLES={cust:'Customer and route',notes:'Job notes',mats:'Materials and costs'};
+function secMeta(j,sec){
+  if(sec==='cust')return (jedDirty(j,'cust').length?'Not saved · ':'')+(j.d.phone||'');
+  if(sec==='notes')return jedDirty(j,'notes').length?'Not saved':j.d.notes?'added':'';
+  var n=(j.materials||[]).length+(j.costs||[]).length,k=matKey('s',j.id);
+  return (matDirty(k)||costDirty(k)?'Not saved'+(n?' · ':''):'')+(n||'');
+}
+function secMetaSync(j){
+  Object.keys(SEC_TITLES).forEach(function(sec){
+    var d=$('#sheet details[data-k="sh:'+SEC_TITLES[sec]+'"]'),sm=d&&d.querySelector('summary');if(!sm)return;
+    var t=secMeta(j,sec),sl=sm.querySelector('small');
+    if(!t){if(sl)sl.remove();return}
+    if(!sl){sl=document.createElement('small');sm.appendChild(sl)}
+    sl.textContent=t;
+  });
+}
+function matDirty(key){var o=ui.mf[key];return !!(o&&((o.i||'')!==''||String(o.n||'').trim()))}
+function costDirty(key){var o=ui.cfm[key];return !!(o&&(String(o.l||'').trim()||moneyVal({value:o.a||''})>0))}
+// what is still unsaved on the open job, in words
+function sheetDirty(j){
+  var out=[];
+  if(jedDirty(j,'cust').length)out.push('the customer and route');
+  if(jedDirty(j,'notes').length)out.push('the job notes');
+  if(matDirty(matKey('s',j.id)))out.push('the material you picked');
+  if(costDirty(matKey('s',j.id)))out.push('the job cost you typed');
+  return out;
+}
+function listWords(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1]}
+// close the sheet, open another job or edit the quote, but ask first when something isn't saved
+function leaveSheet(then){
+  var j=ui.jobId?byId(ui.jobId):null;
+  if(!j||!sheetDirty(j).length){then();return}
+  ui.closeAsk={then:then};renderSheet();
+  var lb=$('#sheet .leavebar button');if(lb){try{lb.focus({preventScroll:true})}catch(e){}}
+}
+function saveNoteLine(j){
+  if(!j.d.notesAt)return 'The crew sees these but can’t change them.';
+  var t=j.d.notesAt,sameDay=iso(new Date(t))===todayISO();
+  return 'Saved. Last changed by '+(j.d.notesBy||'the office')+(sameDay?' today at '+fmtClock(t):' on '+fmtStamp(t))+'. The crew sees these but can’t change them.';
+}
+function jedBarHtml(j,sec){
+  var dirty=jedDirty(j,sec).length>0,lbl=sec==='notes'?'Save notes':'Save';
+  var st=dirty?'<span class="svdot" aria-hidden="true"></span>'+esc('Not saved yet. Tap '+lbl+' so everyone on the job sees it.')
+    :esc(sec==='notes'?saveNoteLine(j):'Saved. The crew sees these on their job card.');
+  return '<div class="savebar" data-sv="'+sec+'" data-dirty="'+(dirty?1:0)+'"><button class="btn'+(dirty?' primary':'')+'" data-act="jed:save" data-sec="'+sec+'">'+lbl+'</button>'+
+    '<button class="btn ghost" data-act="jed:undo" data-sec="'+sec+'"'+(dirty?'':' hidden')+'>Undo</button>'+
+    '<span class="svst'+(dirty?' need':'')+'" role="status">'+st+'</span></div>';
+}
+// redraw just the save bars, and only when saved / not saved flips, so the box being typed in keeps its place
+function jedBars(j){
+  if(!j||ui.jobId!==j.id)return;
+  Object.keys(JED_SECS).forEach(function(sec){var b=$('#sheet [data-sv="'+sec+'"]');if(b&&b.dataset.dirty!==(jedDirty(j,sec).length?'1':'0'))b.outerHTML=jedBarHtml(j,sec)});
+  secMetaSync(j);
+  if(ui.closeAsk&&!sheetDirty(j).length){ui.closeAsk=null;var lb=$('#sheet .leavebar');if(lb)lb.remove()}
+}
+// save one part of the sheet; returns what changed (labels), or null when nothing did
+function jedSave(j,sec){
+  var keys=jedDirty(j,sec);if(!keys.length)return null;
+  var e=ui.jed[j.id],who=myName()||'Office',names=[];
+  keys.forEach(function(k){
+    var v=e[k];
+    if(k.indexOf('cf:')===0){j.d.custom=j.d.custom||{};j.d.custom[k.slice(3)]=v;var f=(state.settings.customFields||[]).find(function(x){return x.id===k.slice(3)});names.push(f?f.label:'a field')}
+    else{j.d[k]=v;names.push(JED_NAMES[k]||k)}
+    delete e[k];
+  });
+  if(!Object.keys(e).length)delete ui.jed[j.id];
+  if(sec==='notes'){j.d.notesBy=who;j.d.notesAt=Date.now();logEv(j,(String(j.d.notes||'').trim()?'Job notes updated':'Job notes cleared')+' by '+who)}
+  else logEv(j,'Customer details updated by '+who+': '+names.join(', '));
+  return names;
+}
+// save everything unsaved on the sheet; false when a material or cost can't go in as typed (it says why)
+function jedSaveAll(j){
+  var did=false,okAll=true;
+  ['cust','notes'].forEach(function(sec){if(jedSave(j,sec))did=true});
+  var key=matKey('s',j.id),who=myName()||'Office';
+  if(matDirty(key)){if(matAddFrom(j,'s',who))did=true;else okAll=false}
+  if(okAll&&costDirty(key)){if(costAddFrom(j,'s',who))did=true;else okAll=false}
+  if(did)save();
+  return okAll;
+}
+// the material and cost forms: what was picked, kept across redraws
+function formKeep(t){
+  var m=/^(mat|cost)_([iqnlca])_(.+)$/.exec(t.id||'');if(!m)return;
+  var bag=m[1]==='mat'?ui.mf:ui.cfm,o=bag[m[3]]||(bag[m[3]]={});o[m[2]]=t.value;
+  formBar(m[1],m[3]);
+}
+function formBar(kind,key){
+  var dirty=kind==='mat'?matDirty(key):costDirty(key),b=$('#'+kind+'Save_'+key),h=$('#'+kind+'Hint_'+key);
+  if(b)b.classList.toggle('primary',dirty);
+  if(h)h.hidden=!dirty;
+  var j=ui.jobId?byId(ui.jobId):null;
+  if(j&&key===matKey('s',j.id)){secMetaSync(j);if(ui.closeAsk&&!sheetDirty(j).length){ui.closeAsk=null;var lb=$('#sheet .leavebar');if(lb)lb.remove()}}
+}
+function matAddFrom(j,ctx,who){
+  var key=matKey(ctx,j.id),o=ui.mf[key]||{},S=state.settings;
+  var sel=$('#mat_i_'+key),qel=$('#mat_q_'+key),nel=$('#mat_n_'+key);
+  var iv=sel?sel.value:(o.i||''),mq=num(qel?qel.value:(o.q==null?'1':o.q)),mn=String(nel?nel.value:(o.n||'')).trim();
+  if(!iv){toast('Choose a material first.');return false}
+  if(!(mq>0)){toast('Enter a quantity.');return false}
+  var mc=(S.materials||[]).find(function(x){return x.id===iv}),ml;
+  if(iv==='other'){if(!mn){toast('Say what the material was.');return false}ml={id:uid(),itemId:'',name:mn,unit:'',qty:mq,price:null,cost:null,by:who,ts:Date.now(),custom:true}}
+  else if(mc)ml={id:uid(),itemId:mc.id,name:mc.name,unit:mc.unit,qty:mq,price:mc.price,cost:mc.cost,by:who,ts:Date.now()};
+  else{toast('That material isn’t on the list any more. Pick another.');return false}
+  j.materials=j.materials||[];j.materials.push(ml);logEv(j,'Material: '+ml.name+' × '+ml.qty+' ('+who+')');
+  delete ui.mf[key];
+  return ml;
+}
+function costAddFrom(j,ctx,who){
+  var key=matKey(ctx,j.id),o=ui.cfm[key]||{};
+  var lel=$('#cost_l_'+key),ael=$('#cost_a_'+key),cel=$('#cost_c_'+key);
+  var cl=String(lel?lel.value:(o.l||'')).trim(),ca=round2(moneyVal(ael||{value:o.a||''})),cc=cel?cel.value:(o.c||((state.settings.costCats||[])[0]||''));
+  if(!cl){toast('Say what the cost was for.');return false}
+  if(!(ca>0)){toast('Enter the amount.');return false}
+  var c={id:uid(),label:cl,cat:cc,amt:ca,by:who,ts:Date.now()};
+  j.costs=j.costs||[];j.costs.push(c);logEv(j,'Cost: '+cl+' '+money(ca)+' ('+who+')');
+  delete ui.cfm[key];
+  return c;
+}
 function nextAction(j){
   if(j.status==='lead')return {label:'Build quote',act:'sh:requote'};
   if(j.status==='quoted')return {label:'Book job',act:'sh:next'};
   if(j.status==='booked')return {label:'Start job',act:'sh:next'};
   if(j.status==='active')return {label:formsPending(j).length?'Get signatures and finish':'Finish job',act:'sh:next'};
   return null;
+}
+function leaveBarHtml(j){
+  if(!ui.closeAsk)return '';
+  var u=sheetDirty(j);if(!u.length)return '';
+  return '<div class="leavebar" role="alertdialog" aria-label="Changes not saved"><p><b>Not saved yet:</b> '+esc(listWords(u))+'. Save so everyone on the job sees it?</p>'+
+    '<div class="row"><button class="btn primary" data-act="jed:saveall">Save</button><button class="btn" data-act="jed:discard">Don’t save</button><button class="btn ghost" data-act="jed:keep">Keep editing</button></div></div>';
 }
 function renderSheet(){
   if(ui.jobId&&!canEditJobs())ui.jobId=null;
@@ -1851,7 +2011,10 @@ function renderSheet(){
   if(window.tallyPay&&!pay.cfg)payLoad();
   var S=state.settings,q=j.quote,paid=paidOf(j),bal=balOf(j),cf=conflictsFor(j);
   var prev=$('.sheet-body',el),keep=prev?prev.scrollTop:0,na=nextAction(j);
-  var cfs=S.customFields.map(function(f){return fld(esc(f.label),cfInput(f,j.d.custom[f.id],'data-jcf="'+f.id+'"'))}).join('');
+  var cfs=S.customFields.map(function(f){return fld(esc(f.label),cfInput(f,jv(j,'cf:'+f.id),'data-jcf="'+f.id+'"'))}).join('');
+  // keep the box being typed in, and where in it, across the redraw
+  var fa=document.activeElement,fsel=null;
+  if(fa&&el.contains(fa)&&(fa.dataset.j||fa.dataset.jcf||fa.id)){fsel={j:fa.dataset.j,jcf:fa.dataset.jcf,id:fa.id,s:fa.selectionStart,e:fa.selectionEnd}}
   var truckOpts='<option value="">Unassigned</option>'+S.trucks.map(function(t){return '<option value="'+t.id+'"'+(j.assign.truckId===t.id?' selected':'')+'>'+esc(t.name)+'</option>'}).join('');
   var crewChips=assignable().map(function(n){var on=j.assign.crew.indexOf(n)>=0;return '<button class="chip'+(on?' on':'')+'" data-act="sh:crew" data-n="'+esc(n)+'" aria-pressed="'+on+'">'+esc(n)+whoTag(n)+(on&&needsConfirm(j)&&isConfirmed(j,n)?' ✓':'')+'</button>'}).join('');
   var clash=cf.map(function(c){return '<div class="note" style="background:rgba(200,64,47,.14);border-color:var(--bad)">'+esc(c.what)+' is also on “'+esc(c.other.d.name)+'” at '+fmtTime(c.other.d.time)+'.</div>'}).join('');
@@ -1891,22 +2054,23 @@ function renderSheet(){
      fld('Start time','<input type="time" data-j="time" data-re="1" value="'+esc(j.d.time)+'">')+
      fld('Truck','<select data-jassign="truckId">'+truckOpts+'</select>','span2')+
    '</div><div class="f" style="margin-top:10px"><span>Crew</span><div class="chips" style="margin:0">'+crewChips+'</div></div>'+confirmLine(j)+'</div>'+
-   '<div class="sec" data-meta="'+esc(j.d.phone||'')+'"><h3>Customer and route</h3><div class="grid2 stack">'+
-     fld('Name','<input data-j="name" value="'+esc(j.d.name)+'">')+
-     fld('Phone','<input data-j="phone" type="tel" value="'+esc(j.d.phone)+'">')+
+   '<div class="sec" data-meta="'+esc(secMeta(j,'cust'))+'"><h3>Customer and route</h3><div class="grid2 stack">'+
+     fld('Name','<input data-j="name" value="'+esc(jv(j,'name'))+'">')+
+     fld('Phone','<input data-j="phone" type="tel" value="'+esc(jv(j,'phone'))+'">')+
      (j.d.phone?'<div class="span2"><button class="btn" data-act="call:cust" data-id="'+j.id+'">Call '+esc(j.d.name||'the customer')+'</button></div>':'')+
-     fld('Pickup','<input data-j="from" value="'+esc(j.d.from)+'">','span2')+
-     fld('Delivery','<input data-j="to" value="'+esc(j.d.to)+'">','span2')+
+     fld('Pickup','<input data-j="from" value="'+esc(jv(j,'from'))+'">','span2')+
+     fld('Delivery','<input data-j="to" value="'+esc(jv(j,'to'))+'">','span2')+
      (num(j.d.milesOut)||num(j.d.milesBack)?'<p class="hint span2" style="margin:0">Round trip from the shop: <b>'+fmtMi(num(j.d.milesOut)+num(j.d.miles)+num(j.d.milesBack))+' mi</b> ('+fmtMi(num(j.d.milesOut))+' to pickup, '+fmtMi(num(j.d.miles))+' to delivery, '+fmtMi(num(j.d.milesBack))+' back).</p>':'')+
      cfs+
+   '</div>'+jedBarHtml(j,'cust')+'<div class="grid2 stack" style="margin-top:12px">'+
      fld('Status','<select data-jstatus="1">'+statusOpts+'</select>')+
    '</div></div>'+
    '<div class="sec" data-meta="'+money(totalOf(j))+'"><h3>Quote</h3><table class="lines">'+lines+'</table><p class="hint">'+esc(items)+'</p>'+clockHtml(j)+'</div>'+
-   '<div class="sec" data-meta="'+(((j.materials||[]).length+(j.costs||[]).length)||'')+'"><h3>Materials and costs</h3>'+matSection(j,'s',myName()||'Office',true)+'</div>'+
+   '<div class="sec" data-meta="'+esc(secMeta(j,'mats'))+'"><h3>Materials and costs</h3>'+matSection(j,'s',myName()||'Office',true)+'</div>'+
    fsec+
    payHtml+
    '<div class="sec" data-meta="'+(j.photos.length||'')+'"><h3>Photos</h3><p class="hint" style="margin:-2px 0 6px">Up to 20 at a time, at any point, even after the job is paid.</p><div class="row"><button class="btn sm" data-act="photo" data-kind="Pickup">Pickup</button><button class="btn sm" data-act="photo" data-kind="Delivery">Delivery</button><button class="btn sm" data-act="photo" data-kind="Damage">Damage</button></div><div class="photos">'+photos+'</div></div>'+
-   '<div class="sec" data-meta="'+(j.d.notes?'added':'')+'"><h3>Job notes</h3><textarea data-j="notes" aria-label="Job notes" style="width:100%;min-height:72px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:16px;color:var(--text)">'+esc(j.d.notes)+'</textarea><p class="hint">The crew sees these but cannot edit them.</p></div>'+
+   '<div class="sec" data-meta="'+esc(secMeta(j,'notes'))+'"><h3>Job notes</h3><textarea data-j="notes" aria-label="Job notes" placeholder="Gate code, elevator booking, what to bring" style="width:100%;min-height:72px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:16px;color:var(--text)">'+esc(jv(j,'notes'))+'</textarea>'+jedBarHtml(j,'notes')+'</div>'+
    '<div class="sec" data-meta="'+((j.crewNotes||[]).length||'')+'"><h3>Crew notes</h3><p class="hint" style="margin:-4px 0 6px">Written by the crew in the field. Gate codes, access details, anything for the office.</p>'+cnotes+'</div>'+
    (j.startedAt?'<div class="sec" data-meta="'+(j.status==='active'?esc(phaseNow(j)):(j.phases&&j.phases.unloadEnd?fmtDur(j.phases.unloadEnd-j.phases.loadStart)+' handling':''))+'"><h3>On-site times</h3>'+
      (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+'</div>':'<p class="hint">The crew did not record load and unload times on this job.</p>')+
@@ -1914,9 +2078,16 @@ function renderSheet(){
    commsSection(j)+
    '<div class="sec"><h3>Activity</h3>'+acts+'</div>'+
    (state.ui.role==='owner'?'<button class="btn danger" data-act="sh:delete">'+(ui.armed==='sh:delete'?'Tap again to delete this job':'Delete job')+'</button>':'')+
-   '</div></div>';
+   '</div>'+leaveBarHtml(j)+'</div>';
   accordify($('.sheet-body',el),'.sec','H3','sh',['Schedule']);
+  // a part with something unsaved stays open, so its Save button is in view
+  ['Customer and route','Job notes','Materials and costs'].forEach(function(tt){
+    var dirty=tt==='Customer and route'?jedDirty(j,'cust').length:tt==='Job notes'?jedDirty(j,'notes').length:(matDirty(matKey('s',j.id))||costDirty(matKey('s',j.id)));
+    if(dirty){var dd=$('#sheet details[data-k="sh:'+tt+'"]');if(dd)dd.open=true}
+  });
   el.hidden=false;syncLock();
+  if(fsel){var fe=fsel.j?$('#sheet [data-j="'+fsel.j+'"]'):fsel.jcf?$('#sheet [data-jcf="'+fsel.jcf+'"]'):$('#'+fsel.id);
+    if(fe&&el.contains(fe)){try{fe.focus({preventScroll:true});if(fsel.s!=null&&fe.setSelectionRange)fe.setSelectionRange(fsel.s,fsel.e)}catch(x){}}}
   var nb=$('.sheet-body',el);if(nb)nb.scrollTop=keep;
   if(!prev){var pn=$('.panel',el);if(pn){pn.setAttribute('tabindex','-1');try{pn.focus({preventScroll:true})}catch(e){}}}
 }
@@ -2048,7 +2219,8 @@ function crewKit(me){
     if(!segs.some(function(s){return s[0]===cur}))cur='';
     var segRow='<div class="segs" data-segs="'+j.id+'" role="group" aria-label="Job details">'+segs.map(function(s){return '<button class="seg" data-act="cr:seg" data-id="'+j.id+'" data-k="'+s[0]+'" aria-expanded="'+(s[0]===cur)+'">'+s[1]+(s[2]!==''?' <small>'+s[2]+'</small>':'')+'</button>'}).join('')+'</div>';
     var panels=segs.map(function(s){return '<div class="segbody" data-segp="'+j.id+'|'+s[0]+'"'+(s[0]===cur?'':' hidden')+'>'+s[3]+'</div>'}).join('');
-    var officeNote=j.d.notes?'<div class="note" style="margin:10px 0 0"><b style="font-weight:var(--w-mid)">From the office:</b> <span style="white-space:pre-wrap">'+esc(j.d.notes)+'</span></div>':'';
+    var officeNote=j.d.notes?'<div class="note" style="margin:10px 0 0"><b style="font-weight:var(--w-mid)">From the office:</b> <span style="white-space:pre-wrap">'+esc(j.d.notes)+'</span>'+
+      (j.d.notesAt?'<small style="display:block;margin-top:4px">'+esc(noteWhen(j))+'</small>':'')+'</div>':'';
     return '<section class="card crewcard"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+'</h3><div class="cc-sub">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</div><div class="cc-sub">Crew: '+(crewLine||'none')+'</div>'+(j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+'</div>'+pill(j.status)+'</div>'+
       '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+officeNote+
       '<div class="cc-actions" style="margin-top:10px">'+main+call+'</div>'+
@@ -3239,7 +3411,7 @@ function pullJobs(snap){
   // work it out again here, so the bill matches the job. Lines from another version of Tally are left.
   Object.keys(remote).forEach(function(id){var cj=byId[id];if(cj&&cj.clockAt&&typeof cj.clockSig==='string'&&cj.clockSig.indexOf(CLOCK_V+':')===0&&cj.clockSig!==clockSig(cj)){rebill(cj,'worked out again');changed=true}});
   sync.got.jobs=true;
-  jobMsgNotice();
+  jobMsgNotice();noteNotice();
   state.jobs.forEach(function(j){(j.photos||[]).forEach(function(p){if(!p.data)fetchPhoto(p.id,0)})});
   commsBaseline();
   if(changed){cacheSave();softRefresh();if(ui.flow)flowRefresh()}
@@ -3695,17 +3867,21 @@ function matSection(j,ctx,who,showPrice){
   }).join('');
   var add='';
   if(can){
-    var opts='<option value="">Choose a material</option>'+(S.materials||[]).map(function(m){return '<option value="'+esc(m.id)+'">'+esc(m.name)+' ('+esc(m.unit)+')</option>'}).join('')+'<option value="other">Other (not on the list)</option>';
-    var cats=(S.costCats||[]).map(function(c){return '<option>'+esc(c)+'</option>'}).join('');
+    var key=matKey(ctx,id),mf=ui.mf[key]||{},cf0=ui.cfm[key]||{},mDirty=matDirty(key),cDirty=costDirty(key);
+    var opts='<option value="">Choose a material</option>'+(S.materials||[]).map(function(m){return '<option value="'+esc(m.id)+'"'+(mf.i===m.id?' selected':'')+'>'+esc(m.name)+' ('+esc(m.unit)+')</option>'}).join('')+'<option value="other"'+(mf.i==='other'?' selected':'')+'>Other (not on the list)</option>';
+    var cats=(S.costCats||[]).map(function(c){return '<option'+(cf0.c===c?' selected':'')+'>'+esc(c)+'</option>'}).join('');
     var ip='style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field);color:var(--text);width:100%;font-size:16px"';
-    add='<div class="grid2 stack" style="margin-top:8px"><label class="f span2"><span>Add a material used</span><select id="mat_i_'+ctx+'_'+id+'" '+ip+'>'+opts+'</select></label>'+
-      '<label class="f"><span>Quantity</span><input id="mat_q_'+ctx+'_'+id+'" type="number" inputmode="decimal" step="any" min="0" value="1" '+ip+'></label>'+
-      '<label class="f"><span>If other, what was it?</span><input id="mat_n_'+ctx+'_'+id+'" '+ip+' placeholder="Furniture sliders"></label></div>'+
-      '<button class="btn sm" style="margin-top:6px" data-act="mat:add" data-id="'+id+'" data-ctx="'+ctx+'" data-who="'+esc(who)+'">Add material</button>'+
-      '<div class="grid2 stack" style="margin-top:14px"><label class="f span2"><span>Add a job cost</span><input id="cost_l_'+ctx+'_'+id+'" '+ip+' placeholder="Dump fee, fuel, tolls"></label>'+
-      '<label class="f"><span>Type</span><select id="cost_c_'+ctx+'_'+id+'" '+ip+'>'+cats+'</select></label>'+
-      '<label class="f"><span>Amount</span><input id="cost_a_'+ctx+'_'+id+'" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00" '+ip+'></label></div>'+
-      '<button class="btn sm" style="margin-top:6px" data-act="cost:add" data-id="'+id+'" data-ctx="'+ctx+'" data-who="'+esc(who)+'">Add cost</button>';
+    var hint=function(k,on,txt){return '<p class="hint" id="'+k+'Hint_'+key+'" style="margin:6px 0 0;color:var(--text)"'+(on?'':' hidden')+'><span class="svdot" aria-hidden="true"></span>'+txt+'</p>'};
+    add='<div class="grid2 stack" style="margin-top:8px"><label class="f span2"><span>Add a material used</span><select id="mat_i_'+key+'" '+ip+'>'+opts+'</select></label>'+
+      '<label class="f"><span>Quantity</span><input id="mat_q_'+key+'" type="number" inputmode="decimal" step="any" min="0" value="'+esc(mf.q==null?'1':mf.q)+'" '+ip+'></label>'+
+      '<label class="f"><span>If other, what was it?</span><input id="mat_n_'+key+'" '+ip+' placeholder="Furniture sliders" value="'+esc(mf.n||'')+'"></label></div>'+
+      hint('mat',mDirty,'Not saved yet. Tap Save material so everyone on the job sees it.')+
+      '<button class="btn'+(mDirty?' primary':'')+'" id="matSave_'+key+'" style="margin-top:8px" data-act="mat:add" data-id="'+id+'" data-ctx="'+ctx+'" data-who="'+esc(who)+'">Save material</button>'+
+      '<div class="grid2 stack" style="margin-top:14px"><label class="f span2"><span>Add a job cost</span><input id="cost_l_'+key+'" '+ip+' placeholder="Dump fee, fuel, tolls" value="'+esc(cf0.l||'')+'"></label>'+
+      '<label class="f"><span>Type</span><select id="cost_c_'+key+'" '+ip+'>'+cats+'</select></label>'+
+      '<label class="f"><span>Amount</span><input id="cost_a_'+key+'" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00" value="'+esc(cf0.a||'')+'" '+ip+'></label></div>'+
+      hint('cost',cDirty,'Not saved yet. Tap Save cost to put it on the job.')+
+      '<button class="btn'+(cDirty?' primary':'')+'" id="costSave_'+key+'" style="margin-top:8px" data-act="cost:add" data-id="'+id+'" data-ctx="'+ctx+'" data-who="'+esc(who)+'">Save cost</button>';
   }else add='<p class="hint">This job is paid, so materials are locked.</p>';
   var tot=showPrice?'<p class="hint" style="margin:6px 0 0">Materials billed '+money(matTotal(j))+' · Job costs '+money(costTotal(j))+'</p>':'';
   return '<div>'+(mats||'<div><small>No materials yet.</small></div>')+(costs?'<div style="margin-top:6px"><small>Job costs</small>'+costs+'</div>':'')+tot+add+'</div>';
@@ -4368,6 +4544,18 @@ function confirmLine(j){
   return '<div class="cfm">'+(yes.length?'<span class="pill" data-s="done">Confirmed: '+esc(yes.join(', '))+'</span>':'')+(no.length?'<span class="pill warn">Waiting on: '+esc(no.join(', '))+'</span>':'')+'</div>'+
     (no.length&&commsReady()?'<button class="btn sm" style="margin-top:8px" data-act="jm:remind">Text '+esc(no.join(', '))+' a reminder</button>':'');
 }
+function noteWhen(j){var t=j.d.notesAt,sameDay=iso(new Date(t))===todayISO();return 'Updated by '+(j.d.notesBy||'the office')+(sameDay?' today at '+fmtClock(t):' on '+fmtStamp(t))}
+var ntSeen={me:'',m:null};
+function noteNotice(){
+  var role=state.ui.role;if(role!=='crew'&&role!=='lead'){ntSeen={me:'',m:null};return}
+  var me=myName();if(!me)return;
+  var m={};state.jobs.forEach(function(j){if(['booked','active'].indexOf(j.status)>=0&&j.assign.crew.indexOf(me)>=0&&j.d.notesAt)m[j.id]=j.d.notesAt});
+  if(ntSeen.me===me&&ntSeen.m){
+    var fresh=Object.keys(m).filter(function(id){var nj=byId(id);return m[id]>(ntSeen.m[id]||0)&&nj&&nj.d.notesBy!==me});
+    if(fresh.length){var fj=byId(fresh[0]);toast(fresh.length===1?'The office updated the notes on '+(fj.d.name||'a job')+'. Open it in My jobs.':'The office updated the notes on '+fresh.length+' of your jobs.')}
+  }
+  ntSeen={me:me,m:m};
+}
 var jmSeen={me:'',ids:null};
 function jobMsgNotice(){
   var me=myName();if(!me)return;
@@ -4996,7 +5184,7 @@ window.addEventListener('popstate',function(){
   else if(t==='more'){ui.more=false;ui.moreMode='list';renderMore()}
   else if(t==='emp')closeEmp();
   else if(t==='flow')closeFlow();
-  else if(t==='sheet')closeSheet();
+  else if(t==='sheet')leaveSheet(closeSheet);
   else if(t==='thread'){ui.chatThread=null;renderChat()}
   else if(t==='setsec'){ui.setSec='';renderSettings();window.scrollTo(0,0)}
   navSync();
@@ -5357,19 +5545,26 @@ document.addEventListener('click',function(e){
     case 'q:cancel':state.draft=blankDraft();ui.qstep=1;save();renderQuote();break;
     case 'filter':ui.filter=t.dataset.f;renderJobs();break;
     case 'job:open':openJob(t.dataset.id);break;
-    case 'sheet:close':closeSheet();break;
+    case 'sheet:close':leaveSheet(closeSheet);break;
+    case 'jed:save':{j=byId(ui.jobId);if(!j)break;var jsec=t.dataset.sec,jch=jedSave(j,jsec);
+      if(!jch){toast(jsec==='notes'?'The job notes are saved. The crew sees them.':'Already saved.');break}
+      save();renderSheet();toast(jsec==='notes'?'Job notes saved. Everyone on the job sees them now.':'Saved: '+jch.join(', ')+'. Everyone on the job sees it now.');break}
+    case 'jed:undo':{j=byId(ui.jobId);if(!j)break;var ue=ui.jed[j.id]||{};Object.keys(ue).forEach(function(k){if(jedSecOf(k)===t.dataset.sec)delete ue[k]});if(!Object.keys(ue).length)delete ui.jed[j.id];renderSheet();break}
+    case 'jed:saveall':{j=byId(ui.jobId);if(!j)break;var ca=ui.closeAsk;if(!jedSaveAll(j)){ui.closeAsk=null;renderSheet();break}ui.closeAsk=null;toast('Saved. Everyone on the job sees it now.');if(ca&&ca.then)ca.then();else renderSheet();break}
+    case 'jed:discard':{j=byId(ui.jobId);var cd=ui.closeAsk;if(j){delete ui.jed[j.id];delete ui.mf[matKey('s',j.id)];delete ui.cfm[matKey('s',j.id)]}ui.closeAsk=null;if(cd&&cd.then)cd.then();else renderSheet();break}
+    case 'jed:keep':ui.closeAsk=null;renderSheet();break;
     case 'wk':{var z=t.dataset.n==='0';ui.weekStart=z?mondayOf(todayISO()):addDays(ui.weekStart,+t.dataset.n);ui.day=z?todayISO():addDays(ui.weekStart,0);renderDispatch();break}
     case 'day':ui.day=t.dataset.d;renderDispatch();break;
     case 'sh:next':j=byId(ui.jobId);if(!j)break;
       if(j.status==='booked'){openStart(j.id,myName());break}
       if(j.status==='active'){finishJob(j,myName(),true);break}
       if(j.status==='quoted'){setStatus(j,'booked');save();renderSheet()}break;
-    case 'sh:requote':j=byId(ui.jobId);if(!j)break;state.draft=Object.assign(blankDraft(),clone(j.d),{editId:j.id});ui.qstep=1;save();ui.jobId=null;ui.tab='quote';render();window.scrollTo(0,0);break;
+    case 'sh:requote':j=byId(ui.jobId);if(!j)break;leaveSheet(function(){var rj=byId(ui.jobId);if(!rj)return;state.draft=Object.assign(blankDraft(),clone(rj.d),{editId:rj.id});ui.qstep=1;save();ui.jobId=null;ui.closeAsk=null;ui.tab='quote';render();window.scrollTo(0,0)});break;
     case 'sh:crew':{j=byId(ui.jobId);if(!j){toast('This job is not available any more. Close it and open it again.');break}var nm=t.dataset.n,ix=j.assign.crew.indexOf(nm);if(!nm||assignable().indexOf(nm)<0){toast('That person is not on the list any more. Check Setup.');break}if(ix>=0){j.assign.crew.splice(ix,1);dropConfirm(j,nm)}else j.assign.crew.push(nm);save();renderSheet();toast(nm+(ix>=0?' removed from':' added to')+' the job.');break}
     case 'sh:fillpay':var pa=$('#payAmt');if(pa)pa.value=fmtCents(Math.round(+t.dataset.v*100));break;
     case 'sh:addpay':j=byId(ui.jobId);if(!j||!canCollect()||!$('#payMethod'))break;var amt=round2(moneyVal($('#payAmt')));if(addPayment(j,amt,$('#payMethod').value)){save();renderSheet();toast('Payment recorded.')}else toast(payLocked(j)?'Sign the required forms first.':'Enter an amount first.');break;
     case 'sh:rmphoto':j=byId(ui.jobId);j.photos=j.photos.filter(function(p){return p.id!==t.dataset.pid});save();renderSheet();break;
-    case 'sh:delete':if(armed('sh:delete')){state.jobs=state.jobs.filter(function(x){return x.id!==ui.jobId});save();ui.jobId=null;render();toast('Job deleted.')}else renderSheet();break;
+    case 'sh:delete':if(armed('sh:delete')){var djid=ui.jobId;state.jobs=state.jobs.filter(function(x){return x.id!==djid});delete ui.jed[djid];delete ui.mf[matKey('s',djid)];delete ui.cfm[matKey('s',djid)];save();ui.jobId=null;ui.closeAsk=null;render();toast('Job deleted.')}else renderSheet();break;
     case 'photo':ui.photoKind=t.dataset.kind;ui.photoJob=t.dataset.id||ui.jobId;pickPhotos();break;
     case 'tallyopen':ui.openTally[t.dataset.id]=!ui.openTally[t.dataset.id];renderCrew();break;
     case 'tally':j=byId(t.dataset.id);var rec=j.tally[t.dataset.item]||(j.tally[t.dataset.item]={});rec[t.dataset.k]=rec[t.dataset.k]?0:1;save();renderCrew();break;
@@ -5410,22 +5605,15 @@ document.addEventListener('click',function(e){
       sync.db.doc('users/'+au).set({uid:au,staff:as1.value,role:ar1.value,ts:Date.now()}).then(function(){return sync.db.doc('requests/'+au).delete()}).then(function(){toast('Access approved.')}).catch(function(){toast('Could not approve. Only owners and editors can.')});break}
     case 'acc:deny':if(sync.db)sync.db.doc('requests/'+t.dataset.uid).delete().catch(function(){});break;
     case 'acc:revoke':if(peopleHosted()&&people.list.some(function(e){return e.user_id===t.dataset.uid})){revokeViaProfile(t.dataset.uid);break}if(sync.db)sync.db.doc('users/'+t.dataset.uid).delete().then(function(){toast('Access removed.')}).catch(function(){toast('Could not remove access.')});break;
-    case 'mat:add':{j=byId(t.dataset.id);if(!j)break;var mx=t.dataset.ctx+'_'+j.id,msel=$('#mat_i_'+mx),mq=num($('#mat_q_'+mx).value),mn=$('#mat_n_'+mx).value.trim();
-      if(!msel||!msel.value){toast('Choose a material first.');break}
-      if(!(mq>0)){toast('Enter a quantity.');break}
-      var mc=(S.materials||[]).find(function(x){return x.id===msel.value}),ml;
-      if(msel.value==='other'){if(!mn){toast('Say what the material was.');break}ml={id:uid(),itemId:'',name:mn,unit:'',qty:mq,price:null,cost:null,by:t.dataset.who,ts:Date.now(),custom:true}}
-      else if(mc)ml={id:uid(),itemId:mc.id,name:mc.name,unit:mc.unit,qty:mq,price:mc.price,cost:mc.cost,by:t.dataset.who,ts:Date.now()};
-      else break;
-      j.materials=j.materials||[];j.materials.push(ml);logEv(j,'Material: '+ml.name+' × '+ml.qty);save();matAfter(t.dataset.ctx);toast('Added '+ml.name+'.');break}
+    case 'mat:add':{j=byId(t.dataset.id);if(!j)break;var ml=matAddFrom(j,t.dataset.ctx,t.dataset.who);if(!ml)break;
+      save();matAfter(t.dataset.ctx);toast('Saved: '+ml.name+' × '+ml.qty+'. Everyone on the job sees it.');break}
     case 'mat:rm':{j=byId(t.dataset.id);if(!j)break;var mm=(j.materials||[]).find(function(x){return x.id===t.dataset.mid});if(!mm)break;
       var priv=state.ui.role==='owner'||state.ui.role==='dispatch'||state.ui.role==='lead';if(!(priv||mm.by===t.dataset.who))break;
       j.materials=j.materials.filter(function(x){return x.id!==t.dataset.mid});logEv(j,'Material removed: '+mm.name);save();matAfter(t.dataset.ctx);break}
     case 'mat:price':{j=byId(t.dataset.id);if(!j)break;var mp=(j.materials||[]).find(function(x){return x.id===t.dataset.mid}),pin=$('#mp_'+t.dataset.ctx+'_'+t.dataset.mid);if(!mp||!pin)break;
       var pv=round2(moneyVal(pin));if(!(pv>0)){toast('Enter the price for one.');break}mp.price=pv;logEv(j,'Priced '+mp.name+' at '+money(pv));save();matAfter(t.dataset.ctx);break}
-    case 'cost:add':{j=byId(t.dataset.id);if(!j)break;var cx=t.dataset.ctx+'_'+j.id,cl2=$('#cost_l_'+cx).value.trim(),ca2=round2(moneyVal($('#cost_a_'+cx))),cc2=$('#cost_c_'+cx).value;
-      if(!cl2){toast('Say what the cost was for.');break}if(!(ca2>0)){toast('Enter the amount.');break}
-      j.costs=j.costs||[];j.costs.push({id:uid(),label:cl2,cat:cc2,amt:ca2,by:t.dataset.who,ts:Date.now()});logEv(j,'Cost: '+cl2+' '+money(ca2));save();matAfter(t.dataset.ctx);toast('Cost added.');break}
+    case 'cost:add':{j=byId(t.dataset.id);if(!j)break;var c2=costAddFrom(j,t.dataset.ctx,t.dataset.who);if(!c2)break;
+      save();matAfter(t.dataset.ctx);toast('Saved: '+c2.label+', '+money(c2.amt)+'. It’s on the job.');break}
     case 'cost:rm':{j=byId(t.dataset.id);if(!j)break;var cst=(j.costs||[]).find(function(x){return x.id===t.dataset.cid});if(!cst)break;
       var priv2=state.ui.role==='owner'||state.ui.role==='dispatch'||state.ui.role==='lead';if(!(priv2||cst.by===t.dataset.who))break;
       j.costs=j.costs.filter(function(x){return x.id!==t.dataset.cid});save();matAfter(t.dataset.ctx);break}
@@ -5620,7 +5808,8 @@ document.addEventListener('click',function(e){
 document.addEventListener('input',function(e){
   var t=e.target,S=state.settings;
   if(t.id==='cardNum'||t.id==='cardExp'){fmtField(t,e)}
-  else if(t.dataset.money!==undefined){fmtMoneyField(t);if(t.id==='flowAmt'&&ui.flow)ui.flow.amt=moneyVal(t)}
+  else if(t.dataset.money!==undefined){fmtMoneyField(t);if(t.id==='flowAmt'&&ui.flow)ui.flow.amt=moneyVal(t);if(/^cost_a_/.test(t.id))formKeep(t)}
+  else if(/^(mat_[iqn]|cost_[lc])_/.test(t.id||'')){formKeep(t)}
   else if(t.dataset.phone!==undefined){state.settings.contacts[t.dataset.phone]=t.value;dirChanged()}
   else if(t.dataset.d!==undefined){state.draft[t.dataset.d]=t.type==='checkbox'?t.checked:t.value;if(t.dataset.d==='miles'){state.draft.milesAuto=false;renderDistNote()}if(t.dataset.d==='milesOut'||t.dataset.d==='milesBack'){state.draft.shopManual=Object.assign({},state.draft.shopManual);state.draft.shopManual[t.dataset.d==='milesOut'?'out':'back']=true;renderShopNote()}save();updateQuote()}
   else if(t.dataset.dcf){state.draft.custom[t.dataset.dcf]=t.value;save()}
@@ -5631,8 +5820,8 @@ document.addEventListener('input',function(e){
   else if(t.id==='odoStartIn'&&ui.start){ui.start.odo=t.value}
   else if(t.id==='setQ'){ui.setQ=t.value;var sl=$('#setList');if(sl)sl.innerHTML=setListHtml(setupSecs())}
   else if(t.dataset.s){var val=t.dataset.t==='num'?num(t.value):t.dataset.t==='bool'?t.checked:t.value;if(/^opt\./.test(t.dataset.s)&&!S.opt)S.opt={};setPath(S,t.dataset.s,val);if(t.dataset.s==='company')$('#brandCo').textContent=val||'Your Moving Co.';save();if(t.getAttribute('role')==='switch')optFlipped(t)}
-  else if(t.dataset.j){var jj=canEditJobs()?byId(ui.jobId):null;if(jj){jj.d[t.dataset.j]=t.value;save()}}
-  else if(t.dataset.jcf){var j2=canEditJobs()?byId(ui.jobId):null;if(j2){j2.d.custom[t.dataset.jcf]=t.value;save()}}
+  else if(t.dataset.j&&!t.dataset.re){var jj=canEditJobs()?byId(ui.jobId):null;if(jj)jedSet(jj,t.dataset.j,t.value)}
+  else if(t.dataset.jcf){var j2=canEditJobs()?byId(ui.jobId):null;if(j2)jedSet(j2,'cf:'+t.dataset.jcf,t.value)}
 });
 document.addEventListener('change',function(e){
   if(e.target&&e.target.id==='etaOn'&&ui.start){ui.start.text=e.target.checked;renderStart();return}
@@ -5640,6 +5829,8 @@ document.addEventListener('change',function(e){
   if(e.target&&ui.flow&&e.target.id==='flowAmt'&&payOn()){var fj0=byId(ui.flow.jobId);if(fj0&&flowMethodStripe(fj0)==='link')renderFlow();return}
   if(e.target&&e.target.dataset&&(e.target.dataset.d==='from'||e.target.dataset.d==='to')){distLookup();shopLookup(false);return}
   var t=e.target,j=ui.jobId&&canEditJobs()?byId(ui.jobId):null;
+  if(t.id&&/^(mat_[iqn]|cost_[lca])_/.test(t.id)){formKeep(t);return}
+  if(t.dataset&&t.dataset.jcf!==undefined&&j){jedSet(j,'cf:'+t.dataset.jcf,t.value);return}
   if(t.dataset&&t.dataset.dq!==undefined){var dj=canEditJobs()?byId(t.dataset.id):null;if(dj){if(t.dataset.dq==='truckId')dj.assign.truckId=t.value;else{dj.d[t.dataset.dq]=t.value;if(t.dataset.dq==='moveDate'&&t.value){ui.weekStart=mondayOf(t.value);ui.day=t.value}}save();renderDispatch()}return}
   if(t.id&&t.id.indexOf('accStaff_')===0){var rs=$('#accRole_'+t.id.slice(9)),er=peopleHosted()?empByName(t.value):null,dv=directory().find(function(x){return x.name===t.value});if(rs&&(er||dv))rs.value=er?er.role:dv.kind;return}
   if(t.id==='chatAs'){var rl=state.ui.role;if(rl==='crew'||rl==='lead')state.ui.me=t.value;else state.ui.who=t.value;save();renderTabs();renderChat();return}
@@ -5678,7 +5869,7 @@ document.addEventListener('change',function(e){
     var wasPast=isHistory(j);setStatus(j,t.value);save();renderSheet();
     if(!wasPast&&isHistory(j))toast(j.status==='lost'?'Marked lost. It is in Job history now.':'Closed. It is in Job history now.')}
 });
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId)closeSheet()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId){if(ui.closeAsk){ui.closeAsk=null;renderSheet()}else leaveSheet(closeSheet)}});
 
 /* ---------- errors are shown, not swallowed ---------- */
 var lastErrAt=0;

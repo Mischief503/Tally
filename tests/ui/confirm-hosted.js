@@ -47,6 +47,20 @@ function seed() {
   ok(/New job: Nadia Farouk tomorrow\. Confirm it in Job messages\./.test(B.$('#toast').textContent), 'a new booking pops up in the app: ' + B.$('#toast').textContent);
   ok(/Nadia Farouk/.test(B.$('#view').textContent), 'and lands on his Today screen');
   ok(B.calls.fn.filter((c) => c.body.action === 'job').length === 0, 'confirming sends no schedule texts');
+  // the office saves new job notes on Priya's job from another device
+  const c1 = JSON.parse(JSON.stringify(db.docs.find((d) => d.path === 'jobs/c1')));
+  c1.data.d.notes = 'Gate code 4411'; c1.data.d.notesBy = 'Dispatch'; c1.data.d.notesAt = Date.now();
+  await B.w.__sb.from('docs').upsert(c1); await sleep(700);
+  ok(/The office updated the notes on Priya Nair\. Open it in My jobs\./.test(B.$('#toast').textContent), 'new office notes pop up on the crew lead’s phone: ' + B.$('#toast').textContent);
+  B.click('[data-act="tab"][data-tab="crew"]'); await sleep(20); await B.openCard('c1');
+  const pc = B.$$('.crewcard').find((c) => c.querySelector('[data-segs="c1"]'));
+  ok(pc && /From the office: Gate code 4411/.test(pc.textContent.replace(/\s+/g, ' ')) && /Updated by Dispatch today at/.test(pc.textContent), 'and his job card shows them, with who updated them');
+  // his own save doesn't pop up for him
+  const c1b = JSON.parse(JSON.stringify(db.docs.find((d) => d.path === 'jobs/c1')));
+  c1b.data.d.notes = 'Gate code 4411, side door'; c1b.data.d.notesBy = 'Marcus'; c1b.data.d.notesAt = Date.now() + 1;
+  B.$('#toast').textContent = '';
+  await B.w.__sb.from('docs').upsert(c1b); await sleep(700);
+  ok(!/updated the notes/.test(B.$('#toast').textContent), 'notes saved under his own name don’t pop up for him');
   ok(A.errors.length === 0 && B.errors.length === 0, 'no errors (' + A.errors.concat(B.errors).slice(0, 3).join(' | ') + ')');
   process.exit(summary('confirm-hosted') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
