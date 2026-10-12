@@ -209,20 +209,26 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   await endPreview();
 
   /* ---------------- the time clock's own switches ---------------- */
-  st().shifts.push({ id: 'sh-late', who: 'Marcus', inAt: Date.now() - 10 * H, outAt: 0, activity: 'Job day', note: '', late: 0 });
-  const lastEnd = Date.now() - 2 * H;
-  P.status = 'done'; P.finishedAt = lastEnd; P.phases.unloadEnd = lastEnd; T.render();
-  await A.go('crew');
-  const ms = $('#meSel'); if (ms) { ms.value = 'Marcus'; ms.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(10); }
-  ok(/needs a note|Add a note to clock out/.test(view()), L('clocking out long after the last job asks for a note'));
-  set('lateNote', false); await sleep(5);
-  ok(!/needs a note|Add a note to clock out/.test(view()), L('Note for late clock-outs off: it doesn’t'));
-  click('[data-act="clk:out"][data-who="Marcus"]'); await sleep(10);
-  ok(st().shifts.find((x) => x.id === 'sh-late').outAt > 0, L('and clocking out goes through without one'));
-  set('lateNote', true);
-  set('clockGps', false); await sleep(5);
-  ok(/Location shared only while clocked in/.test(view()) === false && /Not clocked in/.test(view()), L('Location while clocked in off: the clock card doesn’t mention sharing'));
-  set('clockGps', true);
+  // A late clock-out is measured from the last job that ended the same day, so the clock is pinned
+  // to 3 PM today here (run just after midnight, "two hours ago" would be yesterday).
+  const realNow = w.Date.now, at3 = (() => { const d = new w.Date(); d.setHours(15, 0, 0, 0); return d.getTime(); })();
+  w.Date.now = () => at3;
+  try {
+    st().shifts.push({ id: 'sh-late', who: 'Marcus', inAt: at3 - 10 * H, outAt: 0, activity: 'Job day', note: '', late: 0 });
+    const lastEnd = at3 - 2 * H;
+    P.status = 'done'; P.finishedAt = lastEnd; P.phases.unloadEnd = lastEnd; T.render();
+    await A.go('crew');
+    const ms = $('#meSel'); if (ms) { ms.value = 'Marcus'; ms.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(10); }
+    ok(/needs a note|Add a note to clock out/.test(view()), L('clocking out long after the last job asks for a note'));
+    set('lateNote', false); await sleep(5);
+    ok(!/needs a note|Add a note to clock out/.test(view()), L('Note for late clock-outs off: it doesn’t'));
+    click('[data-act="clk:out"][data-who="Marcus"]'); await sleep(10);
+    ok(st().shifts.find((x) => x.id === 'sh-late').outAt > 0, L('and clocking out goes through without one'));
+    set('lateNote', true);
+    set('clockGps', false); await sleep(5);
+    ok(/Location shared only while clocked in/.test(view()) === false && /Not clocked in/.test(view()), L('Location while clocked in off: the clock card doesn’t mention sharing'));
+    set('clockGps', true);
+  } finally { w.Date.now = realNow; }
 
   /* ---------------- confirmations ---------------- */
   const HR = byName('Hollis & Reed Law');
