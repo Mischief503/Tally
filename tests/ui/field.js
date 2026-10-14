@@ -9,6 +9,7 @@ const file = process.argv[2], label = process.argv[3] || 'field';
   const go = async (tab) => { await A.go(tab); await sleep(5); };
   await go('crew');
   ok(/Working as/.test(text()) && !!$('[data-act="cr:start"][data-id="' + job.id + '"]'), label + ': Priya Nair is on the field screen with Start job');
+  A.clockIn(job.assign.crew); await sleep(5);   // everyone on the job clocks in first (clockjob.js tests that)
 
   // ---- the start prompt
   click('[data-act="cr:start"][data-id="' + job.id + '"]'); await sleep(10);
@@ -87,7 +88,7 @@ const file = process.argv[2], label = process.argv[3] || 'field';
   const nf = st().jobs.find((j) => j.d.name === 'Hollis & Reed Law'); nf.d.phone = '';
   await go('crew');
   const ms = $('#meSel'); ms.value = 'Tanya'; ms.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(10);
-  await A.openCard(nf.id);
+  await A.openCard(nf.id); A.clockIn(nf.assign.crew); await sleep(5);
   click('[data-act="cr:start"][data-id="' + nf.id + '"]'); await sleep(10);
   ok(/No phone number on this job/.test($('#start').textContent) && $('#start [data-act="go:start"]').textContent === 'Start job', label + ': no phone, just Start job');
   click('[data-act="go:close"]');

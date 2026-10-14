@@ -501,6 +501,32 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .leavebar{flex:none;background:var(--card);border-top:2px solid var(--warn);padding:12px 14px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.14);display:grid;gap:10px}
 .leavebar p{margin:0;font-size:14.5px;line-height:1.4}
 .leavebar .row .btn{flex:1 1 120px}
+/* the time clock card: who, where they stand, one big button, and the day's paid time */
+.tclock{padding:16px 16px 18px}
+.tclock .tc-name{font:700 26px/1.1 var(--display);margin:0;overflow-wrap:anywhere}
+.tc-st{font:600 16px var(--font);color:var(--muted);margin:6px 0 14px}
+.tc-st.on{color:var(--ok)}
+.tc-st.brk{color:var(--warn)}
+.tc-big{display:flex;align-items:center;justify-content:center;width:100%;min-height:64px;border-radius:99px;border:var(--bw) solid transparent;font:600 21px/1.2 var(--font);cursor:pointer;padding:10px 18px;touch-action:manipulation;text-align:center}
+.tc-big.primary{background:var(--tape);border-color:var(--tape-edge);color:var(--tape-ink)}
+.tc-big.dark{background:var(--text);border-color:var(--text);color:var(--card)}
+.tc-big.alt{background:var(--card);border-color:var(--line);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+.tc-big:active{transform:scale(.98)}
+.tc-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tc-for{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin:0 0 10px}
+.tc-for select{flex:1;min-width:0;min-height:42px;border:var(--bw) solid var(--line);border-radius:var(--r2);background:var(--field);color:var(--text);padding:6px 10px;font-size:16px}
+.tc-on{margin:14px 0 0;font-size:16px;line-height:1.4}
+.tc-on b{font-weight:var(--w-mid)}
+.tc-on small{font-size:14px}
+.tc-job{margin:6px 0 0;font-size:15px;line-height:1.4}
+.tc-note{margin:10px 0 0;font-size:13.5px;color:var(--muted);line-height:1.4}
+.tc-time{font:700 56px/1 var(--display);text-align:center;margin:20px 0 4px;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.tc-sub{text-align:center;color:var(--muted);font-size:15px}
+.tclock textarea{width:100%;min-height:52px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:16px;margin-top:10px;color:var(--text)}
+.tclock textarea.need{border-color:var(--bad);box-shadow:0 0 0 3px var(--badSoft)}
+.tc-wait{display:flex;align-items:flex-start;gap:6px;margin:8px 0 2px;font-size:14px;line-height:1.35}
+.tc-wait.ok{color:var(--ok)}
+.tc-wait .svdot{flex:0 0 8px;width:8px;height:8px;margin:7px 0 0;align-self:flex-start}
 /* Add materials: tap an item and one goes on the job, each tap */
 #matpick[hidden]{display:none}
 #matpick{position:fixed;inset:0;z-index:72}
@@ -1169,6 +1195,7 @@ var OPTS=[
   {g:'clock',k:'clock',t:'Time clock',h:'Crew clock in and out for job days, warehouse work and dump runs.'},
   {g:'clock',k:'lateNote',t:'Note for late clock-outs',h:'Clocking out long after the day’s last job needs a note.',n:{p:'lateMins',l:'After this many minutes',step:'5'}},
   {g:'clock',k:'clockGps',t:'Location while clocked in',h:'The office sees where the crew is while they’re on the clock, and only then.'},
+  {g:'clock',k:'clockFirst',t:'Everyone clocks in before Start job',h:'The crew lead can start a job only when everyone on it is clocked in. The office can still start it from the job sheet.'},
   {g:'clock',p:'payMin',t:'Pay the minimum hours',h:function(S){return 'When a job runs short, the crew is paid the '+num(S.minHours)+'-hour minimum (set in the Rate card).'}},
   {g:'price',k:'mileage',t:'Mileage moves',h:'Moves past the local radius are charged by the mile, plus loading and unloading time. Off: every move is charged by the hour.',n:{p:'includedMiles',l:'Local radius (driving miles from the shop)'}},
   {g:'price',p:'shopTravel',t:'Count the drive from the shop',h:'The drive from the shop to the pickup and back from the delivery goes in the price: in the hours on local moves, in the miles on mileage moves.'},
@@ -1217,12 +1244,89 @@ function balOf(j){return Math.max(0,round2(totalOf(j)-paidOf(j)))}
 function logEv(j,ev){j.log.push({ts:Date.now(),ev:ev})}
 /* time clock (separate from the job timer) */
 function openShift(who){return state.shifts.find(function(x){return x.who===who&&!x.outAt})}
+/* breaks are unpaid: a shift keeps them as {s,e} (e 0 while the break is on) */
+function lastBreak(x){var b=(x&&x.breaks)||[];return b[b.length-1]||null}
+function onBreak(x){var b=lastBreak(x);return !!(b&&!b.e)}
+function brkMs(x,from,to){return ((x&&x.breaks)||[]).reduce(function(a,b){var bs=Math.max(b.s,from),be=Math.min(b.e||to,to);return a+Math.max(0,be-bs)},0)}
+// worked time of a shift (breaks taken out), up to `upTo` for one still open
+function shiftMs(x,upTo){var en=x.outAt||upTo||Date.now();return Math.max(0,en-x.inAt-brkMs(x,x.inAt,en))}
+// today's paid time for one person, across their shifts, breaks not counted
+function paidToday(who){
+  var d0=new Date();d0.setHours(0,0,0,0);var a=d0.getTime(),now=Date.now();
+  return state.shifts.filter(function(x){return x.who===who&&(x.outAt||now)>a}).reduce(function(sum,x){
+    var st=Math.max(x.inAt,a),en=x.outAt||now;return en<=st?sum:sum+(en-st-brkMs(x,st,en))},0);
+}
+function fmtHM(ms){var m=Math.max(0,Math.floor(ms/60000));return Math.floor(m/60)+'h '+(m%60)+'m'}
+/* the crew on a job (j.crewOn): when Start job is tapped, everyone on it who is clocked in goes on the
+   job; anyone not clocked in yet goes on when they clock in; clocking out takes them off, and so does
+   the job finishing. j.crewOn[name] is a list of {in,out} (out 0 while they're on). */
+function crewSegs(j,n){return (j.crewOn&&j.crewOn[n])||[]}
+function crewIsOn(j,n){var s=crewSegs(j,n),l=s[s.length-1];return !!(l&&!l.out)}
+function crewJoin(j,n,ts){
+  if(opt('clock')&&!openShift(n))return false;
+  if(crewIsOn(j,n))return false;
+  j.crewOn=j.crewOn||{};j.crewOn[n]=crewSegs(j,n).concat([{in:ts,out:0}]);return true;
+}
+function crewLeave(j,n,ts){
+  if(!crewIsOn(j,n))return false;
+  var s=crewSegs(j,n).slice();s[s.length-1]=Object.assign({},s[s.length-1],{out:Math.max(ts,s[s.length-1].in)});j.crewOn[n]=s;return true;
+}
+function crewStart(j,ts){
+  j.crewOn=j.crewOn||{};var on=[],wait=[];
+  j.assign.crew.forEach(function(n){if(crewJoin(j,n,ts)||crewIsOn(j,n))on.push(n);else wait.push(n)});
+  if(on.length||wait.length)logEv(j,'Crew on the job: '+(on.join(', ')||'nobody yet')+(wait.length?'. Not clocked in yet: '+wait.join(', '):''));
+  return {on:on,wait:wait};
+}
+function crewOff(j,ts){Object.keys(j.crewOn||{}).forEach(function(n){crewLeave(j,n,ts)})}
+function crewAssigned(j,n,added){
+  if(j.status!=='active'||!j.crewOn)return;
+  var ts=Date.now();
+  if(added){if(crewJoin(j,n,ts))logEv(j,n+' on the job at '+fmtClock(ts)+' (added to the crew)')}
+  else if(crewLeave(j,n,ts))logEv(j,n+' off the job at '+fmtClock(ts)+' (taken off the crew)');
+}
+function crewMs(j,n,upTo){return crewSegs(j,n).reduce(function(a,x){return a+Math.max(0,(x.out||upTo||Date.now())-x.in)},0)}
+// someone clocking in or out while a job they're on is running
+function crewClockIn(who,ts){state.jobs.forEach(function(j){if(j.status==='active'&&j.assign.crew.indexOf(who)>=0&&j.crewOn&&crewJoin(j,who,ts))logEv(j,who+' on the job at '+fmtClock(ts)+' (clocked in)')})}
+function crewClockOut(who,ts){state.jobs.forEach(function(j){if(j.status==='active'&&crewLeave(j,who,ts))logEv(j,who+' off the job at '+fmtClock(ts)+' (clocked out)')})}
+// the running job someone is on right now
+function jobNow(who){return state.jobs.find(function(j){return j.status==='active'&&crewIsOn(j,who)})||null}
+// Start job waits for everyone on the job to clock in (Options › Everyone clocks in before Start job)
+function clockWait(j){return opt('clock')&&opt('clockFirst')?j.assign.crew.filter(function(n){return !openShift(n)}):[]}
+function waitWords(list,me){var o=list.filter(function(n){return n!==me});return list.indexOf(me)>=0?(o.length?'you, '+andList(o):'you'):andList(o)}
 function fmtDur(ms){var m=Math.max(0,Math.round(ms/60000)),h=Math.floor(m/60);return h?h+'h '+(m%60)+'m':m+'m'}
 function fmtClock(ts){return new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
 function lastJobEnd(who,outAt){
   var day=iso(new Date(outAt)),best=0;
   state.jobs.forEach(function(j){if(j.finishedAt&&j.assign.crew.indexOf(who)>=0&&j.finishedAt<=outAt&&iso(new Date(j.finishedAt))===day&&j.finishedAt>best)best=j.finishedAt});
   return best;
+}
+/* The time clock card, the same on Today and My jobs: who, where they stand, one big button (or Break
+   and Clock Out), and the day's paid time with breaks taken out. */
+function clockCardHtml(me){
+  if(!opt('clock')||!me)return '';
+  var S=state.settings,sh=openShift(me),brk=sh&&onBreak(sh),gps=opt('clockGps'),wm=esc(me),body;
+  var st=!sh?'<div class="tc-st">Clocked out</div>'
+    :brk?'<div class="tc-st brk" id="clkBrk" data-since="'+lastBreak(sh).s+'">On break · '+fmtDur(Date.now()-lastBreak(sh).s)+'</div>'
+    :'<div class="tc-st on">On the clock</div>';
+  if(!sh){
+    var acts=S.activities||[];
+    body=(acts.length>1?'<label class="tc-for"><span>Clocking in for</span><select id="clkAct" aria-label="What are you clocking in for">'+acts.map(function(a){return '<option>'+esc(a)+'</option>'}).join('')+'</select></label>':'')+
+      '<button class="tc-big primary" data-act="clk:in" data-who="'+wm+'">Clock In</button>'+
+      (gps?'<p class="tc-note">Your location is shared only while you’re clocked in.</p>':'');
+  }else{
+    var li=lateInfo(me,Date.now()),need=!!(li&&li.needNote)||ui.needNote,hint='',jn=jobNow(me),seg=jn?crewSegs(jn,me).slice(-1)[0]:null;
+    if(li&&opt('lateNote'))hint=li.needNote?'Your last job ended at '+fmtClock(li.end)+', '+fmtDur(li.lateMs)+' ago. Add a note to clock out.':'Your last job ended at '+fmtClock(li.end)+'. Clocking out more than '+S.lateMins+' min after that needs a note.';
+    body='<div class="tc-two">'+(brk?'<button class="tc-big primary" data-act="clk:break" data-who="'+wm+'">End break</button>':'<button class="tc-big alt" data-act="clk:break" data-who="'+wm+'">Break</button>')+
+        '<button class="tc-big dark" data-act="clk:out" data-who="'+wm+'">Clock Out</button></div>'+
+      '<p class="tc-on"><b>Clocked in for: '+esc(sh.activity)+'</b> <small>since '+fmtClock(sh.inAt)+'</small></p>'+
+      (jn?'<p class="tc-job">On the job: <b>'+esc(jn.d.name||'a job')+'</b> since '+fmtClock(seg.in)+'</p>':'')+
+      (gps?'<p class="tc-note" id="geoLine">'+esc(geoText())+'</p>':'')+
+      (hint?'<p class="hint">'+esc(hint)+'</p>':'')+
+      (need||ui.noteOpen?'<textarea id="clockNote" class="'+(need?'need':'')+'" placeholder="'+(need?'Note (required): why the late clock-out?':'Note for the office (optional)')+'" aria-label="Clock-out note">'+esc(ui.clockNote||'')+'</textarea>'
+        :'<button class="cc-less" style="margin-top:6px" data-act="clk:note">Add a note for the office</button>');
+  }
+  return '<section class="card tclock'+(sh?(brk?' brk':' on'):'')+'"><h2 class="tc-name">'+wm+'</h2>'+st+body+
+    '<div class="tc-time" id="clkPaid" data-who="'+wm+'">'+fmtHM(paidToday(me))+'</div><div class="tc-sub">paid today (breaks not counted)</div></section>';
 }
 function lateInfo(who,outAt){
   var e=lastJobEnd(who,outAt);if(!e)return null;
@@ -1434,6 +1538,8 @@ function setStatus(j,s){
   var was=j.status;
   j.status=s;logEv(j,'Status: '+LABEL[s]);
   if(s==='active'&&!j.startedAt)j.startedAt=Date.now();
+  if(s==='active')crewStart(j,Date.now());          // everyone clocked in goes on the job
+  if(was==='active'&&s!=='active')crewOff(j,Date.now());   // and off it when it finishes
   if(s==='done'){
     // a paid job that owes again (its bill went up) keeps the time it finished
     if(was!=='paid'||!j.finishedAt){j.finishedAt=Date.now();if(j.startedAt)j.actualHours=Math.round((j.finishedAt-j.startedAt)/36e5*10)/10;j.minPaid=state.settings.payMin===false?0:num(state.settings.minHours)}
@@ -1687,7 +1793,8 @@ function renderToday(){
   var soon=state.jobs.filter(function(j){return j.d.moveDate>t&&j.d.moveDate<=addDays(t,7)&&['booked','active'].indexOf(j.status)>=0}).sort(function(a,b){return (a.d.moveDate+a.d.time)<(b.d.moveDate+b.d.time)?-1:1}).slice(0,4);
   var soonHtml=soon.length?'<div class="secline"><h2>Coming up</h2><button data-act="tab" data-tab="dispatch">Board ›</button></div>'+soon.map(function(j){
     return '<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span><span class="r">'+esc(fmtDate(j.d.moveDate))+'</span></div><div class="route">'+jobLine(j)+'</div></button>'}).join(''):'';
-  v.innerHTML=head+memberNudge()+pulse+liveHtml+alerts+todayHtml+soonHtml;
+  var meO=myName(),myClock=opt('clock')&&meO&&(openShift(meO)||state.jobs.some(function(j){return ['booked','active'].indexOf(j.status)>=0&&j.d.moveDate===t&&j.assign.crew.indexOf(meO)>=0}))?clockCardHtml(meO):'';
+  v.innerHTML=head+myClock+memberNudge()+pulse+liveHtml+alerts+todayHtml+soonHtml;
 }
 function renderFieldToday(head){
   var v=$('#view'),me=fieldMe(),t=todayISO();
@@ -1695,9 +1802,7 @@ function renderFieldToday(head){
   // a booking whose day already went by is the office's to sort out, not "next up" (it still shows in My jobs)
   var mine=state.jobs.filter(function(j){return ['booked','active'].indexOf(j.status)>=0&&j.assign.crew.indexOf(me)>=0&&!datePassed(j,t)}).sort(function(a,b){return ((a.d.moveDate||'9999')+a.d.time)<((b.d.moveDate||'9999')+b.d.time)?-1:1});
   var todayJobs=mine.filter(function(j){return j.d.moveDate===t}),next=mine[0];
-  var sh=openShift(me),clock=!opt('clock')?'':sh?
-    '<button class="alert" data-act="tab" data-tab="crew"><span class="ic ok">●</span><span class="tx"><b>On the clock · '+fmtDur(Date.now()-sh.inAt)+'</b><small>'+esc(sh.activity)+' since '+fmtClock(sh.inAt)+'</small></span><span class="go">›</span></button>':
-    '<button class="alert" data-act="tab" data-tab="crew"><span class="ic warn">○</span><span class="tx"><b>Not clocked in</b><small>Tap to start your day</small></span><span class="go">›</span></button>';
+  var clock=clockCardHtml(me);
   var list=(todayJobs.length?todayJobs:(next?[next]:[])).map(function(j){
     var done=j.items.reduce(function(a,i){return a+((j.tally[i.id]||{}).d?i.qty:0)},0),tot=j.items.reduce(function(a,i){return a+i.qty},0);
     return '<button class="job" data-act="field:go" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span>'+pill(j.status)+'</div><div class="route">'+(j.d.moveDate===t?'Today':esc(fmtDate(j.d.moveDate)))+' · '+jobLine(j)+'</div><div class="route">'+esc(truckName(j.assign.truckId))+(opt('tally')?' · delivered '+done+'/'+tot:'')+'</div></button>'}).join('');
@@ -2062,7 +2167,7 @@ function renderSheet(){
      fld('Date','<input type="date" data-j="moveDate" data-re="1" value="'+esc(j.d.moveDate)+'">')+
      fld('Start time','<input type="time" data-j="time" data-re="1" value="'+esc(j.d.time)+'">')+
      fld('Truck','<select data-jassign="truckId">'+truckOpts+'</select>','span2')+
-   '</div><div class="f" style="margin-top:10px"><span>Crew</span><div class="chips" style="margin:0">'+crewChips+'</div></div>'+confirmLine(j)+'</div>'+
+   '</div><div class="f" style="margin-top:10px"><span>Crew</span><div class="chips" style="margin:0">'+crewChips+'</div></div>'+confirmLine(j)+clockLine(j)+'</div>'+
    '<div class="sec" data-meta="'+esc(secMeta(j,'cust'))+'"><h3>Customer and route</h3><div class="grid2 stack">'+
      fld('Name','<input data-j="name" value="'+esc(jv(j,'name'))+'">')+
      fld('Phone','<input data-j="phone" type="tel" value="'+esc(jv(j,'phone'))+'">')+
@@ -2082,7 +2187,7 @@ function renderSheet(){
    '<div class="sec" data-meta="'+esc(secMeta(j,'notes'))+'"><h3>Job notes</h3><textarea data-j="notes" aria-label="Job notes" placeholder="Gate code, elevator booking, what to bring" style="width:100%;min-height:72px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:16px;color:var(--text)">'+esc(jv(j,'notes'))+'</textarea>'+jedBarHtml(j,'notes')+'</div>'+
    '<div class="sec" data-meta="'+((j.crewNotes||[]).length||'')+'"><h3>Crew notes</h3><p class="hint" style="margin:-4px 0 6px">Written by the crew in the field. Gate codes, access details, anything for the office.</p>'+cnotes+'</div>'+
    (j.startedAt?'<div class="sec" data-meta="'+(j.status==='active'?esc(phaseNow(j)):(j.phases&&j.phases.unloadEnd?fmtDur(j.phases.unloadEnd-j.phases.loadStart)+' handling':''))+'"><h3>On-site times</h3>'+
-     (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+'</div>':'<p class="hint">The crew did not record load and unload times on this job.</p>')+
+     (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+'</div>':'<p class="hint">The crew did not record load and unload times on this job.</p>')+crewOnRows(j)+
      (j.actualHours>0?'<p class="hint"'+(topUpFor(j)?' style="color:var(--text)"':'')+'>'+esc(payLine(j,false))+'.</p>':'')+'</div>':'')+
    commsSection(j)+
    '<div class="sec"><h3>Activity</h3>'+acts+'</div>'+
@@ -2191,20 +2296,32 @@ function crewKit(me){
     var map=function(a){return a?'<a href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(a)+'" target="_blank" rel="noopener">'+esc(a)+'</a>':'<small>Not set</small>'};
     var cfs=S.customFields.filter(function(f){return j.d.custom[f.id]}).map(function(f){return '<div><small>'+esc(f.label)+':</small> '+esc(j.d.custom[f.id])+'</div>'}).join('');
     var rows=j.items.map(function(i){var tt=j.tally[i.id]||{};return '<div class="tally-row"><span>'+esc(i.name)+' × '+i.qty+'</span><span class="row"><button class="btn sm'+(tt.l?' on':'')+'" data-act="tally" data-id="'+j.id+'" data-item="'+i.id+'" data-k="l" aria-pressed="'+!!tt.l+'">Loaded</button><button class="btn sm'+(tt.d?' on':'')+'" data-act="tally" data-id="'+j.id+'" data-item="'+i.id+'" data-k="d" aria-pressed="'+!!tt.d+'">Delivered</button></span></div>'}).join('');
-    var main='';
+    var main='',waitLine='';
     if(asLead){
-      if(j.status==='booked')main='<button class="btn primary big" data-act="cr:start" data-id="'+j.id+'" data-who="'+esc(me)+'">Start job</button>';
+      if(j.status==='booked'){
+        var cw=clockWait(j);
+        main='<button class="btn big'+(cw.length?'':' primary')+'" data-act="cr:start" data-id="'+j.id+'" data-who="'+esc(me)+'"'+(cw.length?' aria-describedby="wait_'+j.id+'"':'')+'>Start job</button>';
+        if(opt('clock')&&opt('clockFirst')&&j.assign.crew.length)waitLine=cw.length?'<p class="tc-wait" id="wait_'+j.id+'"><span class="svdot" aria-hidden="true"></span><span>Waiting on '+esc(waitWords(cw,me))+' to clock in. Start job opens when everyone on the job is clocked in.</span></p>'
+          :'<p class="tc-wait ok">Everyone on the job is clocked in.</p>';
+      }
       else if(j.status==='active'){var pn=phaseNext(j);
         main=pn<4?'<button class="btn primary big" data-act="cr:phase" data-id="'+j.id+'" data-k="'+PHASES[pn][0]+'" data-who="'+esc(me)+'">'+PHASES[pn][1]+'</button>'
           :'<button class="btn primary big" data-act="cr:finish" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(formsPending(j).length?'Get signatures and finish':'Finish job')+'</button>'}
       else if(j.status==='done'&&(balOf(j)>0||formsPending(j).length)&&(canCollect()||formsPending(j).length))main='<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(formsPending(j).length?(canCollect()?'Sign forms and collect payment':'Get signatures'):'Collect payment')+'</button>';
       else if(j.status==='done')main='<span class="hint" style="align-self:center;flex:2;margin:0">'+(balOf(j)>0?'Finished. The office collects the payment.':'Finished and paid.')+'</span>';
-    }else main='<span class="hint" style="align-self:center;flex:2;margin:0">'+(j.status==='booked'?'Your crew lead starts the job clock.':j.status==='active'?esc(phaseNow(j))+' · '+fmtDur(Date.now()-phaseSince(j)):'Finished. You can still add photos and notes.')+'</span>';
+    }else main='<span class="hint" style="align-self:center;flex:2;margin:0">'+(j.status==='booked'?(opt('clock')&&opt('clockFirst')&&!openShift(me)?'Clock in so your crew lead can start the job.':opt('clock')&&opt('clockFirst')?'You’re clocked in. Your crew lead starts the job.':'Your crew lead starts the job clock.'):j.status==='active'?esc(phaseNow(j))+' · '+fmtDur(Date.now()-phaseSince(j))+(opt('clock')&&!crewIsOn(j,me)?'. Clock in to go on the job.':''):'Finished. You can still add photos and notes.')+'</span>';
     if(asLead&&j.status==='paid')main='<span class="hint" style="align-self:center;flex:2;margin:0">Paid and closed. You can still add photos and notes.</span>';
     var call=j.d.phone&&(asLead||opt('callCust'))?'<button class="btn" data-act="call:cust" data-id="'+j.id+'">Call</button>':'';
     var thumbs=j.photos.slice(-8).map(function(p){return !p.data?'<span class="phold" style="width:52px;height:52px">…</span>':'<img src="'+p.data+'" alt="'+esc(p.kind)+' photo" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line)">'}).join('');
     var notes=(j.crewNotes||[]).map(function(n){var mineN=n.who===me||role==='owner';return '<div class="who" style="display:block"><div class="row between"><small>'+esc(n.who)+' · '+fmtStamp(n.ts)+'</small>'+(mineN?'<button class="btn sm ghost" data-act="cr:rmnote" data-id="'+j.id+'" data-nid="'+n.id+'" data-who="'+esc(me)+'">Remove</button>':'')+'</div><div style="white-space:pre-wrap">'+esc(n.text)+'</div></div>'}).join('');
-    var crewLine=j.assign.crew.map(function(n){return esc(n)+whoTag(n)}).join(', ');
+    var mark=function(n){
+      if(!asLead||!opt('clock'))return '';
+      if(j.status==='booked'&&opt('clockFirst'))return openShift(n)?' ✓':'';
+      if(j.status==='active'&&j.crewOn)return crewIsOn(j,n)?' ✓':'';
+      return '';
+    };
+    var crewLine=j.assign.crew.map(function(n){return esc(n)+whoTag(n)+mark(n)}).join(', ');
+    var crewHint=j.assign.crew.some(function(n){return mark(n)})?'<div class="cc-sub" style="font-size:12.5px">✓ '+(j.status==='active'?'on the job':'clocked in')+'</div>':'';
     var notesBody=cfs+'<div'+(cfs?' style="margin-top:8px"':'')+'><small>Crew notes: your crew and the office can read these</small>'+(notes||'<br><small>None yet.</small>')+'<textarea id="cn_'+j.id+'" style="width:100%;min-height:56px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-top:6px;color:var(--text);font-size:16px" placeholder="Gate code, passcode, or anything the office should know" aria-label="New crew note"></textarea><button class="btn sm" style="margin-top:6px" data-act="cr:note" data-id="'+j.id+'" data-who="'+esc(me)+'">Add note</button></div>';
     var mediaBody='<div class="row" style="gap:6px"><button class="btn sm" data-act="photo" data-kind="Pickup" data-id="'+j.id+'">Pickup photo</button><button class="btn sm" data-act="photo" data-kind="Delivery" data-id="'+j.id+'">Delivery photo</button><button class="btn sm" data-act="photo" data-kind="Damage" data-id="'+j.id+'">Damage</button></div>'+
       (thumbs?'<div class="row" style="margin-top:8px;gap:6px">'+thumbs+'</div>':'<div class="hint">No photos yet.</div>')+
@@ -2230,9 +2347,9 @@ function crewKit(me){
     var panels=segs.map(function(s){return '<div class="segbody" data-segp="'+j.id+'|'+s[0]+'"'+(s[0]===cur?'':' hidden')+'>'+s[3]+'</div>'}).join('');
     var officeNote=j.d.notes?'<div class="note" style="margin:10px 0 0"><b style="font-weight:var(--w-mid)">From the office:</b> <span style="white-space:pre-wrap">'+esc(j.d.notes)+'</span>'+
       (j.d.notesAt?'<small style="display:block;margin-top:4px">'+esc(noteWhen(j))+'</small>':'')+'</div>':'';
-    return '<section class="card crewcard"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+'</h3><div class="cc-sub">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</div><div class="cc-sub">Crew: '+(crewLine||'none')+'</div>'+(j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+'</div>'+pill(j.status)+'</div>'+
+    return '<section class="card crewcard"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+'</h3><div class="cc-sub">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</div><div class="cc-sub">Crew: '+(crewLine||'none')+'</div>'+crewHint+(j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+'</div>'+pill(j.status)+'</div>'+
       '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+officeNote+
-      '<div class="cc-actions" style="margin-top:10px">'+main+call+'</div>'+
+      '<div class="cc-actions" style="margin-top:10px">'+main+call+'</div>'+waitLine+
       (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+(asLead&&j.status==='active'&&phaseNext(j)>0?'<button class="btn sm ghost" data-act="cr:phaseundo" data-id="'+j.id+'" data-who="'+esc(me)+'">Undo “'+PHASES[phaseNext(j)-1][1]+'”</button>':'')+'</div>':'')+
       mdrive+odoBox+segRow+panels+(less?'<button class="cc-less" data-act="cr:collapse" data-id="'+j.id+'">Show less</button>':'')+'</section>';
   }
@@ -2263,20 +2380,7 @@ function renderCrew(){
     if(isHistory(j,t)){older++;return false}   // settled before today: Job history
     return j.finishedAt?j.finishedAt>since:(j.d.moveDate||'')>=sinceDay;
   }).sort(function(a,b){return (b.finishedAt||0)-(a.finishedAt||0)});
-  function clockCard(){
-    if(!opt('clock'))return '';
-    var sh=openShift(me);
-    if(!sh){
-      return '<section class="card clock"><div class="row between"><h2>Time clock</h2><small>'+(opt('clockGps')?'Location shared only while clocked in':'Not clocked in')+'</small></div><div class="row" style="margin-top:8px"><select id="clkAct" class="grow" aria-label="What are you working on" style="min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)">'+S.activities.map(function(a){return '<option>'+esc(a)+'</option>'}).join('')+'</select><button class="btn primary" data-act="clk:in" data-who="'+esc(me)+'">Clock in</button></div></section>';
-    }
-    var li=lateInfo(me,Date.now()),hint='';
-    if(li&&opt('lateNote'))hint=li.needNote?'Your last job ended at '+fmtClock(li.end)+', '+fmtDur(li.lateMs)+' ago. Add a note to clock out.':'Your last job ended at '+fmtClock(li.end)+'. Clocking out more than '+S.lateMins+' min after that needs a note.';
-    return '<section class="card clock on"><div class="row between"><h2>On the clock</h2><span class="pill" data-s="done">'+esc(sh.activity)+'</span></div><div class="elapsed" id="clkElapsed" data-since="'+sh.inAt+'">'+fmtDur(Date.now()-sh.inAt)+'</div><small>Since '+fmtClock(sh.inAt)+'</small>'+
-      '<p class="hint" id="geoLine">'+esc(geoText())+'</p>'+
-      (hint?'<p class="hint">'+esc(hint)+'</p>':'')+
-      '<textarea id="clockNote" class="'+(ui.needNote||(li&&li.needNote)?'need':'')+'" placeholder="'+(li&&li.needNote?'Note (required): why the late clock-out?':'Note (optional)')+'" aria-label="Clock-out note">'+esc(ui.clockNote||'')+'</textarea>'+
-      '<button class="btn primary big" style="width:100%;min-height:56px;font-size:18px;margin-top:8px" data-act="clk:out" data-who="'+esc(me)+'">Clock out</button></section>';
-  }
+  function clockCard(){return clockCardHtml(me)}
   var kit=crewKit(me),card=kit.card;
   // today's jobs, a job that's running and a job whose day went by show in full; later ones are one line until opened
   var full=function(j){return j.status==='active'||!j.d.moveDate||j.d.moveDate<=t};
@@ -2409,19 +2513,19 @@ function renderReports(){
   }
   var shifts=state.shifts.filter(function(x){return inR(iso(new Date(x.inAt)))});
   var byWho={};
-  shifts.forEach(function(x){var h=((x.outAt||Date.now())-x.inAt)/36e5,r=byWho[x.who]||(byWho[x.who]={tot:0,act:{},late:0});r.tot+=h;r.act[x.activity]=(r.act[x.activity]||0)+h;if(x.late)r.late++});
+  shifts.forEach(function(x){var h=shiftMs(x)/36e5,r=byWho[x.who]||(byWho[x.who]={tot:0,act:{},late:0});r.tot+=h;r.act[x.activity]=(r.act[x.activity]||0)+h;if(x.late)r.late++});
   var jobHrs={},topHrs={},dayClock={},dayJob={},dayTop={};
-  shifts.forEach(function(x){var k=x.who+'|'+iso(new Date(x.inAt));dayClock[k]=(dayClock[k]||0)+((x.outAt||Date.now())-x.inAt)/36e5});
+  shifts.forEach(function(x){var k=x.who+'|'+iso(new Date(x.inAt));dayClock[k]=(dayClock[k]||0)+shiftMs(x)/36e5});
   finished.forEach(function(j){if(!(j.actualHours>0))return;var dy=j.d.moveDate||iso(new Date(j.finishedAt||j.createdAt)),tu=topUpFor(j);
-    j.assign.crew.forEach(function(n){var k=n+'|'+dy;jobHrs[n]=(jobHrs[n]||0)+j.actualHours;topHrs[n]=(topHrs[n]||0)+tu;dayJob[k]=(dayJob[k]||0)+j.actualHours;dayTop[k]=(dayTop[k]||0)+tu})});
+    j.assign.crew.forEach(function(n){var k=n+'|'+dy,jh=crewSegs(j,n).length?Math.round(crewMs(j,n,j.finishedAt)/36e5*10)/10:j.actualHours;jobHrs[n]=(jobHrs[n]||0)+jh;topHrs[n]=(topHrs[n]||0)+tu;dayJob[k]=(dayJob[k]||0)+jh;dayTop[k]=(dayTop[k]||0)+tu})});
   /* pay hours: clock time for the day (or job time if they didn't use the clock), plus any minimum top-ups */
   var payHrs={};Object.keys(dayClock).concat(Object.keys(dayJob)).forEach(function(k){if(payHrs['~'+k])return;payHrs['~'+k]=1;var who=k.split('|')[0];payHrs[who]=(payHrs[who]||0)+((dayClock[k]||0)>0?dayClock[k]:(dayJob[k]||0))+(dayTop[k]||0)});
   var names={};Object.keys(byWho).forEach(function(k){names[k]=1});Object.keys(jobHrs).forEach(function(k){names[k]=1});
   var tsRows=Object.keys(names).sort().map(function(n){var r=byWho[n]||{tot:0,act:{},late:0};return '<tr><td>'+esc(n)+(isLead(n)?' <small>(lead)</small>':'')+'<br><small>'+(Object.keys(r.act).map(function(a){return esc(a)+' '+r.act[a].toFixed(1)}).join(' · ')||'No clock time')+'</small></td><td class="n">'+r.tot.toFixed(1)+'</td><td class="n">'+(jobHrs[n]||0).toFixed(1)+'</td><td class="n">'+((topHrs[n]||0)>0?'+'+topHrs[n].toFixed(1):'—')+'</td><td class="n"><b>'+(payHrs[n]||0).toFixed(1)+'</b></td><td class="n">'+r.late+'</td></tr>'}).join('');
-  var live=state.shifts.filter(function(x){return !x.outAt}).map(function(x){return '<div class="who"><span><b>'+esc(x.who)+'</b> · '+esc(x.activity)+'<br><small>Since '+fmtClock(x.inAt)+', '+fmtDur(Date.now()-x.inAt)+'</small></span><button class="btn sm" data-act="clk:mgr" data-id="'+x.id+'">Clock out</button></div>'}).join('');
+  var live=state.shifts.filter(function(x){return !x.outAt}).map(function(x){var jn=jobNow(x.who);return '<div class="who"><span><b>'+esc(x.who)+'</b> · '+esc(x.activity)+(onBreak(x)?' · <span style="color:var(--warn)">on break</span>':'')+(jn?' · on '+esc(jn.d.name||'a job'):'')+'<br><small>Since '+fmtClock(x.inAt)+', '+fmtHM(shiftMs(x))+' paid</small></span><button class="btn sm" data-act="clk:mgr" data-id="'+x.id+'">Clock out</button></div>'}).join('');
   var lates=shifts.filter(function(x){return x.late}).sort(function(a,b){return b.inAt-a.inAt}).slice(0,15).map(function(x){return '<div class="who" style="display:block"><b>'+esc(x.who)+'</b> · '+esc(fmtDate(iso(new Date(x.inAt))))+' · '+x.late+' min after last job<br><small>'+esc(x.note||'No note')+'</small></div>'}).join('');
   var hoursHtml='<section class="card"><h2>Employee hours</h2>'+(live?'<h3 style="margin-bottom:4px">On the clock now</h3>'+live:'<p class="hint">Nobody is clocked in.</p>')+
-    '<h3 style="margin:14px 0 4px">Clock, job and pay hours</h3>'+(tsRows?'<div class="tblwrap"><table class="tbl"><tr><th>Employee</th><th class="n">Clock</th><th class="n">On jobs</th><th class="n">Min. top-up</th><th class="n">Pay hours</th><th class="n">Late notes</th></tr>'+tsRows+'</table></div><p class="hint">Clock is the time clock. On jobs is the job timer for jobs they worked. '+(S.payMin===false?'Short jobs are paid as worked (Setup › Time clock).':'When a job runs shorter than the minimum, the top-up pays the rest, so a 1-hour job on a '+S.minHours+'-hour minimum pays '+S.minHours+'. Pay hours is the day’s clock time (or job time, on days they didn’t use the clock) plus top-ups.')+'</p>':'<p class="hint">No shifts or timed jobs in this range.</p>')+
+    '<h3 style="margin:14px 0 4px">Clock, job and pay hours</h3>'+(tsRows?'<div class="tblwrap"><table class="tbl"><tr><th>Employee</th><th class="n">Clock</th><th class="n">On jobs</th><th class="n">Min. top-up</th><th class="n">Pay hours</th><th class="n">Late notes</th></tr>'+tsRows+'</table></div><p class="hint">Clock is the time clock, breaks not counted. On jobs is each person’s time on the jobs they worked (from Start job, or their clock-in after it, to the finish or their clock-out). '+(S.payMin===false?'Short jobs are paid as worked (Setup › Time clock).':'When a job runs shorter than the minimum, the top-up pays the rest, so a 1-hour job on a '+S.minHours+'-hour minimum pays '+S.minHours+'. Pay hours is the day’s clock time (or job time, on days they didn’t use the clock) plus top-ups.')+'</p>':'<p class="hint">No shifts or timed jobs in this range.</p>')+
     (lates?'<h3 style="margin:14px 0 4px">Late clock-outs</h3>'+lates:'')+'</section>';
   var rev=meas.reduce(function(a,j){return a+paidOf(j)},0),lab=meas.reduce(function(a,j){return a+j.quote.crew*payHoursFor(j)*S.crewCost},0);
   var mcost=meas.reduce(function(a,j){return a+matCostTotal(j)+costTotal(j)},0),margin=rev-lab-mcost;
@@ -3236,7 +3340,7 @@ setInterval(function(){if(!document.hidden)sosRefresh();if(sosActive().length||u
 document.addEventListener('input',function(e){var t=e.target;if(t&&(t.tagName==='TEXTAREA'||t.tagName==='SELECT')&&t.id&&t.closest&&t.closest('#sos'))ui.sosDraft[t.id]=t.value});
 
 /* ---------- shared backend: identity, roles and synced data ---------- */
-var MAPKEYS=['payments','signed','extras','crewNotes','photos','log','materials','costs','confirm'];
+var MAPKEYS=['payments','signed','extras','crewNotes','photos','log','materials','costs','confirm','crewOn'];
 function canon(v){
   if(v===null||v===undefined)return 'null';
   if(typeof v!=='object')return JSON.stringify(v);
@@ -3259,6 +3363,7 @@ function jobDoc(j){
   o.materials=toMap(j.materials,function(x){return x.id});
   o.costs=toMap(j.costs,function(x){return x.id});
   o.confirm=JSON.parse(JSON.stringify(j.confirm||{}));
+  o.crewOn=JSON.parse(JSON.stringify(j.crewOn||{}));
   o.log=toMap(j.log,function(x){return 'l'+(x.ts||0).toString(36)+'_'+strHash(String(x.ev))});
   return JSON.parse(JSON.stringify(o));
 }
@@ -3272,6 +3377,7 @@ function docToJob(v){
     payments:mapArr(v.payments,'ts'),signed:mapArr(v.signed,'ts'),extras:mapArr(v.extras,'ts'),crewNotes:mapArr(v.crewNotes,'ts'),
     photos:mapArr(v.photos,'ts').map(function(p){return {id:p.id,kind:p.kind,ts:p.ts,data:sync.photoCache[p.id]}}),
     materials:mapArr(v.materials,'ts'),costs:mapArr(v.costs,'ts'),confirm:(v.confirm&&typeof v.confirm==='object')?v.confirm:{},
+    crewOn:(v.crewOn&&typeof v.crewOn==='object')?v.crewOn:undefined,
     log:mapArr(v.log,'ts').slice(-60)};
   ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
   return j;
@@ -3420,7 +3526,7 @@ function pullJobs(snap){
   // work it out again here, so the bill matches the job. Lines from another version of Tally are left.
   Object.keys(remote).forEach(function(id){var cj=byId[id];if(cj&&cj.clockAt&&typeof cj.clockSig==='string'&&cj.clockSig.indexOf(CLOCK_V+':')===0&&cj.clockSig!==clockSig(cj)){rebill(cj,'worked out again');changed=true}});
   sync.got.jobs=true;
-  jobMsgNotice();noteNotice();
+  jobMsgNotice();noteNotice();onJobNotice(false);
   state.jobs.forEach(function(j){(j.photos||[]).forEach(function(p){if(!p.data)fetchPhoto(p.id,0)})});
   commsBaseline();
   if(changed){cacheSave();softRefresh();if(ui.flow)flowRefresh()}
@@ -4616,6 +4722,23 @@ function jobMsgsView(me){
     '<p class="hint" style="margin:0 2px 10px">Every job you are booked on.'+(opt('confirm')?' Confirm each one so the office knows you will be there. If a job moves, you confirm the new time.':'')+'</p>'+
     (list.length?list.map(function(j){return jobMsgCard(j,me)}).join(''):'<div class="card empty"><h3>No upcoming jobs</h3><p>When the office books you on a job, it shows up here.</p></div>');
 }
+// the job sheet: before the start, who is clocked in (Start job here doesn't wait for them)
+function clockLine(j){
+  if(!opt('clock')||j.status!=='booked'||!j.assign.crew.length)return '';
+  var inn=j.assign.crew.filter(function(n){return !!openShift(n)}),no=j.assign.crew.filter(function(n){return !openShift(n)});
+  return '<div class="cfm">'+(inn.length?'<span class="pill" data-s="done">Clocked in: '+esc(inn.join(', '))+'</span>':'')+(no.length?'<span class="pill warn">Not clocked in: '+esc(no.join(', '))+'</span>':'')+'</div>'+
+    (no.length&&opt('clockFirst')?'<p class="hint" style="margin:6px 0 0">The crew lead can start the job once everyone is clocked in. Start job here starts it now, and the others go on the job when they clock in.</p>':'');
+}
+// after the start: each person's time on the job
+function crewOnRows(j){
+  if(!j.crewOn)return '';
+  var names=j.assign.crew.concat(Object.keys(j.crewOn).filter(function(n){return j.assign.crew.indexOf(n)<0})),end=j.status==='active'?Date.now():(j.finishedAt||Date.now());
+  return '<h3 style="margin:12px 0 4px;font-size:15px">Crew on the job</h3>'+names.map(function(n){
+    var sg=crewSegs(j,n);
+    if(!sg.length)return '<div class="who"><span>'+esc(n)+'</span><small>'+(j.status==='active'?'Not clocked in yet':'Wasn’t clocked in')+'</small></div>';
+    return '<div class="who"><span>'+esc(n)+'<br><small>'+sg.map(function(x){return fmtClock(x.in)+' to '+(x.out?fmtClock(x.out):'now')}).join(', ')+'</small></span><b>'+fmtDur(crewMs(j,n,end))+'</b></div>';
+  }).join('');
+}
 function confirmLine(j){
   if(!needsConfirm(j)||!j.assign.crew.length)return '';
   var yes=j.assign.crew.filter(function(c){return isConfirmed(j,c)}),no=j.assign.crew.filter(function(c){return !isConfirmed(j,c)});
@@ -4623,6 +4746,18 @@ function confirmLine(j){
     (no.length&&commsReady()?'<button class="btn sm" style="margin-top:8px" data-act="jm:remind">Text '+esc(no.join(', '))+' a reminder</button>':'');
 }
 function noteWhen(j){var t=j.d.notesAt,sameDay=iso(new Date(t))===todayISO();return 'Updated by '+(j.d.notesBy||'the office')+(sameDay?' today at '+fmtClock(t):' on '+fmtStamp(t))}
+// silent: this phone put them on the job itself (Start job here, or clocking in), so nothing to tell
+var ojSeen={me:'',ids:null};
+function onJobNotice(silent){
+  var role=state.ui.role;if(role!=='crew'&&role!=='lead'){ojSeen={me:'',ids:null};return}
+  var me=myName();if(!me)return;
+  var ids=state.jobs.filter(function(j){return j.status==='active'&&crewIsOn(j,me)}).map(function(j){return j.id});
+  if(!silent&&ojSeen.me===me&&ojSeen.ids){
+    var fresh=ids.filter(function(id){return ojSeen.ids.indexOf(id)<0});
+    if(fresh.length){var fj=byId(fresh[0]);toast('The job started: '+(fj.d.name||'your job')+'. You’re on the job.')}
+  }
+  ojSeen={me:me,ids:ids};
+}
 var ntSeen={me:'',m:null};
 function noteNotice(){
   var role=state.ui.role;if(role!=='crew'&&role!=='lead'){ntSeen={me:'',m:null};return}
@@ -4769,7 +4904,7 @@ function phaseCard(list){
       '<p class="hint">Cu ft per mover-hour is the job’s volume divided by the hours each mover spent loading and unloading. Higher is faster. Your rate card assumes '+state.settings.prod+' over the whole job.</p>'
       :'<p class="hint">Jobs show up here once a crew lead taps through loading and unloading and finishes the job.</p>')+'</section>';
 }
-function openStart(id,who){var j=byId(id);if(!j)return;ui.start={jobId:id,who:who||'',mins:state.ui.etaMins||30,text:!!j.d.phone&&opt('eta')};renderStart()}
+function openStart(id,who,office){var j=byId(id);if(!j)return;ui.start={jobId:id,who:who||'',office:!!office,mins:state.ui.etaMins||30,text:!!j.d.phone&&opt('eta')};renderStart()}
 function etaGreeting(name){name=String(name||'').trim();if(!name||/&|\b(and|family|inc|llc|law|co|company|corp|group)\b/i.test(name))return 'Hello';return 'Hi '+name.split(/\s+/)[0]}
 function etaText(j,m){return (state.settings.company||'Your movers')+': '+etaGreeting(j.d.name)+', your crew is on the way and should arrive in about '+m+' minutes, around '+fmtClock(Date.now()+m*60000)+'.'}
 function smsHref(phone,body){return 'sms:'+String(phone||'').replace(/[^0-9+]/g,'')+'?&body='+encodeURIComponent(body)}
@@ -5635,11 +5770,11 @@ document.addEventListener('click',function(e){
     case 'wk':{var z=t.dataset.n==='0';ui.weekStart=z?mondayOf(todayISO()):addDays(ui.weekStart,+t.dataset.n);ui.day=z?todayISO():addDays(ui.weekStart,0);renderDispatch();break}
     case 'day':ui.day=t.dataset.d;renderDispatch();break;
     case 'sh:next':j=byId(ui.jobId);if(!j)break;
-      if(j.status==='booked'){openStart(j.id,myName());break}
+      if(j.status==='booked'){openStart(j.id,myName(),true);break}
       if(j.status==='active'){finishJob(j,myName(),true);break}
       if(j.status==='quoted'){setStatus(j,'booked');save();renderSheet()}break;
     case 'sh:requote':j=byId(ui.jobId);if(!j)break;leaveSheet(function(){var rj=byId(ui.jobId);if(!rj)return;state.draft=Object.assign(blankDraft(),clone(rj.d),{editId:rj.id});ui.qstep=1;save();ui.jobId=null;ui.closeAsk=null;ui.tab='quote';render();window.scrollTo(0,0)});break;
-    case 'sh:crew':{j=byId(ui.jobId);if(!j){toast('This job is not available any more. Close it and open it again.');break}var nm=t.dataset.n,ix=j.assign.crew.indexOf(nm);if(!nm||assignable().indexOf(nm)<0){toast('That person is not on the list any more. Check Setup.');break}if(ix>=0){j.assign.crew.splice(ix,1);dropConfirm(j,nm)}else j.assign.crew.push(nm);save();renderSheet();toast(nm+(ix>=0?' removed from':' added to')+' the job.');break}
+    case 'sh:crew':{j=byId(ui.jobId);if(!j){toast('This job is not available any more. Close it and open it again.');break}var nm=t.dataset.n,ix=j.assign.crew.indexOf(nm);if(!nm||assignable().indexOf(nm)<0){toast('That person is not on the list any more. Check Setup.');break}if(ix>=0){j.assign.crew.splice(ix,1);dropConfirm(j,nm)}else j.assign.crew.push(nm);crewAssigned(j,nm,ix<0);save();renderSheet();toast(nm+(ix>=0?' removed from':' added to')+' the job.');break}
     case 'sh:fillpay':var pa=$('#payAmt');if(pa)pa.value=fmtCents(Math.round(+t.dataset.v*100));break;
     case 'sh:addpay':j=byId(ui.jobId);if(!j||!canCollect()||!$('#payMethod'))break;var amt=round2(moneyVal($('#payAmt')));if(addPayment(j,amt,$('#payMethod').value)){save();renderSheet();toast('Payment recorded.')}else toast(payLocked(j)?'Sign the required forms first.':'Enter an amount first.');break;
     case 'sh:rmphoto':j=byId(ui.jobId);j.photos=j.photos.filter(function(p){return p.id!==t.dataset.pid});save();renderSheet();break;
@@ -5647,7 +5782,9 @@ document.addEventListener('click',function(e){
     case 'photo':ui.photoKind=t.dataset.kind;ui.photoJob=t.dataset.id||ui.jobId;pickPhotos();break;
     case 'tallyopen':ui.openTally[t.dataset.id]=!ui.openTally[t.dataset.id];renderCrew();break;
     case 'tally':j=byId(t.dataset.id);var rec=j.tally[t.dataset.item]||(j.tally[t.dataset.item]={});rec[t.dataset.k]=rec[t.dataset.k]?0:1;save();renderCrew();break;
-    case 'cr:start':j=byId(t.dataset.id);if(j)openStart(j.id,t.dataset.who);break;
+    case 'cr:start':{j=byId(t.dataset.id);if(!j)break;var cw2=clockWait(j);
+      if(cw2.length){toast('Waiting on '+waitWords(cw2,t.dataset.who)+' to clock in. Everyone on the job clocks in before it starts.');break}
+      openStart(j.id,t.dataset.who);break}
     case 'cr:phase':{j=byId(t.dataset.id);if(!j||j.status!=='active')break;var pk=phaseNext(j);if(pk>3||PHASES[pk][0]!==t.dataset.k){renderCrew();break}
       j.phases=Object.assign({},j.phases||{});j.phases[PHASES[pk][0]]=Date.now();logEv(j,PHASES[pk][2]+' · '+t.dataset.who);if(j.clockAt)rebill(j,'times changed');save();renderCrew();
       toast(PHASES[pk][2]+' at '+fmtClock(Date.now())+'.'+(pk===3?' Finish the job when the customer is ready to sign.':''));break}
@@ -5661,17 +5798,19 @@ document.addEventListener('click',function(e){
     case 'go:copy':{var em=$('#etaMsg');if(!em)break;var etx=em.textContent;var selIt=function(){try{var rg=document.createRange();rg.selectNodeContents(em);var sl=window.getSelection();sl.removeAllRanges();sl.addRange(rg)}catch(x){}toast('Text selected. Copy it from here.')};
       try{navigator.clipboard.writeText(etx).then(function(){toast('Copied.')},selIt)}catch(x){selIt()}break}
     case 'go:start':{var gs=ui.start,sj=gs&&byId(gs.jobId);if(!sj)break;
+      if(!gs.office&&sj.status==='booked'){var cw3=clockWait(sj);if(cw3.length){ui.start=null;renderStart();renderTab();toast('Waiting on '+waitWords(cw3,gs.who)+' to clock in. Everyone on the job clocks in before it starts.');break}}
       var send=!!(sj.d.phone&&gs.text&&opt('eta'))&&!sj.test,viaCo=send&&commsReady(),isLink=t.tagName==='A';
       state.ui.etaMins=gs.mins;
       if(sj.quote&&sj.quote.kind==='mileage'&&sj.quote.shopTravel&&!sj.quote.flat&&num(gs.odo)>0){sj.odo={start:Math.round(num(gs.odo)*10)/10,by:gs.who||myName()||'',ts:Date.now()};logEv(sj,'Odometer leaving the shop: '+fmtMi(sj.odo.start)+(gs.who?' ('+gs.who+')':''))}
-      if(sj.status==='booked'||sj.status==='quoted')setStatus(sj,'active');
+      if(sj.status==='booked'||sj.status==='quoted'){setStatus(sj,'active');onJobNotice(true)}
       if(send)logEv(sj,viaCo?'Arrival text sent: about '+gs.mins+' min':'Arrival text opened on '+(gs.who||'the')+(gs.who?'’s':'')+' phone: about '+gs.mins+' min');
       save();
       /* a link removed from the page during its own click never opens, so the texting app link closes the sheet a beat later */
       var afterStart=function(){ui.start=null;renderStart();if(ui.jobId)renderSheet();renderTab()};
       if(isLink)setTimeout(afterStart,0);else afterStart();
-      if(viaCo){toast('Job started. Texting '+sj.d.name+'…');window.tallyComms.eta(sj.id,gs.mins).then(function(r){toast((r&&r.message)||'The arrival text did not go out.');if(ui.jobId===sj.id)commsLoadLog(sj.id)})}
-      else toast(send?'Job started. Your texting app opens with the message.':'Job started. Clock is running.');
+      var onNow=Object.keys(sj.crewOn||{}).filter(function(n){return crewIsOn(sj,n)}),onTxt=onNow.length?' On the job: '+andList(onNow)+'.':'';
+      if(viaCo){toast('Job started.'+onTxt+' Texting '+sj.d.name+'…');window.tallyComms.eta(sj.id,gs.mins).then(function(r){toast((r&&r.message)||'The arrival text did not go out.');if(ui.jobId===sj.id)commsLoadLog(sj.id)})}
+      else toast('Job started.'+(onTxt||(send?'':' Clock is running.'))+(send?' Your texting app opens with the message.':''));
       break}
     case 'cr:note':{j=byId(t.dataset.id);var ta=$('#cn_'+t.dataset.id),tx=ta?ta.value.trim():'';if(!tx){toast('Write a note first.');break}j.crewNotes=j.crewNotes||[];j.crewNotes.push({id:uid(),who:t.dataset.who,ts:Date.now(),text:tx});logEv(j,'Crew note from '+t.dataset.who);save();renderCrew();toast('Note added.');break}
     case 'cr:rmnote':{j=byId(t.dataset.id);if(!j)break;var nn=(j.crewNotes||[]).find(function(x){return x.id===t.dataset.nid});if(!nn||!(state.ui.role==='owner'||nn.who===t.dataset.who))break;j.crewNotes=j.crewNotes.filter(function(x){return x.id!==t.dataset.nid});save();renderCrew();break}
@@ -5717,7 +5856,7 @@ document.addEventListener('click',function(e){
     case 'st:addmat':{var nm1=$('#nMatName').value.trim(),np1=round2(num($('#nMatPrice').value)),nc1=round2(num($('#nMatCost').value));if(!nm1||!(np1>=0)){toast('Add a name and a customer price.');break}S.materials.push({id:uid(),name:nm1,unit:$('#nMatUnit').value.trim()||'each',price:np1,cost:nc1});save();renderSettings();break}
     case 'st:rmcostcat':if(S.costCats.length>1){S.costCats.splice(+t.dataset.i,1);save();renderSettings()}break;
     case 'st:addcostcat':{var ncc=$('#nCostCat').value.trim();if(!ncc)break;S.costCats.push(ncc);save();renderSettings();break}
-    case 'dq:crew':{j=byId(t.dataset.id);if(!j){toast('This job is not available any more. Reload the page.');break}if(!canEditJobs()){toast('Only the owner and dispatch can schedule crews.');break}var dn=t.dataset.n,dix=j.assign.crew.indexOf(dn);if(!dn||assignable().indexOf(dn)<0){toast('That person is not on the list any more. Check Setup.');break}if(dix>=0){j.assign.crew.splice(dix,1);dropConfirm(j,dn)}else j.assign.crew.push(dn);save();renderDispatch();toast(dn+(dix>=0?' removed from':' added to')+' the job.');break}
+    case 'dq:crew':{j=byId(t.dataset.id);if(!j){toast('This job is not available any more. Reload the page.');break}if(!canEditJobs()){toast('Only the owner and dispatch can schedule crews.');break}var dn=t.dataset.n,dix=j.assign.crew.indexOf(dn);if(!dn||assignable().indexOf(dn)<0){toast('That person is not on the list any more. Check Setup.');break}if(dix>=0){j.assign.crew.splice(dix,1);dropConfirm(j,dn)}else j.assign.crew.push(dn);crewAssigned(j,dn,dix<0);save();renderDispatch();toast(dn+(dix>=0?' removed from':' added to')+' the job.');break}
     case 'call:cust':{var cj=byId(t.dataset.id);if(cj)askCall(cj.d.name,cj.d.phone,custKey(cj),cj.id);break}
     case 'q:dist':{var qd=state.draft;if(!(qd.from||'').trim()||!(qd.to||'').trim()){toast('Enter the pickup and delivery addresses first.');break}
       var qk=distKey(qd.from,qd.to);if(dist.cache[qk]&&t.textContent.indexOf('again')>=0)delete dist.cache[qk];
@@ -5777,7 +5916,7 @@ document.addEventListener('click',function(e){
     case 'fab:quote':ui.tab='quote';ui.qstep=1;ui.armed='';render();window.scrollTo(0,0);break;
     case 'fab:clock':{var fm=fieldMe();if(!opt('clock'))break;if(!fm){toast('Ask the office to add you to the crew list.');break}
       if(openShift(fm)){ui.tab='crew';render();toast('Clock out on your job screen, so you can add a note.');window.scrollTo(0,0);break}
-      state.shifts.push({id:uid(),who:fm,inAt:Date.now(),outAt:0,activity:S.activities[0],note:'',late:0});save();geoStart(fm);render();toast('Clocked in.');break}
+      var fin=Date.now();state.shifts.push({id:uid(),who:fm,inAt:fin,outAt:0,activity:S.activities[0],note:'',late:0,breaks:[]});crewClockIn(fm,fin);onJobNotice(true);save();geoStart(fm);render();var fj0=jobNow(fm);toast(fj0?'Clocked in. You’re on the job at '+(fj0.d.name||'the job')+'.':'Clocked in.');break}
     case 'field:go':ui.tab='crew';ui.armed='';render();window.scrollTo(0,0);break;
     case 'theme:open':ui.pick=true;renderPick();break;
     case 'theme:close':ui.pick=false;renderPick();break;
@@ -5862,10 +6001,18 @@ document.addEventListener('click',function(e){
       if(!fx){toast('Type the form text or choose a file.');break}
       S.forms.push({id:uid(),title:ft,kind:'text',text:fx,pages:[],required:true});save();renderSettings();toast('Form added.');break}
     case 'applyprod':S.prod=+t.dataset.v;save();toast('Crew speed updated. New quotes use it.');renderReports();break;
-    case 'clk:in':{var who=t.dataset.who;if(openShift(who)){toast(who+' is already clocked in.');break}var ac=$('#clkAct');state.shifts.push({id:uid(),who:who,inAt:Date.now(),outAt:0,activity:ac?ac.value:S.activities[0],note:'',late:0});ui.clockNote='';ui.needNote=false;save();renderCrew();toast(opt('clockGps')?'Clocked in. Your location is shared only while you are clocked in.':'Clocked in.');geoStart(who);break}
+    case 'clk:in':{var who=t.dataset.who;if(openShift(who)){toast(who+' is already clocked in.');break}var ac=$('#clkAct'),tin=Date.now();state.shifts.push({id:uid(),who:who,inAt:tin,outAt:0,activity:ac?ac.value:S.activities[0],note:'',late:0,breaks:[]});ui.clockNote='';ui.needNote=false;ui.noteOpen=false;
+      crewClockIn(who,tin);onJobNotice(true);save();render();var jin=jobNow(who);
+      toast(jin?'Clocked in. You’re on the job at '+(jin.d.name||'the job')+'.':opt('clockGps')?'Clocked in. Your location is shared only while you are clocked in.':'Clocked in.');geoStart(who);break}
     case 'clk:out':{var w2=t.dataset.who,sh=openShift(w2);if(!sh)break;var out=Date.now(),li=lateInfo(w2,out),cn=$('#clockNote'),nt=cn?cn.value.trim():'';ui.clockNote=nt;
-      if(li&&li.needNote&&!nt){ui.needNote=true;renderCrew();toast('Add a note first. It has been '+fmtDur(li.lateMs)+' since your last job ended.');var c2=$('#clockNote');if(c2)c2.focus();break}
-      sh.outAt=out;sh.note=nt;sh.late=li&&li.needNote?Math.round(li.lateMs/60000):0;ui.clockNote='';ui.needNote=false;save();renderCrew();toast('Clocked out after '+fmtDur(out-sh.inAt)+'.');geoStop(w2);break}
+      if(li&&li.needNote&&!nt){ui.needNote=true;render();toast('Add a note first. It has been '+fmtDur(li.lateMs)+' since your last job ended.');var c2=$('#clockNote');if(c2)c2.focus();break}
+      var lb0=lastBreak(sh);if(lb0&&!lb0.e)lb0.e=out;
+      sh.outAt=out;sh.note=nt;sh.late=li&&li.needNote?Math.round(li.lateMs/60000):0;ui.clockNote='';ui.needNote=false;ui.noteOpen=false;crewClockOut(w2,out);save();render();toast('Clocked out after '+fmtDur(shiftMs(sh))+(sh.breaks&&sh.breaks.length?' (breaks not counted)':'')+'.');geoStop(w2);break}
+    case 'clk:break':{var bw=t.dataset.who,bs=openShift(bw);if(!bs)break;bs.breaks=(bs.breaks||[]).slice();var lb=lastBreak(bs),nb=Date.now();
+      if(lb&&!lb.e){bs.breaks[bs.breaks.length-1]=Object.assign({},lb,{e:nb});toast('Break over after '+fmtDur(nb-lb.s)+'. Back on the clock.')}
+      else{bs.breaks.push({s:nb,e:0});toast('On break. Breaks aren’t paid. Tap End break when you’re back.')}
+      save();render();break}
+    case 'clk:note':ui.noteOpen=true;render();var cn2=$('#clockNote');if(cn2)cn2.focus();break;
     case 'st:addoffice':{var on=$('#nOfficeName').value.trim();if(!on)break;S.office.push({name:on,kind:$('#nOfficeKind').value});dirChanged();renderSettings();break}
     case 'st:rmoffice':{var ro=S.office.splice(+t.dataset.i,1)[0];if(ro)delete S.contacts[ro.name];dirChanged();renderSettings();break}
     case 'st:officekind':{var oo=S.office[+t.dataset.i];if(oo){oo.kind=oo.kind==='owner'?'dispatch':'owner';dirChanged();renderSettings()}break}
@@ -5877,7 +6024,7 @@ document.addEventListener('click',function(e){
       if(ushift&&geo.last&&geo.who===uw&&Date.now()-geo.last.ts<10*60000)uloc={lat:geo.last.lat,lng:geo.last.lng,acc:geo.last.acc,ts:geo.last.ts};
       sendMsg('all',ut+' · '+j.d.name,{k:'update',job:j.d.name,loc:uloc||undefined},uw);
       toast(uloc?'Update sent with your location.':(ushift?'Update sent. No location yet.':'Update sent. Clock in to include your location.'));break}
-    case 'clk:mgr':{var sm=state.shifts.find(function(x){return x.id===t.dataset.id});if(!sm)break;sm.outAt=Date.now();sm.note=(sm.note?sm.note+' ':'')+'Clocked out by a manager.';sm.mgr=1;geoStop(sm.who);removeLoc(sm.who);save();renderReports();toast(sm.who+' clocked out.');break}
+    case 'clk:mgr':{var sm=state.shifts.find(function(x){return x.id===t.dataset.id});if(!sm)break;sm.outAt=Date.now();var smb=lastBreak(sm);if(smb&&!smb.e)smb.e=sm.outAt;crewClockOut(sm.who,sm.outAt);sm.note=(sm.note?sm.note+' ':'')+'Clocked out by a manager.';sm.mgr=1;geoStop(sm.who);removeLoc(sm.who);save();renderReports();toast(sm.who+' clocked out.');break}
     case 'st:rmact':if(S.activities.length>1){S.activities.splice(+t.dataset.i,1);save();renderSettings()}else toast('Keep at least one work type.');break;
     case 'st:addact':var an=$('#nAct').value.trim();if(!an)break;S.activities.push(an);save();renderSettings();break;
     case 'st:rmtruck':S.trucks.splice(+t.dataset.i,1);save();renderSettings();break;
@@ -6000,12 +6147,18 @@ state.ui.realRole=null;if(state.ui.role!=='owner')state.ui.role='owner';
 (function migrate7(){var S=state.settings,D=defaultSettings();if(!S.comms)S.comms=D.comms;S.comms.alerts=Object.assign({},D.comms.alerts,S.comms.alerts||{});if(!Array.isArray(S.comms.ring))S.comms.ring=[];if(!S.opt||typeof S.opt!=='object')S.opt={}})();
 (function migrate5(){var S=state.settings,D=defaultSettings();if(!S.materials)S.materials=D.materials;if(!S.costCats)S.costCats=D.costCats;state.jobs.forEach(function(j){if(!j.materials)j.materials=[];if(!j.costs)j.costs=[]})})();
 window.addEventListener('resize',function(){renderTabs()});
-setInterval(function(){var el=$('#clkElapsed');if(!el||!el.dataset.since)return;var typing=document.activeElement&&document.activeElement.id==='clockNote';if(typing||ui.tab!=='crew')el.textContent=fmtDur(Date.now()-(+el.dataset.since));else renderCrew()},30000);
+setInterval(function(){
+  var p=$('#clkPaid'),b=$('#clkBrk');if(!p)return;
+  var me=p.dataset.who,a=document.activeElement,typing=a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+  if(ui.tab==='crew'&&openShift(me)&&!typing&&!ui.mp&&!ui.start&&!ui.flow&&!ui.jobId){renderCrew();return}   // job times on the cards tick too
+  p.textContent=fmtHM(paidToday(me));
+  if(b&&b.dataset.since)b.textContent='On break · '+fmtDur(Date.now()-(+b.dataset.since));
+},30000);
 if(location.hash==='#messages'){ui.tab='chat';ui.chatThread='jobs'}
 else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency text opens the alert
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,render:render};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render};
 })();
 </script>
 </body>

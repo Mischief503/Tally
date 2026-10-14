@@ -170,7 +170,13 @@ async function load(file, opts = {}) {
   };
   // a job further out shows as one line on My jobs until it is opened
   const openCard = async (id) => { const m = $('[data-act="cr:expand"][data-id="' + id + '"]'); if (m) { click(m); await sleep(10); } };
-  return { dom, w, $, $$, click, text, go, openCard, errors, calls, T: w.__tally };
+  // put people on the clock (Start job waits for everyone on the job to clock in)
+  const clockIn = (...names) => {
+    const st = w.__tally.state();
+    names.flat().forEach((n) => { if (!st.shifts.some((x) => x.who === n && !x.outAt)) st.shifts.push({ id: 'ck_' + String(n).replace(/\W/g, '') + '_' + st.shifts.length, who: n, inAt: Date.now() - 60000, outAt: 0, activity: 'Job day', note: '', late: 0, breaks: [] }); });
+    w.__tally.render();
+  };
+  return { dom, w, $, $$, click, text, go, openCard, clockIn, errors, calls, T: w.__tally };
 }
 
 let passes = 0, failures = 0;

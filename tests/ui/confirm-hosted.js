@@ -71,6 +71,25 @@ function seed() {
   ok(ml.length === 1 && ml[0].qty === 2 && ml[0].by === 'Marcus', 'two taps reach the database as 2 on Marcus’s line');
   B.click('#matpick [data-act="mp:close"].btn'); await sleep(700);
   ok(Object.values(db.docs.find((d) => d.path === 'jobs/c1').data.log || {}).some((l) => /Materials added by Marcus: .* × 2/.test(l.ev)), 'and closing the list logs it on the job');
+  // the time clock: Marcus clocks in and takes a break; the shift and its break reach the database
+  B.click('[data-act="tab"][data-tab="today"]'); await sleep(20);
+  B.click('.tclock [data-act="clk:in"]'); await sleep(700);
+  const shRow = () => db.docs.find((d) => d.collection === 'shifts' && d.data.who === 'Marcus' && !d.data.outAt);
+  ok(shRow() && Array.isArray(shRow().data.breaks) && shRow().data.breaks.length === 0, 'his clock-in reaches the database');
+  B.click('.tclock [data-act="clk:break"]'); await sleep(700);
+  ok(shRow().data.breaks.length === 1 && !shRow().data.breaks[0].e, 'and so does his break');
+  B.click('.tclock [data-act="clk:break"]'); await sleep(700);
+  ok(shRow().data.breaks[0].e > 0, 'and its end');
+  // the office starts Priya's job on another phone, with Marcus on it
+  const c1s = JSON.parse(JSON.stringify(db.docs.find((d) => d.path === 'jobs/c1')));
+  c1s.data.status = 'active'; c1s.data.startedAt = Date.now(); c1s.data.crewOn = { Marcus: [{ in: Date.now(), out: 0 }] };
+  B.$('#toast').textContent = '';
+  await B.w.__sb.from('docs').upsert(c1s); await sleep(700);
+  ok(/The job started: Priya “P” Nair\. You’re on the job\.|The job started: Priya Nair\. You’re on the job\./.test(B.$('#toast').textContent), 'his phone says the job started with him on it: ' + B.$('#toast').textContent);
+  ok(/On the job: Priya/.test(B.$('.tclock').textContent), 'and his clock card says so');
+  B.click('.tclock [data-act="clk:out"]'); await sleep(700);
+  const on = db.docs.find((d) => d.path === 'jobs/c1').data.crewOn;
+  ok(on && on.Marcus && on.Marcus[0].out > 0 && !shRow(), 'clocking out takes him off the job in the database too');
   ok(A.errors.length === 0 && B.errors.length === 0, 'no errors (' + A.errors.concat(B.errors).slice(0, 3).join(' | ') + ')');
   process.exit(summary('confirm-hosted') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

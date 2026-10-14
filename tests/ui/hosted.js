@@ -184,6 +184,7 @@ function seed(opts = {}) {
   ok(!B.$('#sheet') || B.$('#sheet').hidden, 'crew still have no office job sheet');
   // start with the arrival text through the company line
   B.calls.fn.length = 0;
+  B.clockIn(B.T.state().jobs.find((j) => j.id === 'j1').assign.crew); await sleep(10);
   B.click('[data-act="cr:start"][data-id="j1"]'); await sleep(10);
   const gb = B.$('#start [data-act="go:start"]');
   ok(gb && gb.tagName === 'BUTTON' && /Sent from the company line \(512\) 555-0000 to 512-555-0142/.test(B.$('#start').textContent), 'with a company line, the arrival text goes through it');

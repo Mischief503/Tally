@@ -28,7 +28,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   const rows = $$('#setList [data-act="set:open"]').map((b) => b.dataset.sec);
   ok(rows[0] === 'options' && ['company', 'rates', 'mats', 'catalog', 'fleet', 'employees', 'roles', 'clock', 'forms', 'fields', 'sources', 'bid', 'pay', 'vault', 'comms', 'data'].every((s) => rows.includes(s)), L('Setup lists Options first, then every section: ' + rows.join(', ')));
   ok(['Your company', 'Pricing', 'People', 'Jobs and paperwork', 'Payments and texts', 'Data'].every((g) => $$('#setList .glabel').some((x) => x.textContent === g)), L('in groups'));
-  ok(/33 of 35 switches on/.test($('[data-sec="options"]').textContent) && /\$140\/h for 2 movers · 20-mile local radius · 3 h minimum/.test($('[data-sec="rates"]').textContent), L('each row says how it is set: "33 of 35 switches on", the rate card in a line'));
+  ok(/34 of 36 switches on/.test($('[data-sec="options"]').textContent) && /\$140\/h for 2 movers · 20-mile local radius · 3 h minimum/.test($('[data-sec="rates"]').textContent), L('each row says how it is set: "34 of 36 switches on", the rate card in a line'));
   ok(!$('details.acc.card') && !$('input[data-s="rates.r2"]'), L('no section is open on the list itself'));
   const q = $('#setQ'); q.value = 'deposit'; q.dispatchEvent(new w.Event('input', { bubbles: true })); await sleep(5);
   ok(!!$('#setList input[role="switch"][data-s="opt.deposit"]') && !!$('#setList [data-act="set:open"][data-sec="rates"]') && !$('#setList [data-sec="fleet"]'), L('search "deposit" shows the Deposit switch itself and the Rate card, nothing else'));
@@ -43,12 +43,12 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   /* ---------------- Options: every switch, its number, the count ---------------- */
   click('[data-act="set:open"][data-sec="options"]'); await sleep(10);
   const sws = $$('#view input[role="switch"]');
-  ok(sws.length === 35 && $$('#view .optgrp h3').map((h) => h.textContent).join('|') === 'Crew and field|Billing out|Time clock|Quotes and pricing|Paperwork|Payments|Texts|Office', L('35 switches in 8 groups'));
+  ok(sws.length === 36 && $$('#view .optgrp h3').map((h) => h.textContent).join('|') === 'Crew and field|Billing out|Time clock|Quotes and pricing|Paperwork|Payments|Texts|Office', L('36 switches in 8 groups'));
   ok(sws.filter((i) => !i.checked).map((i) => i.dataset.s).join() === 'opt.photosReq,opt.tax', L('all on to start except Photos before finishing and Sales tax (no tax % set)'));
   const dep = $('input[data-s="depositPct"]');
   ok(dep && !dep.closest('.optn').hidden && dep.value === '25', L('a switch that needs a number shows it under it (Deposit 25%)'));
   flip('opt.deposit', false); await sleep(5);
-  ok(S.opt.deposit === false && dep.closest('.optn').hidden && dep.closest('.opt').classList.contains('off') && /32 of 35 on/.test($('#optCount').textContent), L('switched off: saved, its number hides, and the count drops'));
+  ok(S.opt.deposit === false && dep.closest('.optn').hidden && dep.closest('.opt').classList.contains('off') && /33 of 36 on/.test($('#optCount').textContent), L('switched off: saved, its number hides, and the count drops'));
   flip('opt.deposit', true); await sleep(5);
   ok(S.opt.deposit === true && !dep.closest('.optn').hidden, L('and back on'));
   ok(!!$('input[role="switch"][data-s="comms.alerts.tomorrow"]') && !!$('input[role="switch"][data-s="payMin"]') && !!$('input[role="switch"][data-s="nteCap"]'), L('older settings sit here too (texts, minimum pay, not-to-exceed)'));
@@ -61,7 +61,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   click('[data-act="more:open"]'); await sleep(5);
   ok($$('#more .glabel').map((g) => g.textContent).join('|') === 'Work|Company|You' && !!$('#more .sosrow'), L('More: Work, Company, You, and Truck down apart'));
   click('#more [data-act="more:go"][data-sec="options"]'); await sleep(15);
-  ok(T.ui.tab === 'settings' && T.ui.setSec === 'options' && $$('#view input[role="switch"]').length === 35, L('More › Options opens Setup › Options'));
+  ok(T.ui.tab === 'settings' && T.ui.setSec === 'options' && $$('#view input[role="switch"]').length === 36, L('More › Options opens Setup › Options'));
 
   /* ---------------- the quote's switches ---------------- */
   const base = blank({ miles: '8', flights: '2', pack: true, items: { boxm: 40, sofa3: 1 } });
@@ -133,6 +133,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
 
   /* ---------------- Start job: the arrival text ---------------- */
   P.d.phone = '512-555-0177'; T.render(); await sleep(5);
+  A.clockIn(P.assign.crew); await sleep(5);
   click('[data-act="cr:start"][data-id="' + P.id + '"]'); await sleep(10);
   ok(!!$('#etaOn') && /Text Priya Nair how long until you arrive/.test($('#start').textContent), L('Start job offers the arrival text'));
   click('[data-act="go:close"]'); await sleep(5);
@@ -197,7 +198,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
     ok(!$('[data-act="call:cust"][data-id="' + dj.id + '"]'), L('Crew members can call the customer off: no Call for Dee'));
     set('callCust', true);
   } else ok(false, L('Dee has a job today'));
-  ok(!!$('[data-act="clk:in"]') && !!$('#view [data-act="sos:open"]'), L('Dee has the time clock and the Truck down button'));
+  ok(!!($('[data-act="clk:in"]') || $('[data-act="clk:out"]')) && !!$('#view [data-act="sos:open"]'), L('Dee has the time clock and the Truck down button'));
   set('clock', false); set('truckDown', false); await sleep(5);
   ok(!$('[data-act="clk:in"]') && $('#fab').hidden && !$('#tabs .spacer') && !$('#view [data-act="sos:open"]'), L('Time clock and Truck down off: no clock card, no round button, no Truck down button'));
   click('[data-act="more:open"]'); await sleep(5);
@@ -214,6 +215,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   const realNow = w.Date.now, at3 = (() => { const d = new w.Date(); d.setHours(15, 0, 0, 0); return d.getTime(); })();
   w.Date.now = () => at3;
   try {
+    st().shifts = st().shifts.filter((x) => !(x.who === 'Marcus' && !x.outAt));   // clocked in earlier for Start job
     st().shifts.push({ id: 'sh-late', who: 'Marcus', inAt: at3 - 10 * H, outAt: 0, activity: 'Job day', note: '', late: 0 });
     const lastEnd = at3 - 2 * H;
     P.status = 'done'; P.finishedAt = lastEnd; P.phases.unloadEnd = lastEnd; T.render();
@@ -226,8 +228,9 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
     ok(st().shifts.find((x) => x.id === 'sh-late').outAt > 0, L('and clocking out goes through without one'));
     set('lateNote', true);
     set('clockGps', false); await sleep(5);
-    ok(/Location shared only while clocked in/.test(view()) === false && /Not clocked in/.test(view()), L('Location while clocked in off: the clock card doesn’t mention sharing'));
-    set('clockGps', true);
+    ok(/Clocked out/.test($('.tclock').textContent) && !/location/i.test($('.tclock').textContent), L('Location while clocked in off: the clock card doesn’t mention sharing'));
+    set('clockGps', true); await sleep(5);
+    ok(/Your location is shared only while you’re clocked in\./.test($('.tclock').textContent), L('and on, it does'));
   } finally { w.Date.now = realNow; }
 
   /* ---------------- confirmations ---------------- */
