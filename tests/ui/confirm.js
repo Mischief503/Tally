@@ -12,6 +12,7 @@ const file = process.argv[2], label = process.argv[3] || 'confirm';
 
   // ---- office sees nobody has confirmed
   ok(/Not confirmed yet/.test(text()) && /Marcus, Dee, Luis · Priya Nair today/.test(text()), label + ': Today lists who has not confirmed today’s job');
+  if ($('[data-act="today:alerts"]')) { click('[data-act="today:alerts"]'); await sleep(5); }   // Needs you shows five rows until Show more
   ok(/Tanya, Andre · Hollis & Reed Law tomorrow/.test(text()), label + ': and tomorrow’s');
   click('[data-act="job:open"][data-id="' + job.id + '"]'); await sleep(15);
   ok(/Waiting on: Marcus, Dee, Luis/.test($('#sheet').textContent) && !/✓/.test($('#sheet').textContent), label + ': job sheet shows who it is waiting on');
@@ -29,7 +30,7 @@ const file = process.argv[2], label = process.argv[3] || 'confirm';
   ok(/Job messages/.test(text()) && /1 job to confirm/.test(text()), label + ': Chat has a Job messages spot at the top');
   click('[data-act="chat:open"][data-t="jobs"]'); await sleep(15);
   const card = $('.jmsg');
-  ok(card && /Booked today/.test(card.textContent) && /You’re on Priya Nair today at 8:00 AM\.\s*Pickup: 418 Oak St, Austin\s*Truck: Box 1 \(26 ft\)\s*Lead: Marcus\s*With: Luis(?!, Marcus)/.test(card.textContent), label + ': the message reads right: ' + (card && card.textContent.replace(/\s+/g, ' ')));
+  ok(card && /Booked today/.test(card.textContent) && /You’re on Priya Nair today at 8:00 AM\.\s*Pickup: 418 Oak St, Austin\s*Truck: Box 1 \(26 ft\), Marcus drives\s*Lead: Marcus\s*With: Luis(?!, Marcus)/.test(card.textContent), label + ': the message reads right: ' + (card && card.textContent.replace(/\s+/g, ' ')));
   // a forged tap for someone else does nothing
   const forged = w.document.createElement('button'); forged.dataset.act = 'jm:confirm'; forged.dataset.id = job.id; forged.dataset.who = 'Luis'; w.document.body.appendChild(forged); click(forged); forged.remove(); await sleep(5);
   ok(!(job.confirm && job.confirm.Luis), label + ': Dee cannot confirm for Luis');

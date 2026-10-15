@@ -362,7 +362,12 @@ export async function checkJob(org: string, jobId: string, origin?: string | nul
   const moved = !!was.move_date && (was.move_date !== next.move_date || was.move_time !== next.move_time);
   const stayed = crew.filter((n) => added.indexOf(n) < 0);
   const co = company(S), name = gsm(d.name || "a job"), lead = leadOf(S, job);
-  const truck = ((S && S.trucks) || []).find((t: J) => t.id === (job.assign && job.assign.truckId));
+  // the job's trucks (the first is assign.truckId, any others assign.more) and who drives each
+  const a = job.assign || {}, tids: string[] = [];
+  if (a.truckId) tids.push(a.truckId);
+  (Array.isArray(a.more) ? a.more : []).forEach((x: string) => { if (x && tids.indexOf(x) < 0) tids.push(x); });
+  const trucks: J[] = tids.map((id) => ((S && S.trucks) || []).find((t: J) => t.id === id)).filter(Boolean);
+  const drives = (n: string): J | undefined => optOff(S, "drivers") ? undefined : trucks.find((t: J) => (a.drivers || {})[t.id] === n);
   const C = contacts(S), out: J[] = [];
   const link = appLink(S, origin);
 
@@ -370,7 +375,9 @@ export async function checkJob(org: string, jobId: string, origin?: string | nul
     for (const n of added) {
       const bits = [co + ": You're on " + name + ", " + when(d) + "."];
       if (d.from) bits.push("Pickup " + gsm(d.from) + ".");
-      if (truck) bits.push("Truck " + gsm(truck.name) + ".");
+      const mine = drives(n);
+      if (mine) bits.push("You drive " + gsm(mine.name) + ".");
+      else if (trucks.length) bits.push((trucks.length > 1 ? "Trucks " : "Truck ") + trucks.map((t: J) => gsm(t.name)).join(", ") + ".");
       if (lead && lead !== n) bits.push("Lead " + gsm(lead) + ".");
       if (confirmOn(S)) bits.push(link ? "Confirm in Tally: " + link : "Confirm in Tally under Job messages.");
       out.push(await sendText({ org, line, jobId, purpose: "assigned", staff: n, to: C[n], body: bits.join(" ") }));

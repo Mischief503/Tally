@@ -61,11 +61,13 @@ const L = (m) => label + ': ' + m;
   // exactly six: all six show (a button to see one more row would be silly)
   const done = st().jobs.filter((j) => j.status === 'done' && !/^clone/.test(j.id));
   st().jobs = st().jobs.filter((j) => j.status !== 'done'); T.ui.allAlerts = false; T.render(); await sleep(5);
-  const base = alerts().length;
+  const needN = () => +(($$('#view .secline').find((x) => /Needs you/.test(x.textContent)) || { querySelector: () => null }).querySelector('small') || { textContent: '0' }).textContent;
+  let base = needN();
+  if (base > 6) { st().settings.opt = Object.assign({}, st().settings.opt, { confirm: false }); T.render(); await sleep(5); base = needN(); }   // fewer rows to start from: no confirmations
   for (let i = 0; i < 6 - base; i++) { const c = JSON.parse(JSON.stringify(MT)); c.id = 'clone' + i; c.d.name = 'Owes money ' + i; st().jobs.push(c); }
   T.render(); await sleep(5);
   ok(base <= 6 && alerts().length === 6 && !$('[data-act="today:alerts"]'), L('six rows all show, with no button for one more (' + base + ' without the finished jobs)'));
-  st().jobs = st().jobs.filter((j) => !/^clone/.test(j.id)).concat(done); T.render(); await sleep(5);
+  st().jobs = st().jobs.filter((j) => !/^clone/.test(j.id)).concat(done); delete st().settings.opt.confirm; T.render(); await sleep(5);
 
   /* ---------------- taking a deposit ---------------- */
   T.ui.jobId = PN.id; T.render(); await sleep(10);

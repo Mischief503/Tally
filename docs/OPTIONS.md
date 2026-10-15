@@ -1,6 +1,6 @@
 # Options: what the owner can switch on and off
 
-**Setup › Options** has 36 switches, in eight groups. They apply to everyone in the company and save
+**Setup › Options** has 37 switches, in eight groups. They apply to everyone in the company and save
 as soon as they're flipped. Each switch also sits in the Setup section it belongs to, so the Rate
 card has the pricing switches, Roles has what crew, leads and dispatch can do, and so on. Only the
 owner can change them.
@@ -73,6 +73,7 @@ The number under a switch (radius, %, $) shows only while the switch is on. See
 | Text the crew when a job moves | No texts when a job changes day or time. |
 | Texts the evening before | No evening reminders or office summary. |
 | Unsigned forms alert | No text to the office about a job waiting on a signature. |
+| A driver for every truck | No driver boxes on jobs, no Who drives list in Setup › Fleet and drivers, and a truck without a driver doesn't make a job need scheduling. The texts just name the truck. |
 | Dispatch can take payments | Dispatch has no payment buttons (*The owner takes payments on this job*); the server refuses dispatch's payments too. |
 | Dispatch sees revenue | No Revenue screen for dispatch; Today shows what's to schedule instead of what's owed. |
 

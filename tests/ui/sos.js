@@ -66,6 +66,15 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   click(tdBtn); await sleep(20);
   ok(!$('#sos').hidden && /Tell the office your truck is down\?/.test($('#sos').textContent), 'it opens the truck-down screen');
   ok($('#sosTruck').value === 't26' && /Job: Priya Nair\./.test($('#sos').textContent), 'it picks the truck and the job from today’s schedule');
+  // with two trucks on the job, it starts on the one Marcus drives
+  click('[data-act="sos:cancel"]'); await sleep(10);
+  const pj = T.state().jobs.find((j) => j.id === 'j1'), keepA = JSON.parse(JSON.stringify(pj.assign));
+  pj.assign.more = ['t16']; pj.assign.drivers = { t26: 'Dee', t16: 'Marcus' };
+  click($$('#view [data-act="sos:open"]').find((b) => /Truck down\? Tell the office/.test(b.textContent))); await sleep(20);
+  ok($('#sosTruck').value === 't16', 'with two trucks on the job, it starts on the one he drives');
+  click('[data-act="sos:cancel"]'); await sleep(10);
+  pj.assign = keepA;
+  click($$('#view [data-act="sos:open"]').find((b) => /Truck down\? Tell the office/.test(b.textContent))); await sleep(20);
   ok(/where you are, and a text\./.test($('#sos').textContent), 'it says the office gets a text too');
   ok(w.__geo.watches.length === 0, 'nothing is shared before the alert is sent');
   ok(w.document.body.classList.contains('lock'), 'the page behind it holds still');

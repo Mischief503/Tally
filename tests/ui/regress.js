@@ -25,7 +25,7 @@ const file = process.argv[2], label = process.argv[3] || file;
   ok(job && job.status === 'booked', label + ': booked');
   // schedule in the sheet
   const d = $('#sheet input[data-j="moveDate"]'); d.value = new Date().toISOString().slice(0, 10); d.dispatchEvent(new w.Event('change', { bubbles: true }));
-  const tr = $('#sheet select[data-jassign="truckId"]'); tr.value = 't26'; tr.dispatchEvent(new w.Event('change', { bubbles: true }));
+  const tr = $('#sheet select[data-trk="sh"][data-i="0"]'); tr.value = 't26'; tr.dispatchEvent(new w.Event('change', { bubbles: true }));
   click($$('#sheet [data-act="sh:crew"]').find((c) => c.dataset.n === 'Marcus'));
   click($$('#sheet [data-act="sh:crew"]').find((c) => c.dataset.n === 'Dee'));
   ok(job.assign.crew.join() === 'Marcus,Dee' && job.assign.truckId === 't26', label + ': crew and truck scheduled');

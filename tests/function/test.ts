@@ -798,5 +798,20 @@ ok(r.body.number === "+15125550000" && r.body.twilio === true, "line check repor
   putDoc(ORG, "org/settings", settings);
 }
 
+/* ---------- trucks and drivers ---------- */
+putDoc(ORG, "org/settings", { ...settings, trucks: [{ id: "t26", name: "Box 1 (26 ft)" }, { id: "t20", name: "Box 2 (20 ft)" }] });
+putDoc(ORG, "jobs/j9", job("j9", { d: { ...job("j9").d, moveDate: "2099-06-01" }, assign: { truckId: "t26", more: ["t20"], crew: ["Marcus", "Dee", "Kim"], drivers: { t26: "Marcus", t20: "Dee" } } }));
+let nd = sent.length; r = await app("tok-dispatch", { action: "job", org: ORG, jobId: "j9" });
+const drv = sent.slice(nd), bodyTo = (to: string) => (drv.find((x) => x.To === to) || {}).Body || "";
+ok(r.body.sent === 3, "two trucks, three crew: three texts");
+ok(/You drive Box 1 \(26 ft\)\./.test(bodyTo("+15125550101")) && !/Trucks /.test(bodyTo("+15125550101")), "the driver of the first truck is told he drives it: " + bodyTo("+15125550101"));
+ok(/You drive Box 2 \(20 ft\)\./.test(bodyTo("+15125550102")), "the second truck's driver is told hers: " + bodyTo("+15125550102"));
+ok(/Trucks Box 1 \(26 ft\), Box 2 \(20 ft\)\./.test(bodyTo("+15125550106")), "the rest of the crew hear both trucks: " + bodyTo("+15125550106"));
+putDoc(ORG, "org/settings", { ...settings, opt: { drivers: false }, trucks: [{ id: "t26", name: "Box 1 (26 ft)" }, { id: "t20", name: "Box 2 (20 ft)" }] });
+putDoc(ORG, "jobs/j10", job("j10", { d: { ...job("j10").d, moveDate: "2099-06-01" }, assign: { truckId: "t26", crew: ["Marcus"], drivers: { t26: "Marcus" } } }));
+nd = sent.length; await app("tok-dispatch", { action: "job", org: ORG, jobId: "j10" });
+ok(/Truck Box 1 \(26 ft\)\./.test((sent.slice(nd)[0] || {}).Body || "") && !/You drive/.test((sent.slice(nd)[0] || {}).Body || ""), "with drivers switched off, the text just names the truck");
+putDoc(ORG, "org/settings", settings);
+
 console.log("\n" + passes + " passed, " + failures + " failed");
 if (failures) Deno.exit(1);

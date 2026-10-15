@@ -84,6 +84,12 @@ main{padding:10px 12px calc(70px + env(safe-area-inset-bottom));max-width:960px;
 .note{background:var(--accSoft);border:var(--bw) solid var(--tape-edge);border-radius:10px;padding:8px 10px;font-size:13px;margin-bottom:10px}
 /* grey small print is too faint on a note's tinted box in some dark looks: it takes the note's own colour */
 .note small{color:inherit}
+.trkrow{margin-top:6px}
+.trkrow select.need{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+.drvneed{margin:4px 0 0;font-size:13px;color:var(--bad);font-weight:var(--w-mid)}
+.drv{display:block;font-size:12px}.drv.no{color:var(--bad);font-weight:var(--w-mid)}
+/* a Board block sits on the page colour: its red pills take the card colour behind them, which the red is worked out against (on the page's tint it fell to 4:1 in Cardboard, Denim and Newsprint) */
+.block .pill.bad,.block .pill.due{background:var(--card)!important}
 .clashnote{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;text-align:left;font:inherit;font-size:13px;color:var(--text);background:rgba(200,64,47,.14);border-color:var(--bad);cursor:pointer;min-height:44px}
 .clashnote b{white-space:nowrap;font-weight:700}
 .duelist{margin:4px 0 0;padding-left:20px;font-size:14px}.duelist li{margin:2px 0}
@@ -1174,7 +1180,7 @@ function defaultSettings(){return {
   crew:['Marcus','Dee','Luis','Tanya','Andre','Kim'],
   sources:['Google','Referral','Yelp','Facebook','Repeat customer','Other'],
   customFields:[{id:'cf1',label:'Elevator reserved',type:'yesno'},{id:'cf2',label:'Parking notes',type:'text'}],
-  forms:[{id:'f_deliv',title:'Delivery receipt and release',kind:'text',required:true,pages:[],text:'I confirm that my belongings were delivered to the address on this job.\n\nI walked through and inspected the delivery. Any damage or missing items I noticed were pointed out to the crew before they left.\n\nBy signing, I accept delivery and agree to the final bill for this move.'}],perms:{},office:[{name:'Owner',kind:'owner'},{name:'Dispatch',kind:'dispatch'}],contacts:{Owner:'512-555-0100',Dispatch:'512-555-0199',Marcus:'512-555-0101',Dee:'512-555-0102',Luis:'512-555-0103',Tanya:'512-555-0104',Andre:'512-555-0105',Kim:'512-555-0106'},dirTs:0,leads:['Marcus','Tanya'],bidTol:10,materials:[
+  forms:[{id:'f_deliv',title:'Delivery receipt and release',kind:'text',required:true,pages:[],text:'I confirm that my belongings were delivered to the address on this job.\n\nI walked through and inspected the delivery. Any damage or missing items I noticed were pointed out to the crew before they left.\n\nBy signing, I accept delivery and agree to the final bill for this move.'}],perms:{},office:[{name:'Owner',kind:'owner'},{name:'Dispatch',kind:'dispatch'}],contacts:{Owner:'512-555-0100',Dispatch:'512-555-0199',Marcus:'512-555-0101',Dee:'512-555-0102',Luis:'512-555-0103',Tanya:'512-555-0104',Andre:'512-555-0105',Kim:'512-555-0106'},dirTs:0,leads:['Marcus','Tanya'],drivers:['Marcus','Tanya','Luis','Andre'],bidTol:10,materials:[
     {id:'m_boxs',name:'Small box',unit:'each',price:3.5,cost:1.25},{id:'m_boxm',name:'Medium box',unit:'each',price:4.5,cost:1.75},
     {id:'m_boxl',name:'Large box',unit:'each',price:6,cost:2.5},{id:'m_boxw',name:'Wardrobe box',unit:'each',price:22,cost:9},
     {id:'m_dish',name:'Dish pack box',unit:'each',price:12,cost:5},{id:'m_tvbox',name:'TV box',unit:'each',price:25,cost:10},
@@ -1266,6 +1272,7 @@ var OPTS=[
   {g:'texts',p:'comms.alerts.moved',t:'Text the crew when a job moves',h:'To a new day or time.'},
   {g:'texts',p:'comms.alerts.tomorrow',t:'Texts the evening before',h:'Everyone gets their jobs for tomorrow, and the office gets who hasn’t confirmed.'},
   {g:'texts',p:'comms.alerts.forms',t:'Unsigned forms alert',h:'Text the office when a finished job is still waiting on a signature.'},
+  {g:'office',k:'drivers',t:'A driver for every truck',h:'Dispatch picks who drives each truck on a job. A truck with no driver shows as needing scheduling. Off: no drivers to pick.'},
   {g:'office',k:'dispatchPay',t:'Dispatch can take payments',h:'Dispatch can collect payments and send pay links.'},
   {g:'office',k:'dispatchMoney',t:'Dispatch sees revenue',h:'The Revenue screen and what’s still owed. Off: dispatch schedules without the company’s totals.'}
 ];
@@ -1640,7 +1647,7 @@ function conflictsFor(j){
   state.jobs.forEach(function(o){
     if(o.id===j.id||o.d.moveDate!==j.d.moveDate||!['booked','active'].includes(o.status))return;
     var b0=startMin(o),b1=b0+durMin(o);if(a1<=b0||b1<=a0)return;
-    if(j.assign.truckId&&o.assign.truckId===j.assign.truckId)out.push({what:truckName(j.assign.truckId),other:o});
+    var ot=jobTrucks(o);jobTrucks(j).forEach(function(id){if(ot.indexOf(id)>=0)out.push({what:truckName(id),other:o})});
     j.assign.crew.forEach(function(c){if(o.assign.crew.includes(c))out.push({what:c,other:o})});
   });
   return out;
@@ -1657,7 +1664,8 @@ function demoJobs(S){
   function mk(o){
     var d=Object.assign(blankDraft(),{name:o.name,phone:o.phone||'',source:o.src||'Google',moveDate:o.off==null?'':addDays(t,o.off),time:o.time||'08:00',from:o.from||'',to:o.to||'',miles:o.miles||'',flights:o.fl||'',items:o.items||{},pack:!!o.pack,notes:o.notes||''});
     var j=newJob(d,S,o.status);j.createdAt=Date.now()-(o.age||4)*864e5;
-    j.assign={truckId:o.truck||'',crew:o.crew||[]};
+    j.assign={truckId:o.truck||'',crew:o.crew||[],drivers:{}};
+    if(o.truck&&o.drive!==false){var dv=o.drive||(o.crew||[]).filter(function(n){return !(S.drivers||[]).length||S.drivers.indexOf(n)>=0})[0];if(dv)j.assign.drivers[o.truck]=dv}
     (o.mat||[]).forEach(function(m){var c=(S.materials||[]).find(function(x){return x.id===m[0]});if(c)j.materials.push({id:uid(),itemId:c.id,name:c.name,unit:c.unit,qty:m[1],price:c.price,cost:c.cost,by:(o.crew||['Crew'])[o.crew&&o.crew.length>1?1:0],ts:Date.now()+(o.off||0)*864e5})});
     (o.cost||[]).forEach(function(c){j.costs.push({id:uid(),label:c[0],cat:c[1],amt:c[2],by:(o.crew||['Crew'])[0],ts:Date.now()+(o.off||0)*864e5})});
     var tot=totalOf(j),cum=0,paidSoFar=0;
@@ -1668,7 +1676,7 @@ function demoJobs(S){
   }
   mk({name:'Priya Nair',mat:[['m_boxm',12],['m_tape',4]],phone:'512-555-0142',status:'booked',off:0,time:'08:00',items:B,from:'418 Oak St, Austin',to:'77 Ridge Rd, Round Rock',miles:22,truck:'t26',crew:['Marcus','Dee','Luis'],pay:[[0.25,-4]],src:'Referral',cn:[['Marcus',20,'Elevator at pickup is reserved for 8 AM. Front desk confirmed.']]});
   mk({name:'Hollis & Reed Law',phone:'512-555-0177',status:'booked',off:1,time:'10:00',items:C,from:'900 Congress Ave, Austin',to:'2200 S Lamar, Austin',miles:8,truck:'t20',crew:['Tanya','Andre'],pay:[[0.25,-2]],src:'Google'});
-  mk({name:'Nadia Farouk',phone:'512-555-0110',status:'booked',off:1,time:'11:00',items:D,from:'1502 E 6th, Austin',to:'34 Barton Hills Dr, Austin',miles:5,truck:'t20',crew:['Marcus','Kim'],fl:2,src:'Yelp',notes:'Studio, third floor walk-up.'});
+  mk({name:'Nadia Farouk',phone:'512-555-0110',status:'booked',off:1,time:'11:00',items:D,from:'1502 E 6th, Austin',to:'34 Barton Hills Dr, Austin',miles:5,truck:'t20',crew:['Marcus','Kim'],drive:false,fl:2,src:'Yelp',notes:'Studio, third floor walk-up.'});
   mk({name:'Ortega family',phone:'512-555-0189',status:'quoted',off:5,time:'09:00',items:A,from:'88 Elm Ct, Pflugerville',to:'12 Lakeview Dr, Cedar Park',miles:19,pack:true,src:'Facebook'});
   mk({name:'Marcus Tull',mat:[['m_boxm',10],['m_stretch',2]],cost:[['Dump run at the county site','Dump fee',65]],phone:'512-555-0163',status:'done',off:-2,time:'09:00',items:E,from:'9 Pecan Row, Austin',to:'610 Hill Country Ln, Dripping Springs',miles:27,truck:'t26',crew:['Marcus','Luis'],mult:1.2,pay:[[0.25,-9]],src:'Repeat customer',notes:'Piano on ground floor, ramp needed.'});
   mk({name:'Lena Wu',mat:[['m_boxs',8],['m_boxm',14],['m_tape',3]],status:'paid',off:-9,items:A,from:'71 Maple Way, Austin',to:'5 Cedar St, Austin',miles:6,truck:'t20',crew:['Marcus','Kim','Tanya'],mult:1.1,pay:[[0.25,-14],[0.75,-9]],src:'Google'});
@@ -1756,8 +1764,91 @@ var isOfficeName=function(n){return !!officeRec(n)};
 var canRun=function(n){return isLead(n)||isOfficeName(n)};          // leads, owner and dispatch can all run a job
 function assignable(){var S=state.settings,out=S.crew.slice();(S.office||[]).forEach(function(o){if(out.indexOf(o.name)<0)out.push(o.name)});return out}
 function whoTag(n){var o=officeRec(n);if(o)return o.kind==='owner'?' (owner)':' (dispatch)';return isLead(n)?' (lead)':''}
+/* ---------- trucks and drivers on a job ----------
+   A job's trucks are assign.truckId (the first one, which older copies of the app read too) and
+   assign.more (any others). assign.drivers says who drives each truck, by the truck's id. Who can
+   drive is the owner's list in Setup › Fleet (settings.drivers); until anyone is on it, anyone can. */
+function driversOn(){return opt('drivers')}
+function canDrive(n){var l=state.settings.drivers||[];return !l.length||l.indexOf(n)>=0}
+function jobTrucks(j){var a=j.assign||{},ids=[];if(a.truckId)ids.push(a.truckId);(a.more||[]).forEach(function(x){if(x&&ids.indexOf(x)<0)ids.push(x)});return ids}
+function driverOf(j,tid){var n=((j.assign||{}).drivers||{})[tid];return n&&(j.assign.crew||[]).indexOf(n)>=0?n:''}
+function trucksNoDriver(j){return driversOn()?jobTrucks(j).filter(function(id){return !driverOf(j,id)}):[]}
+function trucksLine(j){return jobTrucks(j).map(truckName).join(', ')}
+// each truck and who drives it, as `me` reads it ("Box 1 (26 ft), you drive · Box 2 (20 ft), Luis drives")
+function truckDrive(j,me,html){
+  var ids=jobTrucks(j),on=driversOn(),e=html?esc:function(x){return x};
+  if(!ids.length)return 'No truck';
+  var past=['done','paid'].indexOf(j.status)>=0,you=past?'you drove':'you drive',drv=past?' drove':' drives';
+  return ids.map(function(id){var d=on?driverOf(j,id):'';return e(truckName(id))+(on?(d===me&&me?(html?', <b>'+you+'</b>':', '+you):d?', '+e(d)+drv:past?'':', no driver yet'):'')}).join(' · ');
+}
+// put a truck in slot i (or take it off with ''); a driver stays with the slot when the truck is swapped
+function setTruckAt(j,i,id){
+  var ids=jobTrucks(j),old=ids[i]||'',dr=Object.assign({},j.assign.drivers||{});
+  if(id&&ids.indexOf(id)>=0&&ids.indexOf(id)!==i)return false;
+  if(id){if(i<ids.length)ids[i]=id;else ids.push(id)}else if(i<ids.length)ids.splice(i,1);
+  if(old&&old!==id){if(id&&dr[old]&&!dr[id])dr[id]=dr[old];delete dr[old]}
+  Object.keys(dr).forEach(function(k){if(ids.indexOf(k)<0)delete dr[k]});
+  j.assign.truckId=ids[0]||'';j.assign.more=ids.slice(1);j.assign.drivers=dr;
+  autoDrivers(j);return true;
+}
+function setDriver(j,tid,n){var dr=Object.assign({},j.assign.drivers||{});Object.keys(dr).forEach(function(k){if(dr[k]===n&&k!==tid)delete dr[k]});if(n)dr[tid]=n;else delete dr[tid];j.assign.drivers=dr}
+// someone off the crew stops driving
+function dropDriver(j,n){var dr=Object.assign({},j.assign.drivers||{}),ch=false;Object.keys(dr).forEach(function(k){if(dr[k]===n){delete dr[k];ch=true}});if(ch)j.assign.drivers=dr;return ch}
+// fill in a driver when there's only one way to do it: one truck without a driver and one person on the crew who drives and isn't driving yet
+function autoDrivers(j){
+  if(!driversOn()||!(state.settings.drivers||[]).length)return '';
+  var open=trucksNoDriver(j);if(open.length!==1)return '';
+  var driving=jobTrucks(j).map(function(id){return driverOf(j,id)}),free=j.assign.crew.filter(function(n){return canDrive(n)&&driving.indexOf(n)<0});
+  if(free.length!==1)return '';
+  setDriver(j,open[0],free[0]);return free[0];
+}
+// the trucks' room against the load (the quote picks a truck with 8% to spare)
+function truckRoom(j){return jobTrucks(j).reduce(function(a,id){var t=state.settings.trucks.find(function(x){return x.id===id});return a+(t?num(t.cf):0)},0)}
+function roomShort(j){var cf=num((j.quote||{}).cf);return cf>0&&jobTrucks(j).length>0&&truckRoom(j)<Math.ceil(cf*1.08)}
+function trkRedraw(ctx){if(ctx==='sh'||ui.jobId)renderSheet();if(ui.tab==='dispatch')renderDispatch();else if(ctx!=='sh')renderTab()}
+// a truck or a driver picked on the sheet or the Board
+function trkChange(t){
+  var ctx=t.dataset.trk||t.dataset.drv,j=canEditJobs()?byId(t.dataset.id):null;
+  if(!j){toast('This job is not available any more. Reload the page.');return}
+  if(t.dataset.trk){
+    var i=+t.dataset.i,was=jobTrucks(j)[i]||'',now=t.value;
+    if(!setTruckAt(j,i,now)){toast('That truck is already on this job.');trkRedraw(ctx);return}
+    logEv(j,now?(was?truckName(was)+' changed to '+truckName(now):truckName(now)+' put on the job'):truckName(was)+' taken off the job');
+    var auto=driverOf(j,now);save();trkRedraw(ctx);
+    toast(now?truckName(now)+(auto?', '+auto+' driving.':' is on the job.'+(driversOn()?' Pick who drives it.':'')):'Truck taken off the job.');
+    return;
+  }
+  var tid=t.dataset.t,n=t.value,added=false,from=n?jobTrucks(j).filter(function(x){return x!==tid&&driverOf(j,x)===n})[0]:'';
+  if(n&&j.assign.crew.indexOf(n)<0){if(assignable().indexOf(n)<0){toast('That person is not on the list any more. Check Setup.');return}j.assign.crew.push(n);crewAssigned(j,n,true);added=true}
+  setDriver(j,tid,n);logEv(j,n?n+' driving '+truckName(tid):'No driver for '+truckName(tid));
+  // the one driver left takes the one truck left (never after a driver was cleared on purpose)
+  var auto=n?autoDrivers(j):'',autoT=auto?jobTrucks(j).filter(function(x){return driverOf(j,x)===auto})[0]:'';if(auto)logEv(j,auto+' driving '+truckName(autoT));
+  save();trkRedraw(ctx);
+  toast(n?n+(added?' added to the crew,':'')+' driving '+truckName(tid)+(from&&!auto?' instead of '+truckName(from)+'. Pick who drives that one.':'.')+(auto?' '+auto+' driving '+truckName(autoT)+'.':''):'No driver for '+truckName(tid)+' now.');
+}
+// The trucks on a job, each with who drives it, for the job sheet (ctx 'sh') and the Board's Needs scheduling (ctx 'dq')
+function truckDriverRows(j,ctx){
+  var S=state.settings,ids=jobTrucks(j),on=driversOn(),q=j.quote||{},rows=ids.length?ids:[''];
+  var tOpts=function(cur,i){return '<option value="">'+(i?'Take this truck off':'No truck yet')+'</option>'+S.trucks.map(function(t){var taken=ids.indexOf(t.id)>=0&&t.id!==cur;return taken?'':'<option value="'+t.id+'"'+(t.id===cur?' selected':'')+'>'+esc(t.name)+'</option>'}).join('')+(cur&&!S.trucks.some(function(t){return t.id===cur})?'<option value="'+esc(cur)+'" selected>Removed truck</option>':'')};
+  var dOpts=function(tid){
+    var cur=driverOf(j,tid),elsewhere=function(n){var x=ids.filter(function(y){return y!==tid&&driverOf(j,y)===n})[0];return x?' (now on '+truckName(x)+')':''};
+    var onJob=j.assign.crew.filter(function(n){return canDrive(n)}),off=assignable().filter(function(n){return j.assign.crew.indexOf(n)<0&&canDrive(n)&&(S.drivers||[]).length});
+    return '<option value="">Who drives?</option>'+(onJob.length?'<optgroup label="On this job">'+onJob.map(function(n){return '<option value="'+esc(n)+'"'+(n===cur?' selected':'')+'>'+esc(n)+esc(elsewhere(n))+'</option>'}).join('')+'</optgroup>':'')+
+      (off.length?'<optgroup label="Add to the crew">'+off.map(function(n){return '<option value="'+esc(n)+'">'+esc(n)+'</option>'}).join('')+'</optgroup>':'');
+  };
+  var html=rows.map(function(tid,i){
+    var nm=tid?truckName(tid):'',dr=tid?driverOf(j,tid):'',lbl=rows.length>1?'Truck '+(i+1):'Truck';
+    var tsel='<select data-trk="'+ctx+'" data-id="'+j.id+'" data-i="'+i+'" aria-label="'+lbl+(ctx==='dq'?' for '+esc(j.d.name):'')+'">'+tOpts(tid,i)+'</select>';
+    var dsel=on&&tid?'<select data-drv="'+ctx+'" data-id="'+j.id+'" data-t="'+esc(tid)+'" aria-label="Driver for '+esc(nm)+'"'+(dr?'':' class="need"')+'>'+dOpts(tid)+'</select>':'';
+    return '<div class="trkrow"><div class="grid2 stack">'+fld(lbl,tsel)+(on?fld('Driver',dsel||'<select disabled aria-label="Driver"><option>Pick a truck first</option></select>'):'')+'</div>'+
+      (on&&tid&&!dr?'<p class="drvneed">No driver for '+esc(nm)+' yet'+((S.drivers||[]).length&&!j.assign.crew.some(function(n){return canDrive(n)})?'. Nobody on this crew drives: add a driver.':'.')+'</p>':'')+'</div>';
+  }).join('');
+  var add=ids.length&&ids.length<S.trucks.length?'<button class="btn sm" data-act="trk:add" data-ctx="'+ctx+'" data-id="'+j.id+'">Add another truck</button>':'';
+  var room=roomShort(j)?'<p class="hint" style="margin:4px 0 0">This load is about '+fmtInt(q.cf)+' cu ft'+(q.nTrucks>1?' (the quote has '+q.nTrucks+' trucks)':'')+'; the truck'+(ids.length===1?' holds':'s hold')+' '+fmtInt(truckRoom(j))+'. Add a truck if one trip won’t do.</p>':'';
+  return '<div class="trks">'+(ctx==='sh'?'<div class="f" style="margin-top:10px"><span>Trucks'+(on?' and drivers':'')+'</span></div>':'')+html+room+(add?'<div style="margin-top:6px">'+add+'</div>':'')+'</div>';
+}
 var leadOf=function(j){return j.assign.crew.filter(isLead)[0]||j.assign.crew.filter(isOfficeName)[0]||''};
-var needsSched=function(j){return j.status==='booked'&&(!j.d.moveDate||!j.assign.truckId||!j.assign.crew.length||!j.assign.crew.some(canRun))};
+var needsSched=function(j){return j.status==='booked'&&(!j.d.moveDate||!j.assign.truckId||!j.assign.crew.length||!j.assign.crew.some(canRun)||trucksNoDriver(j).length>0)};
 /* Job history. A job leaves the working screens (Jobs, Board, Field) once it is over and nothing is
    left to do on it: Lost right away; Paid, or Complete with nothing owed and every form signed, from
    the day after its move (today's finished work still shows today). A finished job that still owes
@@ -1817,7 +1908,8 @@ function renderToday(){
   var todayHtml='<div class="secline"><h2>Today</h2><button data-act="tab" data-tab="dispatch">Board ›</button></div>'+
     (today.length?today.map(function(j){
       var cf=conflictsFor(j).length;
-      return '<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span><span class="r">'+money(totalOf(j))+'</span></div><div class="route">'+jobLine(j)+'</div><div>'+pill(j.status)+' <span class="pill">'+esc(j.assign.crew.length?j.assign.crew.join(', '):'no crew')+'</span>'+(cf?' <span class="pill bad">Double-booked</span>':'')+'</div></button>'}).join('')
+      var nd=trucksNoDriver(j).length;
+      return '<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span><span class="r">'+money(totalOf(j))+'</span></div><div class="route">'+jobLine(j)+'</div><div>'+pill(j.status)+' <span class="pill">'+esc(j.assign.crew.length?j.assign.crew.join(', '):'no crew')+'</span>'+(nd&&j.status==='booked'?' <span class="pill bad">No driver</span>':'')+(cf?' <span class="pill bad">Double-booked</span>':'')+'</div></button>'}).join('')
       :'<div class="card empty"><h3>Nothing booked today</h3><p>Quiet day. Quotes and leads are waiting in Jobs.</p></div>');
   var A=[];
   // a truck that is down comes first
@@ -1876,7 +1968,7 @@ function renderFieldToday(head){
   var clock=clockCardHtml(me);
   var list=(todayJobs.length?todayJobs:(next?[next]:[])).map(function(j){
     var done=j.items.reduce(function(a,i){return a+((j.tally[i.id]||{}).d?i.qty:0)},0),tot=j.items.reduce(function(a,i){return a+i.qty},0);
-    return '<button class="job" data-act="field:go" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span>'+pill(j.status)+'</div><div class="route">'+(j.d.moveDate===t?'Today':esc(fmtDate(j.d.moveDate)))+' · '+jobLine(j)+'</div><div class="route">'+esc(truckName(j.assign.truckId))+(opt('tally')?' · delivered '+done+'/'+tot:'')+'</div></button>'}).join('');
+    return '<button class="job" data-act="field:go" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span>'+pill(j.status)+'</div><div class="route">'+(j.d.moveDate===t?'Today':esc(fmtDate(j.d.moveDate)))+' · '+jobLine(j)+'</div><div class="route">'+truckDrive(j,'',true)+(opt('tally')?' · delivered '+done+'/'+tot:'')+'</div></button>'}).join('');
   var rest=mine.filter(function(j){return todayJobs.indexOf(j)<0&&j!==next});
   var restHtml=rest.length?'<div class="secline"><h2>Later</h2></div>'+rest.map(function(j){
     return '<button class="job" data-act="field:go" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span><span class="r">'+esc(fmtDate(j.d.moveDate))+'</span></div><div class="route">'+jobLine(j)+'</div></button>'}).join(''):'';
@@ -2036,6 +2128,7 @@ function renderJobs(){
     if(cf.length)badges+=' <span class="pill bad">Double-booked</span>';
     if((j.crewNotes||[]).length)badges+=' <span class="pill">'+j.crewNotes.length+' crew note'+(j.crewNotes.length===1?'':'s')+'</span>';
     if(needsSched(j))badges+=' <span class="pill warn">Needs scheduling</span>';
+    if(j.status==='booked'&&j.assign.truckId&&trucksNoDriver(j).length)badges+=' <span class="pill bad">No driver</span>';
     if(j.test)badges+=' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>';
     if(j.status==='done'&&bal>0)badges+=' <span class="pill due">'+money(bal)+' due</span>';
     if(depositDue(j,t)>0)badges+=' <span class="pill warn">No deposit yet</span>';
@@ -2215,7 +2308,7 @@ function renderSheet(){
   // keep the box being typed in, and where in it, across the redraw
   var fa=document.activeElement,fsel=null;
   if(fa&&el.contains(fa)&&(fa.dataset.j||fa.dataset.jcf||fa.id)){fsel={j:fa.dataset.j,jcf:fa.dataset.jcf,id:fa.id,s:fa.selectionStart,e:fa.selectionEnd}}
-  var truckOpts='<option value="">Unassigned</option>'+S.trucks.map(function(t){return '<option value="'+t.id+'"'+(j.assign.truckId===t.id?' selected':'')+'>'+esc(t.name)+'</option>'}).join('');
+  var truckRows=truckDriverRows(j,'sh');
   var crewChips=assignable().map(function(n){var on=j.assign.crew.indexOf(n)>=0;return '<button class="chip'+(on?' on':'')+'" data-act="sh:crew" data-n="'+esc(n)+'" aria-pressed="'+on+'">'+esc(n)+whoTag(n)+(on&&needsConfirm(j)&&isConfirmed(j,n)?' ✓':'')+'</button>'}).join('');
   // a clash opens the other job, to move one of them
   var clash=cf.map(function(c){return '<button class="note clashnote" data-act="job:open" data-id="'+c.other.id+'"><span>'+esc(c.what)+' is also on “'+esc(c.other.d.name||'another job')+'” at '+fmtTime(c.other.d.time)+'.</span><b>Open it ›</b></button>'}).join('');
@@ -2256,9 +2349,8 @@ function renderSheet(){
    '<div class="sec" data-meta="'+esc(fmtDate(j.d.moveDate)+(j.d.moveDate&&j.d.time?' · '+fmtTime(j.d.time):''))+'"><h3>Schedule</h3>'+clash+'<div class="grid2 stack">'+
      fld('Date','<input type="date" data-j="moveDate" data-re="1" value="'+esc(j.d.moveDate)+'">')+
      fld('Start time','<input type="time" data-j="time" data-re="1" value="'+esc(j.d.time)+'">')+
-     fld('Truck','<select data-jassign="truckId">'+truckOpts+'</select>')+
-     fld('Status','<select data-jstatus="1">'+statusOpts+'</select>')+
-   '</div><div class="f" style="margin-top:10px"><span>Crew</span><div class="chips" style="margin:0">'+crewChips+'</div></div>'+confirmLine(j)+clockLine(j)+'</div>'+
+     fld('Status','<select data-jstatus="1">'+statusOpts+'</select>','span2')+
+   '</div>'+truckRows+'<div class="f" style="margin-top:10px"><span>Crew</span><div class="chips" style="margin:0">'+crewChips+'</div></div>'+confirmLine(j)+clockLine(j)+'</div>'+
    '<div class="sec" data-meta="'+esc(secMeta(j,'cust'))+'"><h3>Customer and route</h3><div class="grid2 stack">'+
      fld('Name','<input data-j="name" value="'+esc(jv(j,'name'))+'">')+
      fld('Phone','<input data-j="phone" type="tel" value="'+esc(jv(j,'phone'))+'">')+
@@ -2309,32 +2401,34 @@ function renderDispatch(){
   var need=state.jobs.filter(needsSched);
   var needHtml=need.length?'<details class="acc card" data-k="d:need"'+(ui.open['d:need']===false?'':' open')+'><summary><span>Needs scheduling</span><small>'+need.length+'</small></summary><div class="acc-body">'+need.map(function(j){
     var miss=[];if(!j.d.moveDate)miss.push('date');if(!j.assign.truckId)miss.push('truck');if(!j.assign.crew.length)miss.push('crew');else if(!j.assign.crew.some(canRun))miss.push('someone to run it');
-    var tOpts='<option value="">Choose a truck</option>'+S.trucks.map(function(x){return '<option value="'+x.id+'"'+(j.assign.truckId===x.id?' selected':'')+'>'+esc(x.name)+'</option>'}).join('');
+    trucksNoDriver(j).forEach(function(id){miss.push('a driver for '+truckName(id))});
     var chips=assignable().map(function(n){var on=j.assign.crew.indexOf(n)>=0;return '<button class="chip'+(on?' on':'')+'" data-act="dq:crew" data-id="'+j.id+'" data-n="'+esc(n)+'" aria-pressed="'+on+'">'+esc(n)+whoTag(n)+'</button>'}).join('');
     return '<div class="who" style="display:block;padding:10px 0"><div class="row between"><b>'+esc(j.d.name)+'</b><button class="btn sm ghost" data-act="job:open" data-id="'+j.id+'">Details</button></div><small>Missing '+miss.join(', ')+'</small>'+
       '<div class="grid2" style="margin-top:6px"><input type="date" class="inline-sel" aria-label="Date for '+esc(j.d.name)+'" data-dq="moveDate" data-id="'+j.id+'" value="'+esc(j.d.moveDate)+'"><input type="time" class="inline-sel" aria-label="Start time for '+esc(j.d.name)+'" data-dq="time" data-id="'+j.id+'" value="'+esc(j.d.time)+'"></div>'+
-      '<select class="inline-sel" style="width:100%;margin-top:6px" aria-label="Truck for '+esc(j.d.name)+'" data-dq="truckId" data-id="'+j.id+'">'+tOpts+'</select>'+
+      truckDriverRows(j,'dq')+
       '<div class="scrollx" style="margin-top:6px">'+chips+'</div></div>'}).join('')+'</div></details>':'';
   var jobs=onDay(ui.day).sort(function(a,b){return startMin(a)-startMin(b)});
-  var block=function(j){
-    var cf=conflictsFor(j).length;
-    return '<button class="block'+(j.status==='quoted'?' tent':'')+(cf?' clash':'')+'" data-act="job:open" data-id="'+j.id+'"><span class="tm">'+fmtTime(j.d.time)+' · '+esc(j.d.name)+(j.test?' · test':'')+'</span><small>'+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</small><small>'+(j.assign.crew.length?esc(j.assign.crew.join(', ')):'No crew')+' · '+(j.quote.hours||3)+' h'+(needsConfirm(j)&&j.assign.crew.length?' · '+j.assign.crew.filter(function(c){return isConfirmed(j,c)}).length+'/'+j.assign.crew.length+' confirmed':'')+'</small><span>'+pill(j.status)+(cf?' <span class="pill bad">Double-booked</span>':'')+'</span></button>'};
+  var block=function(j,tid){
+    var cf=conflictsFor(j).length,dr=tid&&driversOn()?driverOf(j,tid):'',drv=tid&&driversOn()?(dr?'<small class="drv">Driver: '+esc(dr)+'</small>':'<small class="drv no">No driver</small>'):'';
+    return '<button class="block'+(j.status==='quoted'?' tent':'')+(cf?' clash':'')+'" data-act="job:open" data-id="'+j.id+'"><span class="tm">'+fmtTime(j.d.time)+' · '+esc(j.d.name)+(j.test?' · test':'')+'</span><small>'+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</small><small>'+(j.assign.crew.length?esc(j.assign.crew.join(', ')):'No crew')+' · '+(j.quote.hours||3)+' h'+(needsConfirm(j)&&j.assign.crew.length?' · '+j.assign.crew.filter(function(c){return isConfirmed(j,c)}).length+'/'+j.assign.crew.length+' confirmed':'')+'</small>'+drv+'<span>'+pill(j.status)+(cf?' <span class="pill bad">Double-booked</span>':'')+'</span></button>'};
   var used={},crewUsed={};
-  jobs.forEach(function(j){if(j.assign.truckId)used[j.assign.truckId]=1;j.assign.crew.forEach(function(c){crewUsed[c]=1})});
+  jobs.forEach(function(j){jobTrucks(j).forEach(function(x){used[x]=1});j.assign.crew.forEach(function(c){crewUsed[c]=1})});
   var down=sosActive();
   var lanes=S.trucks.map(function(tr){
-    var mine=jobs.filter(function(j){return j.assign.truckId===tr.id});
+    var mine=jobs.filter(function(j){return jobTrucks(j).indexOf(tr.id)>=0});
     var hrs=mine.reduce(function(a,j){return a+dayHours(j)},0);
     var dn=down.filter(function(a){return a.truckId===tr.id})[0];
     return '<div class="lane'+(mine.length?'':' free')+'"><div class="lh"><b>'+esc(tr.name)+(dn?' <button class="pill bad" style="border:1px solid;cursor:pointer;font-family:inherit" data-act="sos:open" aria-label="'+esc(tr.name)+' is down. Open the alert.">Down since '+fmtClock(dn.ts)+'</button>':'')+'</b><small>'+(mine.length?mine.length+' job'+(mine.length===1?'':'s')+' · '+hrs+' h':'free all day')+'</small></div>'+
-      (mine.map(block).join('')||'<small>Nothing on this truck.</small>')+'</div>'}).join('');
-  var loose=jobs.filter(function(j){return !j.assign.truckId||!S.trucks.some(function(x){return x.id===j.assign.truckId})});
-  var looseHtml=loose.length?'<div class="lane"><div class="lh"><b>No truck yet</b><small>'+loose.length+'</small></div>'+loose.map(block).join('')+'</div>':'';
+      (mine.map(function(j){return block(j,tr.id)}).join('')||'<small>Nothing on this truck.</small>')+'</div>'}).join('');
+  var loose=jobs.filter(function(j){return !jobTrucks(j).some(function(id){return S.trucks.some(function(x){return x.id===id})})});
+  var looseHtml=loose.length?'<div class="lane"><div class="lh"><b>No truck yet</b><small>'+loose.length+'</small></div>'+loose.map(function(j){return block(j,'')}).join('')+'</div>':'';
   var free=S.crew.filter(function(n){return !crewUsed[n]});
   var officeOn=(S.office||[]).map(function(o){return o.name}).filter(function(n){return crewUsed[n]});
   var dt=parseISO(ui.day);
   var head='<div class="row between" style="margin:2px 0 8px"><h2>'+esc(dt.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}))+'</h2><div class="row"><button class="btn sm ibtn" data-act="wk" data-n="-7" aria-label="Previous week">←</button><button class="btn sm" data-act="wk" data-n="0" style="min-height:40px">Today</button><button class="btn sm ibtn" data-act="wk" data-n="7" aria-label="Next week">→</button></div></div>';
-  var cap='<p class="hint" style="margin:0 2px 10px">'+S.crew.filter(function(n){return crewUsed[n]}).length+' of '+S.crew.length+' crew working'+(officeOn.length?' · plus '+esc(officeOn.join(', ')):'')+(free.length?' · free: '+esc(free.join(', ')):'')+'</p>';
+  var drvAll=driversOn()?(S.drivers||[]).filter(function(n){return assignable().indexOf(n)>=0}):[],drvFree=drvAll.filter(function(n){return !crewUsed[n]});
+  var cap='<p class="hint" style="margin:0 2px 10px">'+S.crew.filter(function(n){return crewUsed[n]}).length+' of '+S.crew.length+' crew working'+(officeOn.length?' · plus '+esc(officeOn.join(', ')):'')+(free.length?' · free: '+esc(free.join(', ')):'')+
+    (drvAll.length?'<br>Drivers free: '+(drvFree.length?esc(drvFree.join(', ')):'none')+' of '+drvAll.length:'')+'</p>';
   var goneHtml=gone&&jobs.length?'<div class="secline"><small>'+gone+' finished job'+(gone===1?'':'s')+' from this day</small><button data-act="hist:go" data-q="'+esc(ui.day)+'">Job history ›</button></div>':'';
   var emptyHtml=gone?'<div class="card empty"><h3>Nothing open this day</h3><p>'+gone+' finished job'+(gone===1?' is':'s are')+' in Job history.</p><button class="btn" data-act="hist:go" data-q="'+esc(ui.day)+'">Open Job history</button></div>':
     '<div class="card empty"><h3>Nothing scheduled</h3><p>Pick another day, or book a job from a quote.</p></div>';
@@ -2436,7 +2530,7 @@ function crewKit(me){
     var panels=segs.map(function(s){return '<div class="segbody" data-segp="'+j.id+'|'+s[0]+'"'+(s[0]===cur?'':' hidden')+'>'+s[3]+'</div>'}).join('');
     var officeNote=j.d.notes?'<div class="note" style="margin:10px 0 0"><b style="font-weight:var(--w-mid)">From the office:</b> <span style="white-space:pre-wrap">'+esc(j.d.notes)+'</span>'+
       (j.d.notesAt?'<small style="display:block;margin-top:4px">'+esc(noteWhen(j))+'</small>':'')+'</div>':'';
-    return '<section class="card crewcard"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+'</h3><div class="cc-sub">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</div><div class="cc-sub">Crew: '+(crewLine||'none')+'</div>'+crewHint+(j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+'</div>'+pill(j.status)+'</div>'+
+    return '<section class="card crewcard"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+'</h3><div class="cc-sub">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+truckDrive(j,me,true)+'</div><div class="cc-sub">Crew: '+(crewLine||'none')+'</div>'+crewHint+(j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+'</div>'+pill(j.status)+'</div>'+
       '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+officeNote+
       '<div class="cc-actions" style="margin-top:10px">'+main+call+'</div>'+waitLine+
       (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+(asLead&&j.status==='active'&&phaseNext(j)>0?'<button class="btn sm ghost" data-act="cr:phaseundo" data-id="'+j.id+'" data-who="'+esc(me)+'">Undo “'+PHASES[phaseNext(j)-1][1]+'”</button>':'')+'</div>':'')+
@@ -2444,7 +2538,7 @@ function crewKit(me){
   }
   // a job further out, or finished: one line until it is opened
   function mini(j){
-    return '<button class="ccmini" data-act="cr:expand" data-id="'+j.id+'"><span class="tx"><b>'+esc(j.d.name)+'</b><small>'+(j.d.moveDate===t?'Today':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+esc(truckName(j.assign.truckId))+'</small></span>'+pill(j.status)+'<span class="go">›</span></button>';
+    return '<button class="ccmini" data-act="cr:expand" data-id="'+j.id+'"><span class="tx"><b>'+esc(j.d.name)+'</b><small>'+(j.d.moveDate===t?'Today':esc(fmtDate(j.d.moveDate)))+' · '+fmtTime(j.d.time)+' · '+truckDrive(j,me,true)+'</small></span>'+pill(j.status)+'<span class="go">›</span></button>';
   }
   return {card:card,mini:mini,asLead:asLead};
 }
@@ -2500,7 +2594,7 @@ function histJobs(){
 function histMatch(j,q){
   if(!q)return true;
   var d=j.d||{},ph=String(d.phone||'').replace(/\D/g,'');
-  var hay=[d.name,d.from,d.to,d.email,d.moveDate,d.moveDate?fmtDate(d.moveDate):'',(j.assign.crew||[]).join(' '),truckName(j.assign.truckId)].join(' ').toLowerCase();
+  var hay=[d.name,d.from,d.to,d.email,d.moveDate,d.moveDate?fmtDate(d.moveDate):'',(j.assign.crew||[]).join(' '),trucksLine(j)].join(' ').toLowerCase();
   return q.toLowerCase().split(/\s+/).filter(Boolean).every(function(w){
     if(hay.indexOf(w)>=0)return true;
     var dg=w.replace(/\D/g,'');return /^[\d().+-]+$/.test(w)&&dg.length>=3&&ph.indexOf(dg)>=0;   // part of a phone number
@@ -2720,8 +2814,12 @@ function setupSecs(){
   add('mats','price','Materials and job costs',(S.materials||[]).length+' materials · '+(S.costCats||[]).length+' kinds of cost',materialsCard(),'boxes tape supplies costs dump fee');
   add('catalog','price','Inventory catalog',S.catalog.length+' items',
     '<section class="card"><h2>Inventory catalog</h2><details class="acc"><summary><span>Show all '+S.catalog.length+' items</span></summary><p class="hint" style="margin:8px 0 4px">Change the cubic feet or the special fee right here. It saves as you type and counts on quotes made from now on.</p><table class="tbl cat"><tr><th>Item</th><th class="n">Cu ft</th><th class="n">Fee ($)</th><th></th></tr>'+cat+'</table></details><div class="grid2 stack" style="margin-top:10px"><input id="nItName" placeholder="Item name" aria-label="Item name" '+inp+'><input id="nItCf" type="number" placeholder="Cu ft" aria-label="Item cubic feet" '+inp+'><input id="nItCat" placeholder="Category" list="cats" aria-label="Item category" '+inp+'><datalist id="cats">'+CATS.map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist><input id="nItFee" type="number" placeholder="Special fee ($)" aria-label="Item fee" '+inp+'></div><button class="btn" style="margin-top:8px" data-act="st:additem">Add item</button></section>','furniture items cubic feet');
-  add('fleet','price','Fleet',S.trucks.length+' truck'+(S.trucks.length===1?'':'s')+(S.trucks.length?': '+S.trucks.map(function(t){return t.name}).join(', '):''),
-    '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="'+tcols+';margin-top:4px"><input id="nTruckName" placeholder="New truck" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" inputmode="numeric" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div></section>','trucks');
+  var drvNames=(S.drivers||[]).filter(function(n){return assignable().indexOf(n)>=0});
+  var drvCard=driversOn()?'<section class="card"><h2>Who drives</h2><p class="sub">Tap everyone who drives the trucks. Dispatch picks one of them for each truck on a job, and a truck with no driver shows as needing scheduling.'+(drvNames.length?'':' Until you pick anyone, anyone can drive.')+'</p><div class="chips">'+
+    assignable().map(function(n){var on=drvNames.indexOf(n)>=0;return '<button class="chip'+(on?' on':'')+'" data-act="st:driver" data-n="'+esc(n)+'" aria-pressed="'+on+'">'+esc(n)+(on?' ✓':'')+'</button>'}).join('')+'</div>'+
+    '<p class="hint" style="margin:0">License class and expiry go in each person’s profile under Employees › Driving.</p></section>':'';
+  add('fleet','price','Fleet and drivers',S.trucks.length+' truck'+(S.trucks.length===1?'':'s')+(S.trucks.length?': '+S.trucks.map(function(t){return t.name}).join(', '):'')+(driversOn()?' · '+(drvNames.length?drvNames.length+' driver'+(drvNames.length===1?'':'s'):'drivers not picked yet'):''),
+    '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="'+tcols+';margin-top:4px"><input id="nTruckName" placeholder="New truck" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" inputmode="numeric" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div></section>'+drvCard,'trucks drivers driver drives driving license');
   add('employees','people','Employees',nIn+' '+(nIn===1?'person':'people'),employeesCard(),'crew staff people hiring documents phone');
   add('access','people','App access',sync.mode==='shared'?'Who can sign in, and as what':'Sign-in for your team',accessCard(),'sign in login users approve revoke');
   add('roles','people','Roles','What crew, crew leads and dispatch can do',
@@ -3084,7 +3182,7 @@ function sosStartHtml(){
     var people=sosOfficeList(me);
     return head+'<h2>Call the office</h2><p class="sos-sub">'+msg+'</p>'+(people.length?'<div class="card2"><b>The office</b>'+people.map(sosCallRow).join('')+'</div>':'')+sosHurt();
   }
-  var job=sosMyJob(me),tk=d.sosTruck!=null?d.sosTruck:((job&&job.assign.truckId)||'');
+  var job=sosMyJob(me),mineT=job?jobTrucks(job).filter(function(id){return driverOf(job,id)===me})[0]:'',tk=d.sosTruck!=null?d.sosTruck:(mineT||(job&&job.assign.truckId)||'');
   var trucks='<option value="">Not sure</option>'+(S.trucks||[]).map(function(t){return '<option value="'+esc(t.id)+'"'+(t.id===tk?' selected':'')+'>'+esc(t.name)+'</option>'}).join('');
   return head+'<h2>Tell the office your truck is down?</h2><p class="sos-sub">They get an alert right away with where you are'+(commsReady()&&!(job&&job.test)?', and a text':'')+'.'+(job?' Job: '+esc(job.d.name)+'.':'')+'</p>'+
     (job&&job.test?'<p class="sos-sub"><b>You’re on a test job,</b> so this is a good way to try it: the office sees the alert in Tally, but no texts go out.</p>':'')+
@@ -3829,7 +3927,7 @@ function employeesCard(){
   var host=peopleHosted(),S=state.settings;
   if(!people.loaded&&!people.loading)loadPeople();
   var rows=empRoster().map(function(x){var st=empStatus(x.rec);
-    return '<button class="emprow'+(x.rec&&x.rec.active===false?' off':'')+'" data-act="emp:open" '+(x.rec?'data-id="'+esc(x.rec.id)+'"':'data-name="'+esc(x.name)+'"')+'><span><span class="nm">'+esc(x.name)+'</span> <span class="pill">'+esc(KIND[x.role]||x.role)+'</span><small>'+esc(st.t)+'</small></span><span class="go" aria-hidden="true">›</span></button>'}).join('');
+    return '<button class="emprow'+(x.rec&&x.rec.active===false?' off':'')+'" data-act="emp:open" '+(x.rec?'data-id="'+esc(x.rec.id)+'"':'data-name="'+esc(x.name)+'"')+'><span><span class="nm">'+esc(x.name)+'</span> <span class="pill">'+esc(KIND[x.role]||x.role)+'</span>'+(driversOn()&&(S.drivers||[]).indexOf(x.name)>=0?' <span class="pill">Drives</span>':'')+'<small>'+esc(st.t)+'</small></span><span class="go" aria-hidden="true">›</span></button>'}).join('');
   return '<section class="card"><h2>Employees</h2><p class="sub">'+(host?'Everyone who works for you. Add the email each person signs in with: when they sign in, Tally connects them to their profile and role, with no code to share. Hiring details are visible only to you and that person.':'Everyone who works for you, with their hiring details. In this copy, profiles stay on this device. In the Tally app they are private to you and each employee, and signing in connects people to their profile.')+'</p>'+
     (people.err?'<div class="note">'+esc(people.err)+'</div>':'')+(host&&people.loading&&!people.list.length?'<p class="hint">Loading profiles…</p>':'')+
     '<button class="btn primary" data-act="emp:new" style="margin:2px 0 12px">Add employee</button>'+(rows||'<p class="hint">No one yet.</p>')+
@@ -3972,7 +4070,7 @@ function empDelete(){
   E.armed='';
   var finish=function(){
     people.list=people.list.filter(function(x){return x.id!==rec.id});delete people.docs[rec.id];
-    var S=state.settings;S.crew=S.crew.filter(function(x){return x!==rec.name});S.leads=S.leads.filter(function(x){return x!==rec.name});S.office=(S.office||[]).filter(function(o){return o.name!==rec.name});delete S.contacts[rec.name];dirChanged();
+    var S=state.settings;S.crew=S.crew.filter(function(x){return x!==rec.name});S.leads=S.leads.filter(function(x){return x!==rec.name});if(S.drivers)S.drivers=S.drivers.filter(function(x){return x!==rec.name});S.office=(S.office||[]).filter(function(o){return o.name!==rec.name});delete S.contacts[rec.name];dirChanged();
     ui.emp=null;renderEmp();softSettings();toast(rec.name+' removed.');
   };
   if(!peopleHosted()){empLocalSave(empLocal().filter(function(x){return x.id!==rec.id}));finish();return}
@@ -4819,7 +4917,7 @@ function jobMsgCard(j,me){
   var head=j.status==='active'?'Happening now':rel==='today'?'Booked today':rel==='tomorrow'?'Booked for tomorrow':'Booked for '+rel;
   var when=(rel==='today'||rel==='tomorrow'?rel:'on '+rel)+' at '+fmtTime(j.d.time);
   var body=(moved?'The day or time changed. ':'')+'You’re on '+(j.d.name||'a job')+' '+when+'.\nPickup: '+(j.d.from||'not set yet')+
-    (j.assign.truckId?'\nTruck: '+truckName(j.assign.truckId):'')+(lead?'\n'+(lead===me?'You’re running it.':'Lead: '+lead):'')+
+    (j.assign.truckId?'\n'+(jobTrucks(j).length>1?'Trucks: ':'Truck: ')+truckDrive(j,me,false):'')+(lead?'\n'+(lead===me?'You’re running it.':'Lead: '+lead):'')+
     (others.length?'\nWith: '+others.join(', '):'');
   var foot=j.status==='active'?'<div><span class="pill" data-s="active">In progress</span></div>'
     :!opt('confirm')?'<div><span class="pill" data-s="booked">Booked</span></div>'
@@ -4942,7 +5040,8 @@ function testPack(S){
     var need=j.quote.crew||2,lead=leads.filter(function(x){return !busy[x]})[0];
     var crew=[];if(lead){crew.push(lead);busy[lead]=1}
     base.forEach(function(x){if(crew.length<need&&!busy[x]){crew.push(x);busy[x]=1}});
-    j.assign={truckId:truck?truck.id:'',crew:crew};
+    j.assign={truckId:truck?truck.id:'',crew:crew,drivers:{}};
+    var dv=crew.filter(function(n){return canDrive(n)})[0];if(truck&&dv)j.assign.drivers[truck.id]=dv;
   }
   function deposit(j,day){var amt=j.quote.deposit||Math.round(j.quote.total*0.25);j.payments.push({id:uid(),amt:amt,method:'Card',date:addDays(day,-5),ts:at(addDays(day,-5),'10:00')})}
   for(var off=-7;off<=20;off++){
@@ -5909,7 +6008,7 @@ document.addEventListener('click',function(e){
       if(j.status==='active'){finishJob(j,myName(),true);break}
       if(j.status==='quoted'){setStatus(j,'booked');save();renderSheet()}break;
     case 'sh:requote':j=byId(ui.jobId);if(!j)break;leaveSheet(function(){var rj=byId(ui.jobId);if(!rj)return;state.draft=Object.assign(blankDraft(),clone(rj.d),{editId:rj.id});ui.qstep=1;save();ui.jobId=null;ui.closeAsk=null;ui.tab='quote';render();window.scrollTo(0,0)});break;
-    case 'sh:crew':{j=byId(ui.jobId);if(!j){toast('This job is not available any more. Close it and open it again.');break}var nm=t.dataset.n,ix=j.assign.crew.indexOf(nm);if(!nm||assignable().indexOf(nm)<0){toast('That person is not on the list any more. Check Setup.');break}if(ix>=0){j.assign.crew.splice(ix,1);dropConfirm(j,nm)}else j.assign.crew.push(nm);crewAssigned(j,nm,ix<0);save();renderSheet();toast(nm+(ix>=0?' removed from':' added to')+' the job.');break}
+    case 'sh:crew':{j=byId(ui.jobId);if(!j){toast('This job is not available any more. Close it and open it again.');break}var nm=t.dataset.n,ix=j.assign.crew.indexOf(nm);if(!nm||assignable().indexOf(nm)<0){toast('That person is not on the list any more. Check Setup.');break}var drvOff=false,drvOn='';if(ix>=0){j.assign.crew.splice(ix,1);dropConfirm(j,nm);drvOff=dropDriver(j,nm)}else{j.assign.crew.push(nm);drvOn=autoDrivers(j)===nm}crewAssigned(j,nm,ix<0);save();renderSheet();toast(nm+(ix>=0?' removed from':' added to')+' the job'+(drvOff?'. Pick someone else to drive.':drvOn?', driving '+jobTrucks(j).filter(function(id){return driverOf(j,id)===nm}).map(truckName)[0]+'.':'.'));break}
     case 'sh:fillpay':var pa=$('#payAmt');if(pa)pa.value=fmtCents(Math.round(+t.dataset.v*100));break;
     case 'sh:addpay':j=byId(ui.jobId);if(!j||!canCollect()||!$('#payMethod'))break;var amt=round2(moneyVal($('#payAmt')));if(addPayment(j,amt,$('#payMethod').value)){save();renderSheet();toast('Payment recorded.')}else toast(payLocked(j)?'Sign the required forms first.':'Enter an amount first.');break;
     case 'sh:rmphoto':j=byId(ui.jobId);j.photos=j.photos.filter(function(p){return p.id!==t.dataset.pid});save();renderSheet();break;
@@ -5987,10 +6086,17 @@ document.addEventListener('click',function(e){
       var priv2=state.ui.role==='owner'||state.ui.role==='dispatch'||state.ui.role==='lead';if(!(priv2||cst.by===t.dataset.who))break;
       j.costs=j.costs.filter(function(x){return x.id!==t.dataset.cid});save();matAfter(t.dataset.ctx);break}
     case 'st:rmmat':setRemove('materials',+t.dataset.i);break;
+    case 'st:driver':{var dvn=t.dataset.n,dvl=(S.drivers||[]).slice(),dvi=dvl.indexOf(dvn);if(!dvn||assignable().indexOf(dvn)<0)break;if(dvi>=0)dvl.splice(dvi,1);else dvl.push(dvn);S.drivers=dvl;save();renderSettings();toast(dvi>=0?dvn+' is off the drivers list.':dvn+' drives.');break}
     case 'st:addmat':{var nm1=$('#nMatName').value.trim(),np1=round2(num($('#nMatPrice').value)),nc1=round2(num($('#nMatCost').value));if(!nm1||!(np1>=0)){toast('Add a name and a customer price.');break}S.materials.push({id:uid(),name:nm1,unit:$('#nMatUnit').value.trim()||'each',price:np1,cost:nc1});save();renderSettings();break}
     case 'st:rmcostcat':setRemove('costCats',+t.dataset.i,1,'Keep at least one kind of cost.');break;
     case 'st:addcostcat':{var ncc=$('#nCostCat').value.trim();if(!ncc)break;S.costCats.push(ncc);save();renderSettings();break}
-    case 'dq:crew':{j=byId(t.dataset.id);if(!j){toast('This job is not available any more. Reload the page.');break}if(!canEditJobs()){toast('Only the owner and dispatch can schedule crews.');break}var dn=t.dataset.n,dix=j.assign.crew.indexOf(dn);if(!dn||assignable().indexOf(dn)<0){toast('That person is not on the list any more. Check Setup.');break}if(dix>=0){j.assign.crew.splice(dix,1);dropConfirm(j,dn)}else j.assign.crew.push(dn);crewAssigned(j,dn,dix<0);save();renderDispatch();toast(dn+(dix>=0?' removed from':' added to')+' the job.');break}
+    case 'trk:add':{j=canEditJobs()?byId(t.dataset.id):null;if(!j)break;var have=jobTrucks(j),busyT={};
+      state.jobs.forEach(function(o){if(o.id!==j.id&&o.d.moveDate===j.d.moveDate&&['booked','active'].indexOf(o.status)>=0)jobTrucks(o).forEach(function(x){busyT[x]=1})});
+      var cand=S.trucks.filter(function(x){return have.indexOf(x.id)<0}),pickT=cand.filter(function(x){return !busyT[x.id]})[0]||cand[0];
+      if(!pickT){toast('All your trucks are on this job.');break}
+      setTruckAt(j,have.length,pickT.id);logEv(j,pickT.name+' put on the job');save();trkRedraw(t.dataset.ctx);
+      toast(pickT.name+' added'+(busyT[pickT.id]?'. It’s on another job that day too.':'.')+(driverOf(j,pickT.id)?' '+driverOf(j,pickT.id)+' driving.':driversOn()?' Pick who drives it.':''));break}
+    case 'dq:crew':{j=byId(t.dataset.id);if(!j){toast('This job is not available any more. Reload the page.');break}if(!canEditJobs()){toast('Only the owner and dispatch can schedule crews.');break}var dn=t.dataset.n,dix=j.assign.crew.indexOf(dn);if(!dn||assignable().indexOf(dn)<0){toast('That person is not on the list any more. Check Setup.');break}var dOff=false,dOn='';if(dix>=0){j.assign.crew.splice(dix,1);dropConfirm(j,dn);dOff=dropDriver(j,dn)}else{j.assign.crew.push(dn);dOn=autoDrivers(j)===dn}crewAssigned(j,dn,dix<0);save();renderDispatch();toast(dn+(dix>=0?' removed from':' added to')+' the job'+(dOff?'. Pick someone else to drive.':dOn?', driving '+jobTrucks(j).filter(function(id){return driverOf(j,id)===dn}).map(truckName)[0]+'.':'.'));break}
     case 'call:cust':{var cj=byId(t.dataset.id);if(cj)askCall(cj.d.name,cj.d.phone,custKey(cj),cj.id);break}
     case 'q:dist':{var qd=state.draft;if(!(qd.from||'').trim()||!(qd.to||'').trim()){toast('Enter the pickup and delivery addresses first.');break}
       var qk=distKey(qd.from,qd.to);if(dist.cache[qk]&&t.textContent.indexOf('again')>=0)delete dist.cache[qk];
@@ -6202,6 +6308,7 @@ document.addEventListener('change',function(e){
   var t=e.target,j=ui.jobId&&canEditJobs()?byId(ui.jobId):null;
   if(t.id&&/^cost_[lca]_/.test(t.id)){formKeep(t);return}
   if(t.dataset&&t.dataset.jcf!==undefined&&j){jedSet(j,'cf:'+t.dataset.jcf,t.value);return}
+  if(t.dataset&&(t.dataset.trk||t.dataset.drv)){trkChange(t);return}
   if(t.dataset&&t.dataset.dq!==undefined){var dj=canEditJobs()?byId(t.dataset.id):null;if(dj){if(t.dataset.dq==='truckId')dj.assign.truckId=t.value;else{dj.d[t.dataset.dq]=t.value;if(t.dataset.dq==='moveDate'&&t.value){ui.weekStart=mondayOf(t.value);ui.day=t.value}}save();renderDispatch()}return}
   if(t.id&&t.id.indexOf('accStaff_')===0){var rs=$('#accRole_'+t.id.slice(9)),er=peopleHosted()?empByName(t.value):null,dv=directory().find(function(x){return x.name===t.value});if(rs&&(er||dv))rs.value=er?er.role:dv.kind;return}
   if(t.id==='chatAs'){var rl=state.ui.role;if(rl==='crew'||rl==='lead')state.ui.me=t.value;else state.ui.who=t.value;save();renderTabs();renderChat();return}
@@ -6282,9 +6389,15 @@ setInterval(function(){
 },30000);
 if(location.hash==='#messages'){ui.tab='chat';ui.chatThread='jobs'}
 else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency text opens the alert
+(function migrate10(){
+  var S=state.settings;if(!Array.isArray(S.drivers))S.drivers=state.demo?defaultSettings().drivers.slice():[];
+  if(state.demo&&!state.demoDrivers){state.demoDrivers=true;state.jobs.forEach(function(j){
+    if(!(j.log||[]).some(function(l){return l.ev==='Sample job'})||!j.assign.truckId||j.d.name==='Nadia Farouk'||(j.assign.drivers&&Object.keys(j.assign.drivers).length))return;
+    var dv=j.assign.crew.filter(function(n){return S.drivers.indexOf(n)>=0})[0];if(dv){j.assign.drivers={};j.assign.drivers[j.assign.truckId]=dv}})}
+})();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive};
 })();
 </script>
 </body>
