@@ -37,7 +37,7 @@ the old notes, tallies, photos and settings are still there.
 
 | Switch | Off means |
 |---|---|
-| Time clock | No clock card, no round clock button, nothing to wait for at Start job; everyone on the job is logged on it when it starts. |
+| Time clock | No clock card, nothing to wait for at Start job; everyone on the job is logged on it when it starts. |
 | Note for late clock-outs (minutes) | Clocking out long after the last job doesn't need a note. |
 | Location while clocked in | The phone doesn't share where the crew is. |
 | Everyone clocks in before Start job | The crew lead can start the job without waiting; each person goes on the job when they clock in. (The office's Start job on the job sheet never waits.) |
@@ -84,10 +84,12 @@ uses its default. The server reads the same settings for texts and payments.
 
 ## The time clock and the job
 
-Each person's clock card (on Today and at the top of My jobs) has their name, where they stand
-(Clocked out, On the clock, On break), one big **Clock In** button, or **Break** / **End break**
-and **Clock Out** once they're on the clock, what they clocked in for, and the day's paid time with
-breaks taken out ("2h 30m paid today (breaks not counted)").
+Each person's clock card on Today has their name, where they stand (Clocked out, On the clock, On
+break), one big **Clock In** button, or **Break** / **End break** and **Clock Out** once they're on
+the clock, what they clocked in for, and the day's paid time with breaks taken out ("2h 30m paid today
+(breaks not counted)"). The top of My jobs has a slimmer copy of the same card (the same buttons, the
+paid time on one line), so the job and its Start job button stay on the first screen. The clock card
+is the one place to clock in and out: there is no separate round clock button.
 
 With **Everyone clocks in before Start job** on, the crew lead's **Start job** waits until everyone
 on the job is clocked in; the card ticks who is ("Crew: Marcus (lead) ✓, Dee, Luis") and says who it

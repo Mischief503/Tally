@@ -50,7 +50,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 /* header and navigation */
 .top{background:var(--header);color:var(--header-text);padding:8px 14px;padding-top:calc(8px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px}
 .brand{font:700 24px/1 var(--display);letter-spacing:.6px}
-.brand small{display:block;font:400 11px/1.2 var(--font);color:inherit;opacity:.65;margin-top:2px;letter-spacing:0}
+.brand small{display:block;font:400 11px/1.2 var(--font);color:inherit;opacity:.92;margin-top:2px;letter-spacing:0}
 .top select{background:transparent;color:inherit;border:1px solid color-mix(in srgb, var(--header-text) 32%, transparent);border-radius:8px;padding:4px 8px;font-size:13px;min-height:32px}
 .top select option{color:#141B2D}
 .tapebar{height:3px;background:var(--tape)}
@@ -69,6 +69,11 @@ main{padding:10px 12px calc(70px + env(safe-area-inset-bottom));max-width:960px;
 .card>.sub{margin:-2px 0 8px;color:var(--muted);font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* a grid cell may shrink below its box's natural width (inputs are wide by default), and the boxes in a row line up at the bottom even when one label runs to two lines */
+.grid2>*,.grid3>*{min-width:0}
+.grid2>input,.grid2>select,.grid3>input,.grid3>select{width:100%}
+.grid2>.f,.grid3>.f{justify-content:space-between}
+.colhead{margin:0 0 4px}.colhead small{font-size:12px}
 .span2{grid-column:1/-1}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .row.between{justify-content:space-between}
@@ -98,10 +103,11 @@ main{padding:10px 12px calc(70px + env(safe-area-inset-bottom));max-width:960px;
 .btn.primary:hover{filter:brightness(.97)}
 .btn.danger{color:var(--bad);border-color:var(--bad)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
-.btn.sm{min-height:32px;padding:4px 10px;font-size:13px;border-radius:8px}
+.btn.sm{min-height:36px;padding:4px 10px;font-size:13px;border-radius:8px}
+.btn.ibtn{min-width:40px;min-height:40px;padding:0;font-size:20px;line-height:1}
 .btn:disabled{opacity:.5;cursor:default;transform:none}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.chip{border:var(--bw) solid var(--line);background:var(--card);color:var(--text);border-radius:var(--rpill);padding:4px 12px;min-height:30px;font-size:13px;cursor:pointer;transition:background .12s,color .12s}
+.chip{border:var(--bw) solid var(--line);background:var(--card);color:var(--text);border-radius:var(--rpill);padding:5px 13px;min-height:36px;font-size:13.5px;cursor:pointer;transition:background .12s,color .12s}
 .chip.on{background:var(--text);color:var(--card);border-color:var(--text)}
 .chip small{color:inherit;opacity:.7}
 .scrollx{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin:0 -2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -207,6 +213,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
 table.tbl th{font-weight:600;text-align:left;color:var(--muted);font-size:12px;padding:3px 6px 3px 0}
 table.tbl td{padding:6px 6px 6px 0;border-top:1px solid var(--line2)}
 table.tbl td.n,table.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+table.tbl td.n{white-space:nowrap}
+.tblwrap table.tbl td:first-child{min-width:7em}
 
 /* job sheet */
 #sheet[hidden]{display:none}
@@ -241,7 +249,7 @@ table.tbl td.n,table.tbl th.n{text-align:right;font-variant-numeric:tabular-nums
 .cc-sub{color:var(--muted);font-size:13px;margin-top:2px}
 .cc-route{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
 .cc-route small{display:block;font-size:11.5px}
-.cc-route a{font-size:14px;font-weight:500;overflow-wrap:anywhere;text-decoration:none;border-bottom:1px solid var(--line)}
+.cc-route a{display:block;padding:4px 0 7px;font-size:14px;font-weight:500;overflow-wrap:anywhere;text-decoration:underline;text-decoration-color:var(--line);text-decoration-thickness:1px;text-underline-offset:4px;min-height:36px}
 .cc-actions{display:flex;gap:8px;margin:2px 0 6px}
 .cc-actions .btn{flex:1;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .crewcard .big{min-height:44px;font-size:16px;flex:2}
@@ -257,7 +265,7 @@ textarea.code{width:100%;min-height:110px;font:12.5px/1.35 ui-monospace,Menlo,Co
 #flow{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column}
 #flow[hidden]{display:none}
 .flow-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));background:var(--header);color:var(--header-text);border-bottom:3px solid var(--tape)}
-.flow-head small{color:inherit;opacity:.7}
+.flow-head small{color:inherit;opacity:.92}
 .flow-head .btn{background:transparent;color:inherit;border-color:color-mix(in srgb, var(--header-text) 38%, transparent)}
 .flow-body{overflow-y:auto;padding:14px 14px calc(30px + env(safe-area-inset-bottom));max-width:620px;margin:0 auto;width:100%}
 .formbox{background:#fff;color:#141a26;border:1px solid var(--line);border-radius:10px;padding:12px;max-height:44vh;overflow:auto;margin:10px 0}
@@ -295,10 +303,9 @@ textarea.code{width:100%;min-height:110px;font:12.5px/1.35 ui-monospace,Menlo,Co
 #pvBar[hidden]{display:none}
 #pvBar b{font-weight:var(--w-mid)}
 #pvBar .grow{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#pvBar button{flex:none;background:var(--card);color:var(--text);border:0;border-radius:99px;padding:5px 12px;min-height:32px;font-weight:var(--w-mid);font-size:13px;cursor:pointer}
-body.previewing .fab{bottom:calc(86px + env(safe-area-inset-bottom))}
-body.previewing main{padding-bottom:calc(118px + env(safe-area-inset-bottom))}
-@media (min-width:900px){ #pvBar{bottom:0} body.previewing .fab{bottom:84px} body.previewing main{padding-bottom:70px} }
+#pvBar button{flex:none;background:var(--card);color:var(--text);border:0;border-radius:99px;padding:5px 14px;min-height:36px;font-weight:var(--w-mid);font-size:13px;cursor:pointer}
+body.previewing main{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
+@media (min-width:900px){ #pvBar{bottom:0} body.previewing .fab{bottom:84px} body.previewing main{padding-bottom:84px} }
 .pvrow{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line2)}
 .pvrow .who-n{flex:1;min-width:0}
 
@@ -312,7 +319,7 @@ body.previewing main{padding-bottom:calc(118px + env(safe-area-inset-bottom))}
 .pulse span{font-size:11.5px;color:var(--muted)}
 .secline{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:14px 2px 7px}
 .secline h2{font-size:17px}
-.secline a,.secline button{background:none;border:0;color:var(--muted);font-size:13.5px;cursor:pointer;padding:4px}
+.secline a,.secline button{background:none;border:0;color:var(--muted);font-size:13.5px;cursor:pointer;padding:11px 8px;margin:-11px -6px -11px 0;min-height:42px}
 .live{border-left:3px solid var(--warn)}
 .live .el{font:700 26px/1 var(--display)}
 .alert{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;cursor:pointer;box-shadow:var(--cardShadow)}
@@ -325,7 +332,9 @@ body.previewing main{padding-bottom:calc(118px + env(safe-area-inset-bottom))}
 .alert .tx small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
 .alert .go{color:var(--muted);flex:none}
 /* nav with a centre action */
-.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(30px + env(safe-area-inset-bottom));z-index:25;width:52px;height:52px;border-radius:99px;border:var(--bw) solid var(--tape-edge);background:var(--tape);color:var(--tape-ink);font-size:26px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-lg)}
+/* the round New quote button sits in the middle of the bottom bar, inside it, so it never covers what is on the screen */
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(3px + env(safe-area-inset-bottom));z-index:25;width:46px;height:46px;border-radius:99px;border:var(--bw) solid var(--tape-edge);background:var(--tape);color:var(--tape-ink);font-size:26px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.fab[aria-current="page"]{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--tape-edge)}
 .fab[hidden]{display:none}
 nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 /* job progress rail */
@@ -348,10 +357,11 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .lane{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;box-shadow:var(--cardShadow)}
 .lane .lh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
 .lane .lh b{font:700 16px var(--display)}
-.lane.free{opacity:.72}
+.lane.free{background:transparent;box-shadow:none;border-style:dashed}
+.lane.free .lh b{color:var(--muted)}
 /* quote steps */
 .steps{display:flex;gap:6px;margin:0 0 10px}
-.steps button{flex:1;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.steps button{flex:1;background:none;border:0;padding:6px 0 8px;cursor:pointer;text-align:left;min-height:42px}
 .steps i{display:block;height:4px;border-radius:2px;background:var(--line);margin-bottom:5px}
 .steps button.on i,.steps button.done i{background:var(--tape)}
 .steps span{font-size:11.5px;color:var(--muted)}
@@ -366,23 +376,23 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .mlist button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .mlist button b{font-weight:var(--w-mid);font-size:14.5px}
 .mlist button small{display:block}
-.mlist button.sosm svg{color:var(--sos)}
+.mlist button.sosm svg{color:var(--sosText)}
 @media (min-width:640px){ .mlist{grid-template-columns:repeat(3,1fr)} #more .panel{left:50%;transform:translateX(-50%);width:620px;border-radius:calc(var(--r) + 6px)} }
 @media (min-width:900px){ .fab{left:auto;right:28px;bottom:28px;transform:none;width:56px;height:56px} nav.tabs.has-fab button.spacer{display:none} }
-.icon-btn{background:transparent;border:1px solid color-mix(in srgb, var(--header-text) 32%, transparent);color:inherit;border-radius:9px;min-height:32px;min-width:34px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0 6px}
+.icon-btn{background:transparent;border:1px solid color-mix(in srgb, var(--header-text) 32%, transparent);color:inherit;border-radius:9px;min-height:40px;min-width:40px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0 6px}
 #pick[hidden]{display:none}
 #pick{position:fixed;inset:0;z-index:70}
 #pick .scrim{position:absolute;inset:0;background:var(--scrim)}
 #pick .panel{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--bg);border-radius:calc(var(--r) + 6px) calc(var(--r) + 6px) 0 0;padding:14px 14px calc(20px + env(safe-area-inset-bottom));box-shadow:var(--shadow-lg)}
 .tgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
-.tcard{position:relative;text-align:left;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:0;overflow:hidden;cursor:pointer}
+.tcard{position:relative;text-align:left;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:0;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch}
 .tcard.on{outline:2px solid var(--focus);outline-offset:1px}
 .tcard .swatch{height:46px;display:flex;align-items:flex-end;gap:4px;padding:6px 8px}
 .tcard .swatch i{display:block;width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.14)}
 .tcard .lbl{padding:6px 9px 9px}
 .tcard .lbl b{display:block;font:700 15px/1.2 var(--display)}
 .tcard .lbl small{font-size:11.5px;line-height:1.25;display:block}
-.tcard .tick{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:99px;background:var(--focus);color:#fff;font-size:12px;line-height:20px;text-align:center;font-weight:700}
+.tcard .tick{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:99px;background:var(--focus);color:var(--card);font-size:12px;line-height:20px;text-align:center;font-weight:700}
 @media (min-width:640px){ .tgrid{grid-template-columns:repeat(3,1fr)} #pick .panel{left:50%;transform:translateX(-50%);width:640px;border-radius:calc(var(--r) + 6px)} }
 
 /* employee profiles */
@@ -396,7 +406,7 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .emprow .nm{font-weight:var(--w-mid);font-size:16px}
 .emprow small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 .emprow .go{margin-left:auto;color:var(--muted);font-size:20px}
-.emprow.off{opacity:.62}
+.emprow.off{background:transparent;border-style:dashed}.emprow.off .nm{color:var(--muted)}
 .empst{font-size:14px;line-height:1.4;padding:9px 11px;border-radius:var(--r2);background:var(--card);border:var(--bw) solid var(--line);margin:8px 0 10px}
 .empst.ok{border-color:var(--ok)}
 .empst.warn{border-color:var(--warn)}
@@ -410,7 +420,7 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .empdoc small{color:var(--muted)}
 #emp details.acc{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:0 12px;margin:0 0 8px}
 #emp input[readonly]{background:transparent;color:var(--muted)}
-.empfoot{position:sticky;bottom:0;z-index:1;background:var(--bg);padding:10px 0 6px;margin-top:10px;border-top:1px solid var(--line2)}
+.empfoot{position:sticky;bottom:calc(-22px - env(safe-area-inset-bottom));z-index:1;background:var(--bg);padding:10px 0 calc(14px + env(safe-area-inset-bottom));margin-top:10px;border-top:1px solid var(--line2)}
 .empfoot .bigbtn{margin:0}
 .empfoot .err{color:var(--bad);margin:6px 0 0}
 
@@ -453,8 +463,8 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .navrow .tx b{display:block;font-weight:var(--w-mid);font-size:15px;line-height:1.25}
 .navrow .tx small{display:block;font-size:12.5px;line-height:1.3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .navrow .go{color:var(--muted);font-size:20px;flex:none}
-.navrow.sosrow{color:var(--sos)}
-.navrow.sosrow .ic{background:color-mix(in srgb, var(--sos) 14%, transparent);color:var(--sos)}
+.navrow.sosrow{color:var(--sosText)}
+.navrow.sosrow .ic{background:color-mix(in srgb, var(--sos) 14%, transparent);color:var(--sosText)}
 .navrow.lead .ic{background:var(--tape);color:var(--tape-ink)}
 .setsearch{width:100%;min-height:44px;border:var(--bw) solid var(--line);border-radius:var(--r2);padding:8px 12px;background:var(--field);color:var(--text);font-size:16px;margin:0 0 4px}
 .setsearch:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px var(--focusRing)}
@@ -491,7 +501,7 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .ccmini .tx b{display:block;font:700 17px/1.15 var(--display)}
 .ccmini .tx small{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .ccmini .go{color:var(--muted);font-size:20px;flex:none}
-.cc-less{background:none;border:0;color:var(--muted);font:600 13px var(--font);padding:4px 0;cursor:pointer;min-height:32px}
+.cc-less{background:none;border:0;color:var(--muted);font:600 13px var(--font);padding:4px 0;cursor:pointer;min-height:40px}
 /* typed job info is saved with a button: the bar under each part says whether it is saved */
 .savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .savebar .btn{min-width:96px}
@@ -524,6 +534,15 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .tc-sub{text-align:center;color:var(--muted);font-size:15px}
 .tclock textarea{width:100%;min-height:52px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:16px;margin-top:10px;color:var(--text)}
 .tclock textarea.need{border-color:var(--bad);box-shadow:0 0 0 3px var(--badSoft)}
+/* the slimmer card on My jobs */
+.tclock.compact{padding:12px 14px 14px}
+.tclock.compact .tc-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 10px}
+.tclock.compact .tc-name{font-size:21px;min-width:0}
+.tclock.compact .tc-st{margin:0;font-size:14.5px;text-align:right;flex:none}
+.tclock.compact .tc-big{min-height:52px;font-size:18px}
+.tclock.compact .tc-for{margin-bottom:8px}
+.tclock.compact .tc-on{margin:10px 0 0;font-size:14.5px}
+.tclock.compact .tc-job{font-size:14.5px}
 .tc-wait{display:flex;align-items:flex-start;gap:6px;margin:8px 0 2px;font-size:14px;line-height:1.35}
 .tc-wait.ok{color:var(--ok)}
 .tc-wait .svdot{flex:0 0 8px;width:8px;height:8px;margin:7px 0 0;align-self:flex-start}
@@ -588,7 +607,7 @@ body.sos-on #matpick{top:calc(var(--sosH) + env(safe-area-inset-top))}
 .linkbox{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:2px}.linkbox code{font-family:ui-monospace,Menlo,Consolas,monospace}
 .stripe-box{min-height:96px;margin:8px 0 6px}
 /* truck down (the emergency beacon): the same red in every theme, with white text (5.9:1) */
-:root{--sos:#C8102E;--sos-deep:#93091E;--sos-ink:#FFFFFF;--sosH:46px}
+:root{--sos:#C8102E;--sos-deep:#93091E;--sos-ink:#FFFFFF;--sosText:#C8102E;--sosH:46px}
 #sosBar[hidden]{display:none}
 #sosBar{position:fixed;top:0;left:0;right:0;z-index:78;display:flex;align-items:center;gap:10px;width:100%;min-height:calc(var(--sosH) + env(safe-area-inset-top));padding:env(safe-area-inset-top) 14px 0;margin:0;background:var(--sos);color:var(--sos-ink);border:0;border-radius:0;font:600 15px/1.25 var(--font);text-align:left;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.28)}
 #sosBar .grow{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -815,7 +834,6 @@ function css(){
   var s=document.createElement('style');s.id='lgCss';
   s.textContent='html.pre-auth body>*:not(#login){display:none!important}'+
   '#login{position:fixed;inset:0;z-index:120;background:#F5F6F8;color:#141B2D;display:flex;align-items:center;justify-content:center;padding:22px;font:400 16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}'+
-  '@media (prefers-color-scheme:dark){#login{background:#0E1422;color:#ECEFF5}#login .box{background:#151D30;border-color:#243049}#login input{background:#0E1422;color:#ECEFF5;border-color:#243049}}'+
   '#login .box{width:100%;max-width:380px;background:#fff;border:1px solid #E7EAF0;border-radius:14px;padding:22px}'+
   '#login h1{font:700 30px/1 "Barlow Condensed","Arial Narrow",Arial,sans-serif;margin:0 0 4px;letter-spacing:.5px}'+
   '#login p{margin:0 0 14px;font-size:14px;opacity:.75}'+
@@ -825,10 +843,14 @@ function css(){
   '#login button{width:100%;min-height:48px;margin-top:10px;border-radius:10px;border:1px solid #D9A000;background:#F5B700;color:#241A00;font-weight:700;font-size:16px;cursor:pointer}'+
   '#login button.link{background:none;border:0;color:inherit;opacity:.7;font-weight:500;font-size:14px;min-height:36px;text-decoration:underline}'+
   '#login button.org{display:block;text-align:left;background:transparent;color:inherit;border:1px solid #E7EAF0;font-weight:600;margin-top:8px;padding:10px 12px}#login button.org small{display:block;font-weight:400;opacity:.7;font-size:13px}'+
-  '#login .msg{margin-top:10px;font-size:13.5px;min-height:18px}#login .msg.bad{color:#C62026}#login .msg.ok{color:#0A7A3D}';
+  // the message line is a plain line here (the app's .msg is a chat bubble)
+  '#login .msg{max-width:none;align-self:auto;background:none;border:0;border-radius:0;padding:0;margin-top:10px;font-size:13.5px;min-height:18px}#login .msg.bad{color:#C62026}#login .msg.ok{color:#0A7A3D}'+
+  // a phone set to dark: last, so it wins over the light rules above (the box was white with light text)
+  '@media (prefers-color-scheme:dark){#login{background:#0E1422;color:#ECEFF5}#login .box{background:#151D30;border-color:#243049}#login input{background:#0E1422;color:#ECEFF5;border-color:#243049}#login button.org{border-color:#243049}#login .msg.bad{color:#FF8A80}#login .msg.ok{color:#5BE39A}}';
   document.head.appendChild(s);
 }
 function render(){
+  if(!document.body){document.addEventListener('DOMContentLoaded',render,{once:true});return}
   css();
   if(!el){el=document.createElement('div');el.id='login';document.body.appendChild(el)}
   var b=state.busy;
@@ -1302,7 +1324,8 @@ function lastJobEnd(who,outAt){
 }
 /* The time clock card, the same on Today and My jobs: who, where they stand, one big button (or Break
    and Clock Out), and the day's paid time with breaks taken out. */
-function clockCardHtml(me){
+// compact: the slimmer card at the top of My jobs, so the job and its buttons stay on the first screen
+function clockCardHtml(me,compact){
   if(!opt('clock')||!me)return '';
   var S=state.settings,sh=openShift(me),brk=sh&&onBreak(sh),gps=opt('clockGps'),wm=esc(me),body;
   var st=!sh?'<div class="tc-st">Clocked out</div>'
@@ -1318,13 +1341,16 @@ function clockCardHtml(me){
     if(li&&opt('lateNote'))hint=li.needNote?'Your last job ended at '+fmtClock(li.end)+', '+fmtDur(li.lateMs)+' ago. Add a note to clock out.':'Your last job ended at '+fmtClock(li.end)+'. Clocking out more than '+S.lateMins+' min after that needs a note.';
     body='<div class="tc-two">'+(brk?'<button class="tc-big primary" data-act="clk:break" data-who="'+wm+'">End break</button>':'<button class="tc-big alt" data-act="clk:break" data-who="'+wm+'">Break</button>')+
         '<button class="tc-big dark" data-act="clk:out" data-who="'+wm+'">Clock Out</button></div>'+
-      '<p class="tc-on"><b>Clocked in for: '+esc(sh.activity)+'</b> <small>since '+fmtClock(sh.inAt)+'</small></p>'+
+      (compact?'<p class="tc-on"><b>'+esc(sh.activity)+'</b> <small>since '+fmtClock(sh.inAt)+' · <span id="clkPaid" data-who="'+wm+'">'+fmtHM(paidToday(me))+'</span> paid today</small></p>'
+        :'<p class="tc-on"><b>Clocked in for: '+esc(sh.activity)+'</b> <small>since '+fmtClock(sh.inAt)+'</small></p>')+
       (jn?'<p class="tc-job">On the job: <b>'+esc(jn.d.name||'a job')+'</b> since '+fmtClock(seg.in)+'</p>':'')+
-      (gps?'<p class="tc-note" id="geoLine">'+esc(geoText())+'</p>':'')+
+      (gps&&!compact?'<p class="tc-note" id="geoLine">'+esc(geoText())+'</p>':'')+
       (hint?'<p class="hint">'+esc(hint)+'</p>':'')+
       (need||ui.noteOpen?'<textarea id="clockNote" class="'+(need?'need':'')+'" placeholder="'+(need?'Note (required): why the late clock-out?':'Note for the office (optional)')+'" aria-label="Clock-out note">'+esc(ui.clockNote||'')+'</textarea>'
         :'<button class="cc-less" style="margin-top:6px" data-act="clk:note">Add a note for the office</button>');
   }
+  if(compact)return '<section class="card tclock compact'+(sh?(brk?' brk':' on'):'')+'"><div class="tc-top"><h2 class="tc-name">'+wm+'</h2>'+st+'</div>'+body+
+    (sh?'':'<p class="tc-on"><small><span id="clkPaid" data-who="'+wm+'">'+fmtHM(paidToday(me))+'</span> paid today (breaks not counted)</small></p>')+'</section>';
   return '<section class="card tclock'+(sh?(brk?' brk':' on'):'')+'"><h2 class="tc-name">'+wm+'</h2>'+st+body+
     '<div class="tc-time" id="clkPaid" data-who="'+wm+'">'+fmtHM(paidToday(me))+'</div><div class="tc-sub">paid today (breaks not counted)</div></section>';
 }
@@ -1746,12 +1772,13 @@ function renderToday(){
   var today=state.jobs.filter(function(j){return j.d.moveDate===t&&['booked','active','done','paid'].indexOf(j.status)>=0}).sort(function(a,b){return startMin(a)-startMin(b)});
   var live=state.jobs.filter(function(j){return j.status==='active'});
   var onClock=state.shifts.filter(function(x){return !x.outAt});
-  var dueToday=state.jobs.filter(function(j){return ['booked','active','done'].indexOf(j.status)>=0}).reduce(function(a,j){return a+balOf(j)},0);
+  // what customers owe now: finished jobs not paid yet (a booked job's balance comes due when the move is done)
+  var dueToday=state.jobs.filter(function(j){return j.status==='done'}).reduce(function(a,j){return a+balOf(j)},0);
   var pulse='<div class="pulse">'+
     '<button data-act="tab" data-tab="dispatch"><b>'+today.length+'</b><span>job'+(today.length===1?'':'s')+' today</span></button>'+
     (opt('clock')?'<button data-act="tab" data-tab="'+(allowedTabs(role).some(function(x){return x.id==='reports'})?'reports':'dispatch')+'"><b>'+onClock.length+'</b><span>on the clock</span></button>'
       :'<button data-act="tab" data-tab="dispatch"><b>'+live.length+'</b><span>running now</span></button>')+
-    (role==='owner'||opt('dispatchMoney')?'<button class="'+(dueToday>0?'due':'paid')+'" data-act="tab" data-tab="jobs"><b>'+money(dueToday)+'</b><span>still owed</span></button>'
+    (role==='owner'||opt('dispatchMoney')?'<button class="'+(dueToday>0?'due':'paid')+'" data-act="tab" data-tab="jobs" data-f="done"><b>'+money(dueToday)+'</b><span>still owed</span></button>'
       :'<button data-act="tab" data-tab="dispatch"><b>'+state.jobs.filter(needsSched).length+'</b><span>to schedule</span></button>')+'</div>';
   var liveHtml=live.length?'<div class="secline"><h2>Running now</h2></div>'+live.map(function(j){
     var pend=formsPending(j).length;
@@ -1769,8 +1796,15 @@ function renderToday(){
   // booked moves whose day went by without being started in the app: finish them, move them or mark them lost
   var lateB=state.jobs.filter(function(j){return j.status==='booked'&&datePassed(j,t)});
   if(lateB.length)A.push('<button class="alert" data-act="jobs:late"><span class="ic warn">!</span><span class="tx"><b>'+lateB.length+' booked job'+(lateB.length===1?' is':'s are')+' past '+(lateB.length===1?'its':'their')+' date</b><small>'+esc(namesLine(lateB))+' · finish, move or mark lost</small></span><span class="go">›</span></button>');
+  // one row for each pair of jobs that clash, naming who (or which truck) is on both
+  var pairSeen={};
   state.jobs.forEach(function(j){
-    if(conflictsFor(j).length)A.push(alertRow('bad','Double-booked',esc(j.d.name)+' on '+esc(fmtDate(j.d.moveDate)),'job:open',j.id));
+    var by={};conflictsFor(j).forEach(function(c){(by[c.other.id]=by[c.other.id]||{o:c.other,w:[]}).w.push(c.what)});
+    Object.keys(by).forEach(function(oid){
+      var key=[j.id,oid].sort().join('|');if(pairSeen[key])return;pairSeen[key]=1;
+      var o=by[oid].o,w=by[oid].w.filter(function(x,i,a){return a.indexOf(x)===i});
+      A.push(alertRow('bad','Double-booked: '+esc(listWords(w)),esc(j.d.name)+' and '+esc(o.d.name)+' · '+esc(fmtDate(j.d.moveDate)),'job:open',j.id));
+    });
   });
   state.jobs.filter(function(j){return j.status==='active'&&j.phases&&j.phases.unloadEnd&&formsPending(j).length}).forEach(function(j){
     A.push(alertRow('warn','Unloaded, waiting on a signature',esc(j.d.name)+' cannot close until the customer signs','job:open',j.id));
@@ -1971,7 +2005,7 @@ function renderJobs(){
   }).join('');
   var allPast=!jobs.length&&past>0;
   var histLine=past&&!allPast?'<div class="secline"><small>'+past+' paid or lost job'+(past===1?'':'s')+'</small><button data-act="hist:go">Job history ›</button></div>':'';
-  v.innerHTML=(state.demo?'<div class="note">Sample data is loaded so you can look around. Clear it in Setup when you are ready to start fresh.</div>':'')+
+  v.innerHTML=(state.demo?'<div class="note">Sample data is loaded so you can look around. Clear it in Setup › Your data when you are ready to start fresh.</div>':'')+
     '<div class="scrollx" style="margin-bottom:10px">'+chips+'</div>'+
     (cards||(allPast?'<div class="card empty"><h3>Nothing open right now</h3><p>Paid and lost jobs are in Job history.</p><div class="row" style="justify-content:center"><button class="btn primary" data-act="tab" data-tab="quote">New quote</button><button class="btn" data-act="hist:go">Job history</button></div></div>':
       '<div class="card empty"><h3>No jobs here yet</h3><p>Build a quote and it lands in this list.</p><button class="btn primary" data-act="tab" data-tab="quote">New quote</button></div>'))+
@@ -2110,7 +2144,21 @@ function nextAction(j){
   if(j.status==='quoted')return {label:'Book job',act:'sh:next'};
   if(j.status==='booked')return {label:'Start job',act:'sh:next'};
   if(j.status==='active')return {label:formsPending(j).length?'Get signatures and finish':'Finish job',act:'sh:next'};
+  // finished but not settled: the payment screen (forms first when some are still unsigned)
+  if(j.status==='done'&&canCollect()){var pn=formsPending(j).length;if(pn||balOf(j)>0)return {label:pn?'Sign forms and collect payment':'Collect payment',act:'flow:open',attrs:' data-id="'+j.id+'" data-who="Office"'}}
   return null;
+}
+/* the money tiles at the top of the job sheet, in the words that fit where the job is: a quote until
+   the move is done, then the bill; a red balance only once it is due; nothing for a lead with no price */
+function sheetMoney(j){
+  var q=j.quote||{},paid=paidOf(j),bal=balOf(j),tot=totalOf(j),st=j.status,T=[];
+  var k=function(v,l,c){T.push('<div class="kpi'+(c?' '+c:'')+'"><b>'+money(v)+'</b><span>'+l+'</span></div>')};
+  if(st==='lead'&&!(tot>0))return '';
+  if(st==='done'||st==='paid'){k(tot,'Bill');k(paid,'Paid',paid>0?'paid':'');k(bal,bal>0?'Balance due':'Paid in full',bal>0?'due':'paid')}
+  else if(st==='lost'){k(tot,'Quote');if(paid>0)k(paid,'Paid','paid')}
+  else if(st==='lead'||st==='quoted'){k(tot,'Quote');if(q.deposit>0&&!(paid>0))k(q.deposit,'Deposit to book');if(paid>0)k(paid,'Paid','paid')}
+  else{k(tot,'Quote');k(paid,'Paid',paid>0?'paid':'');k(bal,bal>0?'Left to pay':'Paid in full',bal>0?'':'paid')}
+  return '<div class="kpis" style="grid-template-columns:repeat('+T.length+',minmax(0,1fr))">'+T.join('')+'</div>';
 }
 function leaveBarHtml(j){
   if(!ui.closeAsk)return '';
@@ -2134,7 +2182,7 @@ function renderSheet(){
   var clash=cf.map(function(c){return '<div class="note" style="background:rgba(200,64,47,.14);border-color:var(--bad)">'+esc(c.what)+' is also on “'+esc(c.other.d.name)+'” at '+fmtTime(c.other.d.time)+'.</div>'}).join('');
   var lines=q.lines.map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('')+matRows(j)+(j.extras||[]).map(function(e){return '<tr><td>'+esc(e.label)+'</td><td>'+(e.amt<0?'−':'')+money(Math.abs(e.amt))+'</td></tr>'}).join('')+'<tr class="total"><td>Total</td><td>'+money(totalOf(j))+'</td></tr>';
   var items=j.items.map(function(i){return esc(i.name)+' × '+i.qty}).join(', ')||'No items yet';
-  var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+' · '+esc(p.date)+(p.pending?' · pending':'')+'</td><td>'+money(p.amt)+'</td></tr>'}).join('')||'<tr><td><small>No payments yet.</small></td><td></td></tr>';
+  var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+' · '+esc(/^\d{4}-\d\d-\d\d$/.test(p.date||'')?fmtDate(p.date):p.date||'')+(p.pending?' · pending':'')+'</td><td>'+money(p.amt)+'</td></tr>'}).join('')||'<tr><td><small>No payments yet.</small></td><td></td></tr>';
   var photos=j.photos.map(function(p){return '<figure>'+(p.data?'<img src="'+p.data+'" alt="'+esc(p.kind)+' photo">':'<div class="phold">Loading photo</div>')+'<figcaption>'+esc(p.kind)+' · '+fmtStamp(p.ts)+'<br><button class="btn sm ghost" data-act="sh:rmphoto" data-pid="'+p.id+'">Remove</button></figcaption></figure>'}).join('');
   var acts=j.log.slice(-6).reverse().map(function(l){return '<div><small>'+fmtStamp(l.ts)+' · '+esc(l.ev)+'</small></div>'}).join('');
   var pend=formsPending(j);
@@ -2144,7 +2192,7 @@ function renderSheet(){
   // who takes payments follows Options (Dispatch can take payments; the ways to pay)
   var coll=canCollect(),recOk=coll&&opt('payCash');
   var payHtml='<div class="sec" data-meta="'+money(paid)+' paid"><h3>Payments</h3><table class="lines">'+pays+'</table>'+
-     (coll?'<button class="btn primary" style="margin-top:8px;width:100%" data-act="flow:open" data-id="'+j.id+'" data-who="Office">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>'+(opt('payLink')?officeLinkHtml(j):'')
+     (coll?'<button class="btn" style="margin-top:8px;width:100%" data-act="flow:open" data-id="'+j.id+'" data-who="Office">'+(['lead','quoted','booked'].indexOf(j.status)>=0?'Take a payment':pend.length?'Sign forms and collect payment':'Collect payment')+'</button>'+(opt('payLink')?officeLinkHtml(j):'')
        :'<p class="hint">The owner takes payments on this job.</p>')+
      (recOk?'<h3 style="margin:16px 0 6px;font-size:16px">Record a deposit, cash or check</h3>'+
      (payLocked(j)?'<p class="hint">Forms must be signed before payment on a job that has started.</p>':'')+
@@ -2153,6 +2201,9 @@ function renderSheet(){
      '<button class="btn" style="margin-top:8px;width:100%" data-act="sh:addpay">Record payment</button>':'')+'</div>';
   var cnotes=(j.crewNotes||[]).map(function(n){return '<div class="who" style="display:block"><div class="row between"><small>'+esc(n.who)+' · '+fmtStamp(n.ts)+'</small>'+(state.ui.role==='owner'?'<button class="btn sm ghost" data-act="sh:rmnote" data-nid="'+n.id+'">Remove</button>':'')+'</div><div style="white-space:pre-wrap">'+esc(n.text)+'</div></div>'}).join('')||'<small>No crew notes yet.</small>';
   var statusOpts=STATUS.map(function(s){return '<option value="'+s+'"'+(j.status===s?' selected':'')+'>'+LABEL[s]+'</option>'}).join('');
+  // the parts each stage needs: a lead or a lost job has no materials, forms or photos to speak of (unless some were added), and no payments unless one was taken
+  var onJob=['booked','active','done','paid'].indexOf(j.status)>=0;
+  var shownMats=onJob||j.status==='quoted'||(j.materials||[]).length||(j.costs||[]).length,shownForms=onJob||(j.signed||[]).length,shownPhotos=onJob||j.photos.length,shownPay=(j.status!=='lead'&&j.status!=='lost')||paid>0||j.payments.length;
   var steps=[['Quoted',['quoted','booked','active','done','paid']],['Scheduled',['booked','active','done','paid']],['On the job',['active','done','paid']],['Signed',['done','paid']],['Paid',['paid']]];
   var nowIx=-1;steps.forEach(function(st,i){if(st[1].indexOf(j.status)>=0)nowIx=i});
   if(j.status==='booked'&&needsSched(j))nowIx=0;
@@ -2161,12 +2212,13 @@ function renderSheet(){
   el.innerHTML='<div class="scrim" data-act="sheet:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Job details">'+
    '<div class="sheet-head"><div><h2>'+esc(j.d.name||'Unnamed')+'</h2><div style="margin-top:4px">'+pill(j.status)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+' <small>'+fmtInt(q.cf)+' cu ft · '+q.crew+' movers · '+q.hours+' h'+(q.kind==='mileage'?' · mileage move':q.kind==='local'?' · local move':'')+'</small></div></div><button class="btn sm" data-act="sheet:close" id="sheetClose">Close</button></div>'+
    '<div class="sheet-body">'+lateNote+rail+
-   '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paid>0?' paid':'')+'"><b>'+money(paid)+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>'+(bal>0?'Balance':'Paid in full')+'</span></div></div>'+
-   '<div class="row sec">'+(na?'<button class="btn primary grow" data-act="'+na.act+'">'+na.label+'</button>':'')+'<button class="btn grow" data-act="sh:requote">Edit quote</button></div>'+
+   sheetMoney(j)+
+   '<div class="row sec">'+(na?'<button class="btn primary grow" data-act="'+na.act+'"'+(na.attrs||'')+'>'+na.label+'</button>':'')+(na&&na.act==='sh:requote'?'':'<button class="btn grow" data-act="sh:requote">Edit quote</button>')+'</div>'+
    '<div class="sec" data-meta="'+esc(fmtDate(j.d.moveDate)+(j.d.moveDate&&j.d.time?' · '+fmtTime(j.d.time):''))+'"><h3>Schedule</h3>'+clash+'<div class="grid2 stack">'+
      fld('Date','<input type="date" data-j="moveDate" data-re="1" value="'+esc(j.d.moveDate)+'">')+
      fld('Start time','<input type="time" data-j="time" data-re="1" value="'+esc(j.d.time)+'">')+
-     fld('Truck','<select data-jassign="truckId">'+truckOpts+'</select>','span2')+
+     fld('Truck','<select data-jassign="truckId">'+truckOpts+'</select>')+
+     fld('Status','<select data-jstatus="1">'+statusOpts+'</select>')+
    '</div><div class="f" style="margin-top:10px"><span>Crew</span><div class="chips" style="margin:0">'+crewChips+'</div></div>'+confirmLine(j)+clockLine(j)+'</div>'+
    '<div class="sec" data-meta="'+esc(secMeta(j,'cust'))+'"><h3>Customer and route</h3><div class="grid2 stack">'+
      fld('Name','<input data-j="name" value="'+esc(jv(j,'name'))+'">')+
@@ -2176,16 +2228,14 @@ function renderSheet(){
      fld('Delivery','<input data-j="to" value="'+esc(jv(j,'to'))+'">','span2')+
      (num(j.d.milesOut)||num(j.d.milesBack)?'<p class="hint span2" style="margin:0">Round trip from the shop: <b>'+fmtMi(num(j.d.milesOut)+num(j.d.miles)+num(j.d.milesBack))+' mi</b> ('+fmtMi(num(j.d.milesOut))+' to pickup, '+fmtMi(num(j.d.miles))+' to delivery, '+fmtMi(num(j.d.milesBack))+' back).</p>':'')+
      cfs+
-   '</div>'+jedBarHtml(j,'cust')+'<div class="grid2 stack" style="margin-top:12px">'+
-     fld('Status','<select data-jstatus="1">'+statusOpts+'</select>')+
-   '</div></div>'+
-   '<div class="sec" data-meta="'+money(totalOf(j))+'"><h3>Quote</h3><table class="lines">'+lines+'</table><p class="hint">'+esc(items)+'</p>'+clockHtml(j)+'</div>'+
-   '<div class="sec" data-meta="'+esc(secMeta(j,'mats'))+'"><h3>Materials and costs</h3>'+matSection(j,'s',myName()||'Office',true)+'</div>'+
-   fsec+
-   payHtml+
-   '<div class="sec" data-meta="'+(j.photos.length||'')+'"><h3>Photos</h3><p class="hint" style="margin:-2px 0 6px">Up to 20 at a time, at any point, even after the job is paid.</p><div class="row"><button class="btn sm" data-act="photo" data-kind="Pickup">Pickup</button><button class="btn sm" data-act="photo" data-kind="Delivery">Delivery</button><button class="btn sm" data-act="photo" data-kind="Damage">Damage</button></div><div class="photos">'+photos+'</div></div>'+
+   '</div>'+jedBarHtml(j,'cust')+'</div>'+
    '<div class="sec" data-meta="'+esc(secMeta(j,'notes'))+'"><h3>Job notes</h3><textarea data-j="notes" aria-label="Job notes" placeholder="Gate code, elevator booking, what to bring" style="width:100%;min-height:72px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:16px;color:var(--text)">'+esc(jv(j,'notes'))+'</textarea>'+jedBarHtml(j,'notes')+'</div>'+
-   '<div class="sec" data-meta="'+((j.crewNotes||[]).length||'')+'"><h3>Crew notes</h3><p class="hint" style="margin:-4px 0 6px">Written by the crew in the field. Gate codes, access details, anything for the office.</p>'+cnotes+'</div>'+
+   (onJob||(j.crewNotes||[]).length?'<div class="sec" data-meta="'+((j.crewNotes||[]).length||'')+'"><h3>Crew notes</h3><p class="hint" style="margin:-4px 0 6px">Written by the crew in the field. Gate codes, access details, anything for the office.</p>'+cnotes+'</div>':'')+
+   '<div class="sec" data-meta="'+money(totalOf(j))+'"><h3>Quote</h3><table class="lines">'+lines+'</table><p class="hint">'+esc(items)+'</p>'+clockHtml(j)+'</div>'+
+   (shownMats?'<div class="sec" data-meta="'+esc(secMeta(j,'mats'))+'"><h3>Materials and costs</h3>'+matSection(j,'s',myName()||'Office',true)+'</div>':'')+
+   (shownPay?payHtml:'')+
+   (shownForms?fsec:'')+
+   (shownPhotos?'<div class="sec" data-meta="'+(j.photos.length||'')+'"><h3>Photos</h3><p class="hint" style="margin:-2px 0 6px">Up to 20 at a time, at any point, even after the job is paid.</p><div class="row"><button class="btn sm" data-act="photo" data-kind="Pickup">Pickup</button><button class="btn sm" data-act="photo" data-kind="Delivery">Delivery</button><button class="btn sm" data-act="photo" data-kind="Damage">Damage</button></div><div class="photos">'+photos+'</div></div>':'')+
    (j.startedAt?'<div class="sec" data-meta="'+(j.status==='active'?esc(phaseNow(j)):(j.phases&&j.phases.unloadEnd?fmtDur(j.phases.unloadEnd-j.phases.loadStart)+' handling':''))+'"><h3>On-site times</h3>'+
      (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+'</div>':'<p class="hint">The crew did not record load and unload times on this job.</p>')+crewOnRows(j)+
      (j.actualHours>0?'<p class="hint"'+(topUpFor(j)?' style="color:var(--text)"':'')+'>'+esc(payLine(j,false))+'.</p>':'')+'</div>':'')+
@@ -2244,7 +2294,7 @@ function renderDispatch(){
   var free=S.crew.filter(function(n){return !crewUsed[n]});
   var officeOn=(S.office||[]).map(function(o){return o.name}).filter(function(n){return crewUsed[n]});
   var dt=parseISO(ui.day);
-  var head='<div class="row between" style="margin:2px 0 8px"><h2>'+esc(dt.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}))+'</h2><div class="row"><button class="btn sm" data-act="wk" data-n="-7" aria-label="Previous week">←</button><button class="btn sm" data-act="wk" data-n="0">Today</button><button class="btn sm" data-act="wk" data-n="7" aria-label="Next week">→</button></div></div>';
+  var head='<div class="row between" style="margin:2px 0 8px"><h2>'+esc(dt.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}))+'</h2><div class="row"><button class="btn sm ibtn" data-act="wk" data-n="-7" aria-label="Previous week">←</button><button class="btn sm" data-act="wk" data-n="0" style="min-height:40px">Today</button><button class="btn sm ibtn" data-act="wk" data-n="7" aria-label="Next week">→</button></div></div>';
   var cap='<p class="hint" style="margin:0 2px 10px">'+S.crew.filter(function(n){return crewUsed[n]}).length+' of '+S.crew.length+' crew working'+(officeOn.length?' · plus '+esc(officeOn.join(', ')):'')+(free.length?' · free: '+esc(free.join(', ')):'')+'</p>';
   var goneHtml=gone&&jobs.length?'<div class="secline"><small>'+gone+' finished job'+(gone===1?'':'s')+' from this day</small><button data-act="hist:go" data-q="'+esc(ui.day)+'">Job history ›</button></div>':'';
   var emptyHtml=gone?'<div class="card empty"><h3>Nothing open this day</h3><p>'+gone+' finished job'+(gone===1?' is':'s are')+' in Job history.</p><button class="btn" data-act="hist:go" data-q="'+esc(ui.day)+'">Open Job history</button></div>':
@@ -2380,7 +2430,7 @@ function renderCrew(){
     if(isHistory(j,t)){older++;return false}   // settled before today: Job history
     return j.finishedAt?j.finishedAt>since:(j.d.moveDate||'')>=sinceDay;
   }).sort(function(a,b){return (b.finishedAt||0)-(a.finishedAt||0)});
-  function clockCard(){return clockCardHtml(me)}
+  function clockCard(){return clockCardHtml(me,true)}
   var kit=crewKit(me),card=kit.card;
   // today's jobs, a job that's running and a job whose day went by show in full; later ones are one line until opened
   var full=function(j){return j.status==='active'||!j.d.moveDate||j.d.moveDate<=t};
@@ -2466,7 +2516,7 @@ function renderReports(){
   var jobs=state.jobs.filter(function(j){return inR(jd(j))});
   var allPays=[];state.jobs.forEach(function(j){j.payments.forEach(function(p){if(inR(p.date))allPays.push({p:p,j:j})})});
   var collected=allPays.reduce(function(a,x){return a+x.p.amt},0);
-  var outstanding=jobs.filter(function(j){return ['booked','active','done'].indexOf(j.status)>=0}).reduce(function(a,j){return a+balOf(j)},0);
+  var outstanding=jobs.filter(function(j){return j.status==='done'}).reduce(function(a,j){return a+balOf(j)},0);   // finished and not paid yet, as on Today
   var won=jobs.filter(function(j){return ['booked','active','done','paid'].indexOf(j.status)>=0});
   var quotedPlus=jobs.filter(function(j){return j.status!=='lead'});
   var finished=jobs.filter(function(j){return j.status==='done'||j.status==='paid'});
@@ -2489,10 +2539,11 @@ function renderReports(){
   var out='<div class="card" style="padding:10px 12px"><div class="grid2"><label class="f"><span>From</span><input type="date" id="rFrom" value="'+esc(from)+'"></label><label class="f"><span>To</span><input type="date" id="rTo" value="'+esc(to)+'"></label></div><div class="hint" style="margin-top:4px">Leave blank for all time.</div></div>'+
    '<div class="kpis"><div class="kpi paid"><b>'+money(collected)+'</b><span>Collected</span></div><div class="kpi'+(outstanding>0?' due':'')+'"><b>'+money(outstanding)+'</b><span>Still owed</span></div><div class="kpi"><b>'+money(avg)+'</b><span>Average job</span></div><div class="kpi"><b>'+win+'</b><span>Quote win rate</span></div></div>'+
    '<section class="card"><h2>Collected by month</h2>'+(bars?'<div class="bars">'+bars+'</div>':'<p class="hint">No payments in this range.</p>')+'</section>'+
-   phaseCard(finished)+
-   '<section class="card"><h2>Revenue by crew</h2><p class="sub">Finished jobs, grouped by the crew lead on the job.</p>'+(crewRows?'<table class="tbl"><tr><th>Crew</th><th class="n">Jobs</th><th class="n">Billed</th><th class="n">Per job hour</th></tr>'+crewRows+'</table>':'<p class="hint">No finished jobs in this range.</p>')+'</section>'+
-   '<section class="card"><h2>Where jobs come from</h2><table class="tbl"><tr><th>Source</th><th class="n">Leads</th><th class="n">Won</th><th class="n">Collected</th></tr>'+(srcRows||'<tr><td colspan="4"><small>No jobs in this range.</small></td></tr>')+'</table></section>';
-  if(!owner){v.innerHTML=out;return}
+   '<section class="card"><h2>Revenue by crew</h2><p class="sub">Finished jobs, grouped by the crew lead on the job.</p>'+(crewRows?'<table class="tbl"><tr><th>Crew</th><th class="n">Jobs</th><th class="n">Billed</th><th class="n">Per job hour</th></tr>'+crewRows+'</table>':'<p class="hint">No finished jobs in this range.</p>')+'</section>';
+  var srcCard='<section class="card"><h2>Where jobs come from</h2><table class="tbl"><tr><th>Source</th><th class="n">Leads</th><th class="n">Won</th><th class="n">Collected</th></tr>'+(srcRows||'<tr><td colspan="4"><small>No jobs in this range.</small></td></tr>')+'</table></section>';
+  var phase=phaseCard(finished);
+  // in three runs: the money, where the work comes from, then the crews' time
+  if(!owner){v.innerHTML=out+srcCard+phase;return}
 
   /* owner only: bid accuracy, job hours, employee hours */
   var meas=finished.filter(function(j){return bidActual(j)>=0.5&&j.quote.hours>0});
@@ -2525,7 +2576,7 @@ function renderReports(){
   var live=state.shifts.filter(function(x){return !x.outAt}).map(function(x){var jn=jobNow(x.who);return '<div class="who"><span><b>'+esc(x.who)+'</b> · '+esc(x.activity)+(onBreak(x)?' · <span style="color:var(--warn)">on break</span>':'')+(jn?' · on '+esc(jn.d.name||'a job'):'')+'<br><small>Since '+fmtClock(x.inAt)+', '+fmtHM(shiftMs(x))+' paid</small></span><button class="btn sm" data-act="clk:mgr" data-id="'+x.id+'">Clock out</button></div>'}).join('');
   var lates=shifts.filter(function(x){return x.late}).sort(function(a,b){return b.inAt-a.inAt}).slice(0,15).map(function(x){return '<div class="who" style="display:block"><b>'+esc(x.who)+'</b> · '+esc(fmtDate(iso(new Date(x.inAt))))+' · '+x.late+' min after last job<br><small>'+esc(x.note||'No note')+'</small></div>'}).join('');
   var hoursHtml='<section class="card"><h2>Employee hours</h2>'+(live?'<h3 style="margin-bottom:4px">On the clock now</h3>'+live:'<p class="hint">Nobody is clocked in.</p>')+
-    '<h3 style="margin:14px 0 4px">Clock, job and pay hours</h3>'+(tsRows?'<div class="tblwrap"><table class="tbl"><tr><th>Employee</th><th class="n">Clock</th><th class="n">On jobs</th><th class="n">Min. top-up</th><th class="n">Pay hours</th><th class="n">Late notes</th></tr>'+tsRows+'</table></div><p class="hint">Clock is the time clock, breaks not counted. On jobs is each person’s time on the jobs they worked (from Start job, or their clock-in after it, to the finish or their clock-out). '+(S.payMin===false?'Short jobs are paid as worked (Setup › Time clock).':'When a job runs shorter than the minimum, the top-up pays the rest, so a 1-hour job on a '+S.minHours+'-hour minimum pays '+S.minHours+'. Pay hours is the day’s clock time (or job time, on days they didn’t use the clock) plus top-ups.')+'</p>':'<p class="hint">No shifts or timed jobs in this range.</p>')+
+    '<h3 style="margin:14px 0 4px">Clock, job and pay hours</h3>'+(tsRows?'<div class="tblwrap" tabindex="0" role="region" aria-label="Clock, job and pay hours"><table class="tbl"><tr><th>Employee</th><th class="n">Clock</th><th class="n">On jobs</th><th class="n">Min. top-up</th><th class="n">Pay hours</th><th class="n">Late notes</th></tr>'+tsRows+'</table></div><p class="hint">Clock is the time clock, breaks not counted. On jobs is each person’s time on the jobs they worked (from Start job, or their clock-in after it, to the finish or their clock-out). '+(S.payMin===false?'Short jobs are paid as worked (Setup › Time clock).':'When a job runs shorter than the minimum, the top-up pays the rest, so a 1-hour job on a '+S.minHours+'-hour minimum pays '+S.minHours+'. Pay hours is the day’s clock time (or job time, on days they didn’t use the clock) plus top-ups.')+'</p>':'<p class="hint">No shifts or timed jobs in this range.</p>')+
     (lates?'<h3 style="margin:14px 0 4px">Late clock-outs</h3>'+lates:'')+'</section>';
   var rev=meas.reduce(function(a,j){return a+paidOf(j)},0),lab=meas.reduce(function(a,j){return a+j.quote.crew*payHoursFor(j)*S.crewCost},0);
   var mcost=meas.reduce(function(a,j){return a+matCostTotal(j)+costTotal(j)},0),margin=rev-lab-mcost;
@@ -2534,7 +2585,7 @@ function renderReports(){
   jobs.forEach(function(j){(j.costs||[]).forEach(function(c){byCat[c.cat||'Other']=(byCat[c.cat||'Other']||0)+c.amt})});
   var catRows=Object.keys(byCat).sort().map(function(k){return '<tr><td>'+esc(k)+'</td><td class="n">'+money(byCat[k])+'</td></tr>'}).join('');
   var matCard='<section class="card"><h2>Materials and job costs</h2><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(mBilled)+'</b><span>Materials billed</span></div><div class="kpi"><b>'+money(mCost)+'</b><span>Materials cost</span></div><div class="kpi"><b>'+money(cAll)+'</b><span>Job costs</span></div></div>'+(catRows?'<table class="tbl"><tr><th>Job cost type</th><th class="n">Total</th></tr>'+catRows+'</table>':'<p class="hint">No job costs logged in this range.</p>')+'</section>';
-  v.innerHTML=out+'<section class="card"><h2>Bid accuracy</h2>'+accHtml+'</section>'+hoursHtml+matCard+profit;
+  v.innerHTML=out+profit+matCard+srcCard+'<section class="card"><h2>Bid accuracy</h2>'+accHtml+'</section>'+phase+hoursHtml;
 }
 
 /* ---------- SETTINGS ---------- */
@@ -2603,14 +2654,15 @@ function setupSecs(){
     optGroup('price','What goes in a quote','These change quotes made or saved from now on.');
   var rateSum=money(num(S.rates.r2))+'/h for 2 movers · '+(opt('mileage')?fmtMi(num(S.includedMiles))+'-mile local radius':'every move local')+' · '+num(S.minHours)+' h minimum';
   if(!owner){add('rates','price','Rate card',rateSum,rates);return out}
-  var trucks=S.trucks.map(function(t,i){return '<div class="grid3" style="grid-template-columns:2fr 1fr auto;margin-bottom:8px"><input aria-label="Truck name" data-s="trucks.'+i+'.name" value="'+esc(t.name)+'" class="f" '+inp+'><input aria-label="Cubic feet" type="number" data-s="trucks.'+i+'.cf" data-t="num" value="'+t.cf+'" '+inp+'><button class="btn sm danger" data-act="st:rmtruck" data-i="'+i+'">Remove</button></div>'}).join('');
+  var tcols='grid-template-columns:minmax(0,1fr) 88px 84px;align-items:center';
+  var trucks=(S.trucks.length?'<div class="grid3 colhead" style="'+tcols+'"><small>Truck</small><small>Cu ft</small><span></span></div>':'')+S.trucks.map(function(t,i){return '<div class="grid3" style="'+tcols+';margin-bottom:8px"><input aria-label="Truck name" data-s="trucks.'+i+'.name" value="'+esc(t.name)+'" '+inp+'><input aria-label="'+esc(t.name)+' cubic feet" type="number" inputmode="numeric" data-s="trucks.'+i+'.cf" data-t="num" value="'+t.cf+'" '+inp+'><button class="btn sm danger" data-act="st:rmtruck" data-i="'+i+'" aria-label="Remove '+esc(t.name)+'">Remove</button></div>'}).join('');
   var formsList=(S.forms||[]).map(function(f){return '<details class="grp"><summary>'+esc(f.title)+' <small>'+(f.required?'required':'optional')+'</small></summary><div class="formbox">'+(f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+pg+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join(''))+'</div><div class="row" style="margin:8px 0"><button class="chip'+(f.required?' on':'')+'" data-act="st:reqform" data-id="'+f.id+'" aria-pressed="'+!!f.required+'">Required before payment</button><button class="btn sm danger" data-act="st:rmform" data-id="'+f.id+'">Remove</button></div></details>'}).join('')||'<p class="hint">No forms yet.</p>';
   // a card kept for a customer without a phone belongs to the job it was kept on
-  var vaultWho=function(x){if(!/^job:/.test(x.cust||''))return 'Customer: '+esc(x.cust);var kj=byId(x.cust.slice(4));return kj?'Kept on '+esc(kj.d.name||'a job')+'’s job':'Kept on a job that is no longer here'};
+  var vaultWho=function(x){if(!/^job:/.test(x.cust||'')){var cj=state.jobs.filter(function(j){return custKey(j)===x.cust}).pop();return 'Customer: '+(cj&&cj.d.name?esc(cj.d.name)+' · ':'')+esc(/^\d{10,11}$/.test(x.cust||'')?fmtPhone(x.cust):x.cust)}var kj=byId(x.cust.slice(4));return kj?'Kept on '+esc(kj.d.name||'a job')+'’s job':'Kept on a job that is no longer here'};
   var vaultList=state.vault.map(function(x){return '<div class="who"><span>'+(x.type==='card'?esc(x.brand)+' ending '+esc(x.last4):'Bank ending '+esc(x.last4))+(x.name?' · '+esc(x.name):'')+(x.via==='stripe'?' <small>· Stripe'+(x.live?'':' test')+'</small>':'')+'<br><small>'+vaultWho(x)+'</small></span><button class="btn sm danger" data-act="st:rmvault" data-id="'+x.id+'">Remove</button></div>'}).join('')||'<p class="hint">Nothing saved yet.</p>';
-  var cfl=S.customFields.map(function(f,i){return '<div class="row between" style="margin-bottom:6px"><span>'+esc(f.label)+' <small>('+esc(f.type)+')</small></span><button class="btn sm danger" data-act="st:rmcf" data-i="'+i+'">Remove</button></div>'}).join('');
-  var cat=S.catalog.map(function(it,i){return '<tr><td>'+esc(it.name)+'</td><td class="n">'+it.cf+'</td><td class="n">'+(it.fee?money(it.fee):'')+'</td><td class="n"><button class="btn sm ghost" data-act="st:rmitem" data-i="'+i+'" aria-label="Remove '+esc(it.name)+'">×</button></td></tr>'}).join('');
-  var arm=function(a,label){return '<button class="btn '+(ui.armed===a?'danger':'')+'" data-act="'+a+'">'+(ui.armed===a?'Tap again to confirm':label)+'</button>'};
+  var cfl=S.customFields.map(function(f,i){return '<div class="row between" style="margin-bottom:6px"><span>'+esc(f.label)+' <small>('+({yesno:'yes / no',number:'number',text:'text'}[f.type]||esc(f.type))+')</small></span><button class="btn sm danger" data-act="st:rmcf" data-i="'+i+'">Remove</button></div>'}).join('');
+  var cat=S.catalog.map(function(it,i){return '<tr><td>'+esc(it.name)+'</td><td class="n">'+it.cf+'</td><td class="n">'+(it.fee?money(it.fee):'')+'</td><td class="n"><button class="btn sm ghost ibtn" data-act="st:rmitem" data-i="'+i+'" aria-label="Remove '+esc(it.name)+'">×</button></td></tr>'}).join('');
+  var arm=function(a,label,risky){return '<button class="btn'+(ui.armed===a||risky?' danger':'')+'" data-act="'+a+'">'+(ui.armed===a?'Tap again to confirm':label)+'</button>'};
   var formsOpt=OPTS.filter(function(x){return x.k==='forms'})[0];
   var nReq=(S.forms||[]).filter(function(f){return f.required}).length,nIn=assignable().length,shop=String(S.shopAddress||'').trim();
   var payWord=!window.tallyPay?'Cash and checks here; cards in the hosted app':!pay.cfg?'Card payments':pay.cfg.ready?'Cards on'+(pay.cfg.test?' (test mode)':''):'Cards not set up yet';
@@ -2627,9 +2679,9 @@ function setupSecs(){
   add('rates','price','Rate card',rateSum,rates,'prices hourly rate movers minimum radius mileage per mile deposit tax stairs packing truck fee not-to-exceed');
   add('mats','price','Materials and job costs',(S.materials||[]).length+' materials · '+(S.costCats||[]).length+' kinds of cost',materialsCard(),'boxes tape supplies costs dump fee');
   add('catalog','price','Inventory catalog',S.catalog.length+' items',
-    '<section class="card"><h2>Inventory catalog</h2><details><summary style="cursor:pointer;min-height:44px">Show '+S.catalog.length+' items</summary><table class="tbl"><tr><th>Item</th><th class="n">Cu ft</th><th class="n">Fee</th><th></th></tr>'+cat+'</table></details><div class="grid2 stack" style="margin-top:10px"><input id="nItName" placeholder="Item name" aria-label="Item name" '+inp+'><input id="nItCf" type="number" placeholder="Cu ft" aria-label="Item cubic feet" '+inp+'><input id="nItCat" placeholder="Category" list="cats" aria-label="Item category" '+inp+'><datalist id="cats">'+CATS.map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist><input id="nItFee" type="number" placeholder="Special fee ($)" aria-label="Item fee" '+inp+'></div><button class="btn" style="margin-top:8px" data-act="st:additem">Add item</button></section>','furniture items cubic feet');
+    '<section class="card"><h2>Inventory catalog</h2><details class="acc"><summary><span>Show all '+S.catalog.length+' items</span></summary><table class="tbl"><tr><th>Item</th><th class="n">Cu ft</th><th class="n">Fee</th><th></th></tr>'+cat+'</table></details><div class="grid2 stack" style="margin-top:10px"><input id="nItName" placeholder="Item name" aria-label="Item name" '+inp+'><input id="nItCf" type="number" placeholder="Cu ft" aria-label="Item cubic feet" '+inp+'><input id="nItCat" placeholder="Category" list="cats" aria-label="Item category" '+inp+'><datalist id="cats">'+CATS.map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist><input id="nItFee" type="number" placeholder="Special fee ($)" aria-label="Item fee" '+inp+'></div><button class="btn" style="margin-top:8px" data-act="st:additem">Add item</button></section>','furniture items cubic feet');
   add('fleet','price','Fleet',S.trucks.length+' truck'+(S.trucks.length===1?'':'s')+(S.trucks.length?': '+S.trucks.map(function(t){return t.name}).join(', '):''),
-    '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="grid-template-columns:2fr 1fr auto"><input id="nTruckName" placeholder="Name" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div></section>','trucks');
+    '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="'+tcols+';margin-top:4px"><input id="nTruckName" placeholder="New truck" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" inputmode="numeric" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div></section>','trucks');
   add('employees','people','Employees',nIn+' '+(nIn===1?'person':'people'),employeesCard(),'crew staff people hiring documents phone');
   add('access','people','App access',sync.mode==='shared'?'Who can sign in, and as what':'Sign-in for your team',accessCard(),'sign in login users approve revoke');
   add('roles','people','Roles','What crew, crew leads and dispatch can do',
@@ -2646,7 +2698,7 @@ function setupSecs(){
     '<section class="card"><h2>Forms to sign</h2><div style="margin:2px 0 8px">'+optRow(formsOpt)+'</div><p class="sub">When a job is finished, the lead is walked through every required form for the customer to sign, then straight to payment. Payment stays locked until they are signed. Sample wording only: have your attorney review anything you rely on.</p>'+formsList+
     '<h3 style="margin:14px 0 6px">Add a form</h3><div class="grid2 stack">'+fld('Form name','<input id="nFormTitle" placeholder="Bill of lading">','span2')+fld('Upload a PDF or photos of the form','<input id="nFormFiles" type="file" accept="application/pdf,image/*" multiple>','span2')+fld('Or type the form text','<textarea id="nFormText" placeholder="Paste the wording customers agree to"></textarea>','span2')+'</div><button class="btn primary" style="margin-top:8px" data-act="st:addform">Add form</button><p class="hint">Uploads are stored as page images on this device. Keep forms to a few pages so storage stays roomy.</p></section>','signatures contract release bill of lading');
   add('fields','jobs','Custom job fields',S.customFields.length?S.customFields.map(function(f){return f.label}).join(', '):'None yet',
-    '<section class="card"><h2>Custom job fields</h2><p class="sub">Add whatever your process needs. They show on quotes, jobs and the crew app.</p>'+cfl+'<div class="grid3" style="grid-template-columns:2fr 1fr auto"><input id="nCfLabel" placeholder="Field name" aria-label="Field name" '+inp+'><select id="nCfType" aria-label="Field type" '+inp+'><option value="text">Text</option><option value="number">Number</option><option value="yesno">Yes / no</option></select><button class="btn sm" data-act="st:addcf">Add</button></div></section>');
+    '<section class="card"><h2>Custom job fields</h2><p class="sub">Add whatever your process needs. They show on quotes, jobs and the crew app.</p>'+cfl+'<div class="grid3" style="grid-template-columns:minmax(0,1fr) 112px 64px;align-items:center"><input id="nCfLabel" placeholder="Field name" aria-label="Field name" '+inp+'><select id="nCfType" aria-label="Field type" '+inp+'><option value="text">Text</option><option value="number">Number</option><option value="yesno">Yes / no</option></select><button class="btn sm" data-act="st:addcf">Add</button></div></section>');
   add('sources','jobs','Lead sources',S.sources.join(', ')||'None yet',
     '<section class="card"><h2>Lead sources</h2>'+chips(S.sources,'st:rmsrc')+'<div class="row"><input id="nSrc" placeholder="Source" aria-label="New lead source" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addsrc">Add</button></div></section>','referral google yelp');
   add('bid','jobs','Bid accuracy','A job counts as accurate within '+num(S.bidTol)+'% of the bid',
@@ -2657,7 +2709,7 @@ function setupSecs(){
   add('comms','money','Texts and calls',window.tallyComms?(line?'Company line '+fmtPhone(line):'Company line not connected yet'):'Sent from the hosted Tally app',commsCard(),'twilio sms text alerts calls phone line');
   add('data','data','Your data','Export, import and test jobs',
     '<section class="card"><h2>Your data</h2><p class="sub">'+(sync.mode==='shared'?'This workspace is shared, so these actions change data for everyone.':'Stored on this device. Copy an export to back it up or move it.')+'</p><div class="row"><button class="btn" data-act="st:export">Export data</button><label class="check" style="min-height:44px"><input type="checkbox" id="expPhotos"> Include photos</label></div><textarea class="code" id="dataBox" placeholder="Export appears here. Paste an export here to import." aria-label="Data export or import">'+esc(ui.exportText||'')+'</textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="st:copy">Copy</button><button class="btn primary" data-act="st:import">Import</button></div>'+
-    '<div class="row" style="margin-top:14px">'+arm('st:testpack','Add 3 weeks of test jobs')+(state.jobs.some(function(j){return j.test})?arm('st:rmtest','Remove the '+state.jobs.filter(function(j){return j.test}).length+' test jobs'):'')+'</div>'+'<p class="hint">Test jobs are made up: last week through three weeks out, in every stage, using your crew and trucks. They are tagged “Test”, never send a text or call, and Remove takes out only them.</p>'+'<div class="row" style="margin-top:14px">'+arm('st:demo','Load sample data')+arm('st:clearjobs','Delete all jobs')+arm('st:reset','Reset everything')+'</div></section>','export import backup test jobs sample reset delete');
+    '<div class="row" style="margin-top:14px">'+arm('st:testpack','Add 3 weeks of test jobs')+(state.jobs.some(function(j){return j.test})?arm('st:rmtest','Remove the '+state.jobs.filter(function(j){return j.test}).length+' test jobs'):'')+'</div>'+'<p class="hint">Test jobs are made up: last week through three weeks out, in every stage, using your crew and trucks. They are tagged “Test”, never send a text or call, and Remove takes out only them.</p>'+'<div class="row" style="margin-top:14px">'+arm('st:demo','Replace all jobs with sample data',1)+arm('st:clearjobs','Delete all jobs',1)+arm('st:reset','Reset everything',1)+'</div></section>','export import backup test jobs sample reset delete');
   return out;
 }
 function renderSettings(){
@@ -2703,8 +2755,8 @@ function render(){
 function renderTabs(){
   var un=unreadTotal(),nav=navTabs(),wide=window.innerWidth>=900,office=canEditJobs();
   var list=wide?allowedTabs(state.ui.role):nav;
-  // the round button: a new quote for the office, the time clock for the crew (none when the clock is off)
-  var hasFab=office||opt('clock');
+  // the round button: a new quote, for the office. (The crew clock in and out on the clock card on Today and My jobs.)
+  var hasFab=office;
   var btn=function(t){return '<button data-act="tab" data-tab="'+t.id+'"'+(t.id===ui.tab?' aria-current="page"':'')+'>'+ICON[t.id]+'<span>'+tabLabel(t)+'</span>'+(t.id==='chat'&&un?'<i class="badge" aria-label="'+un+' unread">'+(un>9?'9+':un)+'</i>':'')+'</button>'};
   var moreBtn='<button data-act="more:open"'+((!wide&&!list.some(function(t){return t.id===ui.tab}))?' aria-current="page"':'')+'>'+ICON.more+'<span>More</span></button>';
   var html=wide||!hasFab?(list.map(btn).join('')+moreBtn)
@@ -2712,10 +2764,10 @@ function renderTabs(){
   var el=$('#tabs');el.className='tabs'+(wide||!hasFab?'':' has-fab');el.innerHTML=html;
   var fab=$('#fab');
   if(fab){
-    fab.hidden=!hasFab;
-    fab.innerHTML=office?'+':(openShift(fieldMe())?'■':'▶');
-    fab.setAttribute('aria-label',office?'New quote':(openShift(fieldMe())?'Clock out':'Clock in'));
-    fab.dataset.act=office?'fab:quote':'fab:clock';
+    fab.hidden=!hasFab||wide;   // on a wide screen New quote is in the side list
+    if(ui.tab==='quote')fab.setAttribute('aria-current','page');else fab.removeAttribute('aria-current');
+    // centred on its gap in the bar (the third of the equal slots), not on the screen
+    fab.style.left=hasFab&&!wide?(100*2.5/(list.length+2))+'%':'';
   }
 }
 
@@ -4184,7 +4236,7 @@ var SKINS={
    '.btn,.chip{border-radius:99px}.btn.primary{box-shadow:0 6px 16px '+(d?'rgba(76,130,247,.35)':'rgba(37,99,235,.28)')+'}'+
    '.kpi b{color:'+v.acc+'}.top{background:linear-gradient(135deg,'+v.header+','+(d?'#101A32':'#2B55A8')+')}.tapebar{height:0}'+
    'nav.tabs button[aria-current="page"]::before{display:none}nav.tabs button[aria-current="page"]{background:'+v.line2+';border-radius:14px}'},
- sunrise:function(v,d){return '.top{background:linear-gradient(105deg,'+v.header+','+v.acc+')}.tapebar{height:0}'+
+ sunrise:function(v,d){return '.top{background:linear-gradient(105deg,'+v.header+','+(d?'#5A2A14':'#A84A22')+')}.tapebar{height:0}'+
    '.card,.job,.kpi,.alert,.lane{border:0;box-shadow:0 2px 6px '+(d?'rgba(0,0,0,.4)':'rgba(180,90,30,.10)')+',0 12px 30px '+(d?'rgba(0,0,0,.35)':'rgba(180,90,30,.09)')+'}'+
    'body{background-image:radial-gradient(120% 60% at 50% 0%,'+(d?'rgba(228,116,42,.18)':'rgba(255,214,184,.75)')+',transparent 70%)}'+
    '.btn,.chip,.pill{border-radius:99px}nav.tabs button[aria-current="page"]::before{display:none}nav.tabs button[aria-current="page"]{background:'+v.line2+';border-radius:99px;margin:4px 2px}'+'.alert{border-radius:22px}.alert .ic{border-radius:99px;width:30px;height:30px}.pulse button{border-radius:20px}'},
@@ -4244,10 +4296,10 @@ var SKINS={
    '.card,.job,.kpi,.alert,.lane{border:0;box-shadow:none;background:'+v.card+'}'+
    '.card>h2,.secline h2{border-bottom:1px solid '+v.line+';padding-bottom:7px}'+
    '.job{border-bottom:1px solid '+v.line+';border-radius:var(--r)}'+
-   '.btn,.chip,.pill{border-radius:99px}.tapebar{height:0}.top{background:linear-gradient(115deg,'+v.header+','+(d?'#2A1B12':'#8B6242')+')}'+'.alert{border-radius:99px;padding:10px 14px}.alert .ic{border-radius:99px}.pulse button{border-radius:20px}'},
+   '.btn,.chip,.pill{border-radius:99px}.tapebar{height:0}.top{background:linear-gradient(115deg,'+v.header+','+(d?'#2A1B12':'#7A5233')+')}'+'.alert{border-radius:99px;padding:10px 14px}.alert .ic{border-radius:99px}.pulse button{border-radius:20px}'},
  seaglass:function(v,d){return 'body{background-image:linear-gradient(160deg,'+(d?'rgba(22,163,163,.16)':'rgba(190,232,228,.9)')+',transparent 55%)}'+
    '.card,.job,.kpi,.alert,.lane,.thread{border:0;background:'+(d?'rgba(13,34,34,.94)':'rgba(255,255,255,.92)')+';backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 8px 26px '+(d?'rgba(0,0,0,.4)':'rgba(20,120,120,.12)')+'}'+
-   '.btn,.chip,.pill{border-radius:99px}.tapebar{height:0}.top{background:linear-gradient(120deg,'+v.header+','+(d?'#0B2C2C':'#1E7C7C')+')}'+
+   '.btn,.chip,.pill{border-radius:99px}.tapebar{height:0}.top{background:linear-gradient(120deg,'+v.header+','+(d?'#0B2C2C':'#176868')+')}'+
    'nav.tabs{background:'+(d?'rgba(10,26,26,.9)':'rgba(255,255,255,.85)')+';backdrop-filter:blur(10px)}'},
  bodega:function(v,d){return '.tapebar{height:10px;background:repeating-linear-gradient(90deg,'+v.acc+' 0 16px,'+v.card+' 16px 32px)}'+
    '.card,.job,.kpi,.lane{border-top:3px solid '+v.acc+'}'+
@@ -4289,7 +4341,26 @@ function modeOf(){var m=(state.ui||{}).mode||'auto',t=themeOf();
   if(t.dark_only)return 'dark';
   if(m==='light'||m==='dark')return m;
   try{return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch(e){return 'light'}}
-function varsFor(t,mode){var v=(mode==='dark'?t.dark:t.light)||t.dark||t.light;return v}
+/* Text in the status colours and the muted grey must stay readable on every look: each is darkened
+   (light looks) or lightened (dark looks) just enough to reach 4.5:1 against both the page and the
+   cards. Most looks already pass; the rest move a shade, keeping their hue. */
+function hexRgb(h){h=String(h||'').replace('#','');if(h.length===3)h=h.replace(/(.)/g,'$1$1');var n=parseInt(h,16)||0;return [n>>16&255,n>>8&255,n&255]}
+function rgbHex(c){return '#'+c.map(function(x){return ('0'+Math.round(Math.max(0,Math.min(255,x))).toString(16)).slice(-2)}).join('').toUpperCase()}
+function relLum(c){var a=c.map(function(x){x/=255;return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)});return 0.2126*a[0]+0.7152*a[1]+0.0722*a[2]}
+function contrastOf(a,b){var x=relLum(hexRgb(a)),y=relLum(hexRgb(b));return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05)}
+function readableOn(fg,bgs,dark,want){
+  var c=hexRgb(fg),to=dark?255:0;
+  for(var i=0;i<60&&!bgs.every(function(b){return contrastOf(rgbHex(c),b)>=want});i++)c=c.map(function(x){return x+(to-x)*0.05});
+  return rgbHex(c);
+}
+var VARS_CACHE={};
+function varsFor(t,mode){
+  var raw=(mode==='dark'?t.dark:t.light)||t.dark||t.light,dark=raw===t.dark,key=t.id+(dark?':d':':l');
+  if(VARS_CACHE[key])return VARS_CACHE[key];
+  var v=Object.assign({},raw);
+  ['ok','bad','info','warn','muted'].forEach(function(k){if(raw[k])v[k]=readableOn(raw[k],[raw.card,raw.bg],dark,4.6)});
+  return (VARS_CACHE[key]=v);
+}
 function themeCss(t,mode){
   var v=varsFor(t,mode),dark=mode==='dark';
   var sh=dark?'0 2px 10px rgba(0,0,0,.45)':'0 2px 8px rgba(16,24,40,.06)';
@@ -4310,8 +4381,12 @@ function themeCss(t,mode){
     '--tabFill:'+(t.surface==='raised'?'transparent':'color-mix(in srgb, var(--tape) 12%, transparent)')+';'+
     '--tintA:'+(dark?'22%':'14%')+';--tintB:'+(dark?'26%':'20%')+';'+
     '--font:'+stack(t.font)+';--display:'+stack(t.display)+';'+
-  '}';
+  '}'+
+  // the money colours stay red and green on every look, a shade deeper (or lighter) where the look's cards
+  // would leave them under 4.5:1, on the card and on their own tinted pills
+  ':root[data-theme]{--due:'+moneyInk(dark?'#FF6B60':'#B81C22',v,dark,dark?.18:.14)+';--paid:'+moneyInk(dark?'#2FD27A':'#0A7A3D',v,dark,dark?.18:.15)+';--sosText:'+moneyInk('#C8102E',v,dark,.14)+'}';
 }
+function moneyInk(c,v,dark,tint){var a=hexRgb(v.card),b=hexRgb(c),soft=rgbHex(a.map(function(x,i){return x*(1-tint)+b[i]*tint}));return readableOn(c,[v.card,v.bg,soft],dark,4.6)}
 function applyTheme(){
   var t=themeOf(),mode=modeOf(),el=document.getElementById('themeVars');
   if(el)el.textContent=themeCss(t,mode)+(SKINS[t.id]?SKINS[t.id](varsFor(t,mode),mode==='dark'):'');
@@ -4900,7 +4975,7 @@ function phaseCard(list){
     return '<tr'+(strong?' style="font-weight:600"':'')+'><td>'+name+'</td><td class="n">'+r.n+'</td><td class="n">'+av(r.to)+'</td><td class="n">'+av(r.ld)+'</td><td class="n">'+av(r.dr)+'</td><td class="n">'+av(r.ul)+'</td><td class="n">'+(r.mh?fmtInt(r.cf/r.mh):'—')+'</td></tr>'};
   var rows=Object.keys(g).sort().map(function(k){return row(esc(k)+(k==='No lead'?'':'’s crew'),g[k])}).join('')+(Object.keys(g).length>1?row('All crews',all,true):'');
   return '<section class="card"><h2>Time on the job by crew</h2><p class="sub">Averages from the crew’s own taps: Start job, Start and Done loading, Start and Done unloading.</p>'+
-    (done.length?'<div class="tblwrap"><table class="tbl"><tr><th>Crew</th><th class="n">Jobs</th><th class="n">To pickup</th><th class="n">Loading</th><th class="n">Drive</th><th class="n">Unloading</th><th class="n">Cu ft / mover-hr</th></tr>'+rows+'</table></div>'+
+    (done.length?'<div class="tblwrap" tabindex="0" role="region" aria-label="Time on the job by crew"><table class="tbl"><tr><th>Crew</th><th class="n">Jobs</th><th class="n">To pickup</th><th class="n">Loading</th><th class="n">Drive</th><th class="n">Unloading</th><th class="n">Cu ft / mover-hr</th></tr>'+rows+'</table></div>'+
       '<p class="hint">Cu ft per mover-hour is the job’s volume divided by the hours each mover spent loading and unloading. Higher is faster. Your rate card assumes '+state.settings.prod+' over the whole job.</p>'
       :'<p class="hint">Jobs show up here once a crew lead taps through loading and unloading and finishes the job.</p>')+'</section>';
 }
@@ -5109,8 +5184,8 @@ function payStepStripe(j){
     panel='<div class="grid2 stack">'+fld('Method','<select id="otherMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option></select>')+fld('Check number or reference (optional)','<input id="otherRef">')+'</div>';
     btn='<button class="btn primary bigbtn" data-act="flow:pay">Record payment</button>';
   }
-  return '<h2>Collect payment</h2>'+(pay.cfg.test?'<div class="note">Stripe test mode: no real money moves. Test card 4242 4242 4242 4242, any future date, any security code.</div>':'')+
-    '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paidOf(j)>0?' paid':'')+'"><b>'+money(paidOf(j))+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>Due now</span></div></div>'+
+  return '<h2>'+payTitle(j)+'</h2>'+(pay.cfg.test?'<div class="note">Stripe test mode: no real money moves. Test card 4242 4242 4242 4242, any future date, any security code.</div>':'')+
+    payTiles(j)+
     fld('Amount','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(amt*100))+'">')+'<div class="methods">'+chips+'</div>'+panel+btn+'<p class="hint" id="flowErr" role="alert"></p>';
 }
 // a payment that lands while the payment screen is open (a pay link used, a card charged) shows at once
@@ -5620,11 +5695,18 @@ function payStepOffline(j){
     c.reason==='connect-pending'?'Stripe is still checking this company’s details, so cards can’t be taken yet.':
     c.reason==='connect-off'?'This company’s Stripe account was disconnected from Tally, so cards can’t be taken. The owner connects it again in Setup › Payments.':
     'The payment service did not answer, so cards can’t be taken right now.';
-  return '<h2>Collect payment</h2><div class="note">'+why+' Cash and checks can still be recorded. <button class="btn sm" data-act="pay:retry">Check again</button></div>'+
-    '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paidOf(j)>0?' paid':'')+'"><b>'+money(paidOf(j))+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>Due now</span></div></div>'+
+  return '<h2>'+payTitle(j)+'</h2><div class="note">'+why+' Cash and checks can still be recorded. <button class="btn sm" data-act="pay:retry">Check again</button></div>'+
+    payTiles(j)+
     fld('Amount','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(bal*100))+'">')+
     '<div class="grid2 stack">'+fld('Method','<select id="otherMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option></select>')+fld('Check number or reference (optional)','<input id="otherRef">')+'</div>'+
     '<button class="btn primary bigbtn" data-act="flow:pay">Record payment</button><p class="hint" id="flowErr" role="alert"></p>';
+}
+/* the payment screen's heading and tiles: a finished job's bill is due now; before then it is a
+   payment toward the quote (a deposit), with what is left to pay */
+function payTitle(j){return ['active','done','paid'].indexOf(j.status)>=0?'Collect payment':'Take a payment'}
+function payTiles(j){
+  var bal=balOf(j),fin=['active','done','paid'].indexOf(j.status)>=0;
+  return '<div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>'+(fin?'Bill':'Quote')+'</span></div><div class="kpi'+(paidOf(j)>0?' paid':'')+'"><b>'+money(paidOf(j))+'</b><span>Paid</span></div><div class="kpi'+(bal>0?(fin?' due':''):' paid')+'"><b>'+money(bal)+'</b><span>'+(fin?'Due now':'Left to pay')+'</span></div></div>';
 }
 function payStep(j){
   if(payOn())return payStepStripe(j);
@@ -5638,13 +5720,13 @@ function payStep(j){
   else if(m==='card')panel='<div class="grid2 stack">'+fld('Name on card','<input id="cardName" autocomplete="cc-name" value="'+esc(j.d.name)+'">','span2')+fld('Card number','<input id="cardNum" inputmode="numeric" autocomplete="cc-number" maxlength="23" placeholder="1234-5678-9012-3456">','span2')+fld('Expires (MM/YY)','<input id="cardExp" inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY">')+fld('Security code','<input id="cardCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC">')+fld('Billing ZIP','<input id="cardZip" inputmode="numeric" autocomplete="postal-code">')+(opt('payVault')?'<label class="check"><input type="checkbox" id="saveCard"> Save this card on file</label>':'')+'</div>';
   else if(m==='ach')panel='<div class="grid2 stack">'+fld('Account holder','<input id="achName" value="'+esc(j.d.name)+'">','span2')+fld('Routing number (9 digits)','<input id="achRoute" inputmode="numeric" autocomplete="off">')+fld('Account number','<input id="achAcct" inputmode="numeric" autocomplete="off">')+fld('Account type','<select id="achType"><option>Checking</option><option>Savings</option></select>')+'<label class="check span2"><input type="checkbox" id="achAuth"> The customer authorizes a one-time bank debit for this amount.</label>'+(opt('payVault')?'<label class="check span2"><input type="checkbox" id="saveAch"> Save this bank account on file</label>':'')+'</div><p class="hint">Bank payments take a few business days to clear and show as pending.</p>';
   else panel='<div class="grid2 stack">'+fld('Method','<select id="otherMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option></select>')+fld('Check number or reference (optional)','<input id="otherRef">')+'</div>';
-  return '<h2>Collect payment</h2><div class="note">Demo mode: nothing is charged. Card and bank numbers are checked and then thrown away, and only the last four digits are kept. A payment processor plugs in here to charge for real.</div>'+
-    '<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>Bill</span></div><div class="kpi'+(paidOf(j)>0?' paid':'')+'"><b>'+money(paidOf(j))+'</b><span>Paid</span></div><div class="kpi'+(bal>0?' due':' paid')+'"><b>'+money(bal)+'</b><span>Due now</span></div></div>'+
+  return '<h2>'+payTitle(j)+'</h2><div class="note">Demo mode: nothing is charged. Card and bank numbers are checked and then thrown away, and only the last four digits are kept. A payment processor plugs in here to charge for real.</div>'+
+    payTiles(j)+
     fld('Amount to charge','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(bal*100))+'">')+'<p class="hint" style="margin-top:-4px">Type the digits and the cents fill in from the right. 1500 becomes 15.00.</p>'+'<div class="methods">'+chips+'</div>'+panel+
     '<button class="btn primary bigbtn" data-act="flow:pay">Charge</button><p class="hint" id="flowErr" role="alert"></p>';
 }
 function doneStep(j){
-  var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+(p.pending?' <small>(pending)</small>':'')+'<br><small>'+esc(p.date)+'</small></td><td>'+money(p.amt)+'</td></tr>'}).join('')||'<tr><td><small>No payments.</small></td><td></td></tr>';
+  var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+(p.pending?' <small>(pending)</small>':'')+'<br><small>'+esc(/^\d{4}-\d\d-\d\d$/.test(p.date||'')?fmtDate(p.date):p.date||'')+'</small></td><td>'+money(p.amt)+'</td></tr>'}).join('')||'<tr><td><small>No payments.</small></td><td></td></tr>';
   var forms=(j.signed||[]).map(function(x){return '<div><small>'+esc(x.title)+' · '+(x.waived?'waived':'signed by '+esc(x.name))+'</small></div>'}).join('');
   return '<div class="card" style="text-align:center;margin-top:8px"><h2>'+(balOf(j)>0?'Forms signed':'Paid in full')+'</h2><p class="hint">Thank you, '+esc(j.d.name)+'.</p>'+(balOf(j)>0&&!canCollect()?'<p class="hint">'+money(balOf(j))+' is still owed. The office collects the payment.</p>':'')+'</div><section class="card"><h3>Receipt</h3><table class="lines">'+pays+'<tr class="total"><td>Total bill</td><td>'+money(totalOf(j))+'</td></tr></table>'+forms+'</section><button class="btn primary bigbtn" data-act="flow:close">Close</button>';
 }
@@ -5653,7 +5735,8 @@ function renderFlow(){
   if(!j||state.ui.role==='crew'){ui.flow=null;el.hidden=true;el.innerHTML='';syncLock();return}
   if(f.step==='back'&&!backApplies(j))f.step='';   // the office took over the bill meanwhile
   if(f.step!=='back'&&f.finishing&&j.status==='active'&&!formsPending(j).length){f.finishing=false;setStatus(j,'done');save();toast('Signed. Job finished'+(j.actualHours?' in '+j.actualHours+' h':'')+'.')}
-  var req=formsRequired(),pend=formsPending(j),bal=balOf(j),body,label;
+  // the forms are signed at the end of the move: a deposit on a job that hasn't started goes straight to payment
+  var req=formsRequired(),pend=['active','done','paid'].indexOf(j.status)>=0?formsPending(j):[],bal=balOf(j),body,label;
   if(f.step==='back'){body=backStep(j,f);label='Before you bill out'}
   else if(pend.length){body=formStep(j,pend[0]);label=(f.finishing?'Sign to close the job · ':'')+'Form '+(req.length-pend.length+1)+' of '+req.length}
   else if(bal>0&&canCollect()){body=payStep(j);label='Payment'}
@@ -5750,7 +5833,7 @@ document.addEventListener('click',function(e){
     case 'cr:collapse':delete ui.ccOpen[t.dataset.id];renderCrew();break;
     case 'set:open':ui.setSec=t.dataset.sec||'';renderSettings();window.scrollTo(0,0);break;
     case 'set:back':ui.setSec='';renderSettings();window.scrollTo(0,0);break;
-    case 'tab':if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();if(t.dataset.tab==='settings'){ui.setSec='';ui.setQ=''}ui.tab=t.dataset.tab;ui.armed='';render();var vw=$('#view');vw.classList.remove('view-in');void vw.offsetWidth;vw.classList.add('view-in');window.scrollTo(0,0);break;
+    case 'tab':if(t.dataset.f)ui.filter=t.dataset.f;if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();if(t.dataset.tab==='settings'){ui.setSec='';ui.setQ=''}ui.tab=t.dataset.tab;ui.armed='';render();var vw=$('#view');vw.classList.remove('view-in');void vw.offsetWidth;vw.classList.add('view-in');window.scrollTo(0,0);break;
     case 'inc':case 'dec':{var id=t.dataset.id,n=(d.items[id]||0)+(a==='inc'?1:-1);if(n<=0)delete d.items[id];else d.items[id]=n;var o=$('#q_'+id);if(o)o.textContent=n>0?n:0;save();updateQuote();break}
     case 'q:step':ui.qstep=Math.max(1,Math.min(3,+t.dataset.s));renderQuote();window.scrollTo(0,0);break;
     case 'q:save':saveQuote('save');break;
@@ -5780,7 +5863,6 @@ document.addEventListener('click',function(e){
     case 'sh:rmphoto':j=byId(ui.jobId);j.photos=j.photos.filter(function(p){return p.id!==t.dataset.pid});save();renderSheet();break;
     case 'sh:delete':if(armed('sh:delete')){var djid=ui.jobId;state.jobs=state.jobs.filter(function(x){return x.id!==djid});delete ui.jed[djid];delete ui.cfm[matKey('s',djid)];save();ui.jobId=null;ui.closeAsk=null;render();toast('Job deleted.')}else renderSheet();break;
     case 'photo':ui.photoKind=t.dataset.kind;ui.photoJob=t.dataset.id||ui.jobId;pickPhotos();break;
-    case 'tallyopen':ui.openTally[t.dataset.id]=!ui.openTally[t.dataset.id];renderCrew();break;
     case 'tally':j=byId(t.dataset.id);var rec=j.tally[t.dataset.item]||(j.tally[t.dataset.item]={});rec[t.dataset.k]=rec[t.dataset.k]?0:1;save();renderCrew();break;
     case 'cr:start':{j=byId(t.dataset.id);if(!j)break;var cw2=clockWait(j);
       if(cw2.length){toast('Waiting on '+waitWords(cw2,t.dataset.who)+' to clock in. Everyone on the job clocks in before it starts.');break}
@@ -5914,9 +5996,6 @@ document.addEventListener('click',function(e){
     case 'me:save':mySave();break;
     case 'more:theme':ui.more=false;renderMore();ui.pick=true;renderPick();break;
     case 'fab:quote':ui.tab='quote';ui.qstep=1;ui.armed='';render();window.scrollTo(0,0);break;
-    case 'fab:clock':{var fm=fieldMe();if(!opt('clock'))break;if(!fm){toast('Ask the office to add you to the crew list.');break}
-      if(openShift(fm)){ui.tab='crew';render();toast('Clock out on your job screen, so you can add a note.');window.scrollTo(0,0);break}
-      var fin=Date.now();state.shifts.push({id:uid(),who:fm,inAt:fin,outAt:0,activity:S.activities[0],note:'',late:0,breaks:[]});crewClockIn(fm,fin);onJobNotice(true);save();geoStart(fm);render();var fj0=jobNow(fm);toast(fj0?'Clocked in. You’re on the job at '+(fj0.d.name||'the job')+'.':'Clocked in.');break}
     case 'field:go':ui.tab='crew';ui.armed='';render();window.scrollTo(0,0);break;
     case 'theme:open':ui.pick=true;renderPick();break;
     case 'theme:close':ui.pick=false;renderPick();break;
@@ -6013,9 +6092,6 @@ document.addEventListener('click',function(e){
       else{bs.breaks.push({s:nb,e:0});toast('On break. Breaks aren’t paid. Tap End break when you’re back.')}
       save();render();break}
     case 'clk:note':ui.noteOpen=true;render();var cn2=$('#clockNote');if(cn2)cn2.focus();break;
-    case 'st:addoffice':{var on=$('#nOfficeName').value.trim();if(!on)break;S.office.push({name:on,kind:$('#nOfficeKind').value});dirChanged();renderSettings();break}
-    case 'st:rmoffice':{var ro=S.office.splice(+t.dataset.i,1)[0];if(ro)delete S.contacts[ro.name];dirChanged();renderSettings();break}
-    case 'st:officekind':{var oo=S.office[+t.dataset.i];if(oo){oo.kind=oo.kind==='owner'?'dispatch':'owner';dirChanged();renderSettings()}break}
     case 'chat:open':ui.chatThread=t.dataset.t;renderChat();window.scrollTo(0,0);break;
     case 'chat:dm':ui.chatThread=dmId(myName(),t.dataset.n);renderChat();window.scrollTo(0,0);break;
     case 'chat:back':ui.chatThread=null;renderChat();break;
@@ -6029,9 +6105,6 @@ document.addEventListener('click',function(e){
     case 'st:addact':var an=$('#nAct').value.trim();if(!an)break;S.activities.push(an);save();renderSettings();break;
     case 'st:rmtruck':S.trucks.splice(+t.dataset.i,1);save();renderSettings();break;
     case 'st:addtruck':var tn=$('#nTruckName').value.trim(),tc=num($('#nTruckCf').value);if(!tn||tc<=0){toast('Enter a truck name and cubic feet.');break}S.trucks.push({id:uid(),name:tn,cf:tc});save();renderSettings();break;
-    case 'st:rmcrew':var rn=S.crew.splice(+t.dataset.i,1)[0];S.leads=S.leads.filter(function(x){return x!==rn});delete S.contacts[rn];dirChanged();renderSettings();break;
-    case 'st:lead':{var ln=S.crew[+t.dataset.i],li2=S.leads.indexOf(ln);if(li2>=0)S.leads.splice(li2,1);else S.leads.push(ln);dirChanged();renderSettings();break}
-    case 'st:addcrew':var cn=$('#nCrew').value.trim();if(!cn)break;S.crew.push(cn);dirChanged();renderSettings();break;
     case 'st:rmsrc':S.sources.splice(+t.dataset.i,1);save();renderSettings();break;
     case 'st:addsrc':var sn=$('#nSrc').value.trim();if(!sn)break;S.sources.push(sn);save();renderSettings();break;
     case 'st:rmcf':S.customFields.splice(+t.dataset.i,1);save();renderSettings();break;
@@ -6158,7 +6231,7 @@ if(location.hash==='#messages'){ui.tab='chat';ui.chatThread='jobs'}
 else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency text opens the alert
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf};
 })();
 </script>
 </body>

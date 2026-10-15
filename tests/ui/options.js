@@ -188,7 +188,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
 
   /* ---------------- crew members: Call, the clock, Truck down ---------------- */
   await preview('crew', 'Dee');
-  ok(!!$('#tabs [data-act="tab"][data-tab="crew"]') && /My jobs/.test($('#tabs').textContent) && !$('#fab').hidden, L('a crew member has My jobs on the bottom bar, and the clock button'));
+  ok(!!$('#tabs [data-act="tab"][data-tab="crew"]') && /My jobs/.test($('#tabs').textContent) && $('#fab').hidden && !$('#tabs .spacer') && !!$('.tclock'), L('a crew member has My jobs on the bottom bar, and clocks in on the clock card (no round button over the screen)'));
   await A.go('crew');
   const dj = st().jobs.find((j) => ['booked', 'active'].includes(j.status) && j.assign.crew.includes('Dee') && j.d.moveDate <= dayISO());
   if (dj) {
