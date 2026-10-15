@@ -29,7 +29,7 @@ const file = process.argv[2], label = process.argv[3] || 'confirm';
   ok(/Job messages/.test(text()) && /1 job to confirm/.test(text()), label + ': Chat has a Job messages spot at the top');
   click('[data-act="chat:open"][data-t="jobs"]'); await sleep(15);
   const card = $('.jmsg');
-  ok(card && /Booked today/.test(card.textContent) && /You’re on Priya Nair today at 8:00 AM\.\s*Pickup: 418 Oak St, Austin\s*Truck: Box 1 \(26 ft\)\s*Lead: Marcus\s*With: Marcus, Luis/.test(card.textContent), label + ': the message reads right: ' + (card && card.textContent.replace(/\s+/g, ' ')));
+  ok(card && /Booked today/.test(card.textContent) && /You’re on Priya Nair today at 8:00 AM\.\s*Pickup: 418 Oak St, Austin\s*Truck: Box 1 \(26 ft\)\s*Lead: Marcus\s*With: Luis(?!, Marcus)/.test(card.textContent), label + ': the message reads right: ' + (card && card.textContent.replace(/\s+/g, ' ')));
   // a forged tap for someone else does nothing
   const forged = w.document.createElement('button'); forged.dataset.act = 'jm:confirm'; forged.dataset.id = job.id; forged.dataset.who = 'Luis'; w.document.body.appendChild(forged); click(forged); forged.remove(); await sleep(5);
   ok(!(job.confirm && job.confirm.Luis), label + ': Dee cannot confirm for Luis');

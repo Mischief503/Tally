@@ -73,6 +73,8 @@ main{padding:10px 12px calc(70px + env(safe-area-inset-bottom));max-width:960px;
 .grid2>*,.grid3>*{min-width:0}
 .grid2>input,.grid2>select,.grid3>input,.grid3>select{width:100%}
 .grid2>.f,.grid3>.f{justify-content:space-between}
+.accpick{display:grid;grid-template-columns:1fr;gap:8px;margin-top:6px}
+@media (min-width:560px){ .accpick{grid-template-columns:3fr 2fr} }
 .colhead{margin:0 0 4px}.colhead small{font-size:12px}
 .span2{grid-column:1/-1}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -80,6 +82,10 @@ main{padding:10px 12px calc(70px + env(safe-area-inset-bottom));max-width:960px;
 .grow{flex:1;min-width:0}
 .hint{color:var(--muted);font-size:13px;margin:6px 0 0}
 .note{background:var(--accSoft);border:var(--bw) solid var(--tape-edge);border-radius:10px;padding:8px 10px;font-size:13px;margin-bottom:10px}
+/* grey small print is too faint on a note's tinted box in some dark looks: it takes the note's own colour */
+.note small{color:inherit}
+.clashnote{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;text-align:left;font:inherit;font-size:13px;color:var(--text);background:rgba(200,64,47,.14);border-color:var(--bad);cursor:pointer;min-height:44px}
+.clashnote b{white-space:nowrap;font-weight:700}
 .duelist{margin:4px 0 0;padding-left:20px;font-size:14px}.duelist li{margin:2px 0}
 .testtag{display:inline-block;background:var(--tape);color:var(--tape-ink);border-radius:4px;padding:0 5px;font:700 10px/1.6 var(--font);letter-spacing:.8px;vertical-align:1px}
 .adm-co h3{font-size:17px;margin-bottom:2px}.adm-co.is-test{border-style:dashed}
@@ -107,6 +113,7 @@ main{padding:10px 12px calc(70px + env(safe-area-inset-bottom));max-width:960px;
 .btn.ibtn{min-width:40px;min-height:40px;padding:0;font-size:20px;line-height:1}
 .btn:disabled{opacity:.5;cursor:default;transform:none}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chips.payq{margin:-2px 0 12px}
 .chip{border:var(--bw) solid var(--line);background:var(--card);color:var(--text);border-radius:var(--rpill);padding:5px 13px;min-height:36px;font-size:13.5px;cursor:pointer;transition:background .12s,color .12s}
 .chip.on{background:var(--text);color:var(--card);border-color:var(--text)}
 .chip small{color:inherit;opacity:.7}
@@ -183,7 +190,8 @@ details.acc.card .acc-body{padding-bottom:14px}
 .job:hover{border-color:var(--hover);box-shadow:var(--shadow)}
 .job .t{font:700 17px/1.15 var(--display)}
 .job .r{font:700 17px/1.15 var(--display);text-align:right}
-.job .route{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:3px 0 6px}
+/* the when-and-where line wraps to a second line on a narrow phone instead of being cut off */
+.job .route{color:var(--muted);font-size:13px;margin:3px 0 6px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:break-word}
 .week{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
 .week>*{min-width:0}
 .day.slim{padding:9px 12px}
@@ -201,7 +209,9 @@ details.acc.card .acc-body{padding-bottom:14px}
 .who:first-child{border-top:0}
 
 /* reports */
-.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.kpis.k2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .kpi{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:10px 12px;box-shadow:var(--cardShadow)}
 .kpi b{display:block;font:700 22px/1.05 var(--display)}
 .kpi span{font-size:12px;color:var(--muted)}
@@ -214,6 +224,10 @@ table.tbl th{font-weight:600;text-align:left;color:var(--muted);font-size:12px;p
 table.tbl td{padding:6px 6px 6px 0;border-top:1px solid var(--line2)}
 table.tbl td.n,table.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
 table.tbl td.n{white-space:nowrap}
+.cin{width:66px;min-height:40px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--field);color:var(--text);font-size:16px;text-align:right;font-variant-numeric:tabular-nums}
+.cin:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px var(--focusRing)}
+table.tbl.cat td{vertical-align:middle;padding-top:4px;padding-bottom:4px}
+@media (max-width:360px){ .cin{width:56px} table.tbl.cat td{padding-right:4px} }
 .tblwrap table.tbl td:first-child{min-width:7em}
 
 /* job sheet */
@@ -241,6 +255,7 @@ table.tbl td.n{white-space:nowrap}
 .tally-row .btn.on{background:var(--ok);border-color:var(--ok);color:var(--card)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom));background:var(--text);color:var(--card);padding:9px 16px;border-radius:99px;font-size:13.5px;z-index:60;max-width:90vw;box-shadow:var(--shadow-lg)}
 .toast[hidden]{display:none}
+.toast .tundo{background:none;border:0;color:inherit;font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:3px;padding:9px 6px;margin:-9px -6px -9px 12px;min-height:40px;cursor:pointer}
 
 /* crew view */
 .crewcard{padding:12px 14px}
@@ -329,7 +344,7 @@ body.previewing main{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
 .alert .ic.ok{background:var(--paidSoft);color:var(--paid)}
 .alert .tx{flex:1;min-width:0}
 .alert .tx b{display:block;font-size:14.5px;font-weight:var(--w-mid)}
-.alert .tx small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.alert .tx small{color:var(--muted);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:break-word}
 .alert .go{color:var(--muted);flex:none}
 /* nav with a centre action */
 /* the round New quote button sits in the middle of the bottom bar, inside it, so it never covers what is on the screen */
@@ -456,12 +471,13 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .navlist{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);overflow:hidden;margin:0 0 var(--gapy);box-shadow:var(--cardShadow)}
 .navrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line2);padding:10px 14px;min-height:56px;color:var(--text);cursor:pointer;font:inherit;text-decoration:none}
 .navrow:first-child{border-top:0}
-@media (hover:hover){ .navrow:hover{background:var(--line2)} }
+/* a row under the mouse takes the page colour, which every look's grey and red text is tuned to read on (the line colour is mid-grey in High contrast), with an accent bar to show it */
+@media (hover:hover){ .navrow:hover{background:var(--bg);box-shadow:inset 3px 0 0 var(--acc)} }
 .navrow .ic{width:32px;height:32px;border-radius:9px;background:var(--line2);color:var(--text);display:flex;align-items:center;justify-content:center;flex:none}
 .navrow .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .navrow .tx{flex:1;min-width:0}
 .navrow .tx b{display:block;font-weight:var(--w-mid);font-size:15px;line-height:1.25}
-.navrow .tx small{display:block;font-size:12.5px;line-height:1.3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.navrow .tx small{font-size:12.5px;line-height:1.3;margin-top:1px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:break-word}
 .navrow .go{color:var(--muted);font-size:20px;flex:none}
 .navrow.sosrow{color:var(--sosText)}
 .navrow.sosrow .ic{background:color-mix(in srgb, var(--sos) 14%, transparent);color:var(--sosText)}
@@ -499,7 +515,7 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .ccmini{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:10px 14px;margin:0 0 8px;cursor:pointer;color:var(--text);font:inherit;box-shadow:var(--cardShadow)}
 .ccmini .tx{flex:1;min-width:0}
 .ccmini .tx b{display:block;font:700 17px/1.15 var(--display)}
-.ccmini .tx small{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ccmini .tx small{font-size:12.5px;margin-top:2px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:break-word}
 .ccmini .go{color:var(--muted);font-size:20px;flex:none}
 .cc-less{background:none;border:0;color:var(--muted);font:600 13px var(--font);padding:4px 0;cursor:pointer;min-height:40px}
 /* typed job info is saved with a button: the bar under each part says whether it is saved */
@@ -559,7 +575,7 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .mtile{position:relative;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);min-height:86px;box-shadow:var(--cardShadow)}
 .mtile.on{border-color:var(--tape-edge);box-shadow:inset 0 0 0 1px var(--tape-edge)}
 .mtap{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;height:100%;min-height:86px;text-align:left;background:none;border:0;border-radius:var(--r);padding:10px 46px 10px 12px;color:var(--text);font:inherit;cursor:pointer;touch-action:manipulation}
-.mtap:active{background:var(--line2)}
+.mtap:active{background:var(--bg)}
 .mtap b{font-weight:var(--w-mid);font-size:15px;line-height:1.25;overflow-wrap:anywhere}
 .mtap small{font-size:12.5px}
 .mcount{position:absolute;top:8px;right:8px;min-width:30px;height:28px;padding:0 7px;border-radius:99px;background:var(--tape);color:var(--tape-ink);font:700 14px/28px var(--font);text-align:center;pointer-events:none;font-variant-numeric:tabular-nums}
@@ -572,12 +588,14 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 body.sos-on #matpick{top:calc(var(--sosH) + env(safe-area-inset-top))}
 @media (max-width:340px){ .grid2.stack{grid-template-columns:1fr} }
 @media (max-width:420px){ nav.tabs button{font-size:10px} }
-@media (min-width:520px){ .stats b{font-size:24px} .kpis{grid-template-columns:repeat(4,1fr)} .kpi b{font-size:24px} }
+@media (min-width:520px){ .stats b{font-size:24px} .kpis{grid-template-columns:repeat(4,minmax(0,1fr))} .kpi b{font-size:24px} }
+/* three money tiles side by side don't fit a small phone: there they become rows, the amount on the right */
+@media (max-width:360px){ .kpis.k3{grid-template-columns:1fr;gap:6px} .kpis.k3 .kpi{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 12px} .kpis.k3 .kpi b{order:2;font-size:19px;white-space:nowrap} }
 @media (min-width:900px){
   .shell{display:grid;grid-template-columns:172px 1fr;align-items:start}
   nav.tabs{position:sticky;top:0;flex-direction:column;border-top:0;border-right:1px solid var(--line);height:calc(100vh - 52px);padding:10px 8px;z-index:5;background:transparent}
   nav.tabs button{flex:none;flex-direction:row;gap:10px;padding:9px 12px;font-size:14px;justify-content:flex-start;min-height:42px;border-radius:10px}
-  nav.tabs button:hover{background:var(--line2)}
+  nav.tabs button:hover{background:var(--card)}
   nav.tabs button[aria-current="page"]{background:var(--card);box-shadow:0 0 0 1px var(--line)}
   nav.tabs button[aria-current="page"]::before{left:0;right:auto;top:10px;bottom:10px;width:3px;height:auto;border-radius:0 3px 3px 0}
   .badge{left:auto;right:10px;top:12px}
@@ -897,6 +915,7 @@ var pick={mode:'list',orgs:[],busy:false,msg:'',kind:''};
 function useOrg(id){try{localStorage.setItem(ORG_KEY,id)}catch(e){}reload()}
 window.tallySwitchCompany=function(){try{localStorage.removeItem(ORG_KEY)}catch(e){}reload()};
 function renderPicker(){
+  if(!document.body){document.addEventListener('DOMContentLoaded',renderPicker,{once:true});return}   // the companies can come back before the page has loaded
   css();
   if(!el){el=document.createElement('div');el.id='login';document.body.appendChild(el)}
   document.documentElement.classList.add('pre-auth');
@@ -1132,8 +1151,18 @@ function fmtTime(t){if(!t)return 'No time';var p=t.split(':').map(Number);return
 function fmtStamp(ts){return new Date(ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}
 function getPath(o,p){return p.split('.').reduce(function(a,k){return a==null?a:a[k]},o)}
 function setPath(o,p,v){var k=p.split('.');for(var i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=v}
-var toastT;
-function toast(msg){var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2600)}
+var toastT,undoFn=null;
+function toast(msg){var t=$('#toast');undoFn=null;t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2600)}
+// a toast with an Undo button, for things taken out by mistake; it stays up a little longer
+function toastUndo(msg,fn){var t=$('#toast');undoFn=fn;t.innerHTML='<span>'+esc(msg)+'</span><button class="tundo" data-act="toast:undo">Undo</button>';t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true;undoFn=null},6000)}
+// take an entry out of a Setup list, with Undo putting it back where it was
+function setRemove(key,i,min,minMsg){
+  var list=state.settings[key];if(!Array.isArray(list)||!(i>=0&&i<list.length))return;
+  if(min&&list.length<=min){if(minMsg)toast(minMsg);return}
+  var item=list.splice(i,1)[0],nm=typeof item==='string'?item:(item.name||item.label||item.title||'');
+  save();renderSettings();
+  toastUndo(nm?'Removed '+nm+'.':'Removed.',function(){var l=state.settings[key];if(!Array.isArray(l))return;l.splice(Math.min(i,l.length),0,item);save();if(ui.tab==='settings')renderSettings();toast((nm||'It')+' is back.')});
+}
 
 /* ---------- defaults ---------- */
 var CATS=['Living room','Bedroom','Dining','Kitchen & laundry','Office','Boxes','Specialty'];
@@ -1173,7 +1202,7 @@ function defaultSettings(){return {
 function blankDraft(){return {name:'',phone:'',email:'',source:'Google',moveDate:'',time:'08:00',from:'',to:'',miles:'',milesOut:'',milesBack:'',flights:'',pack:false,crew:'',truckId:'',hoursOverride:'',discount:'',notes:'',custom:{},items:{},editId:'',moveKind:''}}
 
 /* ---------- state ---------- */
-var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',hq:'',hf:'all',hShow:50,hOpen:'',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null,sosOpen:false,sosStart:null,sosArm:'',sosDraft:{},sosShown:{},sosWant:false,sosBusy:{},setSec:'',setQ:'',seg:{},ccOpen:{},jed:{},cfm:{},closeAsk:null,mp:null};
+var KEY=window.TALLY_ORG_KEY&&window.TALLY_ORG_KEY!=='none'?'tally.v1.'+window.TALLY_ORG_KEY:'tally.v1', state, ui={tab:'today',jobId:null,filter:'all',hq:'',hf:'all',hShow:50,hOpen:'',weekStart:mondayOf(todayISO()),from:'',to:'',armed:'',openTally:{},open:{},qstep:1,more:false,photoKind:'',photoJob:'',clockNote:'',needNote:false,chatThread:null,pick:false,preview:null,moreMode:'list',call:null,sosOpen:false,sosStart:null,sosArm:'',sosDraft:{},sosShown:{},sosWant:false,sosBusy:{},setSec:'',setQ:'',seg:{},ccOpen:{},jed:{},cfm:{},closeAsk:null,mp:null,allAlerts:false};
 var sync={mode:'local',db:null,user:null,uid:'',meName:'',isOwner:false,isAdmin:false,gate:'',identity:{status:'',role:'',staff:''},started:false,keepLocal:false,inited:false,requested:false,
   got:{settings:false,jobs:false,shifts:false,vault:false},settingsSeen:false,lastJobs:{},lastShifts:{},lastVault:{},lastSettings:'',inflight:{},q:{},unsubs:[],
   photoCache:{},pageCache:{},fetching:{},photoUp:{},requests:[],users:[],names:{},retryMs:5000,warned:false,userSub:null,reqSub:null};
@@ -1760,6 +1789,8 @@ var pill=function(s){return '<span class="pill" data-s="'+s+'">'+LABEL[s]+'</spa
 function elapsed(j){return j.startedAt?fmtDur(Date.now()-j.startedAt):''}
 function greet(){var h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
 function jobLine(j){return esc(fmtTime(j.d.time)+' · '+(j.d.from||'?')+' → '+(j.d.to||'?'))}
+// the deposit a booked job still needs before moving day (0 when it's paid, there is none, or the day went by)
+function depositDue(j,t){if(j.status!=='booked'||datePassed(j,t))return 0;var d=round2(num(j.quote.deposit)-paidOf(j));return d>0?d:0}
 function alertRow(kind,title,sub,act,id){
   return '<button class="alert" data-act="'+act+'"'+(id?' data-id="'+id+'"':'')+'><span class="ic '+kind+'">!</span><span class="tx"><b>'+title+'</b><small>'+sub+'</small></span><span class="go">›</span></button>';
 }
@@ -1776,7 +1807,7 @@ function renderToday(){
   var dueToday=state.jobs.filter(function(j){return j.status==='done'}).reduce(function(a,j){return a+balOf(j)},0);
   var pulse='<div class="pulse">'+
     '<button data-act="tab" data-tab="dispatch"><b>'+today.length+'</b><span>job'+(today.length===1?'':'s')+' today</span></button>'+
-    (opt('clock')?'<button data-act="tab" data-tab="'+(allowedTabs(role).some(function(x){return x.id==='reports'})?'reports':'dispatch')+'"><b>'+onClock.length+'</b><span>on the clock</span></button>'
+    (opt('clock')?'<button data-act="tab" data-tab="'+(role==='owner'?'reports" data-to="hoursCard':'dispatch')+'"><b>'+onClock.length+'</b><span>on the clock</span></button>'
       :'<button data-act="tab" data-tab="dispatch"><b>'+live.length+'</b><span>running now</span></button>')+
     (role==='owner'||opt('dispatchMoney')?'<button class="'+(dueToday>0?'due':'paid')+'" data-act="tab" data-tab="jobs" data-f="done"><b>'+money(dueToday)+'</b><span>still owed</span></button>'
       :'<button data-act="tab" data-tab="dispatch"><b>'+state.jobs.filter(needsSched).length+'</b><span>to schedule</span></button>')+'</div>';
@@ -1814,6 +1845,10 @@ function renderToday(){
     if(pend)A.push(alertRow('warn','Waiting on a signature',esc(j.d.name)+' · '+pend+' form'+(pend===1?'':'s'),'job:open',j.id));
     else if(bal>0)A.push(alertRow('bad','<span class="money-due">'+money(bal)+'</span> still to collect',esc(j.d.name)+' finished '+(j.finishedAt?ago(j.finishedAt):''),'job:open',j.id));
   });
+  // booked jobs whose deposit hasn't come in: one row, for whoever takes payments
+  var noDep=canCollect()?state.jobs.filter(function(j){return depositDue(j,t)>0}).sort(function(a,b){return (a.d.moveDate||'9999')<(b.d.moveDate||'9999')?-1:1}):[];
+  if(noDep.length===1){var nd=noDep[0];A.push(alertRow('warn','Deposit not paid yet',esc(nd.d.name||'Unnamed')+' · '+money(depositDue(nd,t))+(nd.d.moveDate?' · moves '+esc(relDay(nd.d.moveDate)):''),'job:open',nd.id))}
+  else if(noDep.length)A.push('<button class="alert" data-act="tab" data-tab="jobs" data-f="booked"><span class="ic warn">$</span><span class="tx"><b>'+noDep.length+' booked jobs have no deposit yet</b><small>'+esc(namesLine(noDep))+' · '+money(noDep.reduce(function(a,j){return a+depositDue(j,t)},0))+' in deposits</small></span><span class="go">›</span></button>');
   state.jobs.filter(function(j){return needsConfirm(j)&&j.d.moveDate<=addDays(t,1)&&j.assign.crew.length}).forEach(function(j){
     var no=j.assign.crew.filter(function(c){return !isConfirmed(j,c)});
     if(no.length)A.push(alertRow('warn','Not confirmed yet',esc(no.join(', '))+' · '+esc(j.d.name)+' '+esc(relDay(j.d.moveDate)),'job:open',j.id));
@@ -1823,7 +1858,9 @@ function renderToday(){
   if(mine)A.push('<button class="alert" data-act="jm:open"><span class="ic warn">'+mine+'</span><span class="tx"><b>Confirm your jobs</b><small>You are on '+mine+' job'+(mine===1?'':'s')+' that need'+(mine===1?'s':'')+' your OK</small></span><span class="go">›</span></button>');
   var unread=chatUnread(myName());
   if(unread)A.push('<button class="alert" data-act="tab" data-tab="chat"><span class="ic ok">'+unread+'</span><span class="tx"><b>Unread messages</b><small>From your crew and office</small></span><span class="go">›</span></button>');
-  var alerts=A.length?'<div class="secline"><h2>Needs you</h2><small>'+A.length+'</small></div>'+A.join(''):'<div class="secline"><h2>Needs you</h2></div><div class="card empty"><h3>All clear</h3><p>Nothing is waiting on you right now.</p></div>';
+  var cap=ui.allAlerts||A.length<=6?A.length:5;
+  var moreBtn=A.length>6?'<button class="btn" style="width:100%;margin:0 0 4px" data-act="today:alerts" aria-expanded="'+!!ui.allAlerts+'">'+(ui.allAlerts?'Show fewer':'Show '+(A.length-5)+' more')+'</button>':'';
+  var alerts=A.length?'<div class="secline"><h2>Needs you</h2><small>'+A.length+'</small></div>'+A.slice(0,cap).join('')+moreBtn:'<div class="secline"><h2>Needs you</h2></div><div class="card empty"><h3>All clear</h3><p>Nothing is waiting on you right now.</p></div>';
   var soon=state.jobs.filter(function(j){return j.d.moveDate>t&&j.d.moveDate<=addDays(t,7)&&['booked','active'].indexOf(j.status)>=0}).sort(function(a,b){return (a.d.moveDate+a.d.time)<(b.d.moveDate+b.d.time)?-1:1}).slice(0,4);
   var soonHtml=soon.length?'<div class="secline"><h2>Coming up</h2><button data-act="tab" data-tab="dispatch">Board ›</button></div>'+soon.map(function(j){
     return '<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><span class="t">'+esc(j.d.name)+'</span><span class="r">'+esc(fmtDate(j.d.moveDate))+'</span></div><div class="route">'+jobLine(j)+'</div></button>'}).join(''):'';
@@ -2001,6 +2038,7 @@ function renderJobs(){
     if(needsSched(j))badges+=' <span class="pill warn">Needs scheduling</span>';
     if(j.test)badges+=' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>';
     if(j.status==='done'&&bal>0)badges+=' <span class="pill due">'+money(bal)+' due</span>';
+    if(depositDue(j,t)>0)badges+=' <span class="pill warn">No deposit yet</span>';
     return '<button class="job" data-act="job:open" data-id="'+j.id+'"><div class="row between"><div class="t">'+esc(j.d.name||'Unnamed')+'</div><div class="r">'+(j.quote.cf?money(totalOf(j)):'')+'</div></div><div class="route">'+esc(fmtDate(j.d.moveDate))+(j.d.time&&j.d.moveDate?' · '+fmtTime(j.d.time):'')+' · '+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</div><div>'+pill(j.status)+badges+'</div></button>';
   }).join('');
   var allPast=!jobs.length&&past>0;
@@ -2169,17 +2207,18 @@ function leaveBarHtml(j){
 function renderSheet(){
   if(ui.jobId&&!canEditJobs())ui.jobId=null;
   var el=$('#sheet'),j=ui.jobId?byId(ui.jobId):null;
-  if(!j){el.hidden=true;el.innerHTML='';syncLock();return}
+  if(!j){el.hidden=true;el.innerHTML='';el.dataset.job='';syncLock();return}
   if(window.tallyPay&&!pay.cfg)payLoad();
   var S=state.settings,q=j.quote,paid=paidOf(j),bal=balOf(j),cf=conflictsFor(j);
-  var prev=$('.sheet-body',el),keep=prev?prev.scrollTop:0,na=nextAction(j);
+  var prev=$('.sheet-body',el),same=!!prev&&el.dataset.job===j.id,keep=same?prev.scrollTop:0,na=nextAction(j);
   var cfs=S.customFields.map(function(f){return fld(esc(f.label),cfInput(f,jv(j,'cf:'+f.id),'data-jcf="'+f.id+'"'))}).join('');
   // keep the box being typed in, and where in it, across the redraw
   var fa=document.activeElement,fsel=null;
   if(fa&&el.contains(fa)&&(fa.dataset.j||fa.dataset.jcf||fa.id)){fsel={j:fa.dataset.j,jcf:fa.dataset.jcf,id:fa.id,s:fa.selectionStart,e:fa.selectionEnd}}
   var truckOpts='<option value="">Unassigned</option>'+S.trucks.map(function(t){return '<option value="'+t.id+'"'+(j.assign.truckId===t.id?' selected':'')+'>'+esc(t.name)+'</option>'}).join('');
   var crewChips=assignable().map(function(n){var on=j.assign.crew.indexOf(n)>=0;return '<button class="chip'+(on?' on':'')+'" data-act="sh:crew" data-n="'+esc(n)+'" aria-pressed="'+on+'">'+esc(n)+whoTag(n)+(on&&needsConfirm(j)&&isConfirmed(j,n)?' ✓':'')+'</button>'}).join('');
-  var clash=cf.map(function(c){return '<div class="note" style="background:rgba(200,64,47,.14);border-color:var(--bad)">'+esc(c.what)+' is also on “'+esc(c.other.d.name)+'” at '+fmtTime(c.other.d.time)+'.</div>'}).join('');
+  // a clash opens the other job, to move one of them
+  var clash=cf.map(function(c){return '<button class="note clashnote" data-act="job:open" data-id="'+c.other.id+'"><span>'+esc(c.what)+' is also on “'+esc(c.other.d.name||'another job')+'” at '+fmtTime(c.other.d.time)+'.</span><b>Open it ›</b></button>'}).join('');
   var lines=q.lines.map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('')+matRows(j)+(j.extras||[]).map(function(e){return '<tr><td>'+esc(e.label)+'</td><td>'+(e.amt<0?'−':'')+money(Math.abs(e.amt))+'</td></tr>'}).join('')+'<tr class="total"><td>Total</td><td>'+money(totalOf(j))+'</td></tr>';
   var items=j.items.map(function(i){return esc(i.name)+' × '+i.qty}).join(', ')||'No items yet';
   var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+' · '+esc(/^\d{4}-\d\d-\d\d$/.test(p.date||'')?fmtDate(p.date):p.date||'')+(p.pending?' · pending':'')+'</td><td>'+money(p.amt)+'</td></tr>'}).join('')||'<tr><td><small>No payments yet.</small></td><td></td></tr>';
@@ -2249,11 +2288,11 @@ function renderSheet(){
     var dirty=tt==='Customer and route'?jedDirty(j,'cust').length:tt==='Job notes'?jedDirty(j,'notes').length:costDirty(matKey('s',j.id));
     if(dirty){var dd=$('#sheet details[data-k="sh:'+tt+'"]');if(dd)dd.open=true}
   });
-  el.hidden=false;syncLock();
-  if(fsel){var fe=fsel.j?$('#sheet [data-j="'+fsel.j+'"]'):fsel.jcf?$('#sheet [data-jcf="'+fsel.jcf+'"]'):$('#'+fsel.id);
+  el.hidden=false;el.dataset.job=j.id;syncLock();
+  if(fsel&&same){var fe=fsel.j?$('#sheet [data-j="'+fsel.j+'"]'):fsel.jcf?$('#sheet [data-jcf="'+fsel.jcf+'"]'):$('#'+fsel.id);
     if(fe&&el.contains(fe)){try{fe.focus({preventScroll:true});if(fsel.s!=null&&fe.setSelectionRange)fe.setSelectionRange(fsel.s,fsel.e)}catch(x){}}}
   var nb=$('.sheet-body',el);if(nb)nb.scrollTop=keep;
-  if(!prev){var pn=$('.panel',el);if(pn){pn.setAttribute('tabindex','-1');try{pn.focus({preventScroll:true})}catch(e){}}}
+  if(!same){var pn=$('.panel',el);if(pn){pn.setAttribute('tabindex','-1');try{pn.focus({preventScroll:true})}catch(e){}}}
 }
 
 /* ---------- DISPATCH ---------- */
@@ -2439,8 +2478,8 @@ function renderCrew(){
   var sv=sosToday();
   v.innerHTML=picker+sv[0]+clockCard()+
     (mine.length?mine.map(show).join(''):'<div class="card empty"><h3>No jobs assigned to '+esc(me)+'</h3><p>Dispatch assigns crew to booked jobs and they show up here.</p></div>')+sv[1]+
-    (billJobs.length?'<h2 style="margin:16px 0 10px">Finished, needs billing</h2>'+billJobs.map(function(j){return card(j)}).join(''):'')+
-    (pastJobs.length?'<h2 style="margin:16px 0 4px">Finished jobs</h2><p class="hint" style="margin:0 2px 10px">Photos and notes can still be added to these.</p>'+pastJobs.map(showPast).join(''):'')+
+    (billJobs.length?'<div class="secline"><h2>Finished, needs billing</h2><small>'+billJobs.length+'</small></div>'+billJobs.map(function(j){return card(j)}).join(''):'')+
+    (pastJobs.length?'<div class="secline"><h2>Finished jobs</h2><small>'+pastJobs.length+'</small></div><p class="hint" style="margin:-3px 2px 9px">Photos and notes can still be added to these.</p>'+pastJobs.map(showPast).join(''):'')+
     (older?'<div class="secline"><small>'+older+' past job'+(older===1?'':'s')+(role==='owner'||role==='dispatch'?' with '+esc(me):'')+'</small><button data-act="hist:go"'+(role==='owner'||role==='dispatch'?' data-q="'+esc(me)+'"':'')+'>Job history ›</button></div>':'');
 }
 
@@ -2557,7 +2596,7 @@ function renderReports(){
     var leadRows=Object.keys(byLead).sort().map(function(k){var st=stats(byLead[k]);return '<tr><td>'+esc(k)+(k==='No lead'?'':'’s crew')+'</td><td class="n">'+st.n+'</td><td class="n">'+st.rate+'%</td><td class="n">'+miss(st.avg)+'</td></tr>'}).join('');
     var se=meas.reduce(function(a,j){return a+j.quote.hours},0),sa=meas.reduce(function(a,j){return a+bidActual(j)},0),sug=Math.round(S.prod*se/sa);
     var recent=meas.slice().sort(function(a,b){return jd(b)<jd(a)?-1:1}).slice(0,8).map(function(j){return '<tr><td>'+esc(j.d.name)+'<br><small>'+esc(leadOf(j)?leadOf(j)+'’s crew':'No lead')+'</small></td><td class="n">'+j.quote.hours+' h</td><td class="n">'+bidActual(j)+' h</td><td class="n">'+miss(Math.round(varOf(j)*100))+'</td></tr>'}).join('');
-    accHtml='<div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+all.rate+'%</b><span>Within '+Math.round(tol*100)+'% of bid</span></div><div class="kpi"><b>'+miss(all.avg)+'</b><span>Average miss</span></div><div class="kpi"><b>'+all.n+'</b><span>Timed jobs</span></div></div>'+
+    accHtml='<div class="kpis k3"><div class="kpi"><b>'+all.rate+'%</b><span>Within '+Math.round(tol*100)+'% of bid</span></div><div class="kpi"><b>'+miss(all.avg)+'</b><span>Average miss</span></div><div class="kpi"><b>'+all.n+'</b><span>Timed jobs</span></div></div>'+
       '<h3 style="margin-bottom:4px">By crew</h3><table class="tbl"><tr><th>Crew</th><th class="n">Jobs</th><th class="n">Accurate</th><th class="n">Avg miss</th></tr>'+leadRows+'</table><p class="hint">A plus means the crew ran longer than the bid.</p>'+
       '<h3 style="margin:14px 0 4px">Job hours</h3><table class="tbl"><tr><th>Job</th><th class="n">Bid</th><th class="n">Actual</th><th class="n">Miss</th></tr>'+recent+'</table>'+
       (Math.abs(all.avg)>=5&&meas.length>=3?'<p class="hint">Setting crew speed to about '+sug+' cu ft per mover-hour (now '+S.prod+') would bring new bids in line with your real jobs.</p><button class="btn sm" data-act="applyprod" data-v="'+sug+'">Set to '+sug+'</button>':'');
@@ -2575,16 +2614,16 @@ function renderReports(){
   var tsRows=Object.keys(names).sort().map(function(n){var r=byWho[n]||{tot:0,act:{},late:0};return '<tr><td>'+esc(n)+(isLead(n)?' <small>(lead)</small>':'')+'<br><small>'+(Object.keys(r.act).map(function(a){return esc(a)+' '+r.act[a].toFixed(1)}).join(' · ')||'No clock time')+'</small></td><td class="n">'+r.tot.toFixed(1)+'</td><td class="n">'+(jobHrs[n]||0).toFixed(1)+'</td><td class="n">'+((topHrs[n]||0)>0?'+'+topHrs[n].toFixed(1):'—')+'</td><td class="n"><b>'+(payHrs[n]||0).toFixed(1)+'</b></td><td class="n">'+r.late+'</td></tr>'}).join('');
   var live=state.shifts.filter(function(x){return !x.outAt}).map(function(x){var jn=jobNow(x.who);return '<div class="who"><span><b>'+esc(x.who)+'</b> · '+esc(x.activity)+(onBreak(x)?' · <span style="color:var(--warn)">on break</span>':'')+(jn?' · on '+esc(jn.d.name||'a job'):'')+'<br><small>Since '+fmtClock(x.inAt)+', '+fmtHM(shiftMs(x))+' paid</small></span><button class="btn sm" data-act="clk:mgr" data-id="'+x.id+'">Clock out</button></div>'}).join('');
   var lates=shifts.filter(function(x){return x.late}).sort(function(a,b){return b.inAt-a.inAt}).slice(0,15).map(function(x){return '<div class="who" style="display:block"><b>'+esc(x.who)+'</b> · '+esc(fmtDate(iso(new Date(x.inAt))))+' · '+x.late+' min after last job<br><small>'+esc(x.note||'No note')+'</small></div>'}).join('');
-  var hoursHtml='<section class="card"><h2>Employee hours</h2>'+(live?'<h3 style="margin-bottom:4px">On the clock now</h3>'+live:'<p class="hint">Nobody is clocked in.</p>')+
+  var hoursHtml='<section class="card" id="hoursCard"><h2>Employee hours</h2>'+(live?'<h3 style="margin-bottom:4px">On the clock now</h3>'+live:'<p class="hint">Nobody is clocked in.</p>')+
     '<h3 style="margin:14px 0 4px">Clock, job and pay hours</h3>'+(tsRows?'<div class="tblwrap" tabindex="0" role="region" aria-label="Clock, job and pay hours"><table class="tbl"><tr><th>Employee</th><th class="n">Clock</th><th class="n">On jobs</th><th class="n">Min. top-up</th><th class="n">Pay hours</th><th class="n">Late notes</th></tr>'+tsRows+'</table></div><p class="hint">Clock is the time clock, breaks not counted. On jobs is each person’s time on the jobs they worked (from Start job, or their clock-in after it, to the finish or their clock-out). '+(S.payMin===false?'Short jobs are paid as worked (Setup › Time clock).':'When a job runs shorter than the minimum, the top-up pays the rest, so a 1-hour job on a '+S.minHours+'-hour minimum pays '+S.minHours+'. Pay hours is the day’s clock time (or job time, on days they didn’t use the clock) plus top-ups.')+'</p>':'<p class="hint">No shifts or timed jobs in this range.</p>')+
     (lates?'<h3 style="margin:14px 0 4px">Late clock-outs</h3>'+lates:'')+'</section>';
   var rev=meas.reduce(function(a,j){return a+paidOf(j)},0),lab=meas.reduce(function(a,j){return a+j.quote.crew*payHoursFor(j)*S.crewCost},0);
   var mcost=meas.reduce(function(a,j){return a+matCostTotal(j)+costTotal(j)},0),margin=rev-lab-mcost;
-  var profit='<section class="card"><h2>Margin on timed jobs</h2>'+(meas.length?'<div class="kpis" style="grid-template-columns:repeat(2,1fr)"><div class="kpi"><b>'+money(rev)+'</b><span>Collected</span></div><div class="kpi"><b>'+money(lab)+'</b><span>Crew labor</span></div><div class="kpi"><b>'+money(mcost)+'</b><span>Materials and job costs</span></div><div class="kpi"><b>'+(rev?Math.round(margin/rev*100)+'%':'—')+'</b><span>Margin before overhead</span></div></div>':'<p class="hint">Needs timed jobs.</p>')+'</section>';
+  var profit='<section class="card"><h2>Margin on timed jobs</h2>'+(meas.length?'<div class="kpis k2"><div class="kpi"><b>'+money(rev)+'</b><span>Collected</span></div><div class="kpi"><b>'+money(lab)+'</b><span>Crew labor</span></div><div class="kpi"><b>'+money(mcost)+'</b><span>Materials and job costs</span></div><div class="kpi"><b>'+(rev?Math.round(margin/rev*100)+'%':'—')+'</b><span>Margin before overhead</span></div></div>':'<p class="hint">Needs timed jobs.</p>')+'</section>';
   var mBilled=jobs.reduce(function(a,j){return a+matTotal(j)},0),mCost=jobs.reduce(function(a,j){return a+matCostTotal(j)},0),cAll=jobs.reduce(function(a,j){return a+costTotal(j)},0),byCat={};
   jobs.forEach(function(j){(j.costs||[]).forEach(function(c){byCat[c.cat||'Other']=(byCat[c.cat||'Other']||0)+c.amt})});
   var catRows=Object.keys(byCat).sort().map(function(k){return '<tr><td>'+esc(k)+'</td><td class="n">'+money(byCat[k])+'</td></tr>'}).join('');
-  var matCard='<section class="card"><h2>Materials and job costs</h2><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><b>'+money(mBilled)+'</b><span>Materials billed</span></div><div class="kpi"><b>'+money(mCost)+'</b><span>Materials cost</span></div><div class="kpi"><b>'+money(cAll)+'</b><span>Job costs</span></div></div>'+(catRows?'<table class="tbl"><tr><th>Job cost type</th><th class="n">Total</th></tr>'+catRows+'</table>':'<p class="hint">No job costs logged in this range.</p>')+'</section>';
+  var matCard='<section class="card"><h2>Materials and job costs</h2><div class="kpis k3"><div class="kpi"><b>'+money(mBilled)+'</b><span>Materials billed</span></div><div class="kpi"><b>'+money(mCost)+'</b><span>Materials cost</span></div><div class="kpi"><b>'+money(cAll)+'</b><span>Job costs</span></div></div>'+(catRows?'<table class="tbl"><tr><th>Job cost type</th><th class="n">Total</th></tr>'+catRows+'</table>':'<p class="hint">No job costs logged in this range.</p>')+'</section>';
   v.innerHTML=out+profit+matCard+srcCard+'<section class="card"><h2>Bid accuracy</h2>'+accHtml+'</section>'+phase+hoursHtml;
 }
 
@@ -2655,13 +2694,14 @@ function setupSecs(){
   var rateSum=money(num(S.rates.r2))+'/h for 2 movers · '+(opt('mileage')?fmtMi(num(S.includedMiles))+'-mile local radius':'every move local')+' · '+num(S.minHours)+' h minimum';
   if(!owner){add('rates','price','Rate card',rateSum,rates);return out}
   var tcols='grid-template-columns:minmax(0,1fr) 88px 84px;align-items:center';
-  var trucks=(S.trucks.length?'<div class="grid3 colhead" style="'+tcols+'"><small>Truck</small><small>Cu ft</small><span></span></div>':'')+S.trucks.map(function(t,i){return '<div class="grid3" style="'+tcols+';margin-bottom:8px"><input aria-label="Truck name" data-s="trucks.'+i+'.name" value="'+esc(t.name)+'" '+inp+'><input aria-label="'+esc(t.name)+' cubic feet" type="number" inputmode="numeric" data-s="trucks.'+i+'.cf" data-t="num" value="'+t.cf+'" '+inp+'><button class="btn sm danger" data-act="st:rmtruck" data-i="'+i+'" aria-label="Remove '+esc(t.name)+'">Remove</button></div>'}).join('');
+  var trucks=(S.trucks.length?'<div class="grid3 colhead" style="'+tcols+'"><small>Truck</small><small>Cu ft</small><span></span></div>':'')+S.trucks.map(function(t,i){return '<div class="grid3" style="'+tcols+';margin-bottom:8px"><input aria-label="Truck name" data-s="trucks.'+i+'.name" value="'+esc(t.name)+'" '+inp+'><input aria-label="'+esc(t.name)+' cubic feet" type="number" inputmode="numeric" min="1" data-min="1" data-s="trucks.'+i+'.cf" data-t="num" value="'+t.cf+'" '+inp+'><button class="btn sm danger" data-act="st:rmtruck" data-i="'+i+'" aria-label="Remove '+esc(t.name)+'">Remove</button></div>'}).join('');
   var formsList=(S.forms||[]).map(function(f){return '<details class="grp"><summary>'+esc(f.title)+' <small>'+(f.required?'required':'optional')+'</small></summary><div class="formbox">'+(f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+pg+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join(''))+'</div><div class="row" style="margin:8px 0"><button class="chip'+(f.required?' on':'')+'" data-act="st:reqform" data-id="'+f.id+'" aria-pressed="'+!!f.required+'">Required before payment</button><button class="btn sm danger" data-act="st:rmform" data-id="'+f.id+'">Remove</button></div></details>'}).join('')||'<p class="hint">No forms yet.</p>';
   // a card kept for a customer without a phone belongs to the job it was kept on
   var vaultWho=function(x){if(!/^job:/.test(x.cust||'')){var cj=state.jobs.filter(function(j){return custKey(j)===x.cust}).pop();return 'Customer: '+(cj&&cj.d.name?esc(cj.d.name)+' · ':'')+esc(/^\d{10,11}$/.test(x.cust||'')?fmtPhone(x.cust):x.cust)}var kj=byId(x.cust.slice(4));return kj?'Kept on '+esc(kj.d.name||'a job')+'’s job':'Kept on a job that is no longer here'};
   var vaultList=state.vault.map(function(x){return '<div class="who"><span>'+(x.type==='card'?esc(x.brand)+' ending '+esc(x.last4):'Bank ending '+esc(x.last4))+(x.name?' · '+esc(x.name):'')+(x.via==='stripe'?' <small>· Stripe'+(x.live?'':' test')+'</small>':'')+'<br><small>'+vaultWho(x)+'</small></span><button class="btn sm danger" data-act="st:rmvault" data-id="'+x.id+'">Remove</button></div>'}).join('')||'<p class="hint">Nothing saved yet.</p>';
   var cfl=S.customFields.map(function(f,i){return '<div class="row between" style="margin-bottom:6px"><span>'+esc(f.label)+' <small>('+({yesno:'yes / no',number:'number',text:'text'}[f.type]||esc(f.type))+')</small></span><button class="btn sm danger" data-act="st:rmcf" data-i="'+i+'">Remove</button></div>'}).join('');
-  var cat=S.catalog.map(function(it,i){return '<tr><td>'+esc(it.name)+'</td><td class="n">'+it.cf+'</td><td class="n">'+(it.fee?money(it.fee):'')+'</td><td class="n"><button class="btn sm ghost ibtn" data-act="st:rmitem" data-i="'+i+'" aria-label="Remove '+esc(it.name)+'">×</button></td></tr>'}).join('');
+  // cubic feet and the special fee can be changed right in the list; they save as you type
+  var cat=S.catalog.map(function(it,i){return '<tr><td>'+esc(it.name)+'</td><td class="n"><input class="cin" type="number" inputmode="decimal" step="any" min="0.1" data-min="0.1" data-s="catalog.'+i+'.cf" data-t="num" value="'+esc(String(it.cf))+'" aria-label="'+esc(it.name)+', cubic feet"></td><td class="n"><input class="cin" type="number" inputmode="decimal" step="0.01" min="0" data-min="0" placeholder="none" data-s="catalog.'+i+'.fee" data-t="num" value="'+(it.fee?esc(String(it.fee)):'')+'" aria-label="'+esc(it.name)+', special fee in dollars"></td><td class="n"><button class="btn sm ghost ibtn" data-act="st:rmitem" data-i="'+i+'" aria-label="Remove '+esc(it.name)+'">×</button></td></tr>'}).join('');
   var arm=function(a,label,risky){return '<button class="btn'+(ui.armed===a||risky?' danger':'')+'" data-act="'+a+'">'+(ui.armed===a?'Tap again to confirm':label)+'</button>'};
   var formsOpt=OPTS.filter(function(x){return x.k==='forms'})[0];
   var nReq=(S.forms||[]).filter(function(f){return f.required}).length,nIn=assignable().length,shop=String(S.shopAddress||'').trim();
@@ -2679,7 +2719,7 @@ function setupSecs(){
   add('rates','price','Rate card',rateSum,rates,'prices hourly rate movers minimum radius mileage per mile deposit tax stairs packing truck fee not-to-exceed');
   add('mats','price','Materials and job costs',(S.materials||[]).length+' materials · '+(S.costCats||[]).length+' kinds of cost',materialsCard(),'boxes tape supplies costs dump fee');
   add('catalog','price','Inventory catalog',S.catalog.length+' items',
-    '<section class="card"><h2>Inventory catalog</h2><details class="acc"><summary><span>Show all '+S.catalog.length+' items</span></summary><table class="tbl"><tr><th>Item</th><th class="n">Cu ft</th><th class="n">Fee</th><th></th></tr>'+cat+'</table></details><div class="grid2 stack" style="margin-top:10px"><input id="nItName" placeholder="Item name" aria-label="Item name" '+inp+'><input id="nItCf" type="number" placeholder="Cu ft" aria-label="Item cubic feet" '+inp+'><input id="nItCat" placeholder="Category" list="cats" aria-label="Item category" '+inp+'><datalist id="cats">'+CATS.map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist><input id="nItFee" type="number" placeholder="Special fee ($)" aria-label="Item fee" '+inp+'></div><button class="btn" style="margin-top:8px" data-act="st:additem">Add item</button></section>','furniture items cubic feet');
+    '<section class="card"><h2>Inventory catalog</h2><details class="acc"><summary><span>Show all '+S.catalog.length+' items</span></summary><p class="hint" style="margin:8px 0 4px">Change the cubic feet or the special fee right here. It saves as you type and counts on quotes made from now on.</p><table class="tbl cat"><tr><th>Item</th><th class="n">Cu ft</th><th class="n">Fee ($)</th><th></th></tr>'+cat+'</table></details><div class="grid2 stack" style="margin-top:10px"><input id="nItName" placeholder="Item name" aria-label="Item name" '+inp+'><input id="nItCf" type="number" placeholder="Cu ft" aria-label="Item cubic feet" '+inp+'><input id="nItCat" placeholder="Category" list="cats" aria-label="Item category" '+inp+'><datalist id="cats">'+CATS.map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist><input id="nItFee" type="number" placeholder="Special fee ($)" aria-label="Item fee" '+inp+'></div><button class="btn" style="margin-top:8px" data-act="st:additem">Add item</button></section>','furniture items cubic feet');
   add('fleet','price','Fleet',S.trucks.length+' truck'+(S.trucks.length===1?'':'s')+(S.trucks.length?': '+S.trucks.map(function(t){return t.name}).join(', '):''),
     '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="'+tcols+';margin-top:4px"><input id="nTruckName" placeholder="New truck" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" inputmode="numeric" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div></section>','trucks');
   add('employees','people','Employees',nIn+' '+(nIn===1?'person':'people'),employeesCard(),'crew staff people hiring documents phone');
@@ -3713,7 +3753,7 @@ function accessCard(){
   var dir=directory(),staffOpts='<option value="">Choose a person</option>'+(peopleHosted()?empRoster().filter(function(x){return !x.rec||(!x.rec.user_id&&x.rec.active!==false)}).map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''):dir.map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''));
   var roleOpts=function(sel){return ['crew','lead','dispatch','owner'].map(function(r){return '<option value="'+r+'"'+(r===sel?' selected':'')+'>'+KIND[r]+'</option>'}).join('')};
   var nm=function(id){return esc(sync.names[id]||'Someone')};
-  var pend=sync.requests.map(function(r){var f={kind:'crew'};return '<div class="who" style="display:block"><b>'+nm(r.uid)+'</b> <small>is asking for access</small><div class="grid2 stack" style="margin-top:6px"><label class="f"><span>This person is</span><select id="accStaff_'+esc(r.uid)+'">'+staffOpts+'</select></label><label class="f"><span>Role</span><select id="accRole_'+esc(r.uid)+'">'+roleOpts(f.kind)+'</select></label></div><div class="row" style="margin-top:6px"><button class="btn primary sm" data-act="acc:approve" data-uid="'+esc(r.uid)+'">Approve</button><button class="btn sm ghost" data-act="acc:deny" data-uid="'+esc(r.uid)+'">Deny</button></div></div>'}).join('');
+  var pend=sync.requests.map(function(r){var f={kind:'crew'};return '<div class="who" style="display:block"><b>'+nm(r.uid)+'</b> <small>is asking for access</small><div class="accpick"><label class="f"><span>This person is</span><select id="accStaff_'+esc(r.uid)+'">'+staffOpts+'</select></label><label class="f"><span>Role</span><select id="accRole_'+esc(r.uid)+'">'+roleOpts(f.kind)+'</select></label></div><div class="row" style="margin-top:6px"><button class="btn primary sm" data-act="acc:approve" data-uid="'+esc(r.uid)+'">Approve</button><button class="btn sm ghost" data-act="acc:deny" data-uid="'+esc(r.uid)+'">Deny</button></div></div>'}).join('');
   var appr=sync.users.map(function(u){return '<div class="who"><span><b>'+nm(u.uid)+'</b><br><small>'+esc(u.staff||'')+' · '+esc(KIND[u.role]||u.role)+'</small></span><button class="btn sm danger" data-act="acc:revoke" data-uid="'+esc(u.uid)+'">Revoke</button></div>'}).join('');
   var org=window.tallyOrg,codeHtml=org&&org.join_code?'<div class="note" style="margin-bottom:10px"><b>'+esc(org.name)+'</b> · company code <b style="letter-spacing:3px;font-size:18px">'+esc(org.join_code)+'</b><br><small>'+(peopleHosted()?'Easiest: add each person under Employees with the email they sign in with, and they go straight in. Anyone else can tap Join a company, enter this code, and wait for you to approve them here.':'Employees sign in with their own email, tap Join a company, and enter this code. You approve them here.')+'</small></div>':'';
   return '<section class="card"><h2>App access</h2>'+codeHtml+'<p class="sub">Everyone signs in with their own account. Approve each person and pick who they are in Tally. Their role decides what they can see and do, and they cannot change it themselves.</p>'+
@@ -4775,11 +4815,12 @@ function jobMsgs(me){
 function jobMsgsPending(me){return jobMsgs(me).filter(function(j){return needsConfirm(j)&&!isConfirmed(j,me)}).length}
 function jobMsgCard(j,me){
   var rel=relDay(j.d.moveDate),c=j.confirm&&j.confirm[me],ok=isConfirmed(j,me),moved=!!c&&!ok,lead=leadOf(j);
+  var others=j.assign.crew.filter(function(x){return x!==me&&x!==lead});   // the lead has their own line
   var head=j.status==='active'?'Happening now':rel==='today'?'Booked today':rel==='tomorrow'?'Booked for tomorrow':'Booked for '+rel;
   var when=(rel==='today'||rel==='tomorrow'?rel:'on '+rel)+' at '+fmtTime(j.d.time);
   var body=(moved?'The day or time changed. ':'')+'You’re on '+(j.d.name||'a job')+' '+when+'.\nPickup: '+(j.d.from||'not set yet')+
     (j.assign.truckId?'\nTruck: '+truckName(j.assign.truckId):'')+(lead?'\n'+(lead===me?'You’re running it.':'Lead: '+lead):'')+
-    (j.assign.crew.length>1?'\nWith: '+j.assign.crew.filter(function(x){return x!==me}).join(', '):'');
+    (others.length?'\nWith: '+others.join(', '):'');
   var foot=j.status==='active'?'<div><span class="pill" data-s="active">In progress</span></div>'
     :!opt('confirm')?'<div><span class="pill" data-s="booked">Booked</span></div>'
     :ok?'<div class="row between"><span class="pill" data-s="done">Confirmed</span><small>'+fmtStamp(c.ts)+'</small></div>'
@@ -5165,9 +5206,17 @@ function payLinkPanel(j,amt){
     '<button class="btn" data-act="pay:copy" data-url="'+esc(l.url)+'">Copy link</button></div>'+
     '<p class="hint" id="payWait">Waiting for '+who+' to pay. This updates by itself. <button class="btn sm ghost" data-act="pay:check" data-busy="1">Check now</button></p>';
 }
+// the amount on the payment screen: what was typed or picked (kept when the screen redraws), else the whole balance
+function flowAmtNow(j){var bal=balOf(j),f=ui.flow||{};return f.amt>0?Math.min(round2(f.amt),bal):bal}
+// before the move, one tap fills in the deposit still owed or the whole balance
+function payQuick(j){
+  var bal=balOf(j),dep=round2(num(j.quote.deposit)-paidOf(j));
+  if(['active','done','paid'].indexOf(j.status)>=0||!(dep>0)||!(dep<bal-0.004))return '';
+  return '<div class="chips payq">'+[['Deposit '+money(dep),dep],['Whole balance '+money(bal),bal]].map(function(x){return '<button class="chip" data-act="flow:amt" data-v="'+x[1]+'">'+x[0]+'</button>'}).join('')+'</div>';
+}
 function payStepStripe(j){
   var bal=balOf(j),cards=stripeCards(j),m=flowMethodStripe(j),f=ui.flow;
-  var amt=f.amt>0?Math.min(round2(f.amt),bal):bal;
+  var amt=flowAmtNow(j);
   var WAY={vault:'Card on file',link:'Pay link',card:'Card',other:'Cash or check'},methods=stripeWays(j).map(function(k){return [k,WAY[k]]});
   var chips=methods.map(function(x){return '<button class="chip'+(m===x[0]?' on':'')+'" data-act="flow:method" data-m="'+x[0]+'" aria-pressed="'+(m===x[0])+'">'+x[1]+'</button>'}).join('');
   var panel='',btn='';
@@ -5186,7 +5235,7 @@ function payStepStripe(j){
   }
   return '<h2>'+payTitle(j)+'</h2>'+(pay.cfg.test?'<div class="note">Stripe test mode: no real money moves. Test card 4242 4242 4242 4242, any future date, any security code.</div>':'')+
     payTiles(j)+
-    fld('Amount','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(amt*100))+'">')+'<div class="methods">'+chips+'</div>'+panel+btn+'<p class="hint" id="flowErr" role="alert"></p>';
+    fld('Amount','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(amt*100))+'">')+payQuick(j)+'<div class="methods">'+chips+'</div>'+panel+btn+'<p class="hint" id="flowErr" role="alert"></p>';
 }
 // a payment that lands while the payment screen is open (a pay link used, a card charged) shows at once
 function flowRefresh(){
@@ -5697,7 +5746,7 @@ function payStepOffline(j){
     'The payment service did not answer, so cards can’t be taken right now.';
   return '<h2>'+payTitle(j)+'</h2><div class="note">'+why+' Cash and checks can still be recorded. <button class="btn sm" data-act="pay:retry">Check again</button></div>'+
     payTiles(j)+
-    fld('Amount','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(bal*100))+'">')+
+    fld('Amount','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(flowAmtNow(j)*100))+'">')+payQuick(j)+
     '<div class="grid2 stack">'+fld('Method','<select id="otherMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option></select>')+fld('Check number or reference (optional)','<input id="otherRef">')+'</div>'+
     '<button class="btn primary bigbtn" data-act="flow:pay">Record payment</button><p class="hint" id="flowErr" role="alert"></p>';
 }
@@ -5722,7 +5771,7 @@ function payStep(j){
   else panel='<div class="grid2 stack">'+fld('Method','<select id="otherMethod"><option>Cash</option><option>Check</option><option>Zelle or app</option></select>')+fld('Check number or reference (optional)','<input id="otherRef">')+'</div>';
   return '<h2>'+payTitle(j)+'</h2><div class="note">Demo mode: nothing is charged. Card and bank numbers are checked and then thrown away, and only the last four digits are kept. A payment processor plugs in here to charge for real.</div>'+
     payTiles(j)+
-    fld('Amount to charge','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(bal*100))+'">')+'<p class="hint" style="margin-top:-4px">Type the digits and the cents fill in from the right. 1500 becomes 15.00.</p>'+'<div class="methods">'+chips+'</div>'+panel+
+    fld('Amount to charge','<input id="flowAmt" data-money="1" type="text" inputmode="numeric" autocomplete="off" value="'+fmtCents(Math.round(flowAmtNow(j)*100))+'">')+'<p class="hint" style="margin-top:-4px">Type the digits and the cents fill in from the right. 1500 becomes 15.00.</p>'+payQuick(j)+'<div class="methods">'+chips+'</div>'+panel+
     '<button class="btn primary bigbtn" data-act="flow:pay">Charge</button><p class="hint" id="flowErr" role="alert"></p>';
 }
 function doneStep(j){
@@ -5734,6 +5783,7 @@ function renderFlow(){
   var el=$('#flow'),f=ui.flow,j=f?byId(f.jobId):null;
   if(!j||state.ui.role==='crew'){ui.flow=null;el.hidden=true;el.innerHTML='';syncLock();return}
   if(f.step==='back'&&!backApplies(j))f.step='';   // the office took over the bill meanwhile
+  if(f.paidSeen!=null&&paidOf(j)!==f.paidSeen)f.amt=0;   // a payment went through: the amount starts again from what is left
   if(f.step!=='back'&&f.finishing&&j.status==='active'&&!formsPending(j).length){f.finishing=false;setStatus(j,'done');save();toast('Signed. Job finished'+(j.actualHours?' in '+j.actualHours+' h':'')+'.')}
   // the forms are signed at the end of the move: a deposit on a job that hasn't started goes straight to payment
   var req=formsRequired(),pend=['active','done','paid'].indexOf(j.status)>=0?formsPending(j):[],bal=balOf(j),body,label;
@@ -5822,18 +5872,20 @@ document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
   var a=t.dataset.act,S=state.settings,d=state.draft,j;
   switch(a){
+    case 'toast:undo':{var uf=undoFn;undoFn=null;clearTimeout(toastT);$('#toast').hidden=true;if(uf)uf();break}
     case 'hist:go':histReset(t.dataset.q||'');ui.tab='history';ui.armed='';render();window.scrollTo(0,0);break;
     case 'hist:f':ui.hf=t.dataset.f;ui.hShow=50;histFill();break;
     case 'hist:more':ui.hShow+=50;histFill();break;
     case 'hist:open':ui.hOpen=ui.hOpen===t.dataset.id?'':t.dataset.id;histFill();break;
     case 'hist:clear':{ui.hq='';ui.hShow=50;var hs=$('#hSearch');if(hs){hs.value='';histFill();hs.focus()}else renderHistory();break}
+    case 'today:alerts':ui.allAlerts=!ui.allAlerts;renderToday();break;
     case 'jobs:late':ui.tab='jobs';ui.filter='late';ui.armed='';render();window.scrollTo(0,0);break;
     case 'cr:seg':{var sgi=t.dataset.id,sgk=t.dataset.k,sgc=ui.seg[sgi];if(sgc===undefined){var sgb=$('[data-segs="'+sgi+'"] .seg[aria-expanded="true"]');sgc=sgb?sgb.dataset.k:''}ui.seg[sgi]=sgc===sgk?'':sgk;segApply(sgi);break}
     case 'cr:expand':ui.ccOpen[t.dataset.id]=true;renderCrew();break;
     case 'cr:collapse':delete ui.ccOpen[t.dataset.id];renderCrew();break;
     case 'set:open':ui.setSec=t.dataset.sec||'';renderSettings();window.scrollTo(0,0);break;
     case 'set:back':ui.setSec='';renderSettings();window.scrollTo(0,0);break;
-    case 'tab':if(t.dataset.f)ui.filter=t.dataset.f;if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();if(t.dataset.tab==='settings'){ui.setSec='';ui.setQ=''}ui.tab=t.dataset.tab;ui.armed='';render();var vw=$('#view');vw.classList.remove('view-in');void vw.offsetWidth;vw.classList.add('view-in');window.scrollTo(0,0);break;
+    case 'tab':if(t.dataset.f)ui.filter=t.dataset.f;if(t.dataset.tab==='history'&&ui.tab!=='history')histReset();if(t.dataset.tab==='settings'){ui.setSec='';ui.setQ=''}ui.tab=t.dataset.tab;ui.armed='';render();var vw=$('#view');vw.classList.remove('view-in');void vw.offsetWidth;vw.classList.add('view-in');window.scrollTo(0,0);if(t.dataset.to){var to=$('#'+t.dataset.to);if(to)to.scrollIntoView({block:'start'})}break;
     case 'inc':case 'dec':{var id=t.dataset.id,n=(d.items[id]||0)+(a==='inc'?1:-1);if(n<=0)delete d.items[id];else d.items[id]=n;var o=$('#q_'+id);if(o)o.textContent=n>0?n:0;save();updateQuote();break}
     case 'q:step':ui.qstep=Math.max(1,Math.min(3,+t.dataset.s));renderQuote();window.scrollTo(0,0);break;
     case 'q:save':saveQuote('save');break;
@@ -5934,9 +5986,9 @@ document.addEventListener('click',function(e){
     case 'cost:rm':{j=byId(t.dataset.id);if(!j)break;var cst=(j.costs||[]).find(function(x){return x.id===t.dataset.cid});if(!cst)break;
       var priv2=state.ui.role==='owner'||state.ui.role==='dispatch'||state.ui.role==='lead';if(!(priv2||cst.by===t.dataset.who))break;
       j.costs=j.costs.filter(function(x){return x.id!==t.dataset.cid});save();matAfter(t.dataset.ctx);break}
-    case 'st:rmmat':S.materials.splice(+t.dataset.i,1);save();renderSettings();break;
+    case 'st:rmmat':setRemove('materials',+t.dataset.i);break;
     case 'st:addmat':{var nm1=$('#nMatName').value.trim(),np1=round2(num($('#nMatPrice').value)),nc1=round2(num($('#nMatCost').value));if(!nm1||!(np1>=0)){toast('Add a name and a customer price.');break}S.materials.push({id:uid(),name:nm1,unit:$('#nMatUnit').value.trim()||'each',price:np1,cost:nc1});save();renderSettings();break}
-    case 'st:rmcostcat':if(S.costCats.length>1){S.costCats.splice(+t.dataset.i,1);save();renderSettings()}break;
+    case 'st:rmcostcat':setRemove('costCats',+t.dataset.i,1,'Keep at least one kind of cost.');break;
     case 'st:addcostcat':{var ncc=$('#nCostCat').value.trim();if(!ncc)break;S.costCats.push(ncc);save();renderSettings();break}
     case 'dq:crew':{j=byId(t.dataset.id);if(!j){toast('This job is not available any more. Reload the page.');break}if(!canEditJobs()){toast('Only the owner and dispatch can schedule crews.');break}var dn=t.dataset.n,dix=j.assign.crew.indexOf(dn);if(!dn||assignable().indexOf(dn)<0){toast('That person is not on the list any more. Check Setup.');break}if(dix>=0){j.assign.crew.splice(dix,1);dropConfirm(j,dn)}else j.assign.crew.push(dn);crewAssigned(j,dn,dix<0);save();renderDispatch();toast(dn+(dix>=0?' removed from':' added to')+' the job.');break}
     case 'call:cust':{var cj=byId(t.dataset.id);if(cj)askCall(cj.d.name,cj.d.phone,custKey(cj),cj.id);break}
@@ -6011,6 +6063,7 @@ document.addEventListener('click',function(e){
     case 'flow:close':closeFlow();break;
     case 'flow:clearsig':clearSig();break;
     case 'flow:method':ui.flow.method=t.dataset.m;renderFlow();break;
+    case 'flow:amt':{if(!ui.flow)break;var fav=round2(num(t.dataset.v)),fai=$('#flowAmt');ui.flow.amt=fav;if(fai)fai.value=fmtCents(Math.round(fav*100));var faj=byId(ui.flow.jobId);if(faj&&payOn()&&flowMethodStripe(faj)==='link')renderFlow();break}
     case 'pay:qr':case 'pay:text':{var lj=ui.flow&&byId(ui.flow.jobId);if(!lj||pay.busy)break;var la=flowAmt(),lk=!!(d0('#saveLink')||{}).checked,ltx=a==='pay:text'&&commsReady();
       ui.flow.amt=la;
       makeLink(lj,la,lk,ltx).then(function(r){if(!r.ok){flowFail(r.message);return}renderFlow();toast(ltx?r.message:a==='pay:text'?'Link ready. Tap Text it from my phone.':'Show the code to '+(lj.d.name||'the customer')+'.')});break}
@@ -6068,7 +6121,7 @@ document.addEventListener('click',function(e){
       break}
     case 'sh:waive':{j=byId(ui.jobId);if(!j||state.ui.role!=='owner')break;j.signed=j.signed||[];j.signed.push({id:uid(),formId:t.dataset.fid,title:((S.forms||[]).find(function(x){return x.id===t.dataset.fid})||{}).title||'Form',waived:true,reason:'Waived by the owner.',ts:Date.now(),by:'Owner'});logEv(j,'Form waived');save();renderSheet();break}
     case 'st:reqform':{var rf2=S.forms.find(function(x){return x.id===t.dataset.id});if(rf2){rf2.required=!rf2.required;save();renderSettings()}break}
-    case 'st:rmform':S.forms=S.forms.filter(function(x){return x.id!==t.dataset.id});save();renderSettings();break;
+    case 'st:rmform':setRemove('forms',S.forms.findIndex(function(x){return x.id===t.dataset.id}));break;
     case 'st:rmvault':{var rv=state.vault.find(function(x){return x.id===t.dataset.id});
       if(rv&&rv.via==='stripe'&&window.tallyPay&&window.tallyPay.forget){toast('Removing the card…');
         window.tallyPay.forget(rv.id).then(function(r){if(!r||!r.ok){toast((r&&r.message)||'Could not remove the card.');return}
@@ -6101,15 +6154,15 @@ document.addEventListener('click',function(e){
       sendMsg('all',ut+' · '+j.d.name,{k:'update',job:j.d.name,loc:uloc||undefined},uw);
       toast(uloc?'Update sent with your location.':(ushift?'Update sent. No location yet.':'Update sent. Clock in to include your location.'));break}
     case 'clk:mgr':{var sm=state.shifts.find(function(x){return x.id===t.dataset.id});if(!sm)break;sm.outAt=Date.now();var smb=lastBreak(sm);if(smb&&!smb.e)smb.e=sm.outAt;crewClockOut(sm.who,sm.outAt);sm.note=(sm.note?sm.note+' ':'')+'Clocked out by a manager.';sm.mgr=1;geoStop(sm.who);removeLoc(sm.who);save();renderReports();toast(sm.who+' clocked out.');break}
-    case 'st:rmact':if(S.activities.length>1){S.activities.splice(+t.dataset.i,1);save();renderSettings()}else toast('Keep at least one work type.');break;
+    case 'st:rmact':setRemove('activities',+t.dataset.i,1,'Keep at least one work type.');break;
     case 'st:addact':var an=$('#nAct').value.trim();if(!an)break;S.activities.push(an);save();renderSettings();break;
-    case 'st:rmtruck':S.trucks.splice(+t.dataset.i,1);save();renderSettings();break;
+    case 'st:rmtruck':setRemove('trucks',+t.dataset.i);break;
     case 'st:addtruck':var tn=$('#nTruckName').value.trim(),tc=num($('#nTruckCf').value);if(!tn||tc<=0){toast('Enter a truck name and cubic feet.');break}S.trucks.push({id:uid(),name:tn,cf:tc});save();renderSettings();break;
-    case 'st:rmsrc':S.sources.splice(+t.dataset.i,1);save();renderSettings();break;
+    case 'st:rmsrc':setRemove('sources',+t.dataset.i);break;
     case 'st:addsrc':var sn=$('#nSrc').value.trim();if(!sn)break;S.sources.push(sn);save();renderSettings();break;
-    case 'st:rmcf':S.customFields.splice(+t.dataset.i,1);save();renderSettings();break;
+    case 'st:rmcf':setRemove('customFields',+t.dataset.i);break;
     case 'st:addcf':var fl=$('#nCfLabel').value.trim();if(!fl)break;S.customFields.push({id:uid(),label:fl,type:$('#nCfType').value});save();renderSettings();break;
-    case 'st:rmitem':S.catalog.splice(+t.dataset.i,1);save();renderSettings();break;
+    case 'st:rmitem':setRemove('catalog',+t.dataset.i);break;
     case 'st:additem':var inn=$('#nItName').value.trim(),icf=num($('#nItCf').value);if(!inn||icf<=0){toast('Enter an item name and cubic feet.');break}var itm={id:uid(),name:inn,cf:icf,cat:$('#nItCat').value.trim()||'Other'};if(num($('#nItFee').value)>0)itm.fee=num($('#nItFee').value);S.catalog.push(itm);save();renderSettings();break;
     case 'st:export':var ex=clone(state);ex.draft=blankDraft();if(!$('#expPhotos').checked)ex.jobs.forEach(function(x){x.photos=[]});ui.exportText=JSON.stringify(ex);renderSettings();break;
     case 'st:copy':var box=$('#dataBox');box.select();try{document.execCommand('copy');toast('Copied.')}catch(er){toast('Select the text and copy it.')}break;
@@ -6137,7 +6190,7 @@ document.addEventListener('input',function(e){
   else if(/^(backSoFar|backMi|odoA|odoB)$/.test(t.id)&&ui.flow&&ui.flow.back){var fbk=ui.flow.back;fbk[{backSoFar:'soFar',backMi:'mi',odoA:'odoStart',odoB:'odoEnd'}[t.id]]=t.value;if(t.id==='backMi')fbk.miSrc='typed';backRedraw()}
   else if(t.id==='odoStartIn'&&ui.start){ui.start.odo=t.value}
   else if(t.id==='setQ'){ui.setQ=t.value;var sl=$('#setList');if(sl)sl.innerHTML=setListHtml(setupSecs())}
-  else if(t.dataset.s){var val=t.dataset.t==='num'?num(t.value):t.dataset.t==='bool'?t.checked:t.value;if(/^opt\./.test(t.dataset.s)&&!S.opt)S.opt={};setPath(S,t.dataset.s,val);if(t.dataset.s==='company')$('#brandCo').textContent=val||'Your Moving Co.';save();if(t.getAttribute('role')==='switch')optFlipped(t)}
+  else if(t.dataset.s){var val=t.dataset.t==='num'?num(t.value):t.dataset.t==='bool'?t.checked:t.value;if(t.dataset.min&&!(val>=+t.dataset.min))return;/* a box cleared to retype keeps the old number until there's a new one */if(/^opt\./.test(t.dataset.s)&&!S.opt)S.opt={};setPath(S,t.dataset.s,val);if(t.dataset.s==='company')$('#brandCo').textContent=val||'Your Moving Co.';save();if(t.getAttribute('role')==='switch')optFlipped(t)}
   else if(t.dataset.j&&!t.dataset.re){var jj=canEditJobs()?byId(ui.jobId):null;if(jj)jedSet(jj,t.dataset.j,t.value)}
   else if(t.dataset.jcf){var j2=canEditJobs()?byId(ui.jobId):null;if(j2)jedSet(j2,'cf:'+t.dataset.jcf,t.value)}
 });

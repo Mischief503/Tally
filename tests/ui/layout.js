@@ -1,5 +1,6 @@
 // What only a real browser can see (Chromium, like a phone): on each role's screens, nothing runs off the
-// side of the screen, nothing a person taps sits under the bottom bar, the round New quote button or the
+// side of the screen (on a 390, 360 and 320 wide phone, a tablet, and a phone turned sideways), nothing a
+// person taps sits under the bottom bar, the round New quote button or the
 // preview bar, every button is big enough for a thumb (36 px or more each way), and the text is readable:
 // the status colours and greys on every look reach 4.5:1, and axe-core's colour-contrast rule passes on
 // the busiest screens in six looks. (Richie, Oct 15: "Is everything well organized in the ui double and
@@ -65,34 +66,14 @@ const SCREENS = {
   'crew My jobs': async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'crew'); },
   'crew Chat': async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'chat'); },
 };
+// the smallest phones (320 wide), a tablet held upright, and a phone turned sideways
+const SMALL = ['owner Today', 'owner Jobs', 'owner Reports', 'owner Setup › Inventory catalog', 'owner new quote, price', 'owner job sheet, booked', 'owner job sheet, finished', 'crew lead My jobs, all clocked in', 'crew lead My jobs, job running', 'crew Today'];
+const TABLET = ['owner Today', 'owner Reports', 'owner job sheet, booked', 'crew lead My jobs, job running'];
+const SIDEWAYS = ['owner Today', 'owner job sheet, booked', 'owner new quote, price', 'crew lead My jobs, all clocked in', 'crew Today'];
 const NARROW = ['owner Today', 'owner Jobs', 'owner Setup › Fleet', 'owner Setup › Custom job fields', 'owner Setup › Inventory catalog', 'owner Setup › Rate card', 'owner new quote, price', 'owner job sheet, booked', 'crew lead My jobs, all clocked in', 'crew Today'];
 
-/* ---------- the checks, in the page ---------- */
-const CHECK = () => {
-  const W = innerWidth, H = innerHeight, out = { overflow: document.documentElement.scrollWidth - W, wide: [], small: [], covered: [] };
-  const folded = (el) => { for (let d = el.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) { if (!d.open) { const sm = d.querySelector(':scope > summary'); if (!(sm && sm.contains(el))) return true; } } return false; };
-  const vis = (el) => { if (!el.getClientRects().length || folded(el)) return false; const cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity !== 0; };
-  const name = (el) => el.tagName.toLowerCase() + (el.dataset.act ? '[' + el.dataset.act + ']' : '') + ' "' + (el.getAttribute('aria-label') || el.textContent || el.placeholder || '').replace(/\s+/g, ' ').trim().slice(0, 40) + '"';
-  const ovs = ['#sos', '#matpick', '#start', '#call', '#pick', '#more', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && vis(e));
-  const root = ovs[0] || document.querySelector('main');
-  const sideScroll = (el) => { for (let p = el.parentElement; p; p = p.parentElement) if (/(auto|scroll|hidden)/.test(getComputedStyle(p).overflowX)) return true; return false; };
-  root.querySelectorAll('*').forEach((el) => { if (!vis(el)) return; const r = el.getBoundingClientRect(); if (r.width && (r.right > W + 1 || r.left < -1) && !sideScroll(el)) out.wide.push(name(el)); });
-  const ctrls = Array.from(root.querySelectorAll('button, a[href], input:not([type=hidden]), select, textarea, [data-act]')).filter((e) => vis(e) && !e.classList.contains('scrim') && !e.closest('[aria-hidden="true"]'));
-  ctrls.forEach((el) => {
-    const r = el.getBoundingClientRect(), inText = el.tagName === 'A' && el.closest('p, li, small, .hint'), tick = el.type === 'checkbox' || el.type === 'radio' || !!el.closest('.sw');
-    if (!inText && !tick && (r.height < 35.5 || r.width < 35.5)) out.small.push(name(el) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
-  });
-  ctrls.forEach((el) => {
-    el.scrollIntoView({ block: 'center', inline: 'nearest' });
-    const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > H) return;
-    const hit = document.elementFromPoint(Math.min(W - 2, Math.max(1, r.left + r.width / 2)), Math.min(H - 2, Math.max(1, r.top + r.height / 2)));
-    if (!hit || hit === el || el.contains(hit) || hit.contains(el) || (hit.closest('label') && hit.closest('label').contains(el)) || (el.labels && Array.from(el.labels).some((l) => l.contains(hit)))) return;
-    if (el.closest('.sw') && hit.closest('.sw') === el.closest('.sw')) return;
-    out.covered.push(name(el) + ' under ' + name(hit));
-  });
-  scrollTo(0, 0);
-  return out;
-};
+/* ---------- the checks, in the page (shared with layout-hosted.js) ---------- */
+const { CHECK } = require('./layoutcheck');
 
 (async () => {
   const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
@@ -105,16 +86,16 @@ const CHECK = () => {
     return p;
   };
   const errors = [];
-  for (const [w, h, list] of [[390, 844, Object.keys(SCREENS)], [360, 740, NARROW]]) {
+  for (const [w, h, list] of [[390, 844, Object.keys(SCREENS)], [360, 740, NARROW], [320, 568, SMALL], [768, 1024, TABLET], [844, 390, SIDEWAYS]]) {
     for (const n of list) {
       const p = await page(w, h);
       try {
         await SCREENS[n](p); await sleep(150);
         const r = await p.evaluate(CHECK);
-        ok(r.overflow <= 0 && !r.wide.length, `${w}px, ${n}: nothing runs off the side` + (r.overflow > 0 || r.wide.length ? ` (page ${r.overflow}px wider; ${r.wide.slice(0, 3).join(', ')})` : ''));
-        ok(!r.covered.length, `${w}px, ${n}: nothing to tap is hidden under the bars` + (r.covered.length ? ` (${r.covered.slice(0, 3).join('; ')})` : ''));
+        ok(r.overflow <= 0 && !r.wide.length, `${w}×${h}, ${n}: nothing runs off the side` + (r.overflow > 0 || r.wide.length ? ` (page ${r.overflow}px wider; ${r.wide.slice(0, 3).join(', ')})` : ''));
+        ok(!r.covered.length, `${w}×${h}, ${n}: nothing to tap is hidden under the bars` + (r.covered.length ? ` (${r.covered.slice(0, 3).join('; ')})` : ''));
         if (w === 390) ok(!r.small.length, `${n}: buttons are at least 36 px` + (r.small.length ? ` (${r.small.slice(0, 4).join('; ')})` : ''));
-      } catch (e) { ok(false, `${w}px, ${n}: ${String(e).slice(0, 200)}`); }
+      } catch (e) { ok(false, `${w}×${h}, ${n}: ${String(e).slice(0, 200)}`); }
       errors.push(...p.errs); await p.context().close();
     }
   }
@@ -141,7 +122,7 @@ const CHECK = () => {
   if (!AXE) ok(false, 'axe-core is installed for the contrast check (npm install in tests/ui)');
   else {
     const looks = [['movingday', 'light'], ['movingday', 'dark'], ['contrast', 'light'], ['hivis', 'dark'], ['cardboard', 'light'], ['terminal', 'dark']];
-    const shots = ['owner Today', 'owner job sheet, finished', 'crew lead My jobs, job running', 'crew Today'];
+    const shots = ['owner Today', 'owner job sheet, finished', 'owner new quote, price', 'owner Setup › Options', 'crew lead My jobs, job running', 'crew Today'];
     for (const [t, m] of looks) {
       const found = [];
       for (const n of shots) {
@@ -155,7 +136,7 @@ const CHECK = () => {
         } catch (e) { found.push(n + ': ' + String(e).slice(0, 120)); }
         errors.push(...p.errs); await p.context().close();
       }
-      ok(!found.length, `${t} ${m}: the text on Today, a finished job's sheet, a running job and the crew's Today passes axe's colour-contrast rule` + (found.length ? ' (' + found.slice(0, 4).join('; ') + ')' : ''));
+      ok(!found.length, `${t} ${m}: the text on Today, a finished job's sheet, a quote's price, Options, a running job and the crew's Today passes axe's colour-contrast rule` + (found.length ? ' (' + found.slice(0, 4).join('; ') + ')' : ''));
     }
   }
   // the hosted app's sign-in screen, on a phone set to light and to dark (it was a white box with white

@@ -60,7 +60,9 @@ Other test cards: `4000 0025 0000 3155` asks the customer to approve (3D Secure)
 `4000 0000 0000 9995` is declined for insufficient funds. Nothing real is charged in test mode.
 
 From the office, a job's sheet has **Send a payment link** for the deposit or the balance. A
-deposit link keeps the card on file for the balance.
+deposit link keeps the card on file for the balance. Before the move, **Take a payment** on the sheet
+has a **Deposit** button and a **Whole balance** button that fill in the amount, and a booked job
+whose deposit hasn't come in shows under **Needs you** on Today and as **No deposit yet** on Jobs.
 
 ## How Tally keeps a customer from being charged twice
 
