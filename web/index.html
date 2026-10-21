@@ -1657,6 +1657,8 @@ function expOk(v){var d=String(v).replace(/\D/g,'');if(d.length!==4)return null;
 function startMin(j){var t=j.d.time||'08:00';var p=t.split(':').map(Number);return p[0]*60+p[1]}
 function durMin(j){return Math.round((dayHours(j)+1)*60)}
 function dayHours(j){var q=j.quote||{};return (q.hours||3)+(q.kind==='mileage'?num(q.driveH):0)}
+// how long a booked job should take, for the crew: "Est. 4.5 h" (the job day, to the half hour)
+function estLine(j){var h=Math.round(dayHours(j)*2)/2;return h>0?'Est. '+h+' h':''}
 function conflictsFor(j){
   var out=[];if(!j.d.moveDate||!['booked','active'].includes(j.status))return out;
   var a0=startMin(j),a1=a0+durMin(j);
@@ -2463,7 +2465,8 @@ function crewKit(me){
       (req.length?'<p class="hint">Forms signed: '+(req.length-pend.length)+' of '+req.length+'</p>':'')+
       (bal>0?'<p class="hint money-due" style="margin:6px 0 0">'+money(bal)+' still to collect</p>':'<p class="hint money-paid" style="margin:6px 0 0">Paid in full</p>')+act+'</div>';
   }
-  // fold: History's short row (the customer's name and the day) that opens to the whole card (Richie, Oct 21)
+  // fold: a short row that opens to the whole card (Richie, Oct 21). History's (fold true) is the customer's
+  // name and the day; Coming up's (fold 'soon') adds the start time and how long the job should take.
   function card(j,fold){
     var tl=j.items.reduce(function(a,i){return a+i.qty},0);
     var ld=j.items.reduce(function(a,i){return a+((j.tally[i.id]||{}).l?i.qty:0)},0),dl=j.items.reduce(function(a,i){return a+((j.tally[i.id]||{}).d?i.qty:0)},0);
@@ -2530,10 +2533,11 @@ function crewKit(me){
       (j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+
       '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+
       notesSec+matsSec+photoSec+runSec;
-    if(fold){var hk='h:'+j.id;
-      return '<details class="acc card crewcard hcard" data-job="'+j.id+'" data-k="'+hk+'"'+(ui.open[hk]?' open':'')+'><summary><span class="hsum"><b>'+esc(j.d.name||'A job')+testTag+'</b><small>'+esc(fmtDate(j.d.moveDate))+'</small></span><span class="hmore">Details</span><span class="hpill">'+pill(j.status)+'</span></summary><div class="hbody">'+body+'</div></details>'}
+    var est=['booked','active'].indexOf(j.status)>=0?estLine(j):'';
+    if(fold){var hk='h:'+j.id,day=fold==='soon'?fmtDate(j.d.moveDate)+(j.d.time?' · '+fmtTime(j.d.time):'')+(est?' · '+est:''):fmtDate(j.d.moveDate);
+      return '<details class="acc card crewcard hcard" data-job="'+j.id+'" data-k="'+hk+'"'+(ui.open[hk]?' open':'')+'><summary><span class="hsum"><b>'+esc(j.d.name||'A job')+testTag+'</b><small>'+esc(day)+'</small></span><span class="hmore">Details</span><span class="hpill">'+pill(j.status)+'</span></summary><div class="hbody">'+body+'</div></details>'}
     return '<section class="card crewcard" data-job="'+j.id+'"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+testTag+'</h3></div>'+pill(j.status)+'</div>'+
-      '<div class="cc-sub cc-date">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+(j.d.time?' · '+fmtTime(j.d.time):'')+'</div>'+body+'</section>';
+      '<div class="cc-sub cc-date">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+(j.d.time?' · '+fmtTime(j.d.time):'')+(est?' · '+est:'')+'</div>'+body+'</section>';
   }
   return {card:card,asLead:asLead};
 }
@@ -2579,7 +2583,7 @@ function renderCrew(){
   v.innerHTML=head+sv+clock+pills+cfm+
     '<div class="secline"><h2>Today</h2>'+(todays.length?'<small>'+todays.length+'</small>':'')+'</div>'+
     (todays.length?todays.map(function(j){return card(j)}).join(''):'<div class="card empty"><h3>No jobs today</h3><p>'+(mine.length?'Your next job is below.':'The office assigns crews. New jobs show here, and finished ones are in History.')+'</p></div>')+
-    (later.length?'<div class="secline"><h2>Coming up</h2><small>'+later.length+'</small></div>'+later.map(function(j){return card(j)}).join(''):'')+
+    (later.length?'<div class="secline"><h2>Coming up</h2><small>'+later.length+'</small></div>'+later.map(function(j){return card(j,'soon')}).join(''):'')+   // folded, with the time and the estimate (Richie, Oct 21)
     (billJobs.length?'<div class="secline"><h2>Finished, needs billing</h2><small>'+billJobs.length+'</small></div>'+billJobs.map(function(j){return card(j)}).join(''):'');
 }
 

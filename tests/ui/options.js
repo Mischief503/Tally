@@ -115,7 +115,18 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   if (later && later.status === 'booked') {
     later.d.moveDate = dayISO(3); if (!later.assign.crew.includes('Marcus')) later.assign.crew.push('Marcus'); T.render(); await sleep(5);
     const cu = $$('#view .secline h2').find((h) => h.textContent === 'Coming up');
-    ok(!!card(later) && !!cu && !!(cu.compareDocumentPosition(card(later)) & 4) && heads(card(later)) === heads(card(P)), L('a later job is the same full card, under Coming up: ' + later.d.name));
+    const row = $('#view details.hcard[data-job="' + later.id + '"]');
+    // folded: the name, then the day, the start time and how long it should take (Richie, Oct 21)
+    const q = later.quote || {}, est = Math.round(((q.hours || 3) + (q.kind === 'mileage' ? (+q.driveH || 0) : 0)) * 2) / 2;
+    const tp = later.d.time.split(':').map(Number), tm = ((tp[0] + 11) % 12 + 1) + ':' + String(tp[1]).padStart(2, '0') + (tp[0] >= 12 ? ' PM' : ' AM');
+    const dd = later.d.moveDate.split('-').map(Number), dayTxt = new w.Date(dd[0], dd[1] - 1, dd[2]).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const small = row ? row.querySelector('summary .hsum small').textContent : '';
+    ok(!!row && !row.open && !!cu && !!(cu.compareDocumentPosition(row) & 4) && row.querySelector('summary .hsum b').textContent === later.d.name && small === dayTxt + ' · ' + tm + ' · Est. ' + est + ' h',
+      L('a later job is folded under Coming up: ' + later.d.name + ', ' + small));
+    await A.openCard(later.id);
+    ok(row.open && heads(row) === heads(card(P)) && !!row.querySelector('[data-act="cr:start"]'), L('tapped, it opens to the same full card'));
+    const pe = Math.round(((P.quote.hours || 3) + (P.quote.kind === 'mileage' ? (+P.quote.driveH || 0) : 0)) * 2) / 2;
+    ok(new RegExp('· Est\\. ' + String(pe).replace('.', '\\.') + ' h$').test(card(P).querySelector('.cc-date').textContent), L('today’s card has the estimate on its date line: ' + card(P).querySelector('.cc-date').textContent));
   } else ok(false, L('sample data has Hollis & Reed booked'));
   if (!P.d.notes) { P.d.notes = 'Elevator reserved'; T.render(); await sleep(5); }
   const onote = card(P).querySelector('.cc-onote');

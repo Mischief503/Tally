@@ -107,6 +107,7 @@ add('lead-jobs-on', async (p) => { await pv(p, 'lead', 'Marcus'); await tap(p, '
 add('lead-jobs-ready', async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); });
 add('lead-jobs-active', async (p) => { await startPriya(p); await pv(p, 'lead', 'Marcus'); });
 add('lead-jobs-costform', async (p) => { await pv(p, 'lead', 'Marcus'); await openAllSecs(p, '#view .crewcard'); });
+add('lead-jobs-soon-open', async (p) => { await pv(p, 'lead', 'Marcus'); await p.evaluate(() => { document.querySelectorAll('#view details.hcard').forEach((d) => { d.open = true; }); }); await sleep(300); });
 add('lead-start', async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); const id = await jobId(p, 'Priya Nair'); await tap(p, `[data-act="cr:start"][data-id="${id}"]`, 500); });
 add('lead-flow', async (p) => { await pv(p, 'lead', 'Marcus'); const id = await jobId(p, 'Marcus Tull'); await tap(p, `#view [data-act="flow:open"][data-id="${id}"]`, 600); });
 add('lead-matpick', async (p) => { await pv(p, 'lead', 'Marcus'); const id = await jobId(p, 'Priya Nair'); await tap(p, `[data-act="mp:open"][data-id="${id}"]`, 500); });
