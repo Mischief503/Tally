@@ -4352,7 +4352,7 @@ var THEMES=[
  {id:'bodega',name:'Bodega',note:'Awning stripes: bright red, white and blue',font:'"Rubik"',display:'"Bebas Neue"',r:10,cap:0,fs:15.5,dens:'normal',surface:'raised',htt:'none',hls:'1px',
   light:{text:'#16181F',muted:'#646A78',bg:'#F6F7FA',card:'#FFFFFF',line:'#E1E4EC',line2:'#EFF1F6',header:'#C0202A',ht:'#FFF6F0',field:'#FFFFFF',focus:'#12429B',acc:'#CE2A20',accEdge:'#9E1811',accInk:'#FFF2F0',ok:'#12805C',bad:'#AE1F18',info:'#12429B',warn:'#C77A12'},
   dark:{text:'#EEF0F6',muted:'#98A0B4',bg:'#0E1017',card:'#171A24',line:'#262B38',line2:'#1C202A',header:'#7E1218',ht:'#FFE9E4',field:'#0E1017',focus:'#7FA9FF',acc:'#CE2A20',accEdge:'#951610',accInk:'#FFF2F0',ok:'#3EC08D',bad:'#FF7A6B',info:'#7FA9FF',warn:'#F0A85A'}},
- {id:'mint',name:'Mint Ledger',note:'Ledger-paper mint with a fine grid feel',font:'"Sora"',display:'"Sora"',r:6,cap:1,fs:14.5,dens:'tight',surface:'outline',htt:'none',hls:'-.1px',
+ {id:'mint',name:'Mint Ledger',note:'Ledger mint: ruled rows and green-underlined headings',font:'"Sora"',display:'"Sora"',r:6,cap:1,fs:14.5,dens:'tight',surface:'outline',htt:'none',hls:'-.1px',
   light:{text:'#10241C',muted:'#547166',bg:'#EDF6F0',card:'#FBFFFD',line:'#CFE2D7',line2:'#E2EFE7',header:'#123A2A',ht:'#EDF6F0',field:'#FBFFFD',focus:'#0F7A52',acc:'#18A06B',accEdge:'#107A50',accInk:'#04170F',ok:'#0F7A52',bad:'#B33A2C',info:'#2F6B8F',warn:'#A87818'},
   dark:{text:'#DCF0E5',muted:'#82A695',bg:'#07130E',card:'#0E1F17',line:'#1C3428',line2:'#132419',header:'#040C08',ok:'#4CCB92',ht:'#DCF0E5',field:'#07130E',focus:'#45D49B',acc:'#18A06B',accEdge:'#0E7048',accInk:'#04170F',bad:'#F0705F',info:'#74AECB',warn:'#E0A85A'}},
  {id:'sunsetdrive',name:'Sunset Drive',note:'Dusk highway: purple sky, hot orange sun',font:'"Space Grotesk"',display:'"Space Grotesk"',r:14,cap:0,fs:15,dens:'normal',surface:'raised',htt:'uppercase',hls:'1px',dark_only:1,
@@ -4376,8 +4376,9 @@ var SKINS={
    '.job:hover{background:'+v.line2+';border-left:0}.pill{border-radius:3px;text-transform:uppercase;letter-spacing:.6px;font-size:10px}'+
    '.card{box-shadow:none}.kpi{border:0;border-left:2px solid '+v.line+';border-radius:0;background:transparent}'+
    'nav.tabs button[aria-current="page"]::before{left:0;right:0;height:2px}'+'.alert{border:0;border-radius:0;border-bottom:1px solid '+v.line+';background:transparent;box-shadow:none;padding:10px 2px}.alert .ic{border-radius:3px}'},
- blueprint:function(v,d){return 'body{background-image:linear-gradient('+v.line+' 1px,transparent 1px),linear-gradient(90deg,'+v.line+' 1px,transparent 1px);background-size:26px 26px;background-position:-1px -1px}'+
-   '.card,.job,.kpi,.lane{position:relative;box-shadow:none}.card::after,.job::after{content:"";position:absolute;right:5px;top:5px;width:6px;height:6px;border-top:1.5px solid '+v.acc+';border-right:1.5px solid '+v.acc+'}'+
+ // (Blueprint, Paper and Newsprint used to draw a grid or ruled lines across the whole page; they ran through
+ // the greeting, headings and hints, so they went with Mint's, Richie Oct 21)
+ blueprint:function(v,d){return '.card,.job,.kpi,.lane{position:relative;box-shadow:none}.card::after,.job::after{content:"";position:absolute;right:5px;top:5px;width:6px;height:6px;border-top:1.5px solid '+v.acc+';border-right:1.5px solid '+v.acc+'}'+
    '.card>h2,.secline h2{text-transform:uppercase;letter-spacing:1.2px;font-size:14px;border-bottom:1.5px solid '+v.line+';padding-bottom:5px}'+
    '.job .r,.kpi b,.lines td:last-child{font-variant-numeric:tabular-nums}.pill{border-radius:2px;border:1px solid '+v.line+'}'+'.alert{border-radius:0}.alert .ic{border-radius:0;border:1.5px solid currentColor;background:transparent}'},
  forest:function(v,d){return '.card,.job,.kpi{border-left:4px solid '+v.acc+'}.top{background:linear-gradient(120deg,'+v.header+','+(d?'#17402C':'#2C5B3F')+')}'+
@@ -4391,8 +4392,7 @@ var SKINS={
    '.card,.job,.kpi,.alert,.lane{border:0;box-shadow:0 2px 6px '+(d?'rgba(0,0,0,.4)':'rgba(180,90,30,.10)')+',0 12px 30px '+(d?'rgba(0,0,0,.35)':'rgba(180,90,30,.09)')+'}'+
    'body{background-image:radial-gradient(120% 60% at 50% 0%,'+(d?'rgba(228,116,42,.18)':'rgba(255,214,184,.75)')+',transparent 70%)}'+
    '.btn,.chip,.pill{border-radius:99px}nav.tabs button[aria-current="page"]::before{display:none}nav.tabs button[aria-current="page"]{background:'+v.line2+';border-radius:99px;margin:4px 2px}'+'.alert{border-radius:22px}.alert .ic{border-radius:99px;width:30px;height:30px}.pulse button{border-radius:20px}'},
- paper:function(v,d){return 'body{background-image:repeating-linear-gradient(to bottom,transparent 0 27px,'+v.line+' 27px 28px)}'+
-   '.card,.job,.kpi,.alert,.lane{box-shadow:none;background:'+v.card+'}'+
+ paper:function(v,d){return '.card,.job,.kpi,.alert,.lane{box-shadow:none;background:'+v.card+'}'+
    '.card>h2,.secline h2{font-style:italic;border-bottom:1px solid '+v.line+';padding-bottom:6px}'+
    '.job{border-left:0;border-right:0;border-radius:0}.pill{border-radius:3px;font-style:italic}'+
    '.brand{font-style:italic}'},
@@ -4458,8 +4458,8 @@ var SKINS={
    '.pill{border-radius:3px;text-transform:uppercase;letter-spacing:.5px}'+
    '.btn.primary{text-transform:uppercase;letter-spacing:1px}'+
    'nav.tabs button[aria-current="page"]::before{height:3px;left:14%;right:14%}'+'.alert{border-top:3px solid '+v.acc+'}.pulse button{border-top:3px solid '+v.acc+'}'},
- mint:function(v,d){return '.card,.lane{background-image:repeating-linear-gradient(to bottom,transparent 0 25px,'+v.line+' 25px 26px);background-position:0 8px}'+
-   '.job{border:0;border-bottom:1px solid '+v.line+';border-radius:0;margin:0;background:transparent;box-shadow:none;padding:9px 4px}'+
+ // (Mint's cards used to be ruled every 26 px like ledger paper; the rules ran through text, so they went, Richie Oct 21)
+ mint:function(v,d){return '.job{border:0;border-bottom:1px solid '+v.line+';border-radius:0;margin:0;background:transparent;box-shadow:none;padding:9px 4px}'+
    '.job .r,.kpi b,.pulse b,.lines td:last-child,table.tbl td.n{font-variant-numeric:tabular-nums}'+
    '.card>h2,.secline h2{border-bottom:1.5px solid '+v.acc+';padding-bottom:5px}'+
    '.pill{border-radius:2px;border:1px solid '+v.line+'}.tapebar{height:2px}'+'.alert{border:0;border-bottom:1px solid '+v.line+';border-radius:0;box-shadow:none;background:transparent;padding:9px 4px}.alert .ic{border-radius:2px}'},
@@ -4477,9 +4477,10 @@ var SKINS={
    '.card,.job,.kpi,.alert,.lane{border:0;box-shadow:0 6px 22px '+(d?'rgba(0,0,0,.45)':'rgba(124,92,224,.14)')+'}'+
    '.btn,.chip,.pill{border-radius:99px}.tapebar{height:0}.top{background:linear-gradient(120deg,'+v.header+','+(d?'#1A1230':'#5C45A0')+')}'+
    'nav.tabs button[aria-current="page"]::before{display:none}nav.tabs button[aria-current="page"]{background:'+v.line2+';border-radius:99px;margin:4px 2px}'+'.alert{border-radius:20px}.alert .ic{border-radius:99px}.pulse button{border-radius:20px;border:0}'},
- newsprint:function(v,d){return 'body{background-image:repeating-linear-gradient(to bottom,transparent 0 29px,'+v.line2+' 29px 30px)}'+
-   '.card,.kpi,.lane,.alert{box-shadow:none;border-left:0;border-right:0;border-radius:0;border-top:2px solid '+v.text+';border-bottom:1px solid '+v.line+'}'+
+ newsprint:function(v,d){return '.card,.kpi,.lane,.alert{box-shadow:none;border-left:0;border-right:0;border-radius:0;border-top:2px solid '+v.text+';border-bottom:1px solid '+v.line+'}'+
    '.job{border:0;border-bottom:1px solid '+v.line+';border-radius:0;margin:0;padding:10px 2px;background:transparent;box-shadow:none}'+
+   // a red pill's tint over the grey page falls just short of 4.5:1 (4.35), so on these open rows it sits on the card colour
+   '.job .pill.bad,.job .pill.due{background:'+v.card+'!important}'+
    '.card>h2,.secline h2{border-bottom:1px solid '+v.text+';padding-bottom:4px;font-variant:small-caps;letter-spacing:.6px}'+
    '.job .t{font-family:var(--display)}.pill{border-radius:0;border:1px solid '+v.text+';background:transparent!important;color:'+v.text+'!important;font-variant:small-caps}'+
    '.tapebar{height:0}.top{border-bottom:3px double '+v.ht+'}'+'.alert .ic{border-radius:0;border:1px solid '+v.text+';background:transparent;color:'+v.text+'}'}
