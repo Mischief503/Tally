@@ -186,6 +186,9 @@ details.acc.card .acc-body{padding-bottom:14px}
 .lines td{padding:5px 0;border-bottom:1px solid var(--line2);vertical-align:top}
 .lines td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .lines tr.total td{font:700 22px var(--display);border-bottom:0;padding-top:8px}
+.lines tr.sub td{font-weight:var(--w-strong);border-bottom:1px solid var(--line)}
+.lines tr.sub small{font-weight:400}
+.saved{font-weight:var(--w-mid)}
 .qbar{position:sticky;bottom:calc(58px + env(safe-area-inset-bottom));z-index:10;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:8px 10px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-lg)}
 .qbar .tot{font:700 22px/1 var(--display)}
 .qbar small{display:block;font-size:12px;white-space:nowrap}
@@ -519,6 +522,7 @@ details.hcard>summary>.hmore{flex:none;font-size:13px;font-weight:var(--w-mid);c
 details.hcard>summary>.hpill{flex:none}
 details.hcard:not([open])>summary>.hpill,details.hcard[open]>summary>.hmore{display:none}
 details.hcard .hbody{padding:0 0 12px}
+.hsum small.hdue{font-weight:var(--w-mid)}
 .crewtabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--line2);border-radius:var(--rpill);padding:4px;margin:4px 0 6px}
 .crewtabs button{border:0;background:transparent;color:var(--text);font:var(--w-mid) 15px var(--font);border-radius:var(--rpill);min-height:42px;cursor:pointer}
 .crewtabs button.on{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 1px var(--line)}
@@ -538,6 +542,34 @@ details.hcard .hbody{padding:0 0 12px}
 .cfmrow b{display:block;font-weight:var(--w-mid)}.cfmrow small{display:block}
 .cc-cost{margin-top:12px}
 .cc-less{background:none;border:0;color:var(--muted);font:600 13px var(--font);padding:4px 0;cursor:pointer;min-height:40px}
+/* a new quote on site: room by room, check it, the customer signs */
+#rq{position:fixed;inset:0;z-index:52;background:var(--bg);display:flex;flex-direction:column}
+#rq[hidden]{display:none}
+#rq .flow-body{flex:1;min-height:0}
+.rq-foot{display:flex;align-items:center;gap:12px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -2px 10px rgba(0,0,0,.08)}
+.rq-foot small{display:block;color:var(--muted);font-size:12.5px}
+.rq-foot b{font:700 22px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.rq-foot #rqDiff{display:inline;font-size:14px;margin-left:4px}
+.rq-foot>.btn{flex:none;min-height:46px;padding:0 18px}
+.rq-leave{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--accSoft);border-bottom:1px solid var(--tape-edge);font-size:14px;color:var(--text)}
+.rq-leave span{flex:1;min-width:12em}
+.rqwas{color:var(--text);font-weight:var(--w-mid)}
+.grp>summary small.rqn{font:500 12.5px var(--font);color:var(--muted);margin-left:6px;letter-spacing:0;text-transform:none}
+.rqch{margin:4px 0 6px;padding-left:20px;font-size:14px}
+.rqch li{margin:2px 0}
+.rqnote{margin:10px 0}
+.rqnote>div{margin-top:3px}
+.rqnote .f{color:inherit}
+.rqask .lines{margin-top:8px}
+.rqhist{margin-top:12px}
+.rqhist h5{margin:0 0 2px;font:var(--w-mid) 12px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.rqhist .who span{min-width:0;overflow-wrap:anywhere}
+.rqhist small{display:block}
+.rqhist .rqchl{color:var(--muted);margin-top:2px}
+.rqsig{height:40px;max-width:120px;background:#fff;border-radius:4px;border:1px solid var(--line);flex:none}
+.rqrooms .grp:first-child{border-top:0}
+/* three money tiles side by side on a phone: a long amount ($1,458.25) gets a smaller size so it stays in its tile */
+@media (max-width:519px){.kpi b.long{font-size:18px}.kpi b.longer{font-size:15.5px}}
 /* typed job info is saved with a button: the bar under each part says whether it is saved */
 .savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .savebar .btn{min-width:96px}
@@ -653,7 +685,7 @@ body.sos-on #matpick{top:calc(var(--sosH) + env(safe-area-inset-top))}
 .sos-dot{width:10px;height:10px;border-radius:99px;background:var(--sos-ink);flex:none}
 body.sos-on{padding-top:calc(var(--sosH) + env(safe-area-inset-top))}
 body.sos-on .top{padding-top:8px}
-body.sos-on #sheet,body.sos-on #emp,body.sos-on #flow,body.sos-on #more,body.sos-on #pick,body.sos-on #call,body.sos-on #start{top:calc(var(--sosH) + env(safe-area-inset-top))}
+body.sos-on #sheet,body.sos-on #emp,body.sos-on #flow,body.sos-on #rq,body.sos-on #more,body.sos-on #pick,body.sos-on #call,body.sos-on #start{top:calc(var(--sosH) + env(safe-area-inset-top))}
 body.sos-on #sheet .panel,body.sos-on #emp .panel,body.sos-on #more .panel,body.sos-on #pick .panel,body.sos-on #call .panel,body.sos-on #start .panel{max-height:100%}
 @media (min-width:900px){ body.sos-on nav.tabs{top:calc(var(--sosH) + env(safe-area-inset-top))} }
 #sos[hidden]{display:none}
@@ -1006,9 +1038,10 @@ var commsLine='';
 function commsPost(body){
   return sb.auth.getSession().then(function(r){
     var s=r&&r.data&&r.data.session;if(!s)return {ok:false,message:'Sign in again.'};
-    return fetch(CFG.url.replace(/\/+$/,'')+'/functions/v1/tally-twilio/app',{method:'POST',keepalive:true,
+    var raw=JSON.stringify(Object.assign({org:ORG},body));   // keepalive only for small posts: a phone drops a bigger one (64 KB) as the page closes
+    return fetch(CFG.url.replace(/\/+$/,'')+'/functions/v1/tally-twilio/app',{method:'POST',keepalive:raw.length<60000,
       headers:{'Content-Type':'application/json',apikey:CFG.anonKey,Authorization:'Bearer '+s.access_token},
-      body:JSON.stringify(Object.assign({org:ORG},body))}).then(function(res){return res.json().catch(function(){return {ok:false,message:'The server did not answer. Try again.'}})});
+      body:raw}).then(function(res){return res.json().catch(function(){return {ok:false,message:'The server did not answer. Try again.'}})});
   }).catch(function(){return {ok:false,message:'Could not reach the server. Check your connection.'}});
 }
 var commsApi={
@@ -1052,6 +1085,9 @@ window.tallyPeople={
   removeDoc:function(path){return sb.storage.from(DOCS).remove([path]).then(function(r){if(r.error)throw r.error})},
   uid:function(){return me.id}
 };
+// a crew lead's new quote, signed by the customer on site: the server works it out again and saves it
+window.tallyQuote={sign:function(id,rq){return commsPost({action:'requote',jobId:id,rq:rq})},
+  refresh:function(){Object.keys(watchers).forEach(function(k){if(k.indexOf('jobs|')===0)bump(k)})}};
 window.tallyMaps={distance:function(from,to){return commsPost({action:'distance',from:from,to:to})},
   toShop:function(lat,lng){return commsPost({action:'shop_distance',lat:lat,lng:lng})}};   // bill-out: from the truck back to the shop
 /* ---------- card payments (Stripe, through the same Edge Function) ---------- */
@@ -1128,6 +1164,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 </div>
 <div id="sheet" hidden></div>
 <div id="flow" hidden></div>
+<div id="rq" hidden></div>
 <div id="gate" hidden></div>
 <div id="pick" hidden></div>
 <div id="more" hidden></div>
@@ -1258,6 +1295,7 @@ var OPTS=[
   {g:'field',k:'updates',t:'Quick updates',h:'“On my way”, “Arrived at pickup” and more, sent to the office and crew from the job card.'},
   {g:'field',k:'callCust',t:'Crew members can call the customer',h:'The Call button on a crew member’s job card. Crew leads can always call.'},
   {g:'field',k:'materials',t:'Crew add materials and costs',h:'Boxes, tape, dump fees and other costs, added from the job card. The office can always add them.'},
+  {g:'field',k:'rqCrew',t:'Crew leads make new quotes on site',h:'When the items aren’t what was quoted, the lead goes room by room and the customer signs the new quote, before or during the move. The office is told.'},
   {g:'field',k:'photosReq',def:false,t:'Photos before finishing',h:'Finish job waits for at least one pickup photo and one delivery photo.'},
   {g:'field',k:'truckDown',t:'Truck down button',h:'The crew can tell the office a truck broke down, and where it is.'},
   {g:'bill',k:'leadPay',t:'Crew leads collect payment',h:'Leads take the payment at the end of the job. Off: leads get the signatures, and the office collects.'},
@@ -1288,6 +1326,7 @@ var OPTS=[
   {g:'texts',p:'comms.alerts.forms',t:'Unsigned forms alert',h:'Text the office when a finished job is still waiting on a signature.'},
   {g:'office',k:'drivers',t:'A driver for every truck',h:'Dispatch picks who drives each truck on a job. A truck with no driver shows as needing scheduling. Off: no drivers to pick.'},
   {g:'office',k:'dispatchPay',t:'Dispatch can take payments',h:'Dispatch can collect payments and send pay links.'},
+  {g:'office',k:'rqOffice',def:false,t:'Office approves new quotes from the crew',h:'A crew lead’s new quote waits for the owner or dispatch to approve it, then the customer signs. Off: the customer’s signature is enough.'},
   {g:'office',k:'dispatchMoney',t:'Dispatch sees revenue',h:'The Revenue screen and what’s still owed. Off: dispatch schedules without the company’s totals.'}
 ];
 // is a switch on? (settings.opt, else its default; sales tax starts on when a tax % is set)
@@ -1312,6 +1351,9 @@ function matTotal(j){return round2((j.materials||[]).reduce(function(a,m){return
 function matCostTotal(j){return round2((j.materials||[]).reduce(function(a,m){return a+(m.cost==null?0:m.qty*m.cost)},0))}
 function costTotal(j){return round2((j.costs||[]).reduce(function(a,c){return a+c.amt},0))}
 function totalOf(j){return round2(j.quote.total+(j.extras||[]).reduce(function(a,e){return a+e.amt},0)+matTotal(j))}
+// how much under the quote the bill came in, once the job is under way (Richie, Oct 21: "show how much the customer
+// saved from the quote"); 0 when it isn't under
+function savedOf(j){if(['active','done','paid'].indexOf(j.status)<0)return 0;var d=round2(num((j.quote||{}).total)-totalOf(j));return d>=0.01?d:0}
 function balOf(j){return Math.max(0,round2(totalOf(j)-paidOf(j)))}
 function logEv(j,ev){j.log.push({ts:Date.now(),ev:ev})}
 /* time clock (separate from the job timer) */
@@ -1575,10 +1617,11 @@ function afterBillChange(j){
   else if(j.status==='done'&&balOf(j)<=0&&!formsPending(j).length)setStatus(j,'paid');
 }
 // the job sheet: how the bill was worked out, and the office's corrections
-function clockHtml(j){
+// ro: the crew card's copy (the lead's Quote part): the same words, without the office's form
+function clockHtml(j,ro){
   var q=j.quote||{};if(!(q.kind==='local'||q.kind==='mileage'))return '';
-  var mileage=q.kind==='mileage',c=clockBill(j),fin=j.status==='done'||j.status==='paid',off=!!(j.clockFix||{}).off,applied=!!j.clockAt&&!off,ed=canEditJobs()&&(fin||!!j.clockAt);
-  var head='<h3 style="font-size:15px;margin:10px 0 2px">'+(mileage?'Mileage move':'Local move')+'</h3>';
+  var mileage=q.kind==='mileage',c=clockBill(j),fin=j.status==='done'||j.status==='paid',off=!!(j.clockFix||{}).off,applied=!!j.clockAt&&!off,ed=!ro&&canEditJobs()&&(fin||!!j.clockAt);
+  var head=ro?'<p style="margin:10px 0 2px"><b>'+(mileage?'Mileage move':'Local move')+'</b></p>':'<h3 style="font-size:15px;margin:10px 0 2px">'+(mileage?'Mileage move':'Local move')+'</h3>';
   var kindTxt=q.flat?'Flat price: the bill is the quote (Final bill by the clock was off in Options when it was quoted).':mileage?'Billed per mile for the drive, plus loading and unloading time.':'Billed by the hour, the drive included. No mileage.';
   if(!c)return head+'<p class="hint" style="margin:0">'+kindTxt+'</p>';
   if(!fin&&!j.clockAt&&(!j.startedAt||c.missing))return head+'<p class="hint" style="margin:0">'+kindTxt+' The final bill comes from the crew\u2019s times'+(mileage?' and the miles driven':'')+'.</p>';
@@ -1932,6 +1975,7 @@ function renderToday(){
   var A=[];
   // a truck that is down comes first
   sosActive().forEach(function(a){A.push(alertRow('bad','Truck down: '+esc(sosTruck(a)),esc(a.from)+(a.job?' · '+esc(a.job):'')+' · sent '+fmtClock(a.ts),'sos:open',''))});
+  rqAlerts(A);   // a crew lead's new quote: to approve, or signed on site
   var need=state.jobs.filter(needsSched);
   if(need.length)A.push('<button class="alert" data-act="tab" data-tab="dispatch"><span class="ic warn">!</span><span class="tx"><b>'+need.length+' job'+(need.length===1?'':'s')+' need scheduling</b><small>'+esc(need.map(function(j){return j.d.name}).join(', '))+'</small></span><span class="go">›</span></button>');
   // booked moves whose day went by without being started in the app: finish them, move them or mark them lost
@@ -2096,7 +2140,7 @@ function saveQuote(kind){
   var j=d.editId?byId(d.editId):null;
   if(j){
     var oldNotes=String(j.d.notes||'');
-    j.d=clone(d);delete j.d.editId;j.quote=q;j.items=itemsOf(d,S);logEv(j,'Quote updated');
+    var hadOk=!!(j.quote&&j.quote.rqOk);j.d=clone(d);delete j.d.editId;j.quote=q;if(hadOk)q.rqOk=null;j.items=itemsOf(d,S);logEv(j,'Quote updated');
     if(String(j.d.notes||'')!==oldNotes){j.d.notesBy=myName()||'Office';j.d.notesAt=Date.now();logEv(j,'Job notes updated by '+j.d.notesBy)}
     if(kind==='book'&&(j.status==='lead'||j.status==='quoted'))setStatus(j,'booked');
     else if(j.status==='lead'&&q.cf)setStatus(j,'quoted');
@@ -2279,15 +2323,21 @@ function nextAction(j){
 }
 /* the money tiles at the top of the job sheet, in the words that fit where the job is: a quote until
    the move is done, then the bill; a red balance only once it is due; nothing for a lead with no price */
+// money tiles side by side, every number the same size: a smaller one for all when one is long ($1,458.25)
+function kpiRow(T){
+  var n=T.reduce(function(a,t){return Math.max(a,money(t[0]).length)},0),cls=n>10?' class="longer"':n>8?' class="long"':'';
+  return '<div class="kpis" style="grid-template-columns:repeat('+T.length+',minmax(0,1fr))">'+T.map(function(t){return '<div class="kpi'+(t[2]?' '+t[2]:'')+'"><b'+cls+'>'+money(t[0])+'</b><span>'+t[1]+'</span></div>'}).join('')+'</div>';
+}
 function sheetMoney(j){
   var q=j.quote||{},paid=paidOf(j),bal=balOf(j),tot=totalOf(j),st=j.status,T=[];
-  var k=function(v,l,c){T.push('<div class="kpi'+(c?' '+c:'')+'"><b>'+money(v)+'</b><span>'+l+'</span></div>')};
+  var k=function(v,l,c){T.push([v,l,c])};
   if(st==='lead'&&!(tot>0))return '';
   if(st==='done'||st==='paid'){k(tot,'Bill');k(paid,'Paid',paid>0?'paid':'');k(bal,bal>0?'Balance due':'Paid in full',bal>0?'due':'paid')}
   else if(st==='lost'){k(tot,'Quote');if(paid>0)k(paid,'Paid','paid')}
   else if(st==='lead'||st==='quoted'){k(tot,'Quote');if(q.deposit>0&&!(paid>0))k(q.deposit,'Deposit to book');if(paid>0)k(paid,'Paid','paid')}
   else{k(tot,'Quote');k(paid,'Paid',paid>0?'paid':'');k(bal,bal>0?'Left to pay':'Paid in full',bal>0?'':'paid')}
-  return '<div class="kpis" style="grid-template-columns:repeat('+T.length+',minmax(0,1fr))">'+T.join('')+'</div>';
+  var sv=savedOf(j);
+  return kpiRow(T)+(sv?'<p class="hint money-paid saved">The customer saved '+money(sv)+' off the quote of '+money(q.total)+'.</p>':'');
 }
 function leaveBarHtml(j){
   if(!ui.closeAsk)return '';
@@ -2342,7 +2392,7 @@ function renderSheet(){
   el.innerHTML='<div class="scrim" data-act="sheet:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Job details">'+
    '<div class="sheet-head"><div><h2>'+esc(j.d.name||'Unnamed')+'</h2><div style="margin-top:4px">'+pill(j.status)+(j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'')+' <small>'+fmtInt(q.cf)+' cu ft · '+q.crew+' movers · '+q.hours+' h'+(q.kind==='mileage'?' · mileage move':q.kind==='local'?' · local move':'')+'</small></div></div><button class="btn sm" data-act="sheet:close" id="sheetClose">Close</button></div>'+
    '<div class="sheet-body">'+lateNote+rail+
-   sheetMoney(j)+
+   sheetMoney(j)+rqSheetTop(j)+
    '<div class="row sec">'+(na?'<button class="btn primary grow" data-act="'+na.act+'"'+(na.attrs||'')+'>'+na.label+'</button>':'')+(na&&na.act==='sh:requote'?'':'<button class="btn grow" data-act="sh:requote">Edit quote</button>')+'</div>'+
    '<div class="sec" data-meta="'+esc(fmtDate(j.d.moveDate)+(j.d.moveDate&&j.d.time?' · '+fmtTime(j.d.time):''))+'"><h3>Schedule</h3>'+clash+'<div class="grid2 stack">'+
      fld('Date','<input type="date" data-j="moveDate" data-re="1" value="'+esc(j.d.moveDate)+'">')+
@@ -2360,7 +2410,7 @@ function renderSheet(){
    '</div>'+jedBarHtml(j,'cust')+'</div>'+
    '<div class="sec" data-meta="'+esc(secMeta(j,'notes'))+'"><h3>Job notes</h3><textarea data-j="notes" aria-label="Job notes" placeholder="Gate code, elevator booking, what to bring" style="width:100%;min-height:72px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:16px;color:var(--text)">'+esc(jv(j,'notes'))+'</textarea>'+jedBarHtml(j,'notes')+'</div>'+
    (onJob||(j.crewNotes||[]).length?'<div class="sec" data-meta="'+((j.crewNotes||[]).length||'')+'"><h3>Crew notes</h3><p class="hint" style="margin:-4px 0 6px">Written by the crew in the field. Gate codes, access details, anything for the office.</p>'+cnotes+'</div>':'')+
-   '<div class="sec" data-meta="'+money(totalOf(j))+'"><h3>Quote</h3><table class="lines">'+lines+'</table><p class="hint">'+esc(items)+'</p>'+clockHtml(j)+'</div>'+
+   '<div class="sec" data-meta="'+money(totalOf(j))+'"><h3>Quote</h3><table class="lines">'+lines+'</table><p class="hint">'+esc(items)+'</p>'+clockHtml(j)+rqHistHtml(j,true)+'</div>'+
    (shownMats?'<div class="sec" data-meta="'+esc(secMeta(j,'mats'))+'"><h3>Materials and costs</h3>'+matSection(j,'s',myName()||'Office',true)+'</div>':'')+
    (shownPay?payHtml:'')+
    (shownForms?fsec:'')+
@@ -2448,25 +2498,368 @@ function photosMissing(j){
   var has=function(k){return (j.photos||[]).some(function(p){return p.kind===k})},p=has('Pickup'),d=has('Delivery');
   return p&&d?'':'Take '+(!p&&!d?'a pickup photo and a delivery photo':!p?'a pickup photo':'a delivery photo')+' before you finish the job.';
 }
+/* ---------- A new quote on site (Richie, Oct 21) ----------
+   "if the crew shows up and the inventory is off . Then the lead show be able to go room for room entering
+   items to make a new quote and then summit it to the dispatch for approval. Or maybe just have a place to
+   sign by the customer so its approved by customer. Then they know what to expect for the move."
+   From the job card, before the move or during it, the crew lead goes room by room. The new quote is worked
+   out the way the office's is (calc), at the rates on the job's quote (rqSettings), for the crew and truck on
+   the job; the deposit stays as booked. It goes on the job only when the customer signs it, and the office is
+   told. With Options › Office approves new quotes, the owner or dispatch says yes first (j.rq.state
+   'waiting', then 'approved'); their yes is written into the job's quote (quote.rqOk), which only the office
+   can change, so the server can tell it's real. Every quote it replaces stays on the job (j.quoteHist).
+   On the hosted app only the office may change a job's quote (the database's jobs_guard), so a crew lead's
+   signed quote goes to the server, which works the price out again and saves it (window.tallyQuote).
+   j.rq.state: 'waiting' | 'approved' | 'declined' (the office said no) | 'done' (signed, on the job) |
+   'refused' (the customer didn't agree) | 'cancelled' (the lead took it back). */
+function rqOn(){return opt('rqCrew')}
+function rqAsk(){return opt('rqOffice')&&!canEditJobs()}   // this one waits for the office's yes first
+function rqLive(j){return !!j&&['booked','active'].indexOf(j.status)>=0&&!j.clockAt}
+// a waiting or approved new quote stops counting when the office changes the job's quote after it was made
+function rqStale(j){var r=j&&j.rq;return !!r&&(r.state==='waiting'||r.state==='approved')&&Math.abs(num(r.was)-num((j.quote||{}).total))>=0.005}
+function rqCan(j,me){
+  var q=j&&j.quote;
+  if(!rqOn()||!rqLive(j)||!q||!(num(q.cf)>0)||!(q.kind==='local'||q.kind==='mileage'))return false;
+  if(j.rq&&(j.rq.state==='waiting'||j.rq.state==='approved')&&!rqStale(j))return false;
+  if((state.ui.rqPend||{})[j.id])return false;
+  var r=state.ui.role;return r==='owner'||r==='dispatch'||(r==='lead'&&isLead(me)&&j.assign.crew.indexOf(me)>=0);
+}
+// items as a list sorted by id (how they're kept in j.rq and the history, so a saved copy replaces cleanly)
+function rqItemsArr(m){return Object.keys(m||{}).filter(function(k){return m[k]>0}).sort().map(function(k){return {id:k,q:m[k]}})}
+function rqItemsMap(a){var m={};(Array.isArray(a)?a:[]).forEach(function(x){if(x&&x.id&&x.q>0)m[x.id]=x.q});return m}
+function rqCf(items){var cf=0;state.settings.catalog.forEach(function(it){cf+=(items[it.id]||0)*it.cf});return cf}
+function rqDraftOf(j){
+  var have={},it={},m=j.d.items||{};state.settings.catalog.forEach(function(i){have[i.id]=1});
+  Object.keys(m).forEach(function(k){if(have[k]&&m[k]>0)it[k]=m[k]});
+  return {items:it,flights:num(j.d.flights)||0,pack:!!j.d.pack};
+}
+// the rate card the job was quoted at: the hourly rate, mileage rate, tax and minimum from the quote, and the
+// truck, stair and packing fees from its lines; the rest (the items, the trucks) from Setup as it is now
+function rqSettings(j){
+  var S=state.settings,q0=j.quote||{},o=Object.assign({},S.opt||{});
+  var S2=Object.assign({},S,{rates:Object.assign({},S.rates),opt:o});
+  var crew=num(q0.crew);
+  if(crew&&num(q0.rate)>0)S2.rates['r'+crew]=num(q0.rate);
+  if(q0.mileRate!=null)S2.mileRate=num(q0.mileRate);
+  if(q0.taxPct!=null){S2.taxPct=num(q0.taxPct);o.tax=num(q0.taxPct)>0}
+  if(q0.minHours!=null)S2.minHours=num(q0.minHours);
+  if(typeof q0.flat==='boolean')o.byClock=!q0.flat;
+  if(typeof q0.capNte==='boolean')S2.nteCap=q0.capNte;
+  if(typeof q0.shopTravel==='boolean')S2.shopTravel=q0.shopTravel;
+  var L=Array.isArray(q0.lines)?q0.lines:[],line=function(re){for(var i=0;i<L.length;i++)if(L[i]&&re.test(String(L[i].label)))return L[i];return null};
+  if(L.length){
+    var tl=line(/^(\d+ trucks|Truck) and fuel$/);o.truckFee=!!tl;if(tl)S2.truckFee=num(tl.amt)/Math.max(1,num(q0.nTrucks));
+    var fl=num(j.d.flights),sl=line(/^Stairs: /);if(sl&&fl>0){o.stairs=true;S2.stairFee=num(sl.amt)/fl}
+    var pl=line(/^Packing and materials: \d+ boxes$/),bx=pl?parseInt(String(pl.label).replace(/\D+/g,''),10):0;if(pl&&bx>0){o.packing=true;S2.packPerBox=num(pl.amt)/bx}
+  }
+  return S2;
+}
+// the new quote for these items: {d, q, items}
+function rqBuild(j,dr){
+  var q0=j.quote||{},S2=rqSettings(j),d=clone(j.d);
+  d.items=clone(dr.items);d.flights=num(dr.flights)>0?String(num(dr.flights)):'';d.pack=!!dr.pack;
+  if(q0.crew)d.crew=String(q0.crew);   // the crew the job was priced for
+  if(q0.kind==='local'||q0.kind==='mileage')d.moveKind=q0.kind;
+  if(j.assign&&j.assign.truckId)d.truckId=j.assign.truckId;   // the truck on the job; more go on the quote when it won't fit
+  // hours the office set by hand grow and shrink with the load
+  var ho=num(j.d.hoursOverride);d.hoursOverride=ho>0?String(Math.max(num(S2.minHours),Math.ceil(ho*rqCf(d.items)/num(q0.cf)*2)/2)):'';
+  var q=calc(d,S2);q.deposit=num(q0.deposit);   // the deposit stays as booked
+  return {d:d,q:q,items:itemsOf(d,S2)};
+}
+// what's different from the job as quoted, in words
+function rqChanges(j,dr){
+  var old=j.d.items||{},out=[];
+  state.settings.catalog.forEach(function(it){var a=old[it.id]||0,b=dr.items[it.id]||0;if(a!==b)out.push({n:b-a,t:(b>a?'+':'−')+Math.abs(b-a)+' '+it.name+(a&&b?' ('+a+' → '+b+')':'')})});
+  var f0=num(j.d.flights)||0,f1=num(dr.flights)||0;
+  if(f0!==f1)out.push({t:'Stairs: '+f0+' → '+f1+' flight'+(f1===1?'':'s')});
+  if(!!j.d.pack!==!!dr.pack)out.push({t:dr.pack?'Packing service added':'Packing service taken off'});
+  return out;
+}
+function rqMake(j,o){
+  var b=rqBuild(j,o.dr);
+  return {id:uid(),by:o.who||myName()||'',ts:Date.now(),was:num(j.quote.total),
+    d:{items:rqItemsArr(b.d.items),flights:b.d.flights,pack:b.d.pack,hoursOverride:b.d.hoursOverride},quote:b.q,items:b.items,
+    note:String(o.note||'').trim().slice(0,500),changes:rqChanges(j,o.dr).map(function(c){return c.t}).slice(0,60),
+    // every key there from the start (null), so a saved copy of an earlier new quote can't leave any behind
+    state:'',sig:null,ok:null,no:null,seen:null,applied:null,refused:null,cancel:null};
+}
+// what the office's yes is for: these items at this price (the server checks it the same way)
+function rqKey(rq){return strHash(canon({items:rq.d.items,flights:String(rq.d.flights||''),pack:!!rq.d.pack,total:num(rq.quote.total)}))}
+function rqHistEntry(j,rq,now){
+  var was=clone(j.quote||{});delete was.rqOk;
+  return {id:rq.id,ts:now,by:rq.by||'',was:was,wasItems:clone(j.items||[]),
+    wasD:{items:rqItemsArr(j.d.items),flights:j.d.flights||'',pack:!!j.d.pack,hoursOverride:j.d.hoursOverride||''},
+    now:num(rq.quote.total),why:rq.note||'',changes:(rq.changes||[]).slice(0,60),
+    sign:rq.sig?{name:rq.sig.name,img:rq.sig.img||'',ts:rq.sig.ts}:null,ok:rq.ok||null};
+}
+// puts a signed new quote on the job, here (the office's phones and the claude.ai copy; a crew lead's phone on
+// the hosted app sends it to the server instead, rqSend). The quote it replaces goes in the job's history.
+function rqApply(j,rq){
+  var now=Date.now();
+  j.quoteHist=(j.quoteHist||[]).concat([rqHistEntry(j,rq,now)]).slice(-10);
+  var nq=clone(rq.quote);if(j.quote&&j.quote.rqOk)nq.rqOk=null;   // the office's yes is used up (null, so the shared copy drops it too)
+  j.quote=nq;j.items=clone(rq.items);
+  j.d.items=rqItemsMap(rq.d.items);j.d.flights=rq.d.flights||'';j.d.pack=!!rq.d.pack;j.d.hoursOverride=rq.d.hoursOverride||'';
+  rq.state='done';rq.applied=now;if(rq.sig)rq.sig={name:rq.sig.name,ts:rq.sig.ts,by:rq.sig.by||''};   // the signature itself stays in the history
+  j.rq=rq;
+  logEv(j,'New quote on site'+(rq.by?' by '+rq.by:'')+': '+money(rq.was)+' → '+money(rq.quote.total)+(rq.sig?', signed by '+rq.sig.name:''));
+}
+// a crew lead's signed quote on the hosted app is saved by the server (the office's phones save their own)
+function rqServer(){return !!window.tallyQuote&&!canEditJobs()}
+function rqSend(j,rq,o){
+  rqBusy(true);rqFail('');
+  window.tallyQuote.sign(j.id,rq).then(function(r){
+    rqBusy(false);
+    if(r&&r.ok){sigDirty=false;rqDone(o,rq);window.tallyQuote.refresh();toast('The new quote is on the job. The office has been told.');return}
+    if(r&&r.final){rqFail(r.message||'The new quote couldn’t be saved.');return}
+    // no connection to the office: kept on this phone, and sent again until it's saved
+    state.ui.rqPend=state.ui.rqPend||{};state.ui.rqPend[j.id]=rq;save();sigDirty=false;o.pend=true;rqDone(o,rq);renderTab();
+  });
+}
+function rqDone(o,rq){if(ui.rqo!==o)return;o.step='done';o.total=num(rq.quote.total);o.signedBy=rq.sig?rq.sig.name:'';renderRq()}
+function rqBusy(on){var b=$('#rq [data-act="rq:sign"]');if(ui.rqo)ui.rqo.busy=on;if(b){b.disabled=on;b.textContent=on?'Saving…':'Sign and save'}}
+function rqFail(m){var o=ui.rqo;if(o)o.err=m;var e=$('#rqErr');if(e){e.textContent=m;e.style.color=m?'var(--bad)':''}}
+var rqRetryAt=0;
+function rqRetry(force){
+  var p=state.ui.rqPend||{},ids=Object.keys(p);if(!ids.length||!window.tallyQuote)return;
+  if(!force&&Date.now()-rqRetryAt<45000)return;rqRetryAt=Date.now();
+  ids.forEach(function(id){var rq=p[id],nm=(byId(id)||{d:{}}).d.name||'the job';
+    window.tallyQuote.sign(id,rq).then(function(r){
+      if(r&&(r.ok||r.final)){delete (state.ui.rqPend||{})[id];save();toast(r.ok?'The new quote for '+nm+' is saved. The office has been told.':(r.message||'The new quote for '+nm+' couldn’t be saved.'));window.tallyQuote.refresh();renderTab()}
+      else if(force)toast('Still no connection to the office. The phone keeps trying on its own.');
+    });
+  });
+}
+setInterval(function(){if(!document.hidden)rqRetry(false)},60000);
+window.addEventListener('online',function(){rqRetry(true)});
+
+/* the screen: room by room, then check it, then the customer signs */
+function rqOpen(id,who,step){
+  var j=byId(id);if(!j)return;
+  ui.rqo={jobId:id,who:who||'',step:step||'items',dr:rqDraftOf(j),note:'',err:'',busy:false,leave:false,rq:step==='sign'&&j.rq?clone(j.rq):null};
+  renderRq();var b=$('#rq .flow-body');if(b)b.scrollTop=0;
+}
+function rqClose(){ui.rqo=null;renderRq();renderTab();renderSheet()}
+function rqDirty(){var o=ui.rqo,j=o&&byId(o.jobId);if(!o||!j||o.step==='done'||o.step==='sent'||o.rq)return false;return rqChanges(j,o.dr).length>0||!!String(o.note||'').trim()}
+function rqExit(){var o=ui.rqo;if(!o)return;if(rqDirty()&&!o.leave){o.leave=true;rqLeaveBar();var l=$('#rq .rq-leave .btn');if(l)try{l.focus()}catch(e){}return}rqClose()}
+// "Leave without saving?" goes in and out on its own, so a signature being drawn isn't wiped
+function rqLeaveHtml(){return '<div class="rq-leave" role="alertdialog" aria-label="Leave the new quote?"><span>Leave without saving the new quote?</span><button class="btn sm" data-act="rq:stay">Keep going</button><button class="btn sm danger" data-act="rq:leave">Leave</button></div>'}
+function rqLeaveBar(){var el=$('#rq'),o=ui.rqo;if(!el||!o)return;var b=$('.rq-leave',el),h=$('.flow-head',el);if(o.leave&&!b&&h)h.insertAdjacentHTML('afterend',rqLeaveHtml());else if(!o.leave&&b)b.parentNode.removeChild(b)}
+function rqCats(){var S=state.settings,cats=CATS.filter(function(c){return S.catalog.some(function(i){return i.cat===c})});S.catalog.forEach(function(i){if(cats.indexOf(i.cat)<0)cats.push(i.cat)});return cats}
+function rqRoomCount(c,items){return state.settings.catalog.filter(function(i){return i.cat===c}).reduce(function(a,i){return a+(items[i.id]||0)},0)}
+function rqTotals(j,o){var q=rqBuild(j,o.dr).q,d=round2(q.total-num(j.quote.total));return {q:q,d:d,txt:d?(d>0?'+':'−')+money(Math.abs(d)):'no change'}}
+function rqItemsHtml(j,o){
+  var S=state.settings,dr=o.dr,old=j.d.items||{};
+  var groups=rqCats().map(function(c,gi){
+    var n=rqRoomCount(c,dr.items),k='rq:'+gi,open=ui.open[k]!=null?ui.open[k]:rqRoomCount(c,old)>0;
+    var rows=S.catalog.filter(function(i){return i.cat===c}).map(function(it){
+      var v=dr.items[it.id]||0,w=old[it.id]||0;
+      return '<div class="item" data-name="'+esc(it.name.toLowerCase())+'"><div><b>'+esc(it.name)+'</b><small>'+it.cf+' cu ft<span class="rqwas" id="rqw_'+it.id+'">'+(v!==w?' · was '+w:'')+'</span></small></div>'+
+        '<div class="stepper"><button class="btn sm" data-act="rq:dec" data-id="'+it.id+'" aria-label="One less '+esc(it.name)+'">−</button><output id="rq_'+it.id+'">'+v+'</output><button class="btn sm" data-act="rq:inc" data-id="'+it.id+'" aria-label="One more '+esc(it.name)+'">+</button></div></div>';
+    }).join('');
+    return '<details class="grp" data-k="'+k+'"'+(open?' open':'')+'><summary><span>'+esc(c)+' <small class="rqn" id="rqn_'+gi+'">'+(n?n+' item'+(n===1?'':'s'):'')+'</small></span></summary>'+rows+'</details>';
+  }).join('');
+  var f0=num(j.d.flights)||0,f1=num(dr.flights)||0;
+  var extra=(opt('stairs')||f0?'<div class="item"><div><b>Stair flights (total)</b><small><span class="rqwas" id="rqw_fl">'+(f1!==f0?'was '+f0:'')+'</span></small></div><div class="stepper"><button class="btn sm" data-act="rq:fl" data-d="-1" aria-label="One flight less">−</button><output id="rq_fl">'+f1+'</output><button class="btn sm" data-act="rq:fl" data-d="1" aria-label="One flight more">+</button></div></div>':'')+
+    (opt('packing')||j.d.pack?'<label class="check" style="margin-top:8px"><input type="checkbox" id="rqPack"'+(dr.pack?' checked':'')+'> Packing service for the boxes</label>':'');
+  return '<p class="hint" style="margin:0 0 10px">Go room by room. Tap + for each thing that’s moving and − for what isn’t. The price is worked out the same way as the office’s, at the rates on this job’s quote.</p>'+
+    '<label class="f"><span>Find an item</span><input id="rqSearch" type="search" placeholder="Sofa, bed, piano" autocomplete="off"></label>'+
+    '<section class="card rqrooms" style="margin-top:8px">'+groups+'</section>'+
+    (extra?'<section class="card"><h3 style="margin:0 0 4px">Anything else different?</h3>'+extra+'</section>':'');
+}
+function rqFootHtml(j,o){
+  var t=rqTotals(j,o);
+  return '<div class="rq-foot"><div class="grow" aria-live="polite"><small>Quote was '+money(j.quote.total)+'</small><div><b id="rqTot">'+money(t.q.total)+'</b> <small id="rqDiff" class="'+(t.d>0?'money-due':t.d<0?'money-paid':'')+'">'+esc(t.txt)+'</small></div></div><button class="btn primary" data-act="rq:step" data-s="review">Check it</button></div>';
+}
+function rqFootUpdate(j,o){
+  var t=rqTotals(j,o),a=$('#rqTot'),b=$('#rqDiff');
+  if(a)a.textContent=money(t.q.total);
+  if(b){b.textContent=t.txt;b.className=t.d>0?'money-due':t.d<0?'money-paid':''}
+}
+// a stepper was tapped: its number, its "was", the room's count and the new total
+function rqItemUpd(id){
+  var o=ui.rqo,j=o&&byId(o.jobId);if(!j)return;
+  if(id==='fl'){var f=num(o.dr.flights)||0,f0=num(j.d.flights)||0,e=$('#rq_fl'),w=$('#rqw_fl');if(e)e.textContent=f;if(w)w.textContent=f!==f0?'was '+f0:''}
+  else{
+    var v=o.dr.items[id]||0,w0=(j.d.items||{})[id]||0,e2=$('#rq_'+id),w2=$('#rqw_'+id);if(e2)e2.textContent=v;if(w2)w2.textContent=v!==w0?' · was '+w0:'';
+    var it=state.settings.catalog.find(function(x){return x.id===id});
+    if(it){var n=rqRoomCount(it.cat,o.dr.items),c=$('#rqn_'+rqCats().indexOf(it.cat));if(c)c.textContent=n?n+' item'+(n===1?'':'s'):''}
+  }
+  rqFootUpdate(j,o);
+}
+function rqFilter(txt){
+  txt=String(txt||'').trim().toLowerCase();
+  $$('#rq .rqrooms .grp').forEach(function(g){
+    var any=false;$$('.item',g).forEach(function(it){var m=!txt||it.dataset.name.indexOf(txt)>=0;it.hidden=!m;if(m)any=true});
+    g.hidden=txt?!any:false;if(txt&&any)g.open=true;
+  });
+}
+function rqLinesHtml(q,head){
+  return '<table class="lines">'+(q.lines||[]).map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('')+
+    '<tr class="sub"><td>'+esc(head||'New quote')+'</td><td>'+money(q.total)+'</td></tr>'+
+    (q.capNte!==false&&!q.flat&&q.nte>0?'<tr><td><small>Not to exceed</small></td><td><small>'+money(q.nte)+'</small></td></tr>':'')+
+    (q.deposit>0?'<tr><td><small>Deposit (as booked)</small></td><td><small>'+money(q.deposit)+'</small></td></tr>':'')+'</table>';
+}
+// room on the truck(s) on the job for the new load
+function rqFit(j,q){
+  var ids=jobTrucks(j);if(!ids.length)return '';
+  var cap=ids.reduce(function(a,id){var t=state.settings.trucks.find(function(x){return x.id===id});return a+(t?num(t.cf):0)},0);
+  return cap>0&&num(q.cf)*1.08>cap?'<p class="note" style="margin:10px 0 0">The new load needs more room than '+esc(ids.map(truckName).join(' and '))+'. Tell the office.</p>':'';
+}
+function rqReviewHtml(j,o){
+  var t=rqTotals(j,o),q=t.q,q0=j.quote,ch=rqChanges(j,o.dr),ask=rqAsk();
+  var tiles='<div class="kpis k3"><div class="kpi"><b>'+money(q0.total)+'</b><span>Quote was</span></div><div class="kpi"><b>'+money(q.total)+'</b><span>New quote</span></div><div class="kpi'+(t.d>0?' due':t.d<0?' paid':'')+'"><b>'+(t.d?(t.d>0?'+':'−')+money(Math.abs(t.d)):'$0')+'</b><span>Difference</span></div></div>';
+  var basis='<p class="hint" style="margin:8px 0 0">'+esc(fmtInt(q0.cf)+' → '+fmtInt(q.cf)+' cu ft · '+q.crew+' movers · '+fmtHrs(q0.hours)+' → '+fmtHrs(q.hours)+' estimated'+(q.nTrucks>1?' · '+q.nTrucks+' trucks':''))+'</p>';
+  var chl=ch.length?'<ul class="rqch">'+ch.map(function(c){return '<li>'+esc(c.t)+'</li>'}).join('')+'</ul>':'<p class="hint" style="margin:0">Nothing is different yet. Go back to the rooms to change what’s moving.</p>';
+  var go=!ch.length?'':ask?'<button class="btn primary bigbtn" data-act="rq:send">Send to the office to approve</button><p class="hint" style="text-align:center">The owner or dispatch approves it, then the customer signs.</p>'
+    :'<button class="btn primary bigbtn" data-act="rq:step" data-s="sign">The customer signs</button>';
+  return tiles+basis+'<section class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">What’s different</h3>'+chl+'</section>'+
+    (ch.length?'<section class="card"><h3 style="margin:0 0 6px">The new quote</h3>'+rqLinesHtml(q)+rqFit(j,q)+'</section>'+
+      '<label class="f"><span>Why it changed (for the office)</span><textarea id="rqNote" class="cc-ta" placeholder="The garage wasn’t on the quote">'+esc(o.note||'')+'</textarea></label>':'')+
+    go+'<button class="btn" style="width:100%;margin-top:8px" data-act="rq:step" data-s="items">Back to the rooms</button>';
+}
+function rqSignHtml(j,o){
+  var rq=o.rq,q=rq?rq.quote:rqTotals(j,o).q,was=rq?num(rq.was):num(j.quote.total);
+  var nte=q.capNte!==false&&!q.flat&&q.nte>0?q.nte:0;
+  var how=q.flat?'This is a flat price: the bill is this quote.':'The bill still follows the time the move takes'+(q.kind==='mileage'?' and the miles driven':'')+(nte?', and it won’t go over '+money(nte):'')+'.';
+  var ch=rq?(rq.changes||[]):rqChanges(j,o.dr).map(function(c){return c.t});
+  return '<h2 style="margin:0">New estimate: '+money(q.total)+'</h2><p class="hint">The quote was '+money(was)+'. '+esc(how)+'</p>'+
+    (ch.length?'<ul class="rqch">'+ch.map(function(c){return '<li>'+esc(c)+'</li>'}).join('')+'</ul>':'')+
+    (rq&&rq.ok?'<p class="hint">Approved by '+esc(rq.ok.by||'the office')+'.</p>':'')+
+    fld('Printed name','<input id="sigName" value="'+esc(j.d.name)+'" autocomplete="off">')+
+    '<label class="check"><input type="checkbox" id="sigAgree"> I agree to the new estimate of '+money(q.total)+(nte?', not to exceed '+money(nte):'')+'.</label>'+
+    '<div class="f"><span>Sign here with your finger</span></div><canvas id="sigPad" class="sigpad" aria-label="Signature pad"></canvas>'+
+    '<div class="row"><button class="btn" data-act="rq:clearsig">Clear</button><button class="btn primary grow" data-act="rq:sign"'+(o.busy?' disabled':'')+'>'+(o.busy?'Saving…':'Sign and save')+'</button></div><p class="hint" id="rqErr" role="alert"'+(o.err?' style="color:var(--bad)"':'')+'>'+esc(o.err||'')+'</p>'+
+    (rq?'':'<button class="btn ghost" style="width:100%;margin-top:4px" data-act="rq:step" data-s="review">Back</button>');
+}
+function rqDoneHtml(j,o){
+  if(o.step==='sent')return '<div class="card"><h2>Sent to the office</h2><p class="hint">The owner or dispatch looks at the new quote of '+money(o.total||0)+'. When they approve it, the job card says so, and then the customer signs.</p></div><button class="btn primary bigbtn" data-act="rq:exit">Close</button>';
+  if(o.pend)return '<div class="card"><h2>Signed</h2><p class="hint">'+money(o.total||0)+(o.signedBy?', signed by '+esc(o.signedBy):'')+'. The phone has no connection to the office right now, so it’s kept here and sent as soon as there’s signal.</p></div><button class="btn primary bigbtn" data-act="rq:exit">Close</button>';
+  return '<div class="card"><h2>The new quote is on the job</h2><p class="hint">'+money(o.total||0)+(o.signedBy?', signed by '+esc(o.signedBy):'')+'. The office has been told.</p></div><button class="btn primary bigbtn" data-act="rq:exit">Close</button>';
+}
+function renderRq(){
+  var el=$('#rq');if(!el)return;
+  var o=ui.rqo,j=o?byId(o.jobId):null;
+  if(!o||!j){ui.rqo=null;el.hidden=true;el.innerHTML='';el.dataset.step='';syncLock();return}
+  var body,label;
+  if(o.step==='items'){body=rqItemsHtml(j,o);label='Room by room'}
+  else if(o.step==='review'){body=rqReviewHtml(j,o);label='Check it'}
+  else if(o.step==='sign'){body=rqSignHtml(j,o);label='The customer signs'}
+  else{body=rqDoneHtml(j,o);label=o.step==='sent'?'Sent':'Saved'}
+  var prev=$('.flow-body',el),keep=prev&&el.dataset.step===o.step?prev.scrollTop:0,fin=o.step==='done'||o.step==='sent';
+  var leave=o.leave?rqLeaveHtml():'';
+  el.innerHTML='<div class="flow-head"><div><b>'+esc(j.d.name||'A job')+'</b><br><small>New quote · '+label+'</small></div>'+(fin?'':'<button class="btn sm" data-act="rq:exit">Exit</button>')+'</div>'+leave+
+    '<div class="flow-body">'+body+'</div>'+(o.step==='items'?rqFootHtml(j,o):'');
+  el.dataset.step=o.step;el.hidden=false;syncLock();
+  var nb=$('.flow-body',el);if(nb&&keep)nb.scrollTop=keep;
+  if(o.step==='sign')initSig();
+}
+// the job card's Quote part, for the crew lead: the button, where a new quote is up to, and the earlier quotes
+function rqCardHtml(j,me){
+  var r=j.rq,out='',live=rqLive(j),pend=(state.ui.rqPend||{})[j.id];
+  if(pend)out+='<div class="note rqnote"><b>The new quote is signed but not saved yet</b><div>'+money(pend.quote.total)+', signed by '+esc(pend.sig?pend.sig.name:'the customer')+'. It goes to the office as soon as the phone has signal.</div><button class="btn sm" style="margin-top:6px" data-act="rq:retry">Try again now</button></div>';
+  else if(r&&live&&rqStale(j))out+='<div class="note rqnote"><b>The quote on the job changed</b><div>The office changed the quote after your new one ('+money(r.quote.total)+') was made, so that one no longer counts.</div></div>';
+  else if(r&&live&&r.state==='waiting')out+='<div class="note rqnote"><b>New quote sent to the office</b><div>'+money(r.quote.total)+' (was '+money(r.was)+'), from '+esc(r.by||'the crew')+'. Waiting for the owner or dispatch to approve it.</div><button class="btn sm" style="margin-top:6px" data-act="rq:cancel" data-id="'+j.id+'" data-who="'+esc(me)+'">Take it back</button></div>';
+  else if(r&&live&&r.state==='approved')out+='<div class="note rqnote"><b>'+esc((r.ok&&r.ok.by)||'The office')+' approved the new quote</b><div>'+money(r.quote.total)+' (was '+money(r.was)+')'+(r.ok&&r.ok.note?': “'+esc(r.ok.note)+'”':'')+'. Have the customer sign it.</div>'+
+    '<div class="row" style="margin-top:6px"><button class="btn primary sm" data-act="rq:open" data-id="'+j.id+'" data-who="'+esc(me)+'" data-step="sign">The customer signs</button><button class="btn sm" data-act="rq:refuse" data-id="'+j.id+'" data-who="'+esc(me)+'">The customer doesn’t agree</button></div></div>';
+  else if(r&&live&&r.state==='declined')out+='<div class="note rqnote"><b>'+esc((r.no&&r.no.by)||'The office')+' didn’t approve the new quote</b><div>'+money(r.quote.total)+(r.no&&r.no.why?': “'+esc(r.no.why)+'”':'')+'. The job stays at '+money(j.quote.total)+'.</div></div>';
+  else if(r&&live&&r.state==='refused')out+='<div class="note rqnote"><b>The customer didn’t agree to the new quote</b><div>The job stays at '+money(j.quote.total)+'. The office has been told.</div></div>';
+  if(rqCan(j,me))out+='<button class="btn" style="width:100%;margin-top:8px" data-act="rq:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Items different? Make a new quote</button>';
+  return out+rqHistHtml(j,false);
+}
+function rqHistHtml(j,office){
+  var h=j.quoteHist||[];if(!h.length)return '';
+  return '<div class="rqhist"><h5>Earlier quotes</h5>'+h.slice().reverse().map(function(x){
+    var sg=x.sign||null;
+    return '<div class="who"><span><b>'+money(num(x.was&&x.was.total))+' → '+money(x.now)+'</b><br><small>'+esc(fmtStamp(x.ts))+' · new quote on site by '+esc(x.by||'the crew')+(x.ok?' · approved by '+esc(x.ok.by||'the office'):'')+(sg?' · signed by '+esc(sg.name):'')+(x.why?' · “'+esc(x.why)+'”':'')+'</small>'+
+      ((x.changes||[]).length?'<small class="rqchl">'+esc(x.changes.join(', '))+'</small>':'')+'</span>'+
+      (office&&sg&&String(sg.img||'').indexOf('data:image/')===0?'<img alt="Signature of '+esc(sg.name)+'" src="'+sg.img+'" class="rqsig">':'')+'</div>'}).join('')+'</div>';
+}
+// the office's side, at the top of the job sheet: approve it or not, and hear about the ones the customer signed
+function rqSheetTop(j){
+  var r=j.rq;if(!r||['booked','active','done'].indexOf(j.status)<0)return '';
+  var head=money(r.was)+' → '+money(r.quote.total);
+  var chg=(r.changes||[]).length?'<ul class="rqch">'+r.changes.map(function(c){return '<li>'+esc(c)+'</li>'}).join('')+'</ul>':'';
+  var why=r.note?'<div>“'+esc(r.note)+'”</div>':'';
+  if(r.state==='waiting'&&rqLive(j))return '<div class="note rqnote rqask"><b>New quote from '+esc(r.by||'the crew')+': '+head+'</b>'+chg+why+rqLinesHtml(r.quote)+
+      (Math.abs(num(r.was)-num(j.quote.total))>=0.005?'<p class="hint">The quote on the job changed after this was made (it’s '+money(j.quote.total)+' now), so it can’t be approved. Ask '+esc(r.by||'the crew lead')+' to make it again.</p>':'')+
+      '<label class="f" style="margin-top:8px"><span>A note back (optional)</span><input id="rqWhy" placeholder="Call me before you go ahead" autocomplete="off"></label>'+
+      '<div class="row" style="margin-top:8px">'+(Math.abs(num(r.was)-num(j.quote.total))<0.005?'<button class="btn primary grow" data-act="rq:ok">Approve</button>':'')+'<button class="btn grow" data-act="rq:no">Don’t approve</button></div></div>';
+  if(r.state==='approved'&&rqLive(j)&&!rqStale(j))return '<p class="hint" style="margin:0 0 10px">New quote approved by '+esc((r.ok&&r.ok.by)||'the office')+' ('+head+'). Waiting for the customer to sign it.</p>';
+  if(r.seen)return '';
+  if(r.state==='done')return '<div class="note rqnote"><b>New quote signed on site: '+head+'</b><div>By '+esc(r.by||'the crew')+(r.sig?', signed by '+esc(r.sig.name)+' at '+esc(fmtStamp(r.sig.ts||r.applied)):'')+'.</div>'+chg+why+'<button class="btn sm" style="margin-top:6px" data-act="rq:seen">Got it</button></div>';
+  if(r.state==='refused')return '<div class="note rqnote"><b>The customer didn’t agree to the new quote ('+money(r.quote.total)+')</b><div>The job stays at '+money(j.quote.total)+'. From '+esc(r.by||'the crew')+'.</div>'+chg+'<button class="btn sm" style="margin-top:6px" data-act="rq:seen">Got it</button></div>';
+  return '';
+}
+// Today, for the office
+function rqAlerts(A){
+  state.jobs.forEach(function(j){var r=j.rq;if(!r||!r.quote)return;
+    var nm=esc(j.d.name||'A job'),head=money(r.was)+' → '+money(r.quote.total);
+    if(r.state==='waiting'&&rqLive(j)&&!rqStale(j))A.push(alertRow('warn','New quote to approve: '+nm,head+' · from '+esc(r.by||'the crew'),'job:open',j.id));
+    else if(r.seen||['booked','active','done'].indexOf(j.status)<0)return;
+    else if(r.state==='done')A.push(alertRow('warn','New quote signed on site: '+nm,head+' · by '+esc(r.by||'the crew')+(r.sig?' · signed by '+esc(r.sig.name):''),'job:open',j.id));
+    else if(r.state==='refused')A.push(alertRow('bad','The customer didn’t agree to the new quote',nm+' · '+money(r.quote.total)+', the job stays at '+money(j.quote.total),'job:open',j.id));
+  });
+}
+var rqSeen={me:'',m:null};
+// on the shared app: tells the office when a crew lead's new quote comes in, and the lead when the office answers
+function rqNotice(){
+  var me=myName(),office=canEditJobs(),m={};
+  state.jobs.forEach(function(j){var r=j.rq;if(r&&r.id)m[j.id]=r.id+':'+r.state});
+  if(rqSeen.me===me&&rqSeen.m){
+    Object.keys(m).forEach(function(id){
+      if(m[id]===rqSeen.m[id])return;
+      var j=byId(id),r=j&&j.rq,nm=(j&&j.d.name)||'a job';if(!r||!r.quote)return;
+      if(office&&r.by!==me){
+        if(r.state==='waiting')toast((r.by||'The crew')+' made a new quote for '+nm+': '+money(r.quote.total)+' (was '+money(r.was)+'). It’s waiting for you to approve it.');
+        else if(r.state==='done')toast((r.by||'The crew')+' made a new quote for '+nm+': '+money(r.quote.total)+' (was '+money(r.was)+'), signed by '+((r.sig&&r.sig.name)||'the customer')+'.');
+        else if(r.state==='refused')toast('The customer didn’t agree to the new quote on '+nm+'.');
+      }else if(!office&&r.by===me){
+        if(r.state==='approved')toast(((r.ok&&r.ok.by)||'The office')+' approved the new quote for '+nm+'. Have the customer sign it.');
+        else if(r.state==='declined')toast(((r.no&&r.no.by)||'The office')+' didn’t approve the new quote for '+nm+'.');
+      }
+    });
+  }
+  rqSeen={me:me,m:m};
+}
+
 function crewKit(me){
   var S=state.settings,role=state.ui.role,t=todayISO();
   var asLead=role==='owner'||role==='dispatch'||(role==='lead'&&isLead(me));
   function billPanel(j){
-    var bal=balOf(j),pend=formsPending(j),req=formsRequired(),coll=canCollect();
+    var bal=balOf(j),pend=formsPending(j),req=formsRequired(),coll=canCollect(),closed=j.status==='paid';
     var extras=(j.extras||[]).map(function(e){return '<tr><td>'+esc(e.label)+'</td><td>'+(e.amt<0?'−':'')+money(Math.abs(e.amt))+'</td></tr>'}).join('');
     var bq=j.quote||{},bk=backApplies(j)?'<p class="hint" style="margin:8px 0 0">'+(j.back?(bq.kind==='mileage'?'Miles: '+fmtMi(num(j.back.soFar))+(j.back.odoEnd!=null?' on the odometer':' so far')+' + '+fmtMi(num(j.back.mi))+' back to the shop '+(BACK_HOW[j.back.src]||'typed in'):'Drive back to the shop: '+(num(j.back.mins)>0?fmtDur(num(j.back.mins)*60000):'none'))+' ('+esc(j.back.by||'')+') <button class="btn sm ghost" data-act="back:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Change</button>'
       :(bq.kind==='mileage'?'The miles back to the shop go':'The drive back to the shop goes')+' on the bill when you bill out.')+'</p>':'';
-    var charge=canCharge()?'<div class="grid2 stack" style="margin-top:8px">'+fld('Add a charge or credit','<input id="ce_l_'+j.id+'" placeholder="Stairs, parking, damage credit">','span2')+fld('Amount','<input id="ce_a_'+j.id+'" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00">')+fld('Type','<select id="ce_t_'+j.id+'"><option value="charge">Charge</option><option value="credit">Credit</option></select>')+'</div><button class="btn" style="margin-top:6px" data-act="cr:charge" data-id="'+j.id+'">Add to bill</button>':'';
-    var act=!(bal>0||pend.length)?'<p class="hint">Paid in full.</p>'
+    var charge=canCharge()&&!closed?'<div class="grid2 stack" style="margin-top:8px">'+fld('Add a charge or credit','<input id="ce_l_'+j.id+'" placeholder="Stairs, parking, damage credit">','span2')+fld('Amount','<input id="ce_a_'+j.id+'" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00">')+fld('Type','<select id="ce_t_'+j.id+'"><option value="charge">Charge</option><option value="credit">Credit</option></select>')+'</div><button class="btn" style="margin-top:6px" data-act="cr:charge" data-id="'+j.id+'">Add to bill</button>':'';
+    var act=!(bal>0||pend.length)?''
       :coll?'<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>'
       :pend.length?'<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Get signatures</button>'
       :'<p class="hint">The office collects the payment.</p>';
-    return '<div><table class="lines"><tr><td>Quote</td><td>'+money(j.quote.total)+'</td></tr>'+matRows(j)+extras+'<tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+bk+charge+
+    // the quote, then everything that changed it, then the bill: so the lead can explain the difference
+    var diff=round2(totalOf(j)-num(j.quote.total));
+    return '<div><table class="lines"><tr><td>Quote</td><td>'+money(j.quote.total)+'</td></tr>'+matRows(j)+extras+
+      '<tr class="sub"><td>Bill <small>('+(Math.abs(diff)>=0.01?(diff>0?'+':'−')+money(Math.abs(diff))+' on the quote':'the same as the quote')+')</small></td><td>'+money(totalOf(j))+'</td></tr><tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+bk+charge+
       (req.length?'<p class="hint">Forms signed: '+(req.length-pend.length)+' of '+req.length+'</p>':'')+
+      (savedOf(j)?'<p class="hint money-paid saved" style="margin:6px 0 0">The customer saved '+money(savedOf(j))+' off the quote.</p>':'')+
       (bal>0?'<p class="hint money-due" style="margin:6px 0 0">'+money(bal)+' still to collect</p>':'<p class="hint money-paid" style="margin:6px 0 0">Paid in full</p>')+act+'</div>';
   }
-  // fold: a short row that opens to the whole card (Richie, Oct 21). History's (fold true) is the customer's
-  // name and the day; Coming up's (fold 'soon') adds the start time and how long the job should take.
+  // The quote and what made it up, always on a lead's card (Richie, Oct 21: "the lead should always be able
+  // to see the quote and what made up the quote. that way he can explain any differences on the bill").
+  function quoteSec(j){
+    var q=j.quote||{};if(!(q.lines||[]).length&&!(num(q.total)>0))return '';
+    var basis=[q.cf?fmtInt(q.cf)+' cu ft':'',q.crew?q.crew+' movers':'',q.hours?fmtHrs(q.hours)+' estimated':'',q.kind==='mileage'&&q.miles?fmtMi(q.miles)+' mi':''].filter(Boolean).join(' · ');
+    var rows=(q.lines||[]).map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('')+
+      '<tr class="sub"><td>Quote</td><td>'+money(q.total)+'</td></tr>'+
+      (q.capNte!==false&&!q.flat&&q.nte>0?'<tr><td><small>Not to exceed</small></td><td><small>'+money(q.nte)+'</small></td></tr>':'')+
+      (q.deposit>0?'<tr><td><small>Deposit at booking</small></td><td><small>'+money(q.deposit)+'</small></td></tr>':'');
+    var items=(j.items||[]).map(function(i){return esc(i.name)+' × '+i.qty}).join(', ');
+    return '<div class="cc-sec cc-quote"><h4>Quote</h4>'+(basis?'<p class="hint" style="margin:0 0 4px">'+esc(basis)+'</p>':'')+'<table class="lines">'+rows+'</table>'+
+      (q.flat?'<p class="hint" style="margin:6px 0 0">Flat price: the bill is this quote.</p>':'')+
+      (items?'<p class="hint" style="margin:6px 0 0">Items: '+items+'</p>':'')+clockHtml(j,true)+rqCardHtml(j,me)+'</div>';
+  }
+  // fold: a short row that opens to the whole card (Richie, Oct 21): the customer's name, then for a finished
+  // job the day and the time on the job, for one coming up the day, the start time and how long it should take.
   function card(j,fold){
     var tl=j.items.reduce(function(a,i){return a+i.qty},0);
     var ld=j.items.reduce(function(a,i){return a+((j.tally[i.id]||{}).l?i.qty:0)},0),dl=j.items.reduce(function(a,i){return a+((j.tally[i.id]||{}).d?i.qty:0)},0);
@@ -2522,20 +2915,24 @@ function crewKit(me){
     var photoSec='<div class="cc-sec cc-photos"><h4>Photos</h4><div class="row" style="gap:6px"><button class="btn sm" data-act="photo" data-kind="Pickup" data-id="'+j.id+'">+ Pickup photo</button><button class="btn sm" data-act="photo" data-kind="Delivery" data-id="'+j.id+'">+ Delivery photo</button><button class="btn sm" data-act="photo" data-kind="Damage" data-id="'+j.id+'">+ Damage photo</button></div>'+
       (thumbs?'<div class="row" style="margin-top:8px;gap:6px">'+thumbs+'</div>':'<p class="hint" style="margin:6px 0 0">No photos yet.</p>')+
       (opt('photosReq')&&j.status==='active'?'<p class="hint">Before Finish job: '+(photosMissing(j)?photosMissing(j).replace(/^Take /,'take ').replace(/ before you finish the job\.$/,'.'):'the pickup and delivery photos are in.')+'</p>':'')+'</div>';
-    var billIn=asLead&&(j.status==='active'||j.status==='done');
+    var billIn=asLead&&['active','done','paid'].indexOf(j.status)>=0;
     var tallySec=opt('tally')&&tl?'<details class="acc cc-tally"><summary><span>Load tally</span><small>loaded '+ld+' of '+tl+' · delivered '+dl+' of '+tl+'</small></summary><div class="acc-body">'+rows+'</div></details>':'';
     var upd=['done','paid'].indexOf(j.status)>=0||!opt('updates')?'':'<div style="margin-top:12px"><small>Send an update to the office and crew</small><div class="scrollx" style="margin-top:6px">'+UPDATES.map(function(u,i){return '<button class="chip" data-act="cr:update" data-id="'+j.id+'" data-u="'+i+'" data-who="'+esc(me)+'">'+u+'</button>'}).join('')+'</div></div>';
     var runSec='<div class="cc-run"><div class="cc-actions">'+main+call+'</div>'+waitLine+
       (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+(asLead&&j.status==='active'&&phaseNext(j)>0?'<button class="btn sm ghost" data-act="cr:phaseundo" data-id="'+j.id+'" data-who="'+esc(me)+'">Undo “'+PHASES[phaseNext(j)-1][1]+'”</button>':'')+'</div>':'')+
-      mdrive+odoBox+tallySec+upd+(billIn?'<div class="cc-sec"><h4>Bill</h4>'+billPanel(j)+'</div>':'')+'</div>';
+      mdrive+odoBox+tallySec+upd+(asLead?quoteSec(j):'')+(billIn?'<div class="cc-sec"><h4>Bill</h4>'+billPanel(j)+'</div>':'')+'</div>';
     var testTag=j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'';
     var body='<div class="cc-sub">Crew: '+(crewLine||'none yet')+'</div>'+crewHint+truckLines+
       (j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+
       '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+
       notesSec+matsSec+photoSec+runSec;
     var est=['booked','active'].indexOf(j.status)>=0?estLine(j):'';
-    if(fold){var hk='h:'+j.id,day=fold==='soon'?fmtDate(j.d.moveDate)+(j.d.time?' · '+fmtTime(j.d.time):'')+(est?' · '+est:''):fmtDate(j.d.moveDate);
-      return '<details class="acc card crewcard hcard" data-job="'+j.id+'" data-k="'+hk+'"'+(ui.open[hk]?' open':'')+'><summary><span class="hsum"><b>'+esc(j.d.name||'A job')+testTag+'</b><small>'+esc(day)+'</small></span><span class="hmore">Details</span><span class="hpill">'+pill(j.status)+'</span></summary><div class="hbody">'+body+'</div></details>'}
+    if(fold){var hk='h:'+j.id,fin=['done','paid'].indexOf(j.status)>=0,dayW=j.d.moveDate===t?'Today':fmtDate(j.d.moveDate);
+      // finished (Richie, Oct 21: "the customer name, date and time on job"): the day and how long the job took
+      var took=j.startedAt&&j.finishedAt>j.startedAt?j.finishedAt-j.startedAt:(j.actualHours>0?j.actualHours*36e5:0);
+      var owe=fin&&asLead&&j.status==='done'?(balOf(j)>0&&canCollect()?money(balOf(j))+' due':formsPending(j).length?'forms to sign':''):'';
+      var day=fin?esc(dayW+(took?' · '+fmtDur(took)+' on the job':'')):esc(fmtDate(j.d.moveDate)+(j.d.time?' · '+fmtTime(j.d.time):'')+(est?' · '+est:''));
+      return '<details class="acc card crewcard hcard" data-job="'+j.id+'" data-k="'+hk+'"'+(ui.open[hk]?' open':'')+'><summary><span class="hsum"><b>'+esc(j.d.name||'A job')+testTag+'</b><small>'+day+'</small>'+(owe?'<small class="money-due hdue">'+esc(owe)+'</small>':'')+'</span><span class="hmore">Details</span><span class="hpill">'+pill(j.status)+'</span></summary><div class="hbody">'+body+'</div></details>'}
     return '<section class="card crewcard" data-job="'+j.id+'"><div class="cc-head"><div class="grow"><h3>'+esc(j.d.name)+testTag+'</h3></div>'+pill(j.status)+'</div>'+
       '<div class="cc-sub cc-date">'+(j.d.moveDate===t?'<b>Today</b>':esc(fmtDate(j.d.moveDate)))+(j.d.time?' · '+fmtTime(j.d.time):'')+(est?' · '+est:'')+'</div>'+body+'</section>';
   }
@@ -2582,9 +2979,9 @@ function renderCrew(){
     return '<div class="cfmrow"><span class="grow"><b>'+esc(j.d.name||'A job')+'</b><small>'+esc((rd==='today'||rd==='tomorrow'?rd.charAt(0).toUpperCase()+rd.slice(1):rd)+' at '+fmtTime(j.d.time))+(j.confirm&&j.confirm[me]?' · the day or time changed':'')+'</small></span><button class="btn primary sm" data-act="jm:confirm" data-id="'+j.id+'" data-who="'+esc(me)+'">Confirm</button></div>'}).join('')+'</div>':'';
   v.innerHTML=head+sv+clock+pills+cfm+
     '<div class="secline"><h2>Today</h2>'+(todays.length?'<small>'+todays.length+'</small>':'')+'</div>'+
-    (todays.length?todays.map(function(j){return card(j)}).join(''):'<div class="card empty"><h3>No jobs today</h3><p>'+(mine.length?'Your next job is below.':'The office assigns crews. New jobs show here, and finished ones are in History.')+'</p></div>')+
-    (later.length?'<div class="secline"><h2>Coming up</h2><small>'+later.length+'</small></div>'+later.map(function(j){return card(j,'soon')}).join(''):'')+   // folded, with the time and the estimate (Richie, Oct 21)
-    (billJobs.length?'<div class="secline"><h2>Finished, needs billing</h2><small>'+billJobs.length+'</small></div>'+billJobs.map(function(j){return card(j)}).join(''):'');
+    (todays.length?todays.map(function(j){return card(j,['done','paid'].indexOf(j.status)>=0)}).join(''):'<div class="card empty"><h3>No jobs today</h3><p>'+(mine.length?'Your next job is below.':'The office assigns crews. New jobs show here, and finished ones are in History.')+'</p></div>')+
+    (later.length?'<div class="secline"><h2>Coming up</h2><small>'+later.length+'</small></div>'+later.map(function(j){return card(j,true)}).join(''):'')+   // folded, with the time and the estimate (Richie, Oct 21)
+    (billJobs.length?'<div class="secline"><h2>Finished, needs billing</h2><small>'+billJobs.length+'</small></div>'+billJobs.map(function(j){return card(j,true)}).join(''):'');
 }
 
 /* ---------- JOB HISTORY ---------- */
@@ -2900,7 +3297,7 @@ function render(){
   if((role==='crew'||role==='lead')&&(ui.tab==='history'||ui.tab==='today')){if(ui.tab==='history')ui.crewView='history';ui.tab='crew'}
   if(!tabs.some(function(t){return t.id===ui.tab}))ui.tab=tabs[0].id;
   renderTabs();
-  renderTab();renderSheet();renderFlow();renderMore();renderCall();renderStart();renderPvBar();renderSos();renderSosBar();
+  renderTab();renderSheet();renderFlow();if(!ui.rqo||ui.rqo.step!=='sign')renderRq();renderMore();renderCall();renderStart();renderPvBar();renderSos();renderSosBar();
 }
 function renderTabs(){
   var un=unreadTotal(),nav=navTabs(),wide=window.innerWidth>=900,office=canEditJobs();
@@ -3555,7 +3952,7 @@ function jobDoc(j){
   var dd=Object.assign({},j.d);
   dd.items=Object.keys(j.d.items||{}).map(function(k){return {id:k,q:j.d.items[k]}});
   var o={id:j.id,status:j.status,createdAt:j.createdAt,d:dd,quote:j.quote,items:j.items||[],assign:j.assign||{truckId:'',crew:[]},tally:j.tally||{}};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
   o.payments=toMap(j.payments,function(x){return x.id});
   o.signed=toMap(j.signed,function(x){return x.id});
   o.extras=toMap(j.extras,function(x){return x.id});
@@ -3580,7 +3977,7 @@ function docToJob(v){
     materials:mapArr(v.materials,'ts'),costs:mapArr(v.costs,'ts'),confirm:(v.confirm&&typeof v.confirm==='object')?v.confirm:{},
     crewOn:(v.crewOn&&typeof v.crewOn==='object')?v.crewOn:undefined,
     log:mapArr(v.log,'ts').slice(-60)};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
   return j;
 }
 function jobDiff(prev,cur){
@@ -3727,7 +4124,7 @@ function pullJobs(snap){
   // work it out again here, so the bill matches the job. Lines from another version of Tally are left.
   Object.keys(remote).forEach(function(id){var cj=byId[id];if(cj&&cj.clockAt&&typeof cj.clockSig==='string'&&cj.clockSig.indexOf(CLOCK_V+':')===0&&cj.clockSig!==clockSig(cj)){rebill(cj,'worked out again');changed=true}});
   sync.got.jobs=true;
-  jobMsgNotice();noteNotice();onJobNotice(false);
+  jobMsgNotice();noteNotice();onJobNotice(false);rqNotice();
   state.jobs.forEach(function(j){(j.photos||[]).forEach(function(p){if(!p.data)fetchPhoto(p.id,0)})});
   commsBaseline();
   if(changed){cacheSave();softRefresh();if(ui.flow)flowRefresh()}
@@ -5618,12 +6015,12 @@ function adminAddCompany(){
 }
 
 /* ---------- signing and payment flow ---------- */
-function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.emp||ui.mp||ui.sosOpen||ui.sosStart));navSync()}
+function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||ui.rqo||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.emp||ui.mp||ui.sosOpen||ui.sosStart));navSync()}
 /* In the installed app the phone's Back button should close whatever is open, not the app.
    One history entry stands in for "something is open"; Back closes the top screen. */
 var nav={pushed:false};
 function standalone(){try{return !!window.TALLY_STANDALONE||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||String(document.referrer).indexOf('android-app://')===0}catch(e){return false}}
-function topOverlay(){return (ui.sosOpen||ui.sosStart)?'sos':ui.mp?'matpick':ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':(ui.tab==='settings'&&ui.setSec)?'setsec':''}
+function topOverlay(){return (ui.sosOpen||ui.sosStart)?'sos':ui.mp?'matpick':ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.rqo?'rq':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':(ui.tab==='settings'&&ui.setSec)?'setsec':''}
 function navSync(){if(!standalone()||nav.pushed||!topOverlay())return;nav.pushed=true;try{history.pushState({tally:1},'')}catch(e){}}
 window.addEventListener('popstate',function(){
   nav.pushed=false;var t=topOverlay();
@@ -5633,6 +6030,7 @@ window.addEventListener('popstate',function(){
   else if(t==='call'){ui.call=null;renderCall()}
   else if(t==='pick'){ui.pick=false;renderPick()}
   else if(t==='more'){ui.more=false;ui.moreMode='list';renderMore()}
+  else if(t==='rq')rqExit();
   else if(t==='emp')closeEmp();
   else if(t==='flow')closeFlow();
   else if(t==='sheet')leaveSheet(closeSheet);
@@ -5868,7 +6266,9 @@ function payStepOffline(j){
 function payTitle(j){return ['active','done','paid'].indexOf(j.status)>=0?'Collect payment':'Take a payment'}
 function payTiles(j){
   var bal=balOf(j),fin=['active','done','paid'].indexOf(j.status)>=0;
-  return '<div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="kpi"><b>'+money(totalOf(j))+'</b><span>'+(fin?'Bill':'Quote')+'</span></div><div class="kpi'+(paidOf(j)>0?' paid':'')+'"><b>'+money(paidOf(j))+'</b><span>Paid</span></div><div class="kpi'+(bal>0?(fin?' due':''):' paid')+'"><b>'+money(bal)+'</b><span>'+(fin?'Due now':'Left to pay')+'</span></div></div>';
+  var sv=savedOf(j);
+  return kpiRow([[totalOf(j),fin?'Bill':'Quote',''],[paidOf(j),'Paid',paidOf(j)>0?'paid':''],[bal,fin?'Due now':'Left to pay',bal>0?(fin?'due':''):'paid']])+
+    (sv?'<p class="hint money-paid saved">You saved '+money(sv)+' off your quote of '+money(j.quote.total)+'.</p>':'');
 }
 function payStep(j){
   if(payOn())return payStepStripe(j);
@@ -5890,7 +6290,7 @@ function payStep(j){
 function doneStep(j){
   var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+(p.pending?' <small>(pending)</small>':'')+'<br><small>'+esc(/^\d{4}-\d\d-\d\d$/.test(p.date||'')?fmtDate(p.date):p.date||'')+'</small></td><td>'+money(p.amt)+'</td></tr>'}).join('')||'<tr><td><small>No payments.</small></td><td></td></tr>';
   var forms=(j.signed||[]).map(function(x){return '<div><small>'+esc(x.title)+' · '+(x.waived?'waived':'signed by '+esc(x.name))+'</small></div>'}).join('');
-  return '<div class="card" style="text-align:center;margin-top:8px"><h2>'+(balOf(j)>0?'Forms signed':'Paid in full')+'</h2><p class="hint">Thank you, '+esc(j.d.name)+'.</p>'+(balOf(j)>0&&!canCollect()?'<p class="hint">'+money(balOf(j))+' is still owed. The office collects the payment.</p>':'')+'</div><section class="card"><h3>Receipt</h3><table class="lines">'+pays+'<tr class="total"><td>Total bill</td><td>'+money(totalOf(j))+'</td></tr></table>'+forms+'</section><button class="btn primary bigbtn" data-act="flow:close">Close</button>';
+  return '<div class="card" style="text-align:center;margin-top:8px"><h2>'+(balOf(j)>0?'Forms signed':'Paid in full')+'</h2><p class="hint">Thank you, '+esc(j.d.name)+'.</p>'+(savedOf(j)?'<p class="hint money-paid saved">You saved '+money(savedOf(j))+' off your quote of '+money(j.quote.total)+'.</p>':'')+(balOf(j)>0&&!canCollect()?'<p class="hint">'+money(balOf(j))+' is still owed. The office collects the payment.</p>':'')+'</div><section class="card"><h3>Receipt</h3><table class="lines">'+pays+'<tr class="total"><td>Total bill</td><td>'+money(totalOf(j))+'</td></tr></table>'+forms+'</section><button class="btn primary bigbtn" data-act="flow:close">Close</button>';
 }
 function renderFlow(){
   var el=$('#flow'),f=ui.flow,j=f?byId(f.jobId):null;
@@ -6179,6 +6579,48 @@ document.addEventListener('click',function(e){
     case 'back:mode':if(ui.flow&&ui.flow.back){ui.flow.back.mode=t.dataset.m==='sofar'?'sofar':'odo';renderFlow()}break;
     case 'flow:close':closeFlow();break;
     case 'flow:clearsig':clearSig();break;
+    /* a new quote on site, from the crew lead's job card */
+    case 'rq:open':{var ro=byId(t.dataset.id);if(!ro)break;
+      if(t.dataset.step==='sign'){if(!ro.rq||ro.rq.state!=='approved'||rqStale(ro)){toast('That new quote isn’t approved to sign.');renderTab();break}rqOpen(ro.id,t.dataset.who,'sign');break}
+      if(!rqCan(ro,t.dataset.who||fieldMe())){toast(rqOn()?'This job can’t take a new quote right now.':'New quotes on site are switched off (Setup › Options).');break}
+      rqOpen(ro.id,t.dataset.who);break}
+    case 'rq:inc':case 'rq:dec':{var rqo=ui.rqo;if(!rqo)break;var rid=t.dataset.id,rn=(rqo.dr.items[rid]||0)+(a==='rq:inc'?1:-1);if(rn<=0)delete rqo.dr.items[rid];else rqo.dr.items[rid]=Math.min(999,rn);rqItemUpd(rid);break}
+    case 'rq:fl':{if(!ui.rqo)break;ui.rqo.dr.flights=Math.max(0,Math.min(99,(num(ui.rqo.dr.flights)||0)+num(t.dataset.d)));rqItemUpd('fl');break}
+    case 'rq:step':{var rs=ui.rqo;if(!rs)break;var rsn=$('#rqNote');if(rsn)rs.note=rsn.value;
+      if(t.dataset.s!=='items'&&!(rqCf(rs.dr.items)>0)){toast('Put in what’s moving first.');break}
+      rs.step=t.dataset.s;rs.err='';rs.leave=false;renderRq();var rsb=$('#rq .flow-body');if(rsb)rsb.scrollTop=0;break}
+    case 'rq:send':{var rd=ui.rqo,rdj=rd&&byId(rd.jobId);if(!rdj)break;var rdn=$('#rqNote');if(rdn)rd.note=rdn.value;
+      if(!rqCan(rdj,rd.who)){toast('This job can’t take a new quote right now.');break}
+      var rdq=rqMake(rdj,rd);rdq.state='waiting';rdj.rq=rdq;logEv(rdj,'New quote sent to the office by '+(rdq.by||'the crew')+': '+money(rdq.was)+' → '+money(rdq.quote.total));save();
+      rd.step='sent';rd.total=rdq.quote.total;renderRq();renderTab();break}
+    case 'rq:sign':{var rg=ui.rqo,rgj=rg&&byId(rg.jobId);if(!rgj||rg.busy)break;
+      var rgn=String(($('#sigName')||{}).value||'').trim();
+      if(!rgn){rqFail('Type the customer’s printed name.');break}
+      if(!($('#sigAgree')||{}).checked){rqFail('Tick the box to show the customer agrees to the new estimate.');break}
+      if(!sigDirty){rqFail('The customer needs to sign in the box.');break}
+      var rgq;
+      if(rg.rq){if(!rgj.rq||rgj.rq.id!==rg.rq.id||rgj.rq.state!=='approved'||rqStale(rgj)){rqFail('This new quote isn’t approved any more. Close this and check the job card.');break}rgq=clone(rgj.rq)}
+      else{if(!rqCan(rgj,rg.who)){rqFail('This job can’t take a new quote right now.');break}rgq=rqMake(rgj,rg)}
+      rgq.sig={name:rgn.slice(0,120),img:exportSig(),ts:Date.now(),by:rg.who||myName()||''};rgq.state='done';
+      if(rqServer()){rqSend(rgj,rgq,rg);break}
+      rqApply(rgj,rgq);save();sigDirty=false;rqDone(rg,rgq);renderTab();renderSheet();toast('The new quote is on the job.');break}
+    case 'rq:clearsig':clearSig();break;
+    case 'rq:exit':rqExit();break;
+    case 'rq:stay':if(ui.rqo){ui.rqo.leave=false;rqLeaveBar()}break;
+    case 'rq:leave':rqClose();break;
+    case 'rq:retry':rqRetry(true);break;
+    case 'rq:cancel':{var rc=byId(t.dataset.id),rcr=rc&&rc.rq;if(!rcr||rcr.state!=='waiting')break;rcr.state='cancelled';rcr.cancel={by:t.dataset.who||myName()||'',ts:Date.now()};logEv(rc,'New quote taken back'+(rcr.cancel.by?' by '+rcr.cancel.by:''));save();renderTab();toast('Taken back. The job stays at '+money(rc.quote.total)+'.');break}
+    case 'rq:refuse':{var rf=byId(t.dataset.id),rfr=rf&&rf.rq;if(!rfr||rfr.state!=='approved')break;rfr.state='refused';rfr.refused={by:t.dataset.who||myName()||'',ts:Date.now()};logEv(rf,'The customer didn’t agree to the new quote of '+money(rfr.quote.total));save();renderTab();toast('The office has been told. The job stays at '+money(rf.quote.total)+'.');break}
+    case 'rq:ok':{var ok1=canEditJobs()?byId(ui.jobId):null,okr=ok1&&ok1.rq;if(!okr||okr.state!=='waiting')break;
+      if(!rqLive(ok1)||rqStale(ok1)){toast('This new quote can’t be approved now.');renderSheet();break}
+      var okw=myName()||'Office',okt=Date.now(),okn=String(($('#rqWhy')||{}).value||'').trim().slice(0,200);
+      okr.state='approved';okr.ok={by:okw,ts:okt};if(okn)okr.ok.note=okn;
+      ok1.quote.rqOk={id:okr.id,total:num(okr.quote.total),key:rqKey(okr),by:okw,ts:okt};   // the yes the server checks, where only the office can write
+      logEv(ok1,'New quote approved by '+okw+': '+money(okr.was)+' → '+money(okr.quote.total));save();renderSheet();renderTab();toast('Approved. '+(okr.by||'The crew lead')+' has the customer sign it.');break}
+    case 'rq:no':{var no1=canEditJobs()?byId(ui.jobId):null,nor=no1&&no1.rq;if(!nor||nor.state!=='waiting')break;
+      var now1=myName()||'Office';nor.state='declined';nor.no={by:now1,ts:Date.now(),why:String(($('#rqWhy')||{}).value||'').trim().slice(0,200)};
+      logEv(no1,'New quote not approved by '+now1+(nor.no.why?': '+nor.no.why:''));save();renderSheet();renderTab();toast((nor.by||'The crew lead')+' will see it wasn’t approved.');break}
+    case 'rq:seen':{var se1=canEditJobs()?byId(ui.jobId):null,ser=se1&&se1.rq;if(!ser)break;ser.seen={by:myName()||'Office',ts:Date.now()};if(ser.state==='refused'&&se1.quote&&se1.quote.rqOk)se1.quote.rqOk=null;save();renderSheet();renderTab();break}
     case 'flow:method':ui.flow.method=t.dataset.m;renderFlow();break;
     case 'flow:amt':{if(!ui.flow)break;var fav=round2(num(t.dataset.v)),fai=$('#flowAmt');ui.flow.amt=fav;if(fai)fai.value=fmtCents(Math.round(fav*100));var faj=byId(ui.flow.jobId);if(faj&&payOn()&&flowMethodStripe(faj)==='link')renderFlow();break}
     case 'pay:qr':case 'pay:text':{var lj=ui.flow&&byId(ui.flow.jobId);if(!lj||pay.busy)break;var la=flowAmt(),lk=!!(d0('#saveLink')||{}).checked,ltx=a==='pay:text'&&commsReady();
@@ -6303,6 +6745,9 @@ document.addEventListener('input',function(e){
   else if(t.dataset.dcf){state.draft.custom[t.dataset.dcf]=t.value;save()}
   else if(t.id==='clockNote'){ui.clockNote=t.value}
   else if(t.id==='qSearch'){filterItems(t.value)}
+  else if(t.id==='rqSearch'){rqFilter(t.value)}
+  else if(t.id==='rqNote'&&ui.rqo){ui.rqo.note=t.value}
+  else if(t.id==='rqPack'&&ui.rqo){ui.rqo.dr.pack=t.checked;rqFootUpdate(byId(ui.rqo.jobId),ui.rqo)}
   else if(t.id==='hSearch'){ui.hq=t.value;ui.hShow=50;ui.hShowC=0;histFill()}
   else if(/^(backSoFar|backMi|odoA|odoB)$/.test(t.id)&&ui.flow&&ui.flow.back){var fbk=ui.flow.back;fbk[{backSoFar:'soFar',backMi:'mi',odoA:'odoStart',odoB:'odoEnd'}[t.id]]=t.value;if(t.id==='backMi')fbk.miSrc='typed';backRedraw()}
   else if(t.id==='odoStartIn'&&ui.start){ui.start.odo=t.value}
@@ -6313,6 +6758,7 @@ document.addEventListener('input',function(e){
 });
 document.addEventListener('change',function(e){
   if(e.target&&e.target.id==='etaOn'&&ui.start){ui.start.text=e.target.checked;renderStart();return}
+  if(e.target&&e.target.id==='rqPack'&&ui.rqo){ui.rqo.dr.pack=e.target.checked;var rpj=byId(ui.rqo.jobId);if(rpj)rqFootUpdate(rpj,ui.rqo);return}
   if(e.target&&ui.flow&&e.target.id==='saveLink'){ui.flow.saveLink=e.target.checked;renderFlow();return}
   if(e.target&&ui.flow&&e.target.id==='flowAmt'&&payOn()){var fj0=byId(ui.flow.jobId);if(fj0&&flowMethodStripe(fj0)==='link')renderFlow();return}
   if(e.target&&e.target.dataset&&(e.target.dataset.d==='from'||e.target.dataset.d==='to')){distLookup();shopLookup(false);return}
@@ -6358,7 +6804,7 @@ document.addEventListener('change',function(e){
     var wasPast=isHistory(j);setStatus(j,t.value);save();renderSheet();
     if(!wasPast&&isHistory(j))toast(j.status==='lost'?'Marked lost. It is in Job history now.':'Closed. It is in Job history now.')}
 });
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.mp){mpClose();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId){if(ui.closeAsk){ui.closeAsk=null;renderSheet()}else leaveSheet(closeSheet)}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.mp){mpClose();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Escape'&&ui.rqo){if(ui.rqo.leave){ui.rqo.leave=false;rqLeaveBar()}else rqExit();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId){if(ui.closeAsk){ui.closeAsk=null;renderSheet()}else leaveSheet(closeSheet)}});
 
 /* ---------- errors are shown, not swallowed ---------- */
 var lastErrAt=0;
@@ -6408,7 +6854,7 @@ else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency te
 })();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon};
 })();
 </script>
 </body>

@@ -171,8 +171,8 @@ const OPEN = ['Priya Nair', 'Hollis & Reed Law', 'Nadia Farouk', 'Ortega family'
   const row = () => $('#view details.hcard[data-job="' + D.id + '"]');
   const sm = row().querySelector('summary');
   const dd = D.d.moveDate.split('-').map(Number), dayTxt = new Date(dd[0], dd[1] - 1, dd[2]).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  ok(!row().open && sm.querySelector('.hsum b').textContent === 'Devon Reyes' && sm.querySelector('.hsum small').textContent === dayTxt && sm.querySelector('.hmore').textContent === 'Details' && sm.children.length === 3,
-    L('each job is folded to the customer’s name and the day, with Details: ' + sm.querySelector('.hsum').textContent));
+  ok(!row().open && sm.querySelector('.hsum b').textContent === 'Devon Reyes' && new RegExp('^' + dayTxt + ' · \\d+h \\d+m on the job$').test(sm.querySelector('.hsum small').textContent) && sm.querySelector('.hmore').textContent === 'Details' && sm.children.length === 3,
+    L('each job is folded to the customer’s name, the day and the time on the job, with Details: ' + sm.querySelector('.hsum').textContent));
   click(row().querySelector('summary b')); await sleep(10);
   ok(row().open && /Finished\. You can still add photos and notes\./.test(row().textContent) && !!row().querySelector('.cc-photos') && !!row().querySelector('#cn_' + D.id), L('tapping it opens the whole card: notes, photos and the rest'));
   const note = $('#cn_' + D.id); note.value = 'Left the spare key under the mat.';

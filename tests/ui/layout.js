@@ -36,6 +36,14 @@ const startPriya = (p) => p.evaluate(() => {
   j.crewOn = { Marcus: [{ in: j.startedAt, out: 0 }], Dee: [{ in: j.startedAt, out: 0 }], Luis: [{ in: j.startedAt, out: 0 }] };
   window.__tally.render();
 });
+// Marcus makes a new quote on Priya Nair's job, as far as the given step
+const rqTo = async (p, step) => {
+  await pv(p, 'lead', 'Marcus'); const id = await jobId(p, 'Priya Nair');
+  await tap(p, `#view [data-job="${id}"] [data-act="rq:open"]`, 250);
+  await tap(p, '#rq [data-act="rq:inc"][data-id="sofa3"]', 60); await tap(p, '#rq [data-act="rq:inc"][data-id="piano"]', 60);
+  if (step !== 'items') await tap(p, '#rq [data-act="rq:step"][data-s="review"]', 200);
+  if (step === 'sign') await tap(p, '#rq [data-act="rq:step"][data-s="sign"]', 200);
+};
 const fillDraft = (p, step) => p.evaluate(() => { Object.assign(window.__tally.state().draft, { name: 'Test Person', phone: '512-555-0100', from: '1 Main St, Austin', to: '9 Oak Ave, Round Rock', miles: '18', items: { boxm: 30, sofa3: 1, bedq: 1 } }); window.__tally.render(); }).then(() => tap(p, `[data-act="q:step"][data-s="${step}"]`, 200));
 
 const SCREENS = {
@@ -63,15 +71,20 @@ const SCREENS = {
   'crew lead Jobs, all clocked in': async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); await tabTo(p, 'crew'); },
   'crew lead Jobs, job running': async (p) => { await startPriya(p); await pv(p, 'lead', 'Marcus'); await tabTo(p, 'crew'); },
   'crew lead History, a job opened': async (p) => { await pv(p, 'lead', 'Marcus'); await tap(p, '[data-act="cr:view"][data-v="history"]', 200); await tap(p, '#view details.hcard summary', 200); },
+  // a new quote on site (Richie, Oct 21): room by room, check it, the customer signs; the office approves
+  'crew lead new quote, rooms': async (p) => { await rqTo(p, 'items'); },
+  'crew lead new quote, check it': async (p) => { await rqTo(p, 'review'); },
+  'crew lead new quote, signature': async (p) => { await rqTo(p, 'sign'); },
+  'owner job sheet, new quote to approve': async (p) => { await p.evaluate(() => { window.__tally.state().settings.opt.rqOffice = true; }); await rqTo(p, 'review'); await tap(p, '#rq [data-act="rq:send"]', 200); await tap(p, '#rq [data-act="rq:exit"]', 200); await tap(p, '[data-act="pv:end"]', 250); await openJob(p, 'Priya Nair'); },
   'crew Jobs': async (p) => { await pv(p, 'crew', 'Dee'); },
   'crew History': async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '[data-act="cr:view"][data-v="history"]', 200); },
   'crew More': async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '[data-act="more:open"]', 250); },
   'crew Chat': async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'chat'); },
 };
 // the smallest phones (320 wide), a tablet held upright, and a phone turned sideways
-const SMALL = ['owner Today', 'owner Jobs', 'owner Reports', 'owner Setup › Inventory catalog', 'owner new quote, price', 'owner job sheet, booked', 'owner job sheet, finished', 'crew lead Jobs, all clocked in', 'crew lead Jobs, job running', 'crew Jobs'];
+const SMALL = ['owner Today', 'owner Jobs', 'owner Reports', 'owner Setup › Inventory catalog', 'owner new quote, price', 'owner job sheet, booked', 'owner job sheet, finished', 'crew lead Jobs, all clocked in', 'crew lead Jobs, job running', 'crew Jobs', 'crew lead new quote, rooms', 'crew lead new quote, check it', 'crew lead new quote, signature', 'owner job sheet, new quote to approve'];
 const TABLET = ['owner Today', 'owner Reports', 'owner job sheet, booked', 'crew lead Jobs, job running'];
-const SIDEWAYS = ['owner Today', 'owner job sheet, booked', 'owner new quote, price', 'crew lead Jobs, all clocked in', 'crew Jobs'];
+const SIDEWAYS = ['owner Today', 'owner job sheet, booked', 'owner new quote, price', 'crew lead Jobs, all clocked in', 'crew Jobs', 'crew lead new quote, rooms'];
 const NARROW = ['owner Today', 'owner Jobs', 'owner Setup › Fleet', 'owner Setup › Custom job fields', 'owner Setup › Inventory catalog', 'owner Setup › Rate card', 'owner new quote, price', 'owner job sheet, booked', 'crew lead Jobs, all clocked in', 'crew Jobs'];
 
 /* ---------- the checks, in the page (shared with layout-hosted.js) ---------- */
@@ -124,7 +137,7 @@ const { CHECK } = require('./layoutcheck');
   if (!AXE) ok(false, 'axe-core is installed for the contrast check (npm install in tests/ui)');
   else {
     const looks = [['movingday', 'light'], ['movingday', 'dark'], ['contrast', 'light'], ['hivis', 'dark'], ['cardboard', 'light'], ['terminal', 'dark']];
-    const shots = ['owner Today', 'owner job sheet, finished', 'owner new quote, price', 'owner Setup › Options', 'crew lead Jobs, job running', 'crew Jobs', 'crew lead History, a job opened'];
+    const shots = ['owner Today', 'owner job sheet, finished', 'owner new quote, price', 'owner Setup › Options', 'crew lead Jobs, job running', 'crew Jobs', 'crew lead History, a job opened', 'crew lead new quote, rooms', 'crew lead new quote, check it', 'owner job sheet, new quote to approve'];
     for (const [t, m] of looks) {
       const found = [];
       for (const n of shots) {

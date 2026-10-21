@@ -2316,6 +2316,261 @@ async function handleStripe(req: Request, kind: HookKind = "platform"): Promise<
   return json({ received: true });
 }
 
+/* ---------- a new quote made on site by the crew lead ----------
+   The app works a new quote out room by room on the crew lead's phone (rqBuild and calc in the app), and the
+   customer signs it there. Only the office may change a job's quote (jobs_guard), so the lead's phone sends
+   the signed quote here. This works the price out again the same way (rqBuildS, priceCalc): from the job,
+   what's moving, and the rate card the job was quoted at. It saves it only when it comes to the total the
+   customer signed, and keeps the quote it replaces in the job's history. With Options › Office approves new
+   quotes, it also needs the office's yes, which the office writes into the job's quote (quote.rqOk), where
+   only the office can write. tests/function/requote.ts checks this agrees with the app, case by case. */
+// the app's defaults for what a price is worked out from (defaultSettings in the app)
+export const PRICE_DEFAULTS: J = {
+  rates: { r2: 140, r3: 195, r4: 250 }, minHours: 3, prod: 45, mph: 30, shopAddress: "", shopTravel: true, truckFee: 45, includedMiles: 20, mileRate: 1.5, stairFee: 25, packPerBox: 8, taxPct: 0, depositPct: 25, ntePct: 15, opt: {},
+  trucks: [{ id: "t26", name: "Box 1 (26 ft)", cf: 1700 }, { id: "t20", name: "Box 2 (20 ft)", cf: 1000 }, { id: "t16", name: "Van (16 ft)", cf: 800 }],
+  catalog: [
+    { id: "sofa3", name: "Sofa (3-seat)", cf: 55, cat: "Living room" },
+    { id: "loveseat", name: "Loveseat", cf: 38, cat: "Living room" },
+    { id: "chair", name: "Armchair", cf: 22, cat: "Living room" },
+    { id: "recliner", name: "Recliner", cf: 30, cat: "Living room" },
+    { id: "coffee", name: "Coffee table", cf: 10, cat: "Living room" },
+    { id: "endtable", name: "End table", cf: 6, cat: "Living room" },
+    { id: "tvstand", name: "TV stand", cf: 14, cat: "Living room" },
+    { id: "tv", name: "TV (flat screen)", cf: 8, cat: "Living room" },
+    { id: "bookcase", name: "Bookcase", cf: 18, cat: "Living room" },
+    { id: "bedq", name: "Queen bed (frame + mattress)", cf: 62, cat: "Bedroom" },
+    { id: "bedk", name: "King bed (frame + mattress)", cf: 78, cat: "Bedroom" },
+    { id: "bedt", name: "Twin bed", cf: 36, cat: "Bedroom" },
+    { id: "dresser", name: "Dresser (6-drawer)", cf: 35, cat: "Bedroom" },
+    { id: "nightstand", name: "Nightstand", cf: 6, cat: "Bedroom" },
+    { id: "wardrobe", name: "Armoire / wardrobe", cf: 40, cat: "Bedroom" },
+    { id: "dintable", name: "Dining table", cf: 30, cat: "Dining" },
+    { id: "dinchair", name: "Dining chair", cf: 5, cat: "Dining" },
+    { id: "hutch", name: "China cabinet", cf: 40, cat: "Dining" },
+    { id: "fridge", name: "Refrigerator", cf: 45, cat: "Kitchen & laundry" },
+    { id: "washer", name: "Washer", cf: 30, cat: "Kitchen & laundry" },
+    { id: "dryer", name: "Dryer", cf: 30, cat: "Kitchen & laundry" },
+    { id: "desk", name: "Desk", cf: 25, cat: "Office" },
+    { id: "ochair", name: "Office chair", cf: 8, cat: "Office" },
+    { id: "filecab", name: "File cabinet", cf: 10, cat: "Office" },
+    { id: "boxs", name: "Small box", cf: 1.5, cat: "Boxes" },
+    { id: "boxm", name: "Medium box", cf: 3, cat: "Boxes" },
+    { id: "boxl", name: "Large box", cf: 4.5, cat: "Boxes" },
+    { id: "boxw", name: "Wardrobe box", cf: 10, cat: "Boxes" },
+    { id: "piano", name: "Upright piano", cf: 60, cat: "Specialty", fee: 150 },
+    { id: "treadmill", name: "Treadmill", cf: 40, cat: "Specialty", fee: 50 },
+    { id: "safe", name: "Gun or fire safe", cf: 20, cat: "Specialty", fee: 100 },
+    { id: "grill", name: "Grill", cf: 15, cat: "Specialty" },
+    { id: "mirror", name: "Large mirror", cf: 5, cat: "Specialty" },
+    { id: "bike", name: "Bicycle", cf: 12, cat: "Specialty" },
+  ],
+};
+const numP = (v: unknown): number => { const n = parseFloat(v as string); return isFinite(n) ? n : 0; };
+// the app's money(): $1,541, or $549.75 when there are cents
+export function usd(n: number): string {
+  n = Math.round((+n || 0) * 100) / 100;
+  const neg = n < 0;
+  n = Math.abs(n);
+  const whole = Math.abs(n - Math.round(n)) < 0.005;
+  return (neg ? "-" : "") + "$" + (whole ? Math.round(n).toLocaleString("en-US") : n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+}
+function fmtMi(x: number): string { x = Math.round(x * 10) / 10; return (Math.abs(x - Math.round(x)) < 0.05 ? Math.round(x) : x).toLocaleString("en-US"); }
+// the app's canon(): the same text for the same data, whatever order its keys are in
+export function canon(v: unknown): string {
+  if (v === null || v === undefined) return "null";
+  if (typeof v !== "object") return JSON.stringify(v);
+  if (Array.isArray(v)) return "[" + v.map(canon).join(",") + "]";
+  const o = v as J;
+  return "{" + Object.keys(o).sort().filter((k) => o[k] !== undefined).map((k) => JSON.stringify(k) + ":" + canon(o[k])).join(",") + "}";
+}
+// the app's opt(): a Setup › Options switch, or its default (these two start off)
+function optOn(S: J, k: string): boolean {
+  const o = (S && S.opt) || {};
+  if (o[k] === true || o[k] === false) return o[k];
+  if (k === "tax") return numP(S.taxPct) > 0;
+  return ["photosReq", "rqOffice"].indexOf(k) < 0;
+}
+// the settings a price is worked out from: what the company saved, over the app's defaults
+export function priceSettings(saved: J): J {
+  const S = Object.assign({}, PRICE_DEFAULTS, saved || {});
+  if (!S.opt || typeof S.opt !== "object") S.opt = {};
+  if (!S.rates || typeof S.rates !== "object") S.rates = PRICE_DEFAULTS.rates;
+  if (!Array.isArray(S.trucks)) S.trucks = PRICE_DEFAULTS.trucks;
+  if (!Array.isArray(S.catalog)) S.catalog = PRICE_DEFAULTS.catalog;
+  return S;
+}
+// a job's details with its items as {id: how many}, the way the app holds them (docToJob)
+function jobD(job: J): J {
+  const d = Object.assign({}, (job && job.d) || {}), m: J = {};
+  (Array.isArray(d.items) ? d.items : []).forEach((x: J) => { if (x && x.id) m[x.id] = x.q; });
+  d.items = m;
+  return d;
+}
+// the app's calc(), for a quote whose move type is set (d.moveKind)
+export function priceCalc(d: J, S: J): J {
+  let cf = 0, count = 0, boxes = 0, fees = 0;
+  S.catalog.forEach((it: J) => { const q = d.items[it.id] || 0; if (!q) return; cf += q * it.cf; count += q; if (it.cat === "Boxes") boxes += q; if (it.fee) fees += q * it.fee; });
+  const shopTravel = !!S.shopAddress && S.shopTravel !== false;
+  const moveMi = numP(d.miles), legMi = shopTravel ? numP(d.milesOut) + numP(d.milesBack) : 0, miles = moveMi + legMi, flights = numP(d.flights);
+  const kind = d.moveKind === "mileage" ? "mileage" : "local", mileage = kind === "mileage";
+  const crew = parseInt(d.crew, 10) || (cf < 350 ? 2 : cf < 1000 ? 3 : 4);
+  const raw = cf ? cf / (crew * S.prod) + (mileage ? 0 : miles / S.mph) : 0;
+  let hours = cf ? Math.max(S.minHours, Math.ceil(raw * 2) / 2) : 0;
+  if (numP(d.hoursOverride) > 0) hours = numP(d.hoursOverride);
+  const trucks = S.trucks.slice().sort((a: J, b: J) => a.cf - b.cf);
+  const truck = trucks.find((t: J) => t.id === d.truckId) || trucks.find((t: J) => cf * 1.08 <= t.cf) || trucks[trucks.length - 1] || { id: "", name: "No truck", cf: 1 };
+  const nTrucks = Math.max(1, Math.ceil(cf * 1.08 / truck.cf));
+  const pct = cf ? Math.min(1, cf / (nTrucks * truck.cf)) : 0;
+  const lines: J[] = [], rate = S.rates["r" + crew] || 0, mileRate = numP(S.mileRate), billMi = Math.round(miles * 100) / 100;
+  let fixed = 0;
+  const add = (label: string, amt: number, k: string) => { lines.push({ label, amt, k }); if (k === "fixed") fixed += amt; };
+  if (cf) {
+    add(crew + " movers, " + hours + " hr" + (mileage ? " loading and unloading" : "") + " at " + usd(rate) + "/hr", Math.round(rate * hours), "hours");
+    if (optOn(S, "truckFee")) add((nTrucks > 1 ? nTrucks + " trucks" : "Truck") + " and fuel", Math.round(S.truckFee * nTrucks), "fixed");
+    if (mileage && miles > 0) add("Mileage: " + fmtMi(miles) + " mi" + (legMi ? " from the shop and back" : "") + " at " + usd(mileRate) + "/mi", Math.round(billMi * mileRate), "miles");
+    if (flights > 0 && optOn(S, "stairs")) add("Stairs: " + flights + " flight" + (flights === 1 ? "" : "s"), Math.round(flights * S.stairFee), "fixed");
+    if (d.pack && boxes > 0 && optOn(S, "packing")) add("Packing and materials: " + boxes + " boxes", Math.round(boxes * S.packPerBox), "fixed");
+    if (fees > 0) add("Specialty items", Math.round(fees), "fixed");
+    if (numP(d.discount) > 0) add("Discount", -Math.round(numP(d.discount)), "fixed");
+  }
+  const subtotal = lines.reduce((a, l) => a + l.amt, 0);
+  const taxPct = optOn(S, "tax") ? numP(S.taxPct) : 0, tax = Math.round(subtotal * taxPct / 100);
+  if (tax > 0) lines.push({ label: "Tax (" + taxPct + "%)", amt: tax, k: "tax" });
+  const total = Math.max(0, subtotal + tax);
+  return {
+    cf, count, lbs: cf * 7, crew, hours, truckId: truck.id, truckName: truck.name, truckCf: truck.cf, nTrucks, pct, lines, total,
+    nte: Math.ceil(total * (1 + S.ntePct / 100) / 5) * 5, deposit: optOn(S, "deposit") ? Math.ceil(total * S.depositPct / 100) : 0,
+    kind, rate, miles: mileage ? billMi : 0, mileRate, fixed, taxPct, minHours: numP(S.minHours), flat: !optOn(S, "byClock"),
+    shopTravel, backH: shopTravel && S.mph > 0 ? Math.round(numP(d.milesBack) / S.mph * 100) / 100 : 0, capNte: S.nteCap !== false,
+    driveH: mileage && S.mph > 0 ? Math.round(miles / S.mph * 100) / 100 : 0,
+  };
+}
+// the app's rqSettings(): the rate card the job was quoted at (the quote's own rates and fees)
+function rqSettings(job: J, jd: J, S: J): J {
+  const q0 = job.quote || {}, o = Object.assign({}, S.opt || {});
+  const S2 = Object.assign({}, S, { rates: Object.assign({}, S.rates), opt: o });
+  const crew = numP(q0.crew);
+  if (crew && numP(q0.rate) > 0) S2.rates["r" + crew] = numP(q0.rate);
+  if (q0.mileRate != null) S2.mileRate = numP(q0.mileRate);
+  if (q0.taxPct != null) { S2.taxPct = numP(q0.taxPct); o.tax = numP(q0.taxPct) > 0; }
+  if (q0.minHours != null) S2.minHours = numP(q0.minHours);
+  if (typeof q0.flat === "boolean") o.byClock = !q0.flat;
+  if (typeof q0.capNte === "boolean") S2.nteCap = q0.capNte;
+  if (typeof q0.shopTravel === "boolean") S2.shopTravel = q0.shopTravel;
+  const L: J[] = Array.isArray(q0.lines) ? q0.lines : [];
+  const line = (re: RegExp) => L.find((l) => l && re.test(String(l.label))) || null;
+  if (L.length) {
+    const tl = line(/^(\d+ trucks|Truck) and fuel$/);
+    o.truckFee = !!tl;
+    if (tl) S2.truckFee = numP(tl.amt) / Math.max(1, numP(q0.nTrucks));
+    const fl = numP(jd.flights), sl = line(/^Stairs: /);
+    if (sl && fl > 0) { o.stairs = true; S2.stairFee = numP(sl.amt) / fl; }
+    const pl = line(/^Packing and materials: \d+ boxes$/), bx = pl ? parseInt(String(pl.label).replace(/\D+/g, ""), 10) : 0;
+    if (pl && bx > 0) { o.packing = true; S2.packPerBox = numP(pl.amt) / bx; }
+  }
+  return S2;
+}
+// the app's rqBuild(): the new quote for what's moving, {d, q, items}
+export function rqBuildS(job: J, S: J, dr: { items: Record<string, number>; flights: number; pack: boolean }): J {
+  const q0 = job.quote || {}, jd = jobD(job), S2 = rqSettings(job, jd, S), d = JSON.parse(JSON.stringify(jd));
+  d.items = Object.assign({}, dr.items);
+  d.flights = numP(dr.flights) > 0 ? String(numP(dr.flights)) : "";
+  d.pack = !!dr.pack;
+  if (q0.crew) d.crew = String(q0.crew);
+  if (q0.kind === "local" || q0.kind === "mileage") d.moveKind = q0.kind;
+  if (job.assign && job.assign.truckId) d.truckId = job.assign.truckId;
+  let cf1 = 0;
+  S.catalog.forEach((it: J) => { cf1 += (d.items[it.id] || 0) * it.cf; });
+  const ho = numP(jd.hoursOverride);
+  d.hoursOverride = ho > 0 ? String(Math.max(numP(S2.minHours), Math.ceil(ho * cf1 / numP(q0.cf) * 2) / 2)) : "";
+  const q = priceCalc(d, S2);
+  q.deposit = numP(q0.deposit);
+  const items = S2.catalog.filter((it: J) => d.items[it.id] > 0).map((it: J) => ({ id: it.id, name: it.name, cf: it.cf, qty: d.items[it.id] }));
+  return { d, q, items };
+}
+// the app's rqKey(): what the office's yes is for, these items at this price
+export function rqKeyS(items: { id: string; q: number }[], flights: string, pack: boolean, total: number): string {
+  return strHash(canon({ items, flights, pack, total }));
+}
+export async function requote(org: string, me: J, jobId: string, b: J): Promise<J> {
+  const office = me.role === "owner" || me.role === "dispatch";
+  const no = (status: number, message: string): J => ({ ok: false, final: true, status, message });
+  const [S0, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
+  if (!job) return no(404, "That job is not available.");
+  const crew: string[] = (job.assign && job.assign.crew) || [];
+  if (!office && !(me.role === "lead" && crew.indexOf(me.staff) >= 0)) return no(403, "Only the crew lead on this job can make a new quote on it.");
+  const S = priceSettings(S0);
+  if (optOff(S, "rqCrew")) return no(403, "New quotes on site are switched off (Setup › Options).");
+  const rq = b.rq && typeof b.rq === "object" ? b.rq : {};
+  const id = String(rq.id || "");
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)) return no(400, "The new quote didn't come through. Make it again.");
+  // sent again after a dropped connection: it's already on the job
+  if (job.rq && job.rq.id === id && job.rq.state === "done") return { ok: true, already: true, total: numP((job.quote || {}).total), message: "The new quote is on the job." };
+  if (["booked", "active"].indexOf(job.status) < 0 || job.clockAt) return no(409, "This job can't take a new quote now: it has been billed out.");
+  const q0 = job.quote || {};
+  if (!(q0.kind === "local" || q0.kind === "mileage") || !(numP(q0.cf) > 0)) return no(409, "This job's quote can't be redone on site. The office can change it.");
+  if (Math.abs(numP(rq.was) - numP(q0.total)) >= 0.005) return no(409, "The quote on this job changed while the new one was being made. Make the new quote again.");
+  // what's moving: items still in Setup, whole numbers
+  const rd = rq.d && typeof rq.d === "object" ? rq.d : {};
+  if (!Array.isArray(rd.items) || rd.items.length > 400) return no(400, "The items didn't come through. Make the new quote again.");
+  const cat: J = {};
+  S.catalog.forEach((it: J) => { if (it && it.id) cat[it.id] = it; });
+  const items: Record<string, number> = {};
+  for (const x of rd.items) {
+    if (!x || typeof x !== "object" || typeof x.id !== "string" || !cat[x.id]) continue;   // taken out of Setup meanwhile: not in the price, as in the app
+    if (typeof x.q !== "number" || !Number.isInteger(x.q) || x.q < 1 || x.q > 999) return no(400, "An item's count didn't come through. Make the new quote again.");
+    items[x.id] = x.q;
+  }
+  const fl = rd.flights === "" || rd.flights == null ? 0 : Number(rd.flights);
+  if (!Number.isInteger(fl) || fl < 0 || fl > 99) return no(400, "The stairs didn't come through. Make the new quote again.");
+  const pack = rd.pack === true;
+  // the customer's signature
+  const sig = rq.sig && typeof rq.sig === "object" ? rq.sig : {};
+  const name = String(sig.name || "").trim().slice(0, 120), img = String(sig.img || "");
+  if (!name || img.length > 400000 || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(img)) return no(400, "The customer's signature didn't come through. Have them sign again.");
+  // the price, worked out again here: it has to be the one the customer signed
+  const built = rqBuildS(job, S, { items, flights: fl, pack });
+  if (!(built.q.cf > 0)) return no(400, "The new quote has nothing moving.");
+  if (Math.abs(built.q.total - numP(rq.quote && rq.quote.total)) >= 0.005) {
+    console.error("requote: price differs", jobId, built.q.total, rq.quote && rq.quote.total);
+    return no(409, "The new price didn't come out the same at the office. Make the new quote again.");
+  }
+  const itemsArr = Object.keys(items).sort().map((k) => ({ id: k, q: items[k] }));
+  // Options › Office approves new quotes: the office's yes, for these items at this price
+  const yes = q0.rqOk && typeof q0.rqOk === "object" && q0.rqOk.id === id ? q0.rqOk : null;
+  if (S.opt.rqOffice === true && !office) {
+    if (!yes) return no(403, "This new quote needs the office's approval first.");
+    if (yes.key !== rqKeyS(itemsArr, built.d.flights, pack, built.q.total) || Math.abs(numP(yes.total) - built.q.total) >= 0.005) return no(409, "This isn't the new quote the office approved. Make it again.");
+  }
+  const now = Date.now(), by = String((office ? me.staff || rq.by || "Office" : me.staff) || "").slice(0, 60);
+  const when = (t: unknown) => (typeof t === "number" && t > 0 && t <= now + 6e4 ? t : now);
+  const note = String(rq.note || "").trim().slice(0, 500);
+  const changes = (Array.isArray(rq.changes) ? rq.changes : []).filter((c: unknown) => typeof c === "string").slice(0, 60).map((c: string) => c.slice(0, 160));
+  const prevOk = job.rq && job.rq.id === id && job.rq.ok && typeof job.rq.ok === "object" ? job.rq.ok : null;
+  const ok = yes ? { by: String(yes.by || "").slice(0, 60), ts: numP(yes.ts) || now, ...(prevOk && prevOk.note ? { note: String(prevOk.note).slice(0, 200) } : {}) } : null;
+  const nq = built.q, jd = jobD(job), was = JSON.parse(JSON.stringify(q0));
+  delete was.rqOk;
+  // the quote replaced whole: a key the new one doesn't have (the office's yes) is removed
+  const quote: J = {};
+  Object.keys(q0).forEach((k) => { if (!(k in nq)) quote[k] = null; });
+  Object.assign(quote, nq);
+  const hist = (Array.isArray(job.quoteHist) ? job.quoteHist : []).concat([{
+    id, ts: now, by, was, wasItems: job.items || [],
+    wasD: { items: Object.keys(jd.items).filter((k) => jd.items[k] > 0).sort().map((k) => ({ id: k, q: jd.items[k] })), flights: jd.flights || "", pack: !!jd.pack, hoursOverride: jd.hoursOverride || "" },
+    now: nq.total, why: note, changes, sign: { name, img, ts: when(sig.ts) }, ok,
+  }]).slice(-10);
+  const dNew = { items: itemsArr, flights: built.d.flights, pack, hoursOverride: built.d.hoursOverride };
+  const rec: J = {
+    id, by, ts: when(rq.ts), was: numP(q0.total), d: dNew, quote: nq, items: built.items, note, changes,
+    state: "done", sig: { name, ts: when(sig.ts), by: me.staff || by }, ok, no: null, seen: null, applied: now, refused: null, cancel: null,
+  };
+  Object.keys(job.rq || {}).forEach((k) => { if (!(k in rec)) rec[k] = null; });
+  const ev = "New quote on site by " + (by || "the crew") + ": " + usd(numP(q0.total)) + " → " + usd(nq.total) + ", signed by " + name;
+  const saved = await rest("POST", "rpc/doc_patch", { o: org, p: "jobs/" + jobId, patch: { quote, items: built.items, d: dNew, quoteHist: hist, rq: rec, log: { [logKey(now, ev)]: { ts: now, ev } } } });
+  if (saved !== true) return { ok: false, message: "The new quote couldn't be saved. Try again." };
+  return { ok: true, total: nq.total, message: "The new quote is on the job." };
+}
+
 async function handleApp(req: Request): Promise<Response> {
   let b: J;
   try { b = await req.json(); } catch { return json({ ok: false, message: "Bad request" }, 400); }
@@ -2395,6 +2650,12 @@ async function handleApp(req: Request): Promise<Response> {
         console.error(b.action, e);
         return json({ ok: false, message: stripeTrouble(e) });
       }
+    }
+    if (b.action === "requote") {
+      const out = await requote(org, me, jobId, b);
+      const st = out.status;
+      delete out.status;
+      return json(out, typeof st === "number" ? st : 200);
     }
     if (b.action === "job") {
       if (!office) return json({ ok: false, message: "Only the owner and dispatch schedule crews." }, 403);

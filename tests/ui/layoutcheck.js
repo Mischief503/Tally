@@ -7,7 +7,7 @@ const CHECK = () => {
   const folded = (el) => { for (let d = el.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) { if (!d.open) { const sm = d.querySelector(':scope > summary'); if (!(sm && sm.contains(el))) return true; } } return false; };
   const vis = (el) => { if (!el.getClientRects().length || folded(el)) return false; const cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity !== 0; };
   const name = (el) => el.tagName.toLowerCase() + (el.dataset.act ? '[' + el.dataset.act + ']' : '') + ' "' + (el.getAttribute('aria-label') || el.textContent || el.placeholder || '').replace(/\s+/g, ' ').trim().slice(0, 40) + '"';
-  const ovs = ['#sos', '#matpick', '#start', '#call', '#pick', '#more', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && vis(e));
+  const ovs = ['#sos', '#matpick', '#start', '#call', '#pick', '#more', '#rq', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && vis(e));
   const root = ovs[0] || document.querySelector('main');
   const sideScroll = (el) => { for (let p = el.parentElement; p; p = p.parentElement) if (/(auto|scroll|hidden)/.test(getComputedStyle(p).overflowX)) return true; return false; };
   root.querySelectorAll('*').forEach((el) => { if (!vis(el)) return; const r = el.getBoundingClientRect(); if (r.width && (r.right > W + 1 || r.left < -1) && !sideScroll(el)) out.wide.push(name(el)); });

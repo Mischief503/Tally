@@ -107,10 +107,27 @@ add('lead-jobs-on', async (p) => { await pv(p, 'lead', 'Marcus'); await tap(p, '
 add('lead-jobs-ready', async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); });
 add('lead-jobs-active', async (p) => { await startPriya(p); await pv(p, 'lead', 'Marcus'); });
 add('lead-jobs-costform', async (p) => { await pv(p, 'lead', 'Marcus'); await openAllSecs(p, '#view .crewcard'); });
+// a job finished today (folded under Today) and the one still to bill, both opened: the quote and the bill
+const finishPriya = (p) => p.evaluate(() => { const st = window.__tally.state(), j = st.jobs.find((x) => x.d.name === 'Priya Nair'), t = Date.now(); Object.assign(j, { status: 'done', startedAt: t - 372 * 6e4, finishedAt: t, actualHours: 6.2 }); window.__tally.render(); });
+add('lead-jobs-done-open', async (p) => { await finishPriya(p); await pv(p, 'lead', 'Marcus'); await p.evaluate(() => { document.querySelectorAll('#view details.hcard').forEach((d) => { d.open = true; }); }); await sleep(300); });
 add('lead-jobs-soon-open', async (p) => { await pv(p, 'lead', 'Marcus'); await p.evaluate(() => { document.querySelectorAll('#view details.hcard').forEach((d) => { d.open = true; }); }); await sleep(300); });
 add('lead-start', async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); const id = await jobId(p, 'Priya Nair'); await tap(p, `[data-act="cr:start"][data-id="${id}"]`, 500); });
 add('lead-flow', async (p) => { await pv(p, 'lead', 'Marcus'); const id = await jobId(p, 'Marcus Tull'); await tap(p, `#view [data-act="flow:open"][data-id="${id}"]`, 600); });
 add('lead-matpick', async (p) => { await pv(p, 'lead', 'Marcus'); const id = await jobId(p, 'Priya Nair'); await tap(p, `[data-act="mp:open"][data-id="${id}"]`, 500); });
+// a new quote on site (Oct 21): room by room, check it, the customer signs, sent to the office to approve
+async function rqTo(p, step) {
+  await pv(p, 'lead', 'Marcus'); const id = await jobId(p, 'Priya Nair');
+  await tap(p, `#view [data-job="${id}"] [data-act="rq:open"]`, 500);
+  await tap(p, '#rq [data-act="rq:inc"][data-id="sofa3"]', 100); await tap(p, '#rq [data-act="rq:inc"][data-id="piano"]', 100);
+  if (step !== 'items') await tap(p, '#rq [data-act="rq:step"][data-s="review"]', 400);
+  if (step === 'sign') await tap(p, '#rq [data-act="rq:step"][data-s="sign"]', 400);
+}
+add('lead-rq-rooms', async (p) => { await rqTo(p, 'items'); }, { overlay: '#rq' });
+add('lead-rq-review', async (p) => { await rqTo(p, 'review'); }, { overlay: '#rq' });
+add('lead-rq-sign', async (p) => { await rqTo(p, 'sign'); }, { overlay: '#rq' });
+add('lead-rq-leave', async (p) => { await rqTo(p, 'items'); await tap(p, '#rq [data-act="rq:exit"]', 300); }, { overlay: '#rq' });
+add('owner-rq-approve', async (p) => { await p.evaluate(() => { window.__tally.state().settings.opt.rqOffice = true; }); await rqTo(p, 'review'); await tap(p, '#rq [data-act="rq:send"]', 400); await tap(p, '#rq [data-act="rq:exit"]', 400); await tap(p, '[data-act="pv:end"]', 500); const id = await jobId(p, 'Priya Nair'); await tabTo(p, 'jobs'); await tap(p, `[data-act="job:open"][data-id="${id}"]`, 600); });
+add('lead-rq-approved', async (p) => { await p.evaluate(() => { window.__tally.state().settings.opt.rqOffice = true; }); await rqTo(p, 'review'); await tap(p, '#rq [data-act="rq:send"]', 400); await tap(p, '#rq [data-act="rq:exit"]', 400); await tap(p, '[data-act="pv:end"]', 500); const id = await jobId(p, 'Priya Nair'); await tabTo(p, 'jobs'); await tap(p, `[data-act="job:open"][data-id="${id}"]`, 600); await tap(p, '#sheet [data-act="rq:ok"]', 400); await tap(p, '#sheet [data-act="sheet:close"].btn', 400); await pv(p, 'lead', 'Marcus'); await p.evaluate(() => { const n = document.querySelector('#view .rqnote'); if (n) window.scrollTo(0, n.getBoundingClientRect().top + window.scrollY - 200); }); await sleep(300); });
 add('lead-history', async (p) => { await pv(p, 'lead', 'Marcus'); await hist(p); });
 add('lead-history-open', async (p) => { await pv(p, 'lead', 'Marcus'); await openHist(p); });
 add('lead-chat', async (p) => { await pv(p, 'lead', 'Marcus'); await tabTo(p, 'chat'); });
@@ -141,7 +158,7 @@ const CHECK = () => {
   const vis = (el) => { if (!el.getClientRects().length || folded(el)) return false; const cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity !== 0; };
   const desc = (el) => { const t = (el.getAttribute('aria-label') || el.textContent || el.value || el.placeholder || '').replace(/\s+/g, ' ').trim().slice(0, 50); return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.dataset && el.dataset.act ? '[' + el.dataset.act + ']' : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : '') + (t ? ' "' + t + '"' : ''); };
   // the overlay on top, if any (its contents are what can be used)
-  const ovs = ['#sos', '#matpick', '#start', '#call', '#pick', '#more', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && vis(e));
+  const ovs = ['#sos', '#matpick', '#start', '#call', '#pick', '#more', '#rq', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && vis(e));
   const root = ovs[0] || document.body;
   const out = { overlay: ovs[0] ? '#' + ovs[0].id : '', pageOverflow: document.documentElement.scrollWidth - W, wide: [], small: [], covered: [], clipped: [], truncated: [], dupIds: [], unnamed: [], unlabeled: [] };
   const scroller = (el) => { for (let p = el.parentElement; p; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflowX)) return p; } return null; };
@@ -213,7 +230,7 @@ const CHECK = () => {
       await p.mouse.move(1, 1);
       // what the user sees, a screen at a time: scroll the top overlay's scroller (or the page) and shoot each step
       const steps = process.env.NOSHOTS ? 0 : await p.evaluate(() => {
-        const ovs = ['#sos', '#matpick', '#start', '#call', '#pick', '#more', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && e.getClientRects().length);
+        const ovs = ['#sos', '#matpick', '#start', '#call', '#pick', '#more', '#rq', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && e.getClientRects().length);
         let sc = document.scrollingElement;
         if (ovs[0]) { let best = null; ovs[0].querySelectorAll('*').forEach((e) => { const cs = getComputedStyle(e); if (/(auto|scroll)/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 4 && (!best || e.clientHeight > best.clientHeight)) best = e; }); if (best) { sc = best; best.setAttribute('data-au-sc', '1'); } else sc = null; }
         if (!sc) return 1;

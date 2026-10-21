@@ -229,9 +229,12 @@ begin
 end $$;
 
 -- ---------- what only the office and the server change on a job ----------
--- Whatever a phone saves, three things stay as they were:
+-- Whatever a phone saves, four things stay as they were:
 --   - the quote, unless the office saves it (a crew lead's card-on-file charges are held to the quote's
 --     not-to-exceed amount, so only the office may move it);
+--   - the quotes a job had before (quoteHist: a new quote made on site keeps the one it replaced, with the
+--     customer's signature), unless the office saves them (added Oct 21, 2026; a crew lead's signed new
+--     quote is saved by the server, which these rules don't hold back);
 --   - card payments, refunds and disputes (st_, rf_ and dp_ entries): only the server writes them,
 --     and a phone can't remove one either;
 --   - a payment of zero or less, or one with no number for its amount, is never added.
@@ -244,6 +247,9 @@ begin
   if auth.uid() is null then return new; end if;   -- the server (service role) and the SQL editor
   if not public.office_of(new.org_id) and (new.data -> 'quote') is distinct from (old.data -> 'quote') then
     new.data := case when old.data ? 'quote' then jsonb_set(new.data, '{quote}', old.data -> 'quote') else new.data - 'quote' end;
+  end if;
+  if not public.office_of(new.org_id) and (new.data -> 'quoteHist') is distinct from (old.data -> 'quoteHist') then
+    new.data := case when old.data ? 'quoteHist' then jsonb_set(new.data, '{quoteHist}', old.data -> 'quoteHist') else new.data - 'quoteHist' end;
   end if;
   pays := case when jsonb_typeof(new.data -> 'payments') = 'object' then new.data -> 'payments' else '{}'::jsonb end;
   olds := case when jsonb_typeof(old.data -> 'payments') = 'object' then old.data -> 'payments' else '{}'::jsonb end;

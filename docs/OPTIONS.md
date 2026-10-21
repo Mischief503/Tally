@@ -1,12 +1,12 @@
 # Options: what the owner can switch on and off
 
-**Setup › Options** has 37 switches, in eight groups. They apply to everyone in the company and save
+**Setup › Options** has 39 switches, in eight groups. They apply to everyone in the company and save
 as soon as they're flipped. Each switch also sits in the Setup section it belongs to, so the Rate
 card has the pricing switches, Roles has what crew, leads and dispatch can do, and so on. Only the
 owner can change them.
 
-All of them start on, except **Photos before finishing** and **Sales tax** (it starts on only when a
-tax % is set). The **Options** row in Setup shows how many are on, and the search box at the top of
+All of them start on, except **Photos before finishing**, **Office approves new quotes from the crew**
+and **Sales tax** (it starts on only when a tax % is set). The **Options** row in Setup shows how many are on, and the search box at the top of
 Setup finds a switch by name.
 
 Switching something off hides it from the screens; it doesn't delete anything. Switched back on,
@@ -22,6 +22,7 @@ the old notes, tallies, photos and settings are still there.
 | Quick updates | No *On my way* / *Arrived at pickup* buttons on the job card. |
 | Crew members can call the customer | No Call button for crew members. Leads and the office always have it. |
 | Crew add materials and costs | Nothing on the job card to add materials or costs with. Materials the office put on the job still show there, to read. The office can still add them on the job sheet. |
+| Crew leads make new quotes on site | No **Items different? Make a new quote** on the lead's job card; the office changes quotes on the job sheet. The server refuses a lead's new quote too. See [PRICING.md](PRICING.md#a-new-quote-on-site). |
 | Photos before finishing (starts off) | On: **Finish job** waits for a pickup photo and a delivery photo, and opens Photos to take them. |
 | Truck down button | No Truck down button for the crew (an alert already open still shows). |
 
@@ -74,6 +75,7 @@ The number under a switch (radius, %, $) shows only while the switch is on. See
 | Texts the evening before | No evening reminders or office summary. |
 | Unsigned forms alert | No text to the office about a job waiting on a signature. |
 | A driver for every truck | No driver boxes on jobs, no Who drives list in Setup › Fleet and drivers, and a truck without a driver doesn't make a job need scheduling. The texts just name the truck. |
+| Office approves new quotes from the crew (starts off) | On: a crew lead's new quote waits for the owner or dispatch to approve it (Today: *New quote to approve*), then the customer signs it. Off: the customer's signature is enough, and the office is told. |
 | Dispatch can take payments | Dispatch has no payment buttons (*The owner takes payments on this job*); the server refuses dispatch's payments too. |
 | Dispatch sees revenue | No Revenue screen for dispatch; Today shows what's to schedule instead of what's owed. |
 

@@ -104,3 +104,44 @@ doesn't re-bill it.
 The bill line keeps a record of the numbers it was worked out from. When a phone gets a job from the
 database whose line was worked out from older numbers, it works the line out again and saves it.
 This happens, for example, when the office changed the quote while the crew lead's phone was offline.
+
+## A new quote on site
+
+When the crew shows up and the inventory isn't what was quoted, the crew lead makes a new quote from
+the job card: **Items different? Make a new quote**, under the Quote part, before the move or during
+it (not once it's billed out).
+
+1. **Room by room.** Every room in the item list, with the quoted count for each item; the rooms with
+   something on the quote start open. **+** and **−** change the counts, and each changed item says
+   what it was ("was 1"). Stairs and packing are there too. The bar at the bottom shows the new price
+   against the quote as you go.
+2. **Check it.** The old and new price and the difference, what's different ("+1 Sofa (3-seat)
+   (1 → 2)", "−2 Medium box (30 → 28)"), the new quote's lines, its not-to-exceed price, and a note
+   for the office about why.
+3. **The customer signs.** "New estimate: $1,788", how the bill still works (by the time and miles,
+   never over the not-to-exceed price; or the flat price), the printed name, a tick box and the
+   signature. Only then does the new quote go on the job.
+
+The new quote is worked out the same way as the office's, at the rates on the job's quote: the same
+hourly and mileage rates, tax, minimum hours, truck, stair and packing fees, and the same crew and
+move type, even if the Rate card changed since booking. The truck on the job stays (more trucks go on
+the quote when the load won't fit), hours the office set by hand grow and shrink with the load, and
+the deposit stays as booked.
+
+The office is told: *New quote signed on site* on Today and at the top of the job sheet, with who made
+it, who signed, why and what changed, until someone taps **Got it**. Every quote a new one replaced
+stays on the job, under **Earlier quotes** on the card and the sheet, with the customer's signature
+(on the sheet).
+
+With **Options › Office approves new quotes from the crew** on, step 3 is **Send to the office to
+approve** instead. The owner or dispatch sees *New quote to approve* on Today, and on the sheet
+**Approve** or **Don't approve**, with a note back. Approved, the lead's card says so with **The
+customer signs** and **The customer doesn't agree**; the price on the job changes only when the
+customer signs. If the office changes the job's quote while a new one waits, that one stops counting
+and the lead makes it again. The lead can **Take it back** while it waits.
+
+On the hosted app only the office can change a job's quote, so a crew lead's signed quote goes to the
+server (the `requote` action of the tally-twilio function). It works the price out again from the
+job, the items and the job's rates, and saves it only if it's the price the customer signed, and, with
+office approval on, only the quote the office approved. No signal on site: the phone keeps the signed
+quote, says so on the card (**Try again now**), and sends it as soon as it can.
