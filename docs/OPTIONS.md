@@ -21,7 +21,7 @@ the old notes, tallies, photos and settings are still there.
 | Load tally | No Tally on the job card or on Today. |
 | Quick updates | No *On my way* / *Arrived at pickup* buttons on the job card. |
 | Crew members can call the customer | No Call button for crew members. Leads and the office always have it. |
-| Crew add materials and costs | No Materials on the job card. The office can still add them on the job sheet. |
+| Crew add materials and costs | Nothing on the job card to add materials or costs with. Materials the office put on the job still show there, to read. The office can still add them on the job sheet. |
 | Photos before finishing (starts off) | On: **Finish job** waits for a pickup photo and a delivery photo, and opens Photos to take them. |
 | Truck down button | No Truck down button for the crew (an alert already open still shows). |
 
@@ -88,9 +88,10 @@ uses its default. The server reads the same settings for texts and payments.
 Each person's clock card on Today has their name, where they stand (Clocked out, On the clock, On
 break), one big **Clock In** button, or **Break** / **End break** and **Clock Out** once they're on
 the clock, what they clocked in for, and the day's paid time with breaks taken out ("2h 30m paid today
-(breaks not counted)"). The top of My jobs has a slimmer copy of the same card (the same buttons, the
-paid time on one line), so the job and its Start job button stay on the first screen. The clock card
-is the one place to clock in and out: there is no separate round clock button.
+(breaks not counted)"). Crews and leads have it on their **Jobs** screen, under "Good morning" and the
+date: one big **Clock In** button, the paid time on one line, and while they're on the clock whether
+their location is being shared. The clock card is the one place to clock in and out: there is no
+separate round clock button.
 
 With **Everyone clocks in before Start job** on, the crew lead's **Start job** waits until everyone
 on the job is clocked in; the card ticks who is ("Crew: Marcus (lead) ✓, Dee, Luis") and says who it

@@ -105,12 +105,19 @@ const L = (m) => label + ': ' + m;
   click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:preview"]'); await sleep(5);
   click($$('#more [data-act="pv:set"]').find((b) => b.dataset.role === 'lead' && b.dataset.staff === 'Marcus')); await sleep(15);
   click('[data-act="tab"][data-tab="crew"]'); await sleep(10);
-  const card = $$('.crewcard').find((c) => /Priya Nair/.test(c.textContent));
-  ok(card && /Box 1 \(26 ft\), you drive · Box 2 \(20 ft\), Luis drives/.test(card.querySelector('.cc-sub').textContent), L('Marcus’s card: Box 1, you drive · Box 2, Luis drives: ' + (card ? card.querySelector('.cc-sub').textContent : '')));
+  const trucksOn = () => { const c = $('#view .crewcard[data-job="' + PN.id + '"]'); return c ? Array.from(c.querySelectorAll('.cc-truck')).map((d) => d.textContent).join(' | ') : 'no card'; };
+  const crewOn = () => { const c = $('#view .crewcard[data-job="' + PN.id + '"]'); return c ? (Array.from(c.querySelectorAll('.cc-sub')).find((d) => /^Crew: /.test(d.textContent)) || {}).textContent : ''; };
+  ok(trucksOn() === 'Truck: Box 1 (26 ft), you drive | Truck: Box 2 (20 ft), Luis drives', L('Marcus’s card: a line for each truck, with who drives: ' + trucksOn()));
+  ok(/^Crew: Marcus \(lead\), Dee, Luis$/.test(crewOn()), L('and everyone on the job: ' + crewOn()));
   click('[data-act="tab"][data-tab="chat"]'); await sleep(10);
   click('[data-act="chat:open"][data-t="jobs"]'); await sleep(10);
   const msg = $$('.jmsg').find((m) => /Priya Nair/.test(m.textContent));
   ok(msg && /Trucks: Box 1 \(26 ft\), you drive · Box 2 \(20 ft\), Luis drives/.test(msg.textContent), L('his job message lists both trucks and who drives'));
+  click('[data-act="pv:end"]'); await sleep(15);
+  // Richie, Oct 21: "When dispatched with more than 1 truck the crew should see both trucks being used and all crew mates"
+  click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:preview"]'); await sleep(5);
+  click($$('#more [data-act="pv:set"]').find((b) => b.dataset.role === 'crew' && b.dataset.staff === 'Dee')); await sleep(15);
+  ok(trucksOn() === 'Truck: Box 1 (26 ft), Marcus drives | Truck: Box 2 (20 ft), Luis drives' && /^Crew: Marcus \(lead\), Dee, Luis$/.test(crewOn()), L('Dee, who drives neither, sees both trucks, both drivers and all her crewmates: ' + trucksOn()));
   click('[data-act="pv:end"]'); await sleep(15);
 
   /* ---------------- Job history finds every truck ---------------- */

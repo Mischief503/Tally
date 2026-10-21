@@ -291,7 +291,7 @@ const H = 36e5;
   await more('crew');
   click('[data-act="cr:phaseundo"][data-id="' + SP.id + '"]'); await sleep(10);
   ok(SP.phases.unloadEnd === null && !SP.extras.some((e) => e.id === 'clock') && SP.log.some((l) => l.ev === 'Bill back to the quote (times changed)'), L('Undo "Done unloading": the bill goes back to the quote until it is tapped again'));
-  click($('.crewcard [data-id="' + SP.id + '"].primary')); await sleep(10);
+  click($('.crewcard .cc-run [data-id="' + SP.id + '"].primary')); await sleep(10);
   ok(SP.phases.unloadEnd > 0 && SP.extras.find((e) => e.id === 'clock'), L('tapped again: the line is back'));
   // a mileage bid needs the loading and unloading taps to be measured
   ok(T.bidActual({ quote: { kind: 'mileage', hours: 6.5 }, actualHours: 10, phases: {} }) === 0 && T.bidActual({ quote: { kind: 'local', hours: 3 }, actualHours: 4 }) === 4, L('bid accuracy leaves out a mileage move with no loading and unloading taps'));

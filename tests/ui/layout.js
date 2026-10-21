@@ -58,19 +58,21 @@ const SCREENS = {
   'owner job sheet, lead': async (p) => { await openJob(p, 'Sam Kowalski'); },
   'dispatch Today': async (p) => { await pv(p, 'dispatch', 'Dispatch'); },
   'dispatch Jobs': async (p) => { await pv(p, 'dispatch', 'Dispatch'); await tabTo(p, 'jobs'); },
-  'crew lead Today': async (p) => { await pv(p, 'lead', 'Marcus'); },
-  'crew lead My jobs': async (p) => { await pv(p, 'lead', 'Marcus'); await tabTo(p, 'crew'); },
-  'crew lead My jobs, all clocked in': async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); await tabTo(p, 'crew'); },
-  'crew lead My jobs, job running': async (p) => { await startPriya(p); await pv(p, 'lead', 'Marcus'); await tabTo(p, 'crew'); },
-  'crew Today': async (p) => { await pv(p, 'crew', 'Dee'); },
-  'crew My jobs': async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'crew'); },
+  // the crew's app (Richie's drawing, Oct 21): Jobs (Today | History), Chat and More
+  'crew lead Jobs': async (p) => { await pv(p, 'lead', 'Marcus'); },
+  'crew lead Jobs, all clocked in': async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); await tabTo(p, 'crew'); },
+  'crew lead Jobs, job running': async (p) => { await startPriya(p); await pv(p, 'lead', 'Marcus'); await tabTo(p, 'crew'); },
+  'crew lead History, a job opened': async (p) => { await pv(p, 'lead', 'Marcus'); await tap(p, '[data-act="cr:view"][data-v="history"]', 200); await tap(p, '#view details.hcard summary', 200); },
+  'crew Jobs': async (p) => { await pv(p, 'crew', 'Dee'); },
+  'crew History': async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '[data-act="cr:view"][data-v="history"]', 200); },
+  'crew More': async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '[data-act="more:open"]', 250); },
   'crew Chat': async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'chat'); },
 };
 // the smallest phones (320 wide), a tablet held upright, and a phone turned sideways
-const SMALL = ['owner Today', 'owner Jobs', 'owner Reports', 'owner Setup › Inventory catalog', 'owner new quote, price', 'owner job sheet, booked', 'owner job sheet, finished', 'crew lead My jobs, all clocked in', 'crew lead My jobs, job running', 'crew Today'];
-const TABLET = ['owner Today', 'owner Reports', 'owner job sheet, booked', 'crew lead My jobs, job running'];
-const SIDEWAYS = ['owner Today', 'owner job sheet, booked', 'owner new quote, price', 'crew lead My jobs, all clocked in', 'crew Today'];
-const NARROW = ['owner Today', 'owner Jobs', 'owner Setup › Fleet', 'owner Setup › Custom job fields', 'owner Setup › Inventory catalog', 'owner Setup › Rate card', 'owner new quote, price', 'owner job sheet, booked', 'crew lead My jobs, all clocked in', 'crew Today'];
+const SMALL = ['owner Today', 'owner Jobs', 'owner Reports', 'owner Setup › Inventory catalog', 'owner new quote, price', 'owner job sheet, booked', 'owner job sheet, finished', 'crew lead Jobs, all clocked in', 'crew lead Jobs, job running', 'crew Jobs'];
+const TABLET = ['owner Today', 'owner Reports', 'owner job sheet, booked', 'crew lead Jobs, job running'];
+const SIDEWAYS = ['owner Today', 'owner job sheet, booked', 'owner new quote, price', 'crew lead Jobs, all clocked in', 'crew Jobs'];
+const NARROW = ['owner Today', 'owner Jobs', 'owner Setup › Fleet', 'owner Setup › Custom job fields', 'owner Setup › Inventory catalog', 'owner Setup › Rate card', 'owner new quote, price', 'owner job sheet, booked', 'crew lead Jobs, all clocked in', 'crew Jobs'];
 
 /* ---------- the checks, in the page (shared with layout-hosted.js) ---------- */
 const { CHECK } = require('./layoutcheck');
@@ -122,7 +124,7 @@ const { CHECK } = require('./layoutcheck');
   if (!AXE) ok(false, 'axe-core is installed for the contrast check (npm install in tests/ui)');
   else {
     const looks = [['movingday', 'light'], ['movingday', 'dark'], ['contrast', 'light'], ['hivis', 'dark'], ['cardboard', 'light'], ['terminal', 'dark']];
-    const shots = ['owner Today', 'owner job sheet, finished', 'owner new quote, price', 'owner Setup › Options', 'crew lead My jobs, job running', 'crew Today'];
+    const shots = ['owner Today', 'owner job sheet, finished', 'owner new quote, price', 'owner Setup › Options', 'crew lead Jobs, job running', 'crew Jobs', 'crew lead History, a job opened'];
     for (const [t, m] of looks) {
       const found = [];
       for (const n of shots) {
@@ -136,7 +138,7 @@ const { CHECK } = require('./layoutcheck');
         } catch (e) { found.push(n + ': ' + String(e).slice(0, 120)); }
         errors.push(...p.errs); await p.context().close();
       }
-      ok(!found.length, `${t} ${m}: the text on Today, a finished job's sheet, a quote's price, Options, a running job and the crew's Today passes axe's colour-contrast rule` + (found.length ? ' (' + found.slice(0, 4).join('; ') + ')' : ''));
+      ok(!found.length, `${t} ${m}: the text on Today, a finished job's sheet, a quote's price, Options, a running job, the crew's Jobs and an opened History job passes axe's colour-contrast rule` + (found.length ? ' (' + found.slice(0, 4).join('; ') + ')' : ''));
     }
   }
   // the hosted app's sign-in screen, on a phone set to light and to dark (it was a white box with white

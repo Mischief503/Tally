@@ -79,7 +79,7 @@ const row = (db, path) => db.docs.find((r) => r.path === path).data;
   M.click(undo); await sleep(500);
   ok(row(db, 'jobs/m2').phases && !('unloadEnd' in row(db, 'jobs/m2').phases) && row(db, 'jobs/m2').phases.unloadStart > 0, 'Undo removes "Done unloading" in the database too');
   await sleep(300);
-  ok(!M.T.state().jobs.find((x) => x.id === 'm2').phases.unloadEnd && /Done unloading/.test((M.$('.crewcard [data-id="m2"].primary') || {}).textContent || ''), 'and it stays undone after the database echoes it back');
+  ok(!M.T.state().jobs.find((x) => x.id === 'm2').phases.unloadEnd && /Done unloading/.test((M.$('.crewcard .cc-run [data-id="m2"].primary') || {}).textContent || ''), 'and it stays undone after the database echoes it back');
   // ---- the radius is each company's own: it is saved with the company's settings
   await O.go('settings', 'rates');
   const rad = O.$('input[data-s="includedMiles"]');

@@ -37,7 +37,7 @@ const file = process.argv[2], label = process.argv[3] || 'field';
   ok(job.log.some((l) => /Arrival text opened .*about 45 min/.test(l.ev)) && st().ui.etaMins === 45, label + ': logged on the job, and 45 is offered next time');
 
   // ---- the four steps
-  const btn = () => $('.crewcard [data-id="' + job.id + '"].primary');
+  const btn = () => $('.crewcard .cc-run [data-id="' + job.id + '"].primary');
   ok(btn() && btn().textContent === 'Start loading' && !$('[data-act="cr:finish"][data-id="' + job.id + '"]'), label + ': next step is Start loading, no Finish yet');
   ok(/On the way.*since/.test($('.phz').textContent.replace(/\s+/g, ' ')), label + ': timeline shows On the way, running');
   click(btn()); await sleep(5);

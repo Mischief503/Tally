@@ -99,38 +99,39 @@ add('dispatch-reports', async (p) => { await pv(p, 'dispatch', 'Dispatch'); awai
 add('dispatch-field', async (p) => { await pv(p, 'dispatch', 'Dispatch'); await more(p, 'crew'); });
 add('dispatch-sheet', async (p) => { await pv(p, 'dispatch', 'Dispatch'); await openJob(p, 'Marcus Tull'); await openAllSecs(p, '#sheet'); }, { sheet: true });
 /* ---------- crew lead ---------- */
-add('lead-today', async (p) => { await pv(p, 'lead', 'Marcus'); });
-add('lead-today-on', async (p) => { await pv(p, 'lead', 'Marcus'); await tap(p, '.tclock [data-act="clk:in"]', 3000); });
-add('lead-myjobs', async (p) => { await pv(p, 'lead', 'Marcus'); await tabTo(p, 'crew'); });
-add('lead-myjobs-ready', async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); await tabTo(p, 'crew'); });
-add('lead-myjobs-bill', async (p) => { await pv(p, 'lead', 'Marcus'); await tabTo(p, 'crew'); const id = await jobId(p, 'Marcus Tull'); const b = await p.$(`[data-act="cr:seg"][data-id="${id}"][data-k="bill"]`); if (b) { await b.click(); await sleep(300); } });
-add('lead-myjobs-active', async (p) => { await startPriya(p); await pv(p, 'lead', 'Marcus'); await tabTo(p, 'crew'); });
-add('lead-start', async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); await tabTo(p, 'crew'); const id = await jobId(p, 'Priya Nair'); await tap(p, `[data-act="cr:start"][data-id="${id}"]`, 500); });
-add('lead-flow', async (p) => { await pv(p, 'lead', 'Marcus'); await tabTo(p, 'crew'); const id = await jobId(p, 'Marcus Tull'); await tap(p, `[data-act="flow:open"][data-id="${id}"]`, 600); });
-add('lead-matpick', async (p) => { await pv(p, 'lead', 'Marcus'); await tabTo(p, 'crew'); const id = await jobId(p, 'Priya Nair'); await tap(p, `[data-act="cr:seg"][data-id="${id}"][data-k="mats"]`); await tap(p, `[data-act="mp:open"][data-id="${id}"]`, 500); });
+// the crew's app (Richie's drawing, Oct 21): Jobs (Today | History), Chat, More
+const hist = async (p) => { await tap(p, '[data-act="cr:view"][data-v="history"]', 400); };
+const openHist = async (p) => { await hist(p); await p.evaluate(() => { document.querySelectorAll('#view details.hcard').forEach((d) => { d.open = true; }); }); await sleep(300); };
+add('lead-jobs', async (p) => { await pv(p, 'lead', 'Marcus'); });
+add('lead-jobs-on', async (p) => { await pv(p, 'lead', 'Marcus'); await tap(p, '.tclock [data-act="clk:in"]', 3000); });
+add('lead-jobs-ready', async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); });
+add('lead-jobs-active', async (p) => { await startPriya(p); await pv(p, 'lead', 'Marcus'); });
+add('lead-jobs-costform', async (p) => { await pv(p, 'lead', 'Marcus'); await openAllSecs(p, '#view .crewcard'); });
+add('lead-start', async (p) => { await pv(p, 'lead', 'Marcus'); await clockIn(p, ['Marcus', 'Dee', 'Luis']); const id = await jobId(p, 'Priya Nair'); await tap(p, `[data-act="cr:start"][data-id="${id}"]`, 500); });
+add('lead-flow', async (p) => { await pv(p, 'lead', 'Marcus'); const id = await jobId(p, 'Marcus Tull'); await tap(p, `#view [data-act="flow:open"][data-id="${id}"]`, 600); });
+add('lead-matpick', async (p) => { await pv(p, 'lead', 'Marcus'); const id = await jobId(p, 'Priya Nair'); await tap(p, `[data-act="mp:open"][data-id="${id}"]`, 500); });
+add('lead-history', async (p) => { await pv(p, 'lead', 'Marcus'); await hist(p); });
+add('lead-history-open', async (p) => { await pv(p, 'lead', 'Marcus'); await openHist(p); });
 add('lead-chat', async (p) => { await pv(p, 'lead', 'Marcus'); await tabTo(p, 'chat'); });
 add('lead-more', async (p) => { await pv(p, 'lead', 'Marcus'); await tap(p, '[data-act="more:open"]', 400); });
-add('lead-history', async (p) => { await pv(p, 'lead', 'Marcus'); await more(p, 'history'); });
 add('lead-sos', async (p) => { await pv(p, 'lead', 'Marcus'); await tap(p, '[data-act="more:open"]'); await tap(p, '#more [data-act="sos:open"]', 500); }, { overlay: '#sos' });
-/* ---------- crew ---------- */
-add('crew-today', async (p) => { await pv(p, 'crew', 'Dee'); });
-add('crew-today-break', async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '.tclock [data-act="clk:in"]'); await tap(p, '.tclock [data-act="clk:break"]', 3000); });
-add('crew-myjobs', async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'crew'); });
-add('crew-myjobs-notes', async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'crew'); const id = await jobId(p, 'Priya Nair'); await tap(p, `[data-act="cr:seg"][data-id="${id}"][data-k="notes"]`); });
+
+add('crew-jobs', async (p) => { await pv(p, 'crew', 'Dee'); });
+add('crew-jobs-break', async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '.tclock [data-act="clk:in"]'); await tap(p, '.tclock [data-act="clk:break"]', 3000); });
+add('crew-jobs-active', async (p) => { await startPriya(p); await pv(p, 'crew', 'Dee'); });
+add('crew-history', async (p) => { await pv(p, 'crew', 'Dee'); await hist(p); });
+add('crew-history-open', async (p) => { await pv(p, 'crew', 'Dee'); await openHist(p); });
 add('crew-chat', async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'chat'); });
 add('crew-jobmsgs', async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'chat'); await tap(p, '[data-act="chat:open"][data-t="jobs"]', 400); });
 add('crew-more', async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '[data-act="more:open"]', 400); });
-add('crew-history', async (p) => { await pv(p, 'crew', 'Dee'); await more(p, 'history'); });
-add('crew-myjobs-active', async (p) => { await startPriya(p); await pv(p, 'crew', 'Dee'); await tabTo(p, 'crew'); });
-add('crew-today-active', async (p) => { await startPriya(p); await pv(p, 'crew', 'Dee'); });
 const empty = async (p) => { await p.evaluate(() => { const st = window.__tally.state(); st.jobs = []; st.shifts = []; window.__tally.render(); }); await sleep(200); };
 add('empty-owner-today', async (p) => { await empty(p); });
 add('empty-owner-jobs', async (p) => { await empty(p); await tabTo(p, 'jobs'); });
 add('empty-owner-board', async (p) => { await empty(p); await tabTo(p, 'dispatch'); });
 add('empty-owner-reports', async (p) => { await empty(p); await tabTo(p, 'reports'); });
-add('empty-crew-today', async (p) => { await empty(p); await pv(p, 'crew', 'Dee'); });
-add('empty-crew-myjobs', async (p) => { await empty(p); await pv(p, 'crew', 'Dee'); await tabTo(p, 'crew'); });
-add('crew-sos', async (p) => { await pv(p, 'crew', 'Dee'); const b = await p.$('#view [data-act="sos:open"]'); if (b) { await b.click(); await sleep(500); } }, { overlay: '#sos' });
+add('empty-crew-jobs', async (p) => { await empty(p); await pv(p, 'crew', 'Dee'); });
+add('empty-crew-history', async (p) => { await empty(p); await pv(p, 'crew', 'Dee'); await hist(p); });
+add('crew-sos', async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '[data-act="more:open"]'); await tap(p, '#more [data-act="sos:open"]', 500); }, { overlay: '#sos' });
 
 /* ---------- the checks, run in the page ---------- */
 const CHECK = () => {

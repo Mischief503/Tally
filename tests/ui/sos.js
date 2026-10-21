@@ -51,6 +51,8 @@ function phone(o = {}) {
 const fix = (lat, lng, acc) => ({ coords: { latitude: lat, longitude: lng, accuracy: acc } });
 const as = (uid) => ({ uid, email: uid + '@x' });
 const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? start : { ok: true, sent: 1 }) : { ok: true, sent: 0 };
+// the crew's Truck down is in More (Richie's drawing, Oct 21)
+const tdOpen = async (X) => { X.click('[data-act="more:open"]'); await sleep(10); X.click('#more [data-act="sos:open"]'); await sleep(20); };
 
 (async () => {
   const all = [];
@@ -61,20 +63,23 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   all.push(A);
   const { w, $, $$, click, calls, T } = A;
   const patches = (id) => calls.writes.filter((x) => x.op === 'patch' && x.row.path === 'chat/' + id);
-  const tdBtn = $$('#view [data-act="sos:open"]').find((b) => /Truck down\? Tell the office/.test(b.textContent));
-  ok(!!tdBtn, 'the crew’s Today screen has a Truck down button');
-  click(tdBtn); await sleep(20);
+  ok(!$('#view [data-act="sos:open"]'), 'the crew’s Jobs screen keeps Truck down out of the way');
+  click('[data-act="more:open"]'); await sleep(10);
+  const tdRow = $('#more .sosrow [data-act="sos:open"]') || $('#more [data-act="sos:open"]');
+  ok(!!tdRow && /Truck down/.test(tdRow.textContent) && /Tell the office a truck broke down, and where/.test(tdRow.textContent), 'it is at the bottom of More, in red');
+  click(tdRow); await sleep(20);
+  ok(!T.ui.more, 'More closes as it opens');
   ok(!$('#sos').hidden && /Tell the office your truck is down\?/.test($('#sos').textContent), 'it opens the truck-down screen');
   ok($('#sosTruck').value === 't26' && /Job: Priya Nair\./.test($('#sos').textContent), 'it picks the truck and the job from today’s schedule');
   // with two trucks on the job, it starts on the one Marcus drives
   click('[data-act="sos:cancel"]'); await sleep(10);
   const pj = T.state().jobs.find((j) => j.id === 'j1'), keepA = JSON.parse(JSON.stringify(pj.assign));
   pj.assign.more = ['t16']; pj.assign.drivers = { t26: 'Dee', t16: 'Marcus' };
-  click($$('#view [data-act="sos:open"]').find((b) => /Truck down\? Tell the office/.test(b.textContent))); await sleep(20);
+  await tdOpen(A);
   ok($('#sosTruck').value === 't16', 'with two trucks on the job, it starts on the one he drives');
   click('[data-act="sos:cancel"]'); await sleep(10);
   pj.assign = keepA;
-  click($$('#view [data-act="sos:open"]').find((b) => /Truck down\? Tell the office/.test(b.textContent))); await sleep(20);
+  await tdOpen(A);
   ok(/where you are, and a text\./.test($('#sos').textContent), 'it says the office gets a text too');
   ok(w.__geo.watches.length === 0, 'nothing is shared before the alert is sent');
   ok(w.document.body.classList.contains('lock'), 'the page behind it holds still');
@@ -118,7 +123,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   click('[data-act="sos:hide"]'); await sleep(20);
   ok($('#sos').hidden && !$('#sosBar').hidden && /Your truck-down alert is on/.test($('#sosBar').textContent), 'closing the screen leaves a red bar while the alert is on');
   ok(w.document.body.classList.contains('sos-on') && !w.document.body.classList.contains('lock'), 'the page makes room for the bar and scrolls again');
-  ok(/Truck down alert is on/.test($('#view').textContent) && !/Truck down\? Tell the office/.test($('#view').textContent), 'Today shows the alert is on instead of the button');
+  ok(/Truck down alert is on/.test($('#view').textContent), 'his Jobs screen shows the alert is on');
   click('[data-act="tab"][data-tab="chat"]'); await sleep(20);
   ok(!/Flat tire/.test($('#view').textContent), 'the alert is not in the team chat');
 
@@ -215,7 +220,9 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   const C = await load(HOSTED, { db: seed({ alerts: [alert('sx1')] }), org: ORG, me: as('u-dee'), setup: phone() });
   all.push(C);
   ok(C.$('#sos').hidden && C.$('#sosBar').hidden && C.w.__fx.beeps === 0 && !/TRUCK DOWN/.test(C.w.document.title), 'the rest of the crew is not shown the alert');
-  ok(C.$$('#view [data-act="sos:open"]').some((b) => /Truck down\? Tell the office/.test(b.textContent)), 'and still has their own Truck down button');
+  C.click('[data-act="more:open"]'); await sleep(10);
+  ok(!!C.$('#more [data-act="sos:open"]'), 'and still has their own Truck down in More');
+  C.click('[data-act="more:close"]'); await sleep(10);
 
   /* ---------- old, ended and answered alerts; the link in the text ---------- */
   const old = alert('so1', { ts: Date.now() - 13 * 3600e3 }), done = alert('so2', { end: { by: 'Marcus', ts: Date.now() } });
@@ -236,7 +243,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   const dbG = seed({ noLine: true });
   const G = await load(HOSTED, { db: dbG, org: ORG, me: as('u-marcus'), setup: phone({ noGeo: true }) });
   all.push(G);
-  G.click(G.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(G);
   ok(!/and a text/.test(G.$('#sos').textContent), 'without a company line it doesn’t promise a text');
   G.click('[data-act="sos:send"]'); await sleep(80);
   ok(dbG.docs.some((d) => d.collection === 'chat' && d.data.k === 'sos' && d.data.truck === 'Box 1 (26 ft)' && d.data.text === ''), 'the alert still goes to the office’s Tally');
@@ -248,7 +255,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   const dbH = seed();
   const H = await load(HOSTED, { db: dbH, org: ORG, me: as('u-marcus'), setup: phone(), fnReply: sosReply({ ok: true, sent: 2, names: ['Owner', 'Dispatch'] }) });
   all.push(H);
-  H.click(H.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(H);
   H.click('[data-act="sos:send"]'); await sleep(80);
   const hid = dbH.docs.find((d) => d.collection === 'chat' && d.data.k === 'sos').data.id;
   H.w.__geo.watches[0].err({ code: 1 }); await sleep(100);
@@ -273,7 +280,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   dbK.__failUpsert = (table, p) => table === 'docs' && p.collection === 'chat';
   const K = await load(HOSTED, { db: dbK, org: ORG, me: as('u-marcus'), setup: phone() });
   all.push(K);
-  K.click(K.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(K);
   K.click('[data-act="sos:send"]'); await sleep(80);
   ok(/The alert did not go out\. Check your signal and try again, or call the office\./.test(K.$('#sos').textContent), 'an alert that didn’t save says so');
   ok(K.w.__geo.cleared.length === 1 && !K.T.state().ui.sosOwn && !K.$('[data-act="sos:send"]').disabled, 'nothing is shared, and Send works again');
@@ -285,7 +292,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   const dbL = seed({ testJob: true });
   const L = await load(HOSTED, { db: dbL, org: ORG, me: as('u-marcus'), setup: phone(), fnReply: sosReply({ ok: true, sent: 0, skipped: 'test', names: [] }) });
   all.push(L);
-  L.click(L.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(L);
   ok(/You’re on a test job/.test(L.$('#sos').textContent) && !/and a text/.test(L.$('#sos').textContent), 'on a test job it says no texts will go out');
   L.click('[data-act="sos:send"]'); await sleep(60);
   L.w.__geo.watches[0].ok(fix(30.26715, -97.74306, 20)); await sleep(80);
@@ -301,7 +308,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   N.click('[data-act="more:open"]'); await sleep(10);
   N.click('[data-act="more:preview"]'); await sleep(10);
   N.click('[data-act="pv:set"][data-role="lead"][data-staff="Marcus"]'); await sleep(30);
-  N.click(N.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(N);
   ok(/can’t be sent from a preview/.test(N.$('#sos').textContent) && !N.$('[data-act="sos:send"]'), 'an owner previewing Marcus can’t send an alert as him');
 
   /* ---------- a copy that isn't connected to the office ---------- */
@@ -341,7 +348,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   const dbY = seed();
   const Y = await load(HOSTED, { db: dbY, org: ORG, me: as('u-marcus'), setup: phone(), fnReply: sosReply({ ok: true, sent: 2, names: ['Owner', 'Dispatch'] }) });
   all.push(Y);
-  Y.click(Y.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(Y);
   Y.click('[data-act="sos:send"]'); await sleep(80);
   const yid = dbY.docs.find((d) => d.collection === 'chat' && d.data.k === 'sos').data.id;
   dbY.__failSelect = () => true;
@@ -354,7 +361,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   const dbY2 = seed();
   const Y2 = await load(HOSTED, { db: dbY2, org: ORG, me: as('u-marcus'), setup: phone(), fnReply: sosReply({ ok: true, sent: 2, names: ['Owner', 'Dispatch'] }) });
   all.push(Y2);
-  Y2.click(Y2.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(Y2);
   Y2.click('[data-act="sos:send"]'); await sleep(80);
   dbY2.__docPatchFail = true;
   Y2.w.__geo.watches[0].ok(fix(30.26715, -97.74306, 10)); await sleep(80);
@@ -375,7 +382,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   const TT = await load(HOSTED, { db: dbT, org: ORG, me: as('u-marcus'), setup: phone({ noGeo: true }),
     fnReply: (b) => b.action !== 'sos' ? { ok: true, sent: 0 } : (++tries === 1 ? { ok: false, reason: 'failed', message: 'The texts did not go out.' } : tries === 2 ? { ok: true, pending: true } : { ok: true, sent: 2, names: ['Owner', 'Dispatch'] }) });
   all.push(TT);
-  TT.click(TT.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(TT);
   TT.click('[data-act="sos:send"]'); await sleep(100);
   ok(/The texts did not go out\. Call the office\./.test(TT.$('#sos').textContent) && !/Texted/.test(TT.$('#sos').textContent), 'texts that failed say so');
   TT.click('[data-act="sos:texts"]'); await sleep(60);
@@ -389,7 +396,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   dbQ.__failUpsert = (table, p) => table === 'docs' && p.collection === 'chat' ? 120 : false;
   const Q = await load(HOSTED, { db: dbQ, org: ORG, me: as('u-marcus'), setup: phone() });
   all.push(Q);
-  Q.click(Q.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(Q);
   Q.click('[data-act="sos:send"]'); await sleep(10);
   Q.click('[data-act="sos:cancel"]'); await sleep(250);
   ok(/The truck-down alert did not go out/.test(Q.$('#toast').textContent) && Q.$('#sos').hidden, 'closing the form while it sends still tells them if it failed');
@@ -422,7 +429,7 @@ const sosReply = (start) => (b) => b.action === 'sos' ? (b.kind === 'start' ? st
   delete dbCF.__failSelect;
   CF.T.sosRefresh(); await sleep(80);
   ok(CF.T.chat.mode === 'shared' && !!CF.T.chat.db, 'the next check that works connects it again');
-  CF.click(CF.$$('#view [data-act="sos:open"]').find((b) => /Truck down/.test(b.textContent))); await sleep(20);
+  await tdOpen(CF);
   CF.click('[data-act="sos:send"]'); await sleep(80);
   ok(dbCF.docs.some((d) => d.collection === 'chat' && d.data.k === 'sos' && d.data.from === 'Marcus'), 'and a truck-down alert goes out');
   // the same through a change coming in

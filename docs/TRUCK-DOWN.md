@@ -1,11 +1,11 @@
 # Truck down: the emergency beacon
 
-When a truck breaks down or is in an accident, the crew taps **Truck down? Tell the office** in
-Tally. The office is told right away which truck, who sent it, the job, and where the truck is.
+When a truck breaks down or is in an accident, the crew taps **More › Truck down** in Tally. The
+office is told right away which truck, who sent it, the job, and where the truck is.
 
 ## What the crew does
 
-1. On **Today** (or **My jobs**, or **More › Truck down**), tap **Truck down? Tell the office**.
+1. Tap **More** on the bottom bar, then **Truck down** (in red, at the bottom).
 2. Check the truck (Tally picks the one on today's job) and, if there's time, say what happened:
    *flat tire on I-5, won't start, accident*.
 3. Tap **Tell the office**. The phone asks to use its location the first time; allow it.

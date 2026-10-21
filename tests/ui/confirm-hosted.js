@@ -51,10 +51,10 @@ function seed() {
   const c1 = JSON.parse(JSON.stringify(db.docs.find((d) => d.path === 'jobs/c1')));
   c1.data.d.notes = 'Gate code 4411'; c1.data.d.notesBy = 'Dispatch'; c1.data.d.notesAt = Date.now();
   await B.w.__sb.from('docs').upsert(c1); await sleep(700);
-  ok(/The office updated the notes on Priya Nair\. Open it in My jobs\./.test(B.$('#toast').textContent), 'new office notes pop up on the crew lead’s phone: ' + B.$('#toast').textContent);
+  ok(/The office updated the notes on Priya Nair\. Open it in Jobs\./.test(B.$('#toast').textContent), 'new office notes pop up on the crew lead’s phone: ' + B.$('#toast').textContent);
   B.click('[data-act="tab"][data-tab="crew"]'); await sleep(20); await B.openCard('c1');
-  const pc = B.$$('.crewcard').find((c) => c.querySelector('[data-segs="c1"]'));
-  ok(pc && /From the office: Gate code 4411/.test(pc.textContent.replace(/\s+/g, ' ')) && /Updated by Dispatch today at/.test(pc.textContent), 'and his job card shows them, with who updated them');
+  const pc = B.$('#view .crewcard[data-job="c1"] .cc-onote');
+  ok(pc && /^From the office ?Gate code 4411/.test(pc.textContent.replace(/\s+/g, ' ').trim()) && /Updated by Dispatch today at/.test(pc.textContent), 'and his job card shows them, with who updated them');
   // his own save doesn't pop up for him
   const c1b = JSON.parse(JSON.stringify(db.docs.find((d) => d.path === 'jobs/c1')));
   c1b.data.d.notes = 'Gate code 4411, side door'; c1b.data.d.notesBy = 'Marcus'; c1b.data.d.notesAt = Date.now() + 1;
@@ -62,7 +62,6 @@ function seed() {
   await B.w.__sb.from('docs').upsert(c1b); await sleep(700);
   ok(!/updated the notes/.test(B.$('#toast').textContent), 'notes saved under his own name don’t pop up for him');
   // Marcus adds materials with taps; each reaches the database
-  B.click('[data-act="cr:seg"][data-id="c1"][data-k="mats"]'); await sleep(10);
   B.click('[data-act="mp:open"][data-id="c1"]'); await sleep(20);
   const m0 = B.T.state().settings.materials[0];
   B.click('#matpick [data-act="mp:add"][data-mid="' + m0.id + '"]'); await sleep(5);
@@ -72,7 +71,7 @@ function seed() {
   B.click('#matpick [data-act="mp:close"].btn'); await sleep(700);
   ok(Object.values(db.docs.find((d) => d.path === 'jobs/c1').data.log || {}).some((l) => /Materials added by Marcus: .* × 2/.test(l.ev)), 'and closing the list logs it on the job');
   // the time clock: Marcus clocks in and takes a break; the shift and its break reach the database
-  B.click('[data-act="tab"][data-tab="today"]'); await sleep(20);
+  B.click('[data-act="tab"][data-tab="crew"]'); await sleep(20);
   B.click('.tclock [data-act="clk:in"]'); await sleep(700);
   const shRow = () => db.docs.find((d) => d.collection === 'shifts' && d.data.who === 'Marcus' && !d.data.outAt);
   ok(shRow() && Array.isArray(shRow().data.breaks) && shRow().data.breaks.length === 0, 'his clock-in reaches the database');

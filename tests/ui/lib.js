@@ -168,8 +168,8 @@ async function load(file, opts = {}) {
     click('[data-act="more:go"][data-tab="' + tab + '"]' + (tab === 'settings' ? ':not([data-sec])' : '')); await sleep(25);
     if (sec) { click('[data-act="set:open"][data-sec="' + sec + '"]'); await sleep(20); }
   };
-  // a job further out shows as one line on My jobs until it is opened
-  const openCard = async (id) => { const m = $('[data-act="cr:expand"][data-id="' + id + '"]'); if (m) { click(m); await sleep(10); } };
+  // every job on the crew's Jobs screen is a full card now (Oct 21), so there is nothing to open; kept so tests read the same
+  const openCard = async () => { await sleep(1); };
   // put people on the clock (Start job waits for everyone on the job to clock in)
   const clockIn = (...names) => {
     const st = w.__tally.state();

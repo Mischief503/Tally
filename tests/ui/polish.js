@@ -3,7 +3,7 @@
 // the Jobs list; Needs you shows five rows with the rest a tap away; the payment screen fills in the
 // deposit or the whole balance with one tap and keeps a typed amount when the screen redraws; a clash on
 // the job sheet opens the other job; things removed in Setup come back with Undo; the catalog's cubic feet
-// and fees change right in the list; My jobs headings match the other screens; Reports' three-tile rows.
+// and fees change right in the list; the crew's Jobs headings match the other screens; Reports' three-tile rows.
 const { load, ok, sleep, summary } = require('./lib');
 const file = process.argv[2] || __dirname + '/../../build/tally-artifact.html', label = process.argv[3] || 'polish';
 const L = (m) => label + ': ' + m;
@@ -134,12 +134,14 @@ const L = (m) => label + ': ' + m;
   const stale = w.document.createElement('button'); stale.dataset.act = 'toast:undo'; w.document.body.appendChild(stale); click(stale); stale.remove(); await sleep(5);
   ok(S().materials.length === m0 && !$('#toast [data-act="toast:undo"]'), L('once another message replaces it, an old Undo does nothing'));
 
-  /* ---------------- My jobs headings ---------------- */
+  /* ---------------- the crew's Jobs headings ---------------- */
   click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:preview"]'); await sleep(5);
   click($$('#more [data-act="pv:set"]').find((b) => b.dataset.role === 'lead' && b.dataset.staff === 'Marcus')); await sleep(15);
   click('[data-act="tab"][data-tab="crew"]'); await sleep(10);
-  const hs = $$('#view h2').filter((h) => /Finished, needs billing|Finished jobs/.test(h.textContent));
-  ok(hs.length >= 1 && hs.every((h) => h.parentElement.classList.contains('secline')), L('My jobs: the Finished headings look like every other section heading (' + hs.map((h) => h.textContent).join(', ') + ')'));
+  let hs = $$('#view h2').filter((h) => /^(Confirm your jobs|Today|Coming up|Finished, needs billing)$/.test(h.textContent));
+  click('[data-act="cr:view"][data-v="history"]'); await sleep(10);
+  hs = hs.concat($$('#view h2').filter((h) => /^(Finished lately|Past jobs)$/.test(h.textContent)));
+  ok(hs.length >= 4 && hs.every((h) => h.parentElement.classList.contains('secline')), L('Jobs and History: the section headings all look alike (' + hs.map((h) => h.textContent).join(', ') + ')'));
 
   ok(A.errors.length === 0, L('no errors (' + A.errors.slice(0, 3).join(' | ') + ')'));
   process.exit(summary(label) ? 1 : 0);

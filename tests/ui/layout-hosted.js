@@ -77,7 +77,8 @@ const SCREENS = {
   'Tally admin': [{ replies: R({ member_status: ST({ admin: true }) }) }, async (p) => { await more(p, 'admin'); }],
   'a job sheet with cards on': [{ replies: R({ pay_config: PAY.ready }) }, async (p) => { await tap(p, '#tabs [data-act="tab"][data-tab="jobs"]', 300); await tap(p, '[data-act="job:open"][data-id="j1"]', 500); await p.evaluate(() => document.querySelectorAll('#sheet details').forEach((d) => { d.open = true; })); }],
   'taking a deposit by card': [{ replies: R({ pay_config: PAY.ready }) }, async (p) => { await tap(p, '#tabs [data-act="tab"][data-tab="jobs"]', 300); await tap(p, '[data-act="job:open"][data-id="j1"]', 500); await p.evaluate(() => { const b = Array.from(document.querySelectorAll('#sheet [data-act="flow:open"]')).find((x) => /Take a payment/.test(x.textContent)); b.click(); }); await sleep(600); }],
-  'crew lead Today': [{ me: lead }, async () => {}],
+  'crew lead Jobs': [{ me: lead }, async () => {}],
+  'crew lead More': [{ me: lead }, async (p) => { await tap(p, '[data-act="more:open"]', 400); }],
   'crew lead My profile': [{ me: lead }, async (p) => { await tap(p, '[data-act="more:open"]'); await tap(p, '#more [data-act="me:open"]', 700); }],
   'the company picker': [{ org: '', twoOrgs: true }, async () => {}],
 };

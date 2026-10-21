@@ -153,37 +153,43 @@ const OPEN = ['Priya Nair', 'Hollis & Reed Law', 'Nadia Farouk', 'Ortega family'
   await more('reports');
   ok(/Lena Wu/.test(view()) || /Devon Reyes/.test(view()), L('Reports still use past jobs'));
 
-  /* ---------------- a crew member ---------------- */
+  /* ---------------- a crew member: Jobs › Today and History (Richie's drawing, Oct 21) ---------------- */
   const D = byName('Devon Reyes'), OP = byName('Owen Patel');
   const late = clone(byName('Nadia Farouk')); late.id = 'late-dee'; late.d.name = 'Wes Park'; late.d.moveDate = iso(-2); late.assign.crew = ['Dee']; st().jobs.push(late);
   await preview('crew', 'Dee');
-  ok(!/Wes Park/.test(view()), L('Dee’s Today does not offer a booking whose day went by as next up'));
+  ok($$('#tabs [data-act="tab"]').map((b) => b.dataset.tab).join() === 'crew,chat' && /Jobs/.test($('#tabs').textContent) && !/My jobs|Today/.test($('#tabs').textContent), L('Dee’s bottom bar: Jobs, Chat and More'));
   click('[data-act="more:open"]'); await sleep(5);
-  ok(!!$('#more [data-act="more:go"][data-tab="history"]') && /Jobs you worked/.test($('#more').textContent), L('Dee’s More has Job history'));
-  ok(!$('#more [data-act="more:go"][data-tab="crew"]') && /My jobs/.test($('#tabs').textContent), L('My jobs is on Dee’s bottom bar, not in More'));
-  click('[data-act="more:close"]'); await sleep(5); click('#tabs [data-act="tab"][data-tab="crew"]'); await sleep(15);
-  ok(/Wes Park/.test(view()), L('Wes Park is still in Dee’s jobs, where the lead can start or finish it'));
-  ok(!/Devon Reyes|Owen Patel/.test(view()) && /2 past jobs/.test(view()) && !/ with /.test($$('#view .secline small').map((s) => s.textContent).join(' ')), L('her old paid jobs are not on the Field screen; a line points to Job history'));
-  click('#view [data-act="hist:go"]'); await sleep(15);
-  const mine = $$('#view [data-act="hist:open"]').map((b) => st().jobs.find((j) => j.id === b.dataset.id).d.name);
-  ok(mine.join() === 'Devon Reyes,Owen Patel', L('Dee’s history: just the jobs she worked: ' + mine.join(', ')));
-  ok(!/\$/.test(view()) && !/Lost/.test(view()), L('no prices and no lost quotes for the crew'));
-  click('[data-act="hist:open"][data-id="' + D.id + '"]'); await sleep(10);
-  ok(!!$('#view .crewcard') && !!$('#view .crewcard [data-act="cr:seg"][data-k="media"]') && /Finished\. You can still add photos and notes\./.test(view()), L('tapping a job opens the field card'));
+  ok(!$('#more [data-act="more:go"][data-tab="history"]') && !$('#more [data-act="more:go"][data-tab="crew"]'), L('her History is inside Jobs, not in More'));
+  click('[data-act="more:close"]'); await sleep(5);
+  ok(T.ui.tab === 'crew' && /Wes Park/.test(view()) && !/Devon Reyes|Owen Patel/.test(view()), L('Wes Park, whose day went by, is still on her Today for the lead to start or finish; her old paid jobs are not'));
+  click('[data-act="cr:view"][data-v="history"]'); await sleep(15);
+  const rows = () => $$('#view details.hcard');
+  const mine = rows().map((d) => st().jobs.find((j) => j.id === d.dataset.job).d.name);
+  ok(mine.join() === 'Devon Reyes,Owen Patel', L('Dee’s History: just the jobs she worked: ' + mine.join(', ')));
+  const noCosts = (() => { const c = $('#view').cloneNode(true); c.querySelectorAll('.who b').forEach((b) => b.remove()); return c.textContent; })();
+  ok(!/\$/.test(noCosts) && !/Lost/.test(view()), L('no prices (just the job costs the crew can add too) and no lost quotes for the crew'));
+  const row = () => $('#view details.hcard[data-job="' + D.id + '"]');
+  const sm = row().querySelector('summary');
+  const dd = D.d.moveDate.split('-').map(Number), dayTxt = new Date(dd[0], dd[1] - 1, dd[2]).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  ok(!row().open && sm.querySelector('.hsum b').textContent === 'Devon Reyes' && sm.querySelector('.hsum small').textContent === dayTxt && sm.querySelector('.hmore').textContent === 'Details' && sm.children.length === 3,
+    L('each job is folded to the customer’s name and the day, with Details: ' + sm.querySelector('.hsum').textContent));
+  click(row().querySelector('summary b')); await sleep(10);
+  ok(row().open && /Finished\. You can still add photos and notes\./.test(row().textContent) && !!row().querySelector('.cc-photos') && !!row().querySelector('#cn_' + D.id), L('tapping it opens the whole card: notes, photos and the rest'));
   const note = $('#cn_' + D.id); note.value = 'Left the spare key under the mat.';
   click('[data-act="cr:note"][data-id="' + D.id + '"]'); await sleep(10);
-  ok(D.crewNotes.some((n) => n.who === 'Dee' && /spare key/.test(n.text)) && T.ui.tab === 'history' && !!$('#view .crewcard') && /spare key/.test(view()), L('a note added there saves, and the screen stays on history with the card open'));
-  click('[data-act="hist:open"][data-id="' + D.id + '"]'); await sleep(10);
-  ok(!$('#view .crewcard'), L('tapping the job again closes the card'));
+  ok(D.crewNotes.some((n) => n.who === 'Dee' && /spare key/.test(n.text)) && T.ui.crewView === 'history' && row() && row().open && /spare key/.test(row().textContent), L('a note added there saves, and the screen stays on History with the card open'));
+  click(row().querySelector('summary b')); await sleep(10);
+  ok(!row().open, L('tapping the name again folds it'));
   await endPreview();
 
   /* ---------------- a crew lead ---------------- */
   await preview('lead', 'Marcus');
-  await more('history');
-  const marc = $$('#view [data-act="hist:open"]').map((b) => st().jobs.find((j) => j.id === b.dataset.id).d.name);
-  ok(marc.includes('Devon Reyes') && marc.includes('Marcus Tull') && !marc.includes('Ibrahim Sayed'), L('Marcus sees the jobs he ran: ' + marc.join(', ')));
-  click('[data-act="hist:open"][data-id="' + OP.id + '"]'); await sleep(10);
-  ok(/Paid and closed\. You can still add photos and notes\./.test(view()), L('his card says paid and closed'));
+  click('[data-act="cr:view"][data-v="history"]'); await sleep(15);
+  const marc = rows().map((d) => st().jobs.find((j) => j.id === d.dataset.job).d.name);
+  ok(marc.includes('Devon Reyes') && marc.includes('Marcus Tull') && !marc.includes('Ibrahim Sayed'), L('Marcus’s History: the jobs he ran: ' + marc.join(', ')));
+  const opRow = $('#view details.hcard[data-job="' + OP.id + '"]');
+  click(opRow.querySelector('summary b')); await sleep(10);
+  ok(opRow.open && /Paid and closed\. You can still add photos and notes\./.test(opRow.textContent), L('his card says paid and closed'));
   await endPreview();
   ok(st().ui.role === 'owner', L('back to the owner'));
 

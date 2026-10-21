@@ -1,6 +1,6 @@
 // The time clock card (Richie, Oct 12/14: "This is what i would like the clock in for employees to look
 // like. And they will clock in then when everyone is clocked in the lead can start the job. When the lead
-// starts the job the assigned employees are logged on the job."): the card on Today and My jobs with
+// starts the job the assigned employees are logged on the job."): the card on Today and the crew's Jobs screen with
 // Clock In, Break / End break, Clock Out and the day's paid time without breaks; Start job waiting for
 // everyone on the job to clock in; the crew logged on the job when it starts, on and off as they clock
 // in and out or are added or taken off; and what the office sees.
@@ -21,18 +21,18 @@ const H = 36e5, M = 6e4;
   const preview = async (role, staff) => { click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:preview"]'); await sleep(5); click($$('#more [data-act="pv:set"]').find((b) => b.dataset.role === role && b.dataset.staff === staff)); await sleep(15); };
   const endPreview = async () => { click('[data-act="pv:end"]'); await sleep(15); };
   const P = st().jobs.find((j) => j.d.name === 'Priya Nair');
-  const crewCard = (j) => $$('.crewcard').find((c) => c.querySelector('[data-segs="' + j.id + '"]'));
+  const crewCard = (j) => $('#view .crewcard[data-job="' + j.id + '"]');
   ok(P.status === 'booked' && P.assign.crew.join() === 'Marcus,Dee,Luis', L('sample: Priya Nair today, Marcus (lead), Dee and Luis'));
 
   /* ---------------- Dee's clock card ---------------- */
   await preview('crew', 'Dee');
-  ok(!!card() && /^Dee/.test(cardTxt()) && /Clocked out/.test(cardTxt()) && $('.tclock [data-act="clk:in"]').textContent === 'Clock In', L('Today starts with Dee’s clock card: her name, Clocked out, Clock In'));
+  ok(T.ui.tab === 'crew' && /^Good (morning|afternoon|evening), Dee$/.test($('#view .hero-day h1').textContent) && !!card() && $('.tclock [data-act="clk:in"]').textContent === 'Clock In' && !!(($('#view .hero-day').compareDocumentPosition(card())) & 4), L('her Jobs screen starts with good morning, Dee and the clock card with Clock In'));
   ok(/0h 0m ?paid today \(breaks not counted\)/.test(cardTxt()) && /Your location is shared only while you’re clocked in\./.test(cardTxt()), L('the day’s paid time (0h 0m) and the location line'));
   ok(!!$('#clkAct') && $$('#clkAct option').length === S.activities.length, L('she can pick what she’s clocking in for'));
   $('#clkAct').value = 'Warehouse';
   click('.tclock [data-act="clk:in"]'); await sleep(10);
   const d1 = open('Dee');
-  ok(d1 && d1.activity === 'Warehouse' && /On the clock/.test(cardTxt()) && /Clocked in for: Warehouse/.test(cardTxt()), L('Clock In: on the clock, for Warehouse'));
+  ok(d1 && d1.activity === 'Warehouse' && /On the clock/.test(cardTxt()) && /Warehouse since \d{1,2}:\d\d [AP]M/.test(cardTxt()), L('Clock In: on the clock, for Warehouse: ' + cardTxt()));
   ok($('.tclock [data-act="clk:break"]').textContent === 'Break' && $('.tclock [data-act="clk:out"]').textContent === 'Clock Out' && !$('.tclock [data-act="clk:in"]'), L('two big buttons now: Break and Clock Out'));
   click('.tclock [data-act="clk:break"]'); await sleep(10);
   ok(d1.breaks.length === 1 && !d1.breaks[0].e && /On break/.test(cardTxt()) && $('.tclock [data-act="clk:break"]').textContent === 'End break' && /Breaks aren’t paid/.test(toastTxt()), L('Break: on break, the button says End break'));
@@ -45,10 +45,10 @@ const H = 36e5, M = 6e4;
   d1.inAt = now - 3 * H; d1.breaks = [{ s: now - 2 * H, e: now - 1.5 * H }]; T.render(); await sleep(10);
   ok(Math.round(T.paidToday('Dee') / M) === 150 && /2h 30m ?paid today/.test(cardTxt()), L('3 hours with a 30-minute break: 2h 30m paid today'));
   click('[data-act="tab"][data-tab="crew"]'); await sleep(10);
-  ok(!!card() && /2h 30m/.test(cardTxt()), L('the same card sits at the top of My jobs'));
+  ok(!!card() && /2h 30m/.test(cardTxt()), L('tapping Jobs again: the same card, 2h 30m'));
   ok(/You’re clocked in\. Your crew lead starts the job\./.test(crewCard(P).textContent), L('her job card says her lead starts the job'));
   click('.tclock [data-act="clk:out"]'); await sleep(10);
-  ok(d1.outAt > 0 && /Clocked out after 2h 30m \(breaks not counted\)/.test(toastTxt()) && /Clocked out/.test(cardTxt()) && /2h 30m ?paid today/.test(cardTxt()), L('Clock Out: 2h 30m, and the day’s total stays'));
+  ok(d1.outAt > 0 && /Clocked out after 2h 30m \(breaks not counted\)/.test(toastTxt()) && !!$('.tclock [data-act="clk:in"]') && !/On the clock/.test(cardTxt()) && /2h 30m ?paid today/.test(cardTxt()), L('Clock Out: 2h 30m, Clock In again, and the day’s total stays'));
   ok(/Clock in so your crew lead can start the job\./.test(crewCard(P).textContent), L('clocked out, her card tells her to clock in so the job can start'));
   w.Date.now = realNow;
   // a break left on when clocking out ends there
@@ -61,7 +61,7 @@ const H = 36e5, M = 6e4;
 
   /* ---------------- Start job waits for everyone ---------------- */
   await preview('lead', 'Marcus');
-  ok(!!card() && /^Marcus/.test(cardTxt()), L('Marcus has the card on Today too'));
+  ok(!!card() && /, Marcus$/.test($('#view .hero-day h1').textContent), L('Marcus has the card on his Jobs screen too'));
   click('.tclock [data-act="clk:in"]'); await sleep(10);
   await A.go('crew');
   let cc = crewCard(P), ct = cc.textContent.replace(/\s+/g, ' ');
@@ -81,7 +81,7 @@ const H = 36e5, M = 6e4;
   click('#start [data-act="go:start"]'); await sleep(15);
   ok(P.status === 'active' && ['Marcus', 'Dee', 'Luis'].every((n) => (P.crewOn[n] || []).length === 1 && P.crewOn[n][0].in >= t0 - 1000 && !P.crewOn[n][0].out), L('started: Marcus, Dee and Luis are logged on the job from now'));
   ok(P.log.some((l) => l.ev === 'Crew on the job: Marcus, Dee, Luis') && /On the job: Marcus, Dee and Luis\./.test(toastTxt()), L('the job’s Activity and the toast name them: ' + toastTxt() + ' | ' + P.log.slice(-3).map((l) => l.ev).join(' / ')));
-  click('[data-act="tab"][data-tab="today"]'); await sleep(10);
+  click('[data-act="tab"][data-tab="crew"]'); await sleep(10);
   ok(/On the job: Priya Nair since \d{1,2}:\d\d [AP]M/.test(cardTxt()), L('Marcus’s clock card says he’s on the job'));
   await endPreview();
 

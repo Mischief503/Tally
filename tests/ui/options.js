@@ -1,6 +1,6 @@
 // The owner's on/off switches (Setup › Options) and the new layout around them: Setup as a list of
-// sections with search, the More menu in groups, My jobs on the crew's bottom bar, and the job card's
-// parts behind one row of buttons. Each switch is flipped and its effect checked where people meet it.
+// sections with search, the More menu in groups, Jobs · Chat · More on the crew's bottom bar, and the
+// crew's job card in one order, all open. Each switch is flipped and its effect checked where people meet it.
 const { load, ok, sleep, summary } = require('./lib');
 const file = process.argv[2] || __dirname + '/../../build/tally-artifact.html', label = process.argv[3] || 'options';
 const L = (m) => label + ': ' + m;
@@ -102,33 +102,29 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   ok(!N.extras.some((e) => e.id === 'clock') && !/Before you bill out/.test(flow()), L('finished after 8 hours: billed at the quote, no drive-back step'));
   click('#flow [data-act="flow:close"]'); await sleep(5);
 
-  /* ---------------- My jobs: the folded card ---------------- */
+  /* ---------------- the crew's job card: one order, all open (Richie's drawing, Oct 21) ---------------- */
   const P = byName('Priya Nair');
-  const card = (j) => $$('.crewcard').find((c) => c.querySelector('[data-segs="' + j.id + '"]'));
-  ok(!!card(P) && $$('[data-segs="' + P.id + '"] .seg').map((b) => b.dataset.k).join() === 'notes,tally,mats,media', L('a booked job’s card: Notes · Tally · Materials · Photos'));
-  ok($$('[data-segp^="' + P.id + '|"]').every((p) => p.hidden), L('all folded to start'));
-  click('[data-act="cr:seg"][data-id="' + P.id + '"][data-k="tally"]'); await sleep(5);
-  ok(!$('[data-segp="' + P.id + '|tally"]').hidden && $('[data-segp="' + P.id + '|notes"]').hidden && $('[data-act="cr:seg"][data-id="' + P.id + '"][data-k="tally"]').getAttribute('aria-expanded') === 'true', L('Tally opens'));
-  click('[data-act="cr:seg"][data-id="' + P.id + '"][data-k="media"]'); await sleep(5);
-  ok(!$('[data-segp="' + P.id + '|media"]').hidden && $('[data-segp="' + P.id + '|tally"]').hidden, L('Photos opens and Tally folds: one at a time'));
-  click('[data-act="cr:seg"][data-id="' + P.id + '"][data-k="media"]'); await sleep(5);
-  ok($$('[data-segp^="' + P.id + '|"]').every((p) => p.hidden), L('tapping it again folds it'));
+  const card = (j) => $('#view .crewcard[data-job="' + j.id + '"]');
+  const heads = (c) => Array.from(c.querySelectorAll('.cc-sec>h4')).map((h) => h.textContent).join(' · ');
+  const inOrder = (c, sels) => { let prev = null; return sels.every((q) => { const e = c.querySelector(q); const good = !!e && (!prev || !!(prev.compareDocumentPosition(e) & 4)); prev = e || prev; return good; }); };
+  ok(!!card(P) && heads(card(P)) === 'Notes for the job · Materials · Photos' && !!card(P).querySelector('.cc-run .cc-tally'), L('a booked job’s card: Notes for the job · Materials · Photos, then running the job with Load tally (' + (card(P) ? heads(card(P)) : 'no card') + ')'));
+  ok(inOrder(card(P), ['.cc-head h3', '.cc-head > .pill', '.cc-date', '.cc-truck', '.cc-route', '.cc-sec textarea', '.cc-sec [data-act="mp:open"]', '.cc-photos', '.cc-run']) && /Crew: /.test(card(P).textContent), L('in the drawing’s order: status, name, date, crew and trucks, pickup and delivery, notes, materials, photos'));
+  ok(!card(P).querySelector('details:not(.cc-tally):not(.cc-cost)') && !Array.from(card(P).querySelectorAll('[hidden]')).some((e) => !e.closest('.cc-cost')), L('nothing folded away but the load tally and the job-cost form'));
   // a job in a few days: Marcus is put on Hollis & Reed's crew for it
   const later = byName('Hollis & Reed Law');
   if (later && later.status === 'booked') {
     later.d.moveDate = dayISO(3); if (!later.assign.crew.includes('Marcus')) later.assign.crew.push('Marcus'); T.render(); await sleep(5);
-    ok(!!$('[data-act="cr:expand"][data-id="' + later.id + '"]') && !card(later), L('a later job is one line: ' + later.d.name));
-    await A.openCard(later.id);
-    ok(!!card(later) && !!$('[data-act="cr:collapse"][data-id="' + later.id + '"]'), L('tapped, it opens with Show less'));
-    click('[data-act="cr:collapse"][data-id="' + later.id + '"]'); await sleep(10);
-    ok(!card(later), L('Show less folds it again'));
+    const cu = $$('#view .secline h2').find((h) => h.textContent === 'Coming up');
+    ok(!!card(later) && !!cu && !!(cu.compareDocumentPosition(card(later)) & 4) && heads(card(later)) === heads(card(P)), L('a later job is the same full card, under Coming up: ' + later.d.name));
   } else ok(false, L('sample data has Hollis & Reed booked'));
-  if (P.d.notes) ok(/From the office:/.test(card(P).textContent), L('the office note shows on the card'));
-  else { P.d.notes = 'Elevator reserved'; T.render(); await sleep(5); ok(/From the office: Elevator reserved/.test(card(P).textContent.replace(/\s+/g, ' ')), L('the office note shows on the card')); }
+  if (!P.d.notes) { P.d.notes = 'Elevator reserved'; T.render(); await sleep(5); }
+  const onote = card(P).querySelector('.cc-onote');
+  ok(!!onote && /^From the office/.test(onote.textContent.trim()) && onote.textContent.includes(P.d.notes.split('\n')[0]), L('the office note shows on the card, in its own box under Notes for the job'));
 
   // switches on the card
   set('tally', false); set('materials', false); set('updates', false); await sleep(5);
-  ok($$('[data-segs="' + P.id + '"] .seg').map((b) => b.dataset.k).join() === 'notes,media' && !$('[data-act="cr:update"][data-id="' + P.id + '"]'), L('Load tally, Materials and Quick updates off: just Notes and Photos, no update chips'));
+  ok(!card(P).querySelector('.cc-tally') && !card(P).querySelector('[data-act="mp:open"]') && !card(P).querySelector('[data-act="cost:add"]') && !$('[data-act="cr:update"][data-id="' + P.id + '"]'), L('Load tally, Materials and Quick updates off: no load tally, nothing to add materials or costs with, no update chips'));
+  ok(P.materials.length ? heads(card(P)) === 'Notes for the job · Materials · Photos' && P.materials.every((m) => Array.from(card(P).querySelectorAll('.cc-sec')).find((x) => x.querySelector('h4').textContent === 'Materials').textContent.includes(m.name)) : heads(card(P)) === 'Notes for the job · Photos', L('the materials already on the job still show, to read'));
   set('tally', true); set('materials', true); set('updates', true);
 
   /* ---------------- Start job: the arrival text ---------------- */
@@ -148,9 +144,10 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   set('photosReq', true);
   Object.assign(P, { startedAt: Date.now() - 4 * H, phases: { loadStart: Date.now() - 3.5 * H, loadEnd: Date.now() - 3 * H, unloadStart: Date.now() - 2 * H, unloadEnd: Date.now() - H }, photos: [] });
   T.render(); await sleep(5);
-  ok(/needed/.test($('[data-act="cr:seg"][data-id="' + P.id + '"][data-k="media"]').textContent), L('the Photos button says photos are needed'));
+  ok(/Before Finish job: take a pickup photo and a delivery photo\./.test(card(P).querySelector('.cc-photos').textContent), L('Photos says which photos are needed before Finish job'));
+  let toPhotos = false; card(P).querySelector('.cc-photos').scrollIntoView = () => { toPhotos = true; };
   click('[data-act="cr:finish"][data-id="' + P.id + '"]'); await sleep(15);
-  ok(P.status === 'active' && $('#flow').hidden && /Take a pickup photo and a delivery photo before you finish the job\./.test(toastTxt()) && !$('[data-segp="' + P.id + '|media"]').hidden, L('Finish job waits for both photos and opens Photos'));
+  ok(P.status === 'active' && $('#flow').hidden && /Take a pickup photo and a delivery photo before you finish the job\./.test(toastTxt()) && toPhotos, L('Finish job waits for both photos and takes you to Photos'));
   P.photos.push({ id: 'p1', kind: 'Pickup', data: 'data:,', ts: Date.now() }); T.render(); await sleep(5);
   click('[data-act="cr:finish"][data-id="' + P.id + '"]'); await sleep(15);
   ok(/Take a delivery photo before you finish the job\./.test(toastTxt()), L('one in: it asks for the other'));
@@ -176,9 +173,10 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   click('#flow [data-act="flow:sign"]'); await sleep(20);
   ok(/Forms signed/.test(flow()) && /is still owed\. The office collects the payment\./.test(flow()) && !$('#flowAmt'), L('signed: no payment screen, the office collects'));
   click('#flow [data-act="flow:close"]'); await sleep(5);
-  ok(!card(MT) && !!$('[data-act="cr:expand"][data-id="' + MT.id + '"]'), L('nothing left for the lead: it moves down to Finished jobs as one line'));
-  await A.openCard(MT.id);
-  ok(!!card(MT) && /The office collects the payment/.test(card(MT).textContent), L('opened, the card says the office collects'));
+  ok(MT.d.moveDate === dayISO() ? !!card(MT) : !card(MT), L('nothing left for the lead: it leaves Finished, needs billing'));
+  click('[data-act="cr:view"][data-v="history"]'); await sleep(10);
+  const mtRow = $('#view details.hcard[data-job="' + MT.id + '"]');
+  ok(!!mtRow && /The office collects the payment/.test(mtRow.textContent), L('it is in History, and its card says the office collects'));
   set('leadPay', true);
   ok(!!$('[id="ce_l_' + MT.id + '"]'), L('a lead can add a charge or credit'));
   set('leadCharges', false); await sleep(5);
@@ -188,7 +186,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
 
   /* ---------------- crew members: Call, the clock, Truck down ---------------- */
   await preview('crew', 'Dee');
-  ok(!!$('#tabs [data-act="tab"][data-tab="crew"]') && /My jobs/.test($('#tabs').textContent) && $('#fab').hidden && !$('#tabs .spacer') && !!$('.tclock'), L('a crew member has My jobs on the bottom bar, and clocks in on the clock card (no round button over the screen)'));
+  ok($$('#tabs [data-act="tab"]').map((b) => b.dataset.tab).join() === 'crew,chat' && /Jobs/.test($('#tabs').textContent) && $('#fab').hidden && !$('#tabs .spacer') && !!$('.tclock'), L('a crew member has Jobs and Chat on the bottom bar, and clocks in on the clock card (no round button over the screen)'));
   await A.go('crew');
   const dj = st().jobs.find((j) => ['booked', 'active'].includes(j.status) && j.assign.crew.includes('Dee') && j.d.moveDate <= dayISO());
   if (dj) {
@@ -198,14 +196,15 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
     ok(!$('[data-act="call:cust"][data-id="' + dj.id + '"]'), L('Crew members can call the customer off: no Call for Dee'));
     set('callCust', true);
   } else ok(false, L('Dee has a job today'));
-  ok(!!($('[data-act="clk:in"]') || $('[data-act="clk:out"]')) && !!$('#view [data-act="sos:open"]'), L('Dee has the time clock and the Truck down button'));
+  click('[data-act="more:open"]'); await sleep(5);
+  ok(!!($('[data-act="clk:in"]') || $('[data-act="clk:out"]')) && !!$('#more .sosrow [data-act="sos:open"], #more [data-act="sos:open"]'), L('Dee has the time clock, and Truck down in More'));
+  click('[data-act="more:close"]'); await sleep(5);
   set('clock', false); set('truckDown', false); await sleep(5);
-  ok(!$('[data-act="clk:in"]') && $('#fab').hidden && !$('#tabs .spacer') && !$('#view [data-act="sos:open"]'), L('Time clock and Truck down off: no clock card, no round button, no Truck down button'));
+  ok(!$('[data-act="clk:in"]') && $('#fab').hidden && !$('#tabs .spacer') && !$('#view [data-act="sos:open"]'), L('Time clock and Truck down off: no clock card, no round button'));
   click('[data-act="more:open"]'); await sleep(5);
   ok(!$('#more .sosrow'), L('and no Truck down in More'));
   click('[data-act="more:close"]'); await sleep(5);
-  click('[data-act="tab"][data-tab="today"]'); await sleep(10);
-  ok(!/Not clocked in|On the clock/.test(view()), L('Today has no clock line'));
+  ok(!/Not clocked in|On the clock/.test(view()), L('her Jobs screen has no clock line'));
   set('clock', true); set('truckDown', true);
   await endPreview();
 
@@ -228,7 +227,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
     ok(st().shifts.find((x) => x.id === 'sh-late').outAt > 0, L('and clocking out goes through without one'));
     set('lateNote', true);
     set('clockGps', false); await sleep(5);
-    ok(/Clocked out/.test($('.tclock').textContent) && !/location/i.test($('.tclock').textContent), L('Location while clocked in off: the clock card doesn’t mention sharing'));
+    ok(!!$('.tclock [data-act="clk:in"]') && !/location/i.test($('.tclock').textContent), L('Location while clocked in off: the clock card doesn’t mention sharing'));
     set('clockGps', true); await sleep(5);
     ok(/Your location is shared only while you’re clocked in\./.test($('.tclock').textContent), L('and on, it does'));
   } finally { w.Date.now = realNow; }

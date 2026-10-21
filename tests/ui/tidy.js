@@ -2,7 +2,7 @@
 // double and triple check everything"): the job sheet in the order the office works it, with only the
 // parts a job's stage uses and money tiles in that stage's words; a finished job's next step at the top;
 // a deposit taken without the end-of-move forms; Today's "still owed" meaning finished jobs not paid yet;
-// one Double-booked row per clash saying who; Reports grouped; the slimmer clock card on My jobs; the
+// one Double-booked row per clash saying who; Reports grouped; the clock card on the crew's Jobs screen; the
 // round New quote button for the office only; risky data buttons in red; the Fleet rows with headings.
 const { load, ok, sleep, summary } = require('./lib');
 const file = process.argv[2] || __dirname + '/../../build/tally-artifact.html', label = process.argv[3] || 'tidy';
@@ -95,14 +95,12 @@ const L = (m) => label + ': ' + m;
   const preview = async (role, staff) => { click('[data-act="more:open"]'); await sleep(5); click('[data-act="more:preview"]'); await sleep(5); click($$('#more [data-act="pv:set"]').find((b) => b.dataset.role === role && b.dataset.staff === staff)); await sleep(15); };
   await preview('lead', 'Marcus');
   ok($('#fab').hidden && !$('#tabs .spacer'), L('crew leads have no round button over the screen: they clock in on the card'));
-  ok(!!$('.tclock') && !$('.tclock').classList.contains('compact') && /paid today \(breaks not counted\)/.test($('.tclock').textContent), L('Today has the full clock card'));
-  click('[data-act="tab"][data-tab="crew"]'); await sleep(10);
   const card = $('.tclock');
-  ok(card && card.classList.contains('compact') && !card.querySelector('.tc-time') && /paid today/.test(card.textContent), L('My jobs has the slimmer card: same buttons, the paid time on one line'));
+  ok(T.ui.tab === 'crew' && card && card.classList.contains('home') && !card.querySelector('.tc-time') && !card.querySelector('.tc-name') && /paid today \(breaks not counted\)/.test(card.textContent) && !!($('#view .hero-day').compareDocumentPosition(card) & 4), L('his Jobs screen: the greeting, then the big Clock In card with the paid time on one line'));
   A.clockIn('Marcus'); await sleep(5);
-  ok(/On the clock/.test($('.tclock').textContent) && !!$('.tclock [data-act="clk:out"]') && /paid today/.test($('.tclock').textContent) && !$('.tclock #geoLine'), L('on the clock it keeps Break and Clock Out, and leaves the location line to Today'));
-  const pc = $$('.crewcard').find((c) => c.querySelector('[data-segs="' + PN.id + '"]'));
-  ok(pc && pc.querySelector('[data-act="cr:start"]') && $('.tclock').compareDocumentPosition(pc) & 4, L('and Priya Nair’s card, with Start job, comes right after it'));
+  ok(/On the clock/.test($('.tclock').textContent) && !!$('.tclock [data-act="clk:out"]') && /paid today/.test($('.tclock').textContent) && !!$('.tclock #geoLine'), L('on the clock it has Break and Clock Out, and says when his location is shared'));
+  const pc = $('#view .crewcard[data-job="' + PN.id + '"]'), pills = $('#view .crewtabs');
+  ok(pc && pc.querySelector('[data-act="cr:start"]') && !!pills && ($('.tclock').compareDocumentPosition(pills) & 4) && (pills.compareDocumentPosition(pc) & 4), L('then the Today and History pills, then Priya Nair’s card with Start job'));
 
   ok(A.errors.length === 0, L('no errors (' + A.errors.slice(0, 3).join(' | ') + ')'));
   process.exit(summary(label) ? 1 : 0);

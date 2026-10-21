@@ -36,8 +36,8 @@ const as = (uid) => ({ uid, email: uid + '@x' });
   // the crew lead's phone
   const M = await load(HOSTED, { db, org: ORG, me: as('u-marcus'), fnReply: () => ({ ok: true, sent: 0 }) }); all.push(M);
   M.click('[data-act="tab"][data-tab="crew"]'); await sleep(20);
-  const card = M.$$('.crewcard,.ccmini').find((c) => /Priya Nair/.test(c.textContent));
-  ok(card && /Box 1 \(26 ft\), you drive · Box 2 \(20 ft\), Luis drives/.test(card.textContent), 'Marcus’s phone: Box 1, you drive · Box 2, Luis drives');
+  const card = M.$('#view .crewcard[data-job="j1"]'), tl = card ? Array.from(card.querySelectorAll('.cc-truck')).map((d) => d.textContent).join(' | ') : 'no card';
+  ok(tl === 'Truck: Box 1 (26 ft), you drive | Truck: Box 2 (20 ft), Luis drives', 'Marcus’s phone: a line for each truck, with who drives: ' + tl);
   // someone else changes the drivers: dispatch's sheet follows
   // (the stand-in database tells only the client that wrote a row, so the change goes in through dispatch's own connection, as a change from elsewhere arrives)
   await D.w.__sb.from('docs').upsert(row('jobs/j1', Object.assign({}, job(), { assign: Object.assign({}, job().assign, { drivers: { t26: 'Luis', t20: 'Marcus' } }) }))); await sleep(700);
