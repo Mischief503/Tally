@@ -28,7 +28,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   const rows = $$('#setList [data-act="set:open"]').map((b) => b.dataset.sec);
   ok(rows[0] === 'options' && ['company', 'rates', 'mats', 'catalog', 'fleet', 'employees', 'roles', 'clock', 'forms', 'fields', 'sources', 'bid', 'pay', 'vault', 'comms', 'data'].every((s) => rows.includes(s)), L('Setup lists Options first, then every section: ' + rows.join(', ')));
   ok(['Your company', 'Pricing', 'People', 'Jobs and paperwork', 'Payments and texts', 'Data'].every((g) => $$('#setList .glabel').some((x) => x.textContent === g)), L('in groups'));
-  ok(/36 of 39 switches on/.test($('[data-sec="options"]').textContent) && /\$140\/h for 2 movers · 20-mile local radius · 3 h minimum/.test($('[data-sec="rates"]').textContent), L('each row says how it is set: "36 of 39 switches on", the rate card in a line'));
+  ok(/37 of 40 switches on/.test($('[data-sec="options"]').textContent) && /\$140\/h for 2 movers · 20-mile local radius · 3 h minimum/.test($('[data-sec="rates"]').textContent), L('each row says how it is set: "37 of 40 switches on", the rate card in a line'));
   ok(!$('details.acc.card') && !$('input[data-s="rates.r2"]'), L('no section is open on the list itself'));
   const q = $('#setQ'); q.value = 'deposit'; q.dispatchEvent(new w.Event('input', { bubbles: true })); await sleep(5);
   ok(!!$('#setList input[role="switch"][data-s="opt.deposit"]') && !!$('#setList [data-act="set:open"][data-sec="rates"]') && !$('#setList [data-sec="fleet"]'), L('search "deposit" shows the Deposit switch itself and the Rate card, nothing else'));
@@ -43,12 +43,12 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   /* ---------------- Options: every switch, its number, the count ---------------- */
   click('[data-act="set:open"][data-sec="options"]'); await sleep(10);
   const sws = $$('#view input[role="switch"]');
-  ok(sws.length === 39 && $$('#view .optgrp h3').map((h) => h.textContent).join('|') === 'Crew and field|Billing out|Time clock|Quotes and pricing|Paperwork|Payments|Texts|Office', L('39 switches in 8 groups'));
+  ok(sws.length === 40 && $$('#view .optgrp h3').map((h) => h.textContent).join('|') === 'Crew and field|Billing out|Time clock|Quotes and pricing|Paperwork|Payments|Texts|Office', L('40 switches in 8 groups'));
   ok(sws.filter((i) => !i.checked).map((i) => i.dataset.s).join() === 'opt.photosReq,opt.tax,opt.rqOffice', L('all on to start except Photos before finishing, Sales tax (no tax % set) and Office approves new quotes from the crew'));
   const dep = $('input[data-s="depositPct"]');
   ok(dep && !dep.closest('.optn').hidden && dep.value === '25', L('a switch that needs a number shows it under it (Deposit 25%)'));
   flip('opt.deposit', false); await sleep(5);
-  ok(S.opt.deposit === false && dep.closest('.optn').hidden && dep.closest('.opt').classList.contains('off') && /35 of 39 on/.test($('#optCount').textContent), L('switched off: saved, its number hides, and the count drops'));
+  ok(S.opt.deposit === false && dep.closest('.optn').hidden && dep.closest('.opt').classList.contains('off') && /36 of 40 on/.test($('#optCount').textContent), L('switched off: saved, its number hides, and the count drops'));
   flip('opt.deposit', true); await sleep(5);
   ok(S.opt.deposit === true && !dep.closest('.optn').hidden, L('and back on'));
   ok(!!$('input[role="switch"][data-s="comms.alerts.tomorrow"]') && !!$('input[role="switch"][data-s="payMin"]') && !!$('input[role="switch"][data-s="nteCap"]'), L('older settings sit here too (texts, minimum pay, not-to-exceed)'));
@@ -61,7 +61,7 @@ const dayISO = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0));
   click('[data-act="more:open"]'); await sleep(5);
   ok($$('#more .glabel').map((g) => g.textContent).join('|') === 'Work|Company|You' && !!$('#more .sosrow'), L('More: Work, Company, You, and Truck down apart'));
   click('#more [data-act="more:go"][data-sec="options"]'); await sleep(15);
-  ok(T.ui.tab === 'settings' && T.ui.setSec === 'options' && $$('#view input[role="switch"]').length === 39, L('More › Options opens Setup › Options'));
+  ok(T.ui.tab === 'settings' && T.ui.setSec === 'options' && $$('#view input[role="switch"]').length === 40, L('More › Options opens Setup › Options'));
 
   /* ---------------- the quote's switches ---------------- */
   const base = blank({ miles: '8', flights: '2', pack: true, items: { boxm: 40, sofa3: 1 } });

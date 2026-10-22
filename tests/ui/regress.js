@@ -59,7 +59,7 @@ const file = process.argv[2], label = process.argv[3] || file;
   ok(!JSON.stringify(T.state()).includes('4242424242424242'), label + ': full card number never stored');
   click('#flow [data-act="flow:close"]'); await sleep(10);
   ok(fetched === 0, label + ': nothing tried to reach the network');
-  ok(/#call,#start\{position:fixed/.test(w.document.querySelector('style').textContent), label + ': call and start prompts are real overlays');
+  ok(/#call,#start,#mover\{position:fixed/.test(w.document.querySelector('style').textContent), label + ': call, start and movers prompts are real overlays');
   click('[data-act="sheet:close"]');
 
   // setup card on-device

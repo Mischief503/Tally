@@ -122,6 +122,19 @@ async function rqTo(p, step) {
   if (step !== 'items') await tap(p, '#rq [data-act="rq:step"][data-s="review"]', 400);
   if (step === 'sign') await tap(p, '#rq [data-act="rq:step"][data-s="sign"]', 400);
 }
+// a mover joining on site (Oct 21): the panel, and the finished job's bill with the crew change
+async function moversJob(p, billed) {
+  return p.evaluate((b) => {
+    const T = window.__tally, st = T.state(), N = st.jobs.find((j) => j.d.name === 'Nadia Farouk'), H = 36e5, now = Date.now(), t0 = now - 5 * H, d = new Date();
+    N.d.moveDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    Object.assign(N, { status: 'active', startedAt: t0, phases: { loadStart: t0 }, crewOn: { Marcus: [{ in: t0, out: 0 }], Kim: [{ in: t0, out: 0 }] } });
+    if (b) { T.mvAdd(N, 'Dee', 1, t0 + 2 * H, 'Marcus'); T.mvAdd(N, 'Luis', 1, t0 + 2 * H, 'Marcus'); Object.assign(N, { status: 'done', finishedAt: now, actualHours: 5 }); N.phases.unloadEnd = now; T.applyClock(N); }
+    T.render(); return N.id;
+  }, !!billed);
+}
+add('lead-movers', async (p) => { const id = await moversJob(p); await pv(p, 'lead', 'Marcus'); await tap(p, `#view [data-job="${id}"] .cc-movers [data-act="mv:open"]`, 500); await tap(p, '#mover [data-act="mv:pick"][data-n="Dee"]', 300); }, { overlay: '#mover' });
+add('lead-movers-left', async (p) => { const id = await moversJob(p, true); await pv(p, 'lead', 'Marcus'); await p.evaluate((jid) => { const d = document.querySelector(`#view details.hcard[data-job="${jid}"]`); if (d) d.open = true; }, id); await sleep(300); await tap(p, `#view [data-job="${id}"] .cc-movers [data-act="mv:open"]`, 500); }, { overlay: '#mover' });
+add('owner-movers-bill', async (p) => { const id = await moversJob(p, true); await tabTo(p, 'jobs'); await tap(p, `[data-act="job:open"][data-id="${id}"]`, 600); });
 add('lead-rq-rooms', async (p) => { await rqTo(p, 'items'); }, { overlay: '#rq' });
 add('lead-rq-review', async (p) => { await rqTo(p, 'review'); }, { overlay: '#rq' });
 add('lead-rq-sign', async (p) => { await rqTo(p, 'sign'); }, { overlay: '#rq' });
@@ -158,7 +171,7 @@ const CHECK = () => {
   const vis = (el) => { if (!el.getClientRects().length || folded(el)) return false; const cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity !== 0; };
   const desc = (el) => { const t = (el.getAttribute('aria-label') || el.textContent || el.value || el.placeholder || '').replace(/\s+/g, ' ').trim().slice(0, 50); return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.dataset && el.dataset.act ? '[' + el.dataset.act + ']' : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : '') + (t ? ' "' + t + '"' : ''); };
   // the overlay on top, if any (its contents are what can be used)
-  const ovs = ['#sos', '#matpick', '#start', '#call', '#pick', '#more', '#rq', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && vis(e));
+  const ovs = ['#sos', '#matpick', '#mover', '#start', '#call', '#pick', '#more', '#rq', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && vis(e));
   const root = ovs[0] || document.body;
   const out = { overlay: ovs[0] ? '#' + ovs[0].id : '', pageOverflow: document.documentElement.scrollWidth - W, wide: [], small: [], covered: [], clipped: [], truncated: [], dupIds: [], unnamed: [], unlabeled: [] };
   const scroller = (el) => { for (let p = el.parentElement; p; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflowX)) return p; } return null; };
@@ -230,7 +243,7 @@ const CHECK = () => {
       await p.mouse.move(1, 1);
       // what the user sees, a screen at a time: scroll the top overlay's scroller (or the page) and shoot each step
       const steps = process.env.NOSHOTS ? 0 : await p.evaluate(() => {
-        const ovs = ['#sos', '#matpick', '#start', '#call', '#pick', '#more', '#rq', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && e.getClientRects().length);
+        const ovs = ['#sos', '#matpick', '#mover', '#start', '#call', '#pick', '#more', '#rq', '#emp', '#flow', '#sheet'].map((s) => document.querySelector(s)).filter((e) => e && !e.hidden && e.getClientRects().length);
         let sc = document.scrollingElement;
         if (ovs[0]) { let best = null; ovs[0].querySelectorAll('*').forEach((e) => { const cs = getComputedStyle(e); if (/(auto|scroll)/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 4 && (!best || e.clientHeight > best.clientHeight)) best = e; }); if (best) { sc = best; best.setAttribute('data-au-sc', '1'); } else sc = null; }
         if (!sc) return 1;

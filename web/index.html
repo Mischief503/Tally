@@ -450,10 +450,10 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 
 /* small bottom sheets: the call prompt and the start-job prompt */
 #call[hidden],#start[hidden]{display:none}
-#call,#start{position:fixed;inset:0;z-index:70}
-#call .scrim,#start .scrim{position:absolute;inset:0;background:var(--scrim)}
-#call .panel,#start .panel{position:absolute;left:0;right:0;bottom:0;max-height:90vh;overflow:auto;background:var(--bg);border-radius:calc(var(--r) + 6px) calc(var(--r) + 6px) 0 0;padding:14px 14px calc(20px + env(safe-area-inset-bottom));box-shadow:var(--shadow-lg)}
-@media (min-width:640px){ #call .panel,#start .panel{left:50%;right:auto;bottom:24px;transform:translateX(-50%);width:520px;border-radius:calc(var(--r) + 6px)} }
+#call,#start,#mover{position:fixed;inset:0;z-index:70}
+#call .scrim,#start .scrim,#mover .scrim{position:absolute;inset:0;background:var(--scrim)}
+#call .panel,#start .panel,#mover .panel{position:absolute;left:0;right:0;bottom:0;max-height:90vh;overflow:auto;background:var(--bg);border-radius:calc(var(--r) + 6px) calc(var(--r) + 6px) 0 0;padding:14px 14px calc(20px + env(safe-area-inset-bottom));box-shadow:var(--shadow-lg)}
+@media (min-width:640px){ #call .panel,#start .panel,#mover .panel{left:50%;right:auto;bottom:24px;transform:translateX(-50%);width:520px;border-radius:calc(var(--r) + 6px)} }
 .eta-out{font:700 40px/1 var(--display);min-width:110px;text-align:center;font-variant-numeric:tabular-nums}
 .eta-out small{font:500 15px var(--font);color:var(--muted);margin-left:4px}
 .eta-msg{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r2);padding:10px 12px;font-size:15px;line-height:1.45;-webkit-user-select:text;user-select:text}
@@ -568,6 +568,13 @@ details.hcard .hbody{padding:0 0 12px}
 .rqhist .rqchl{color:var(--muted);margin-top:2px}
 .rqsig{height:40px;max-width:120px;background:#fff;border-radius:4px;border:1px solid var(--line);flex:none}
 .rqrooms .grp:first-child{border-top:0}
+/* movers joining or leaving on site */
+.cc-movers{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cc-movers>span{flex:1;min-width:12em}
+.mv-tabs{margin:4px 0 12px}
+.mv-what{margin:10px 0 0;color:var(--text)}
+.mv-list{margin-top:14px}
+.mv-list h4{margin:0 0 4px;font:700 15px var(--display)}
 /* three money tiles side by side on a phone: a long amount ($1,458.25) gets a smaller size so it stays in its tile */
 @media (max-width:519px){.kpi b.long{font-size:18px}.kpi b.longer{font-size:15.5px}}
 /* typed job info is saved with a button: the bar under each part says whether it is saved */
@@ -685,8 +692,8 @@ body.sos-on #matpick{top:calc(var(--sosH) + env(safe-area-inset-top))}
 .sos-dot{width:10px;height:10px;border-radius:99px;background:var(--sos-ink);flex:none}
 body.sos-on{padding-top:calc(var(--sosH) + env(safe-area-inset-top))}
 body.sos-on .top{padding-top:8px}
-body.sos-on #sheet,body.sos-on #emp,body.sos-on #flow,body.sos-on #rq,body.sos-on #more,body.sos-on #pick,body.sos-on #call,body.sos-on #start{top:calc(var(--sosH) + env(safe-area-inset-top))}
-body.sos-on #sheet .panel,body.sos-on #emp .panel,body.sos-on #more .panel,body.sos-on #pick .panel,body.sos-on #call .panel,body.sos-on #start .panel{max-height:100%}
+body.sos-on #sheet,body.sos-on #emp,body.sos-on #flow,body.sos-on #rq,body.sos-on #more,body.sos-on #pick,body.sos-on #call,body.sos-on #start,body.sos-on #mover{top:calc(var(--sosH) + env(safe-area-inset-top))}
+body.sos-on #sheet .panel,body.sos-on #emp .panel,body.sos-on #more .panel,body.sos-on #pick .panel,body.sos-on #call .panel,body.sos-on #start .panel,body.sos-on #mover .panel{max-height:100%}
 @media (min-width:900px){ body.sos-on nav.tabs{top:calc(var(--sosH) + env(safe-area-inset-top))} }
 #sos[hidden]{display:none}
 #sos:not([hidden])~.toast{z-index:95}
@@ -1171,6 +1178,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <div id="call" hidden></div>
 <div id="matpick" hidden></div>
 <div id="start" hidden></div>
+<div id="mover" hidden></div>
 <div id="emp" hidden></div>
 <button id="sosBar" data-act="sos:open" hidden></button>
 <div id="sos" role="alertdialog" aria-modal="true" aria-label="Truck down" tabindex="-1" hidden></div>
@@ -1300,6 +1308,7 @@ var OPTS=[
   {g:'field',k:'truckDown',t:'Truck down button',h:'The crew can tell the office a truck broke down, and where it is.'},
   {g:'bill',k:'leadPay',t:'Crew leads collect payment',h:'Leads take the payment at the end of the job. Off: leads get the signatures, and the office collects.'},
   {g:'bill',k:'leadCharges',t:'Crew leads add charges and credits',h:'Stairs, parking or a damage credit, added to the bill on the job.'},
+  {g:'bill',k:'crewAdd',t:'Crew leads add movers on site',h:'When a mover joins or leaves during the job, the lead puts it in, and the bill charges that time at the rate for that crew.'},
   {g:'bill',k:'gpsMiles',t:'Miles back to the shop by GPS',h:'On mileage moves, the phone looks up the miles from the truck to the shop at bill-out. Off: the quote’s miles, which the lead can change.'},
   {g:'clock',k:'clock',t:'Time clock',h:'Crew clock in and out for job days, warehouse work and dump runs.'},
   {g:'clock',k:'lateNote',t:'Note for late clock-outs',h:'Clocking out long after the day’s last job needs a note.',n:{p:'lateMins',l:'After this many minutes',step:'5'}},
@@ -1588,25 +1597,31 @@ function clockSig(j){
   return CLOCK_V+':'+[q.kind,q.total,q.hours,q.cf,q.rate,q.miles,q.mileRate,q.fixed,q.taxPct,q.minHours,q.nte,q.capNte,q.shopTravel,q.backH,
     j.startedAt,j.finishedAt,p.loadStart,p.loadEnd,p.unloadStart,p.unloadEnd,j.milesDriven,f.hours,f.miles,f.off].map(v).join('|')+
     // the drive back from bill-out, only when there is one (older jobs keep the signature they have)
-    (j.back?'|b:'+[j.back.mins,j.back.mi,j.back.soFar].map(v).join(','):'');
+    (j.back?'|b:'+[j.back.mins,j.back.mi,j.back.soFar].map(v).join(','):'')+
+    // movers who joined or left, when there are any
+    (crewAdjs(j).length?'|m:'+crewAdjs(j).map(function(e){return e.ts+(e.d>0?'+':'-')}).join(',')+(j.crewRates?'/'+[j.crewRates.r2,j.crewRates.r3,j.crewRates.r4].map(v).join(','):''):'');
 }
 // writes the bill line; returns what it worked out ({off:true} when the office bills at the quote),
 // or null for a job billed at its quote
 function applyClock(j,why){
-  var c=clockBill(j),had=(j.extras||[]).filter(function(e){return e.id==='clock'})[0];
-  var keep=(j.extras||[]).filter(function(e){return e.id!=='clock'}),off=!!(j.clockFix||{}).off;
+  var c=clockBill(j),had=(j.extras||[]).filter(function(e){return e.id==='clock'})[0],hadCrew=(j.extras||[]).filter(isCrewLine);
+  var keep=(j.extras||[]).filter(function(e){return e.id!=='clock'&&!isCrewLine(e)}),off=!!(j.clockFix||{}).off;
   if(!c||c.missing||off){
-    if(had){j.extras=keep;logEv(j,(off?'Billed at the quote':'Bill back to the quote')+(why?' ('+why+')':''))}
+    if(had||hadCrew.length){j.extras=keep;logEv(j,(off?'Billed at the quote':'Bill back to the quote')+(why?' ('+why+')':''))}
     if(j.clockAt||off)j.clockSig=clockSig(j);
     return off&&c?{off:true}:c;
   }
   var line=Math.abs(c.adj)>=0.01?{id:'clock',label:clockLabel(j,c),amt:c.adj,ts:(had&&had.ts)||Date.now()}:null;
-  var same=had?!!line&&had.label===line.label&&had.amt===line.amt:!line;
+  // movers joining or leaving: their own lines, after the clock's
+  var crew=mvLines(j).map(function(l){var h=hadCrew.filter(function(x){return x.id===l.id})[0];l.ts=(h&&h.ts)||Date.now();return l});
+  var key=function(L){return canon(L.map(function(x){return [x.id,x.label,x.amt]}))};
+  var same=(had?!!line&&had.label===line.label&&had.amt===line.amt:!line)&&key(hadCrew)===key(crew);
   j.clockSig=clockSig(j);
   if(same&&j.clockAt)return c;   // nothing changed: finishing, then closing, logs it once
-  j.extras=line?keep.concat([line]):keep;
+  j.extras=(line?keep.concat([line]):keep).concat(crew);
   j.clockAt=Date.now();
-  logEv(j,'Billed by the clock: '+fmtHrs(c.billed)+(j.quote.kind==='mileage'?', '+fmtMi(c.miles)+' mi':'')+', '+money(c.total)+(why?' ('+why+')':''));
+  var mvT=crew.reduce(function(a,l){return a+l.amt},0);
+  logEv(j,'Billed by the clock: '+fmtHrs(c.billed)+(j.quote.kind==='mileage'?', '+fmtMi(c.miles)+' mi':'')+', '+money(c.total)+(crew.length?', crew changes '+(mvT<0?'−':'+')+money(Math.abs(mvT)):'')+(why?' ('+why+')':''));
   return c;
 }
 // work the bill out again; the job's status follows only when the bill really changed
@@ -1624,7 +1639,7 @@ function clockHtml(j,ro){
   var head=ro?'<p style="margin:10px 0 2px"><b>'+(mileage?'Mileage move':'Local move')+'</b></p>':'<h3 style="font-size:15px;margin:10px 0 2px">'+(mileage?'Mileage move':'Local move')+'</h3>';
   var kindTxt=q.flat?'Flat price: the bill is the quote (Final bill by the clock was off in Options when it was quoted).':mileage?'Billed per mile for the drive, plus loading and unloading time.':'Billed by the hour, the drive included. No mileage.';
   if(!c)return head+'<p class="hint" style="margin:0">'+kindTxt+'</p>';
-  if(!fin&&!j.clockAt&&(!j.startedAt||c.missing))return head+'<p class="hint" style="margin:0">'+kindTxt+' The final bill comes from the crew\u2019s times'+(mileage?' and the miles driven':'')+'.</p>';
+  if(!fin&&!j.clockAt&&(!j.startedAt||c.missing))return head+'<p class="hint" style="margin:0">'+kindTxt+' The final bill comes from the crew\u2019s times'+(mileage?' and the miles driven':'')+'.'+mvNote(j,false)+'</p>';
   var body;
   if(c.missing)body=(mileage?'The crew didn\u2019t record loading and unloading times, so the bill is the quote.':'The job clock wasn\u2019t used, so the bill is the quote.')+(ed?' Enter the hours to bill by the clock.':'');
   else{
@@ -1639,6 +1654,7 @@ function clockHtml(j,ro){
        :fin?' This job was closed at its quoted price. By the clock it would be '+bill+'.'
        :' Bill '+bill+'. It goes on the bill when the job is finished.');
   }
+  if(!c.missing&&!off)body+=mvNote(j,applied);
   var over=fin?round2(paidOf(j)-totalOf(j)):0;
   if(over>0.004)body+=' The customer has paid '+money(over)+' more than the bill.';
   var mph=c.missing?'':String(c.billed),mip=mileage?fmtMi(c.missing?(j.milesDriven!=null&&j.milesDriven!==''?num(j.milesDriven):num(q.miles)):c.miles):'';
@@ -1671,8 +1687,10 @@ function setStatus(j,s){
 function jobMinPaid(j){return j.minPaid!=null?num(j.minPaid):(state.settings.payMin===false?0:num(state.settings.minHours))}
 function payHoursFor(j){return j.actualHours>0?Math.round(Math.max(j.actualHours,jobMinPaid(j))*10)/10:0}
 function topUpFor(j){return j.actualHours>0?Math.round(Math.max(0,payHoursFor(j)-j.actualHours)*10)/10:0}
-function payLine(j,you){
+function payLine(j,you,who){
   if(!(j.actualHours>0))return '';
+  var own=you&&who?mvPayHours(j,who):null;   // joined late or left early: their own time
+  if(own)return 'You’re paid '+own.paid+' h'+(own.paid>own.h?' (the '+jobMinPaid(j)+'-hour minimum; you were on the job '+own.h+' h)':' (your time on the job)');
   var p=payHoursFor(j),t=topUpFor(j);
   return (you?'You’re paid ':'Crew paid ')+p+' h'+(you?'':' each')+(t?' (the '+jobMinPaid(j)+'-hour minimum; the job took '+j.actualHours+' h)':' (job time)');
 }
@@ -2398,7 +2416,7 @@ function renderSheet(){
      fld('Date','<input type="date" data-j="moveDate" data-re="1" value="'+esc(j.d.moveDate)+'">')+
      fld('Start time','<input type="time" data-j="time" data-re="1" value="'+esc(j.d.time)+'">')+
      fld('Status','<select data-jstatus="1">'+statusOpts+'</select>','span2')+
-   '</div>'+truckRows+'<div class="f" style="margin-top:10px"><span>Crew</span><div class="chips" style="margin:0">'+crewChips+'</div></div>'+confirmLine(j)+clockLine(j)+'</div>'+
+   '</div>'+truckRows+'<div class="f" style="margin-top:10px"><span>Crew</span><div class="chips" style="margin:0">'+crewChips+'</div></div>'+confirmLine(j)+clockLine(j)+mvLine(j,myName()||'Office')+'</div>'+
    '<div class="sec" data-meta="'+esc(secMeta(j,'cust'))+'"><h3>Customer and route</h3><div class="grid2 stack">'+
      fld('Name','<input data-j="name" value="'+esc(jv(j,'name'))+'">')+
      fld('Phone','<input data-j="phone" type="tel" value="'+esc(jv(j,'phone'))+'">')+
@@ -2823,6 +2841,164 @@ function rqNotice(){
   rqSeen={me:me,m:m};
 }
 
+/* ---------- Movers joining or leaving on site (Richie, Oct 21) ----------
+   "If a mover has to be added to the job we need a way for the lead to add the guy when he shows up. So the
+   bill starts with 2 movers for 2 hours and then the last 3 hours with 4 movers."
+   The bill by the clock is worked out for the crew on the quote, as before (q.crew at q.rate, held to the
+   not-to-exceed price). A change on site, j.crewAdj ({id, ts: when it took effect, d: +1 joined or −1 left,
+   who, by, at: when it was put in, added: put on the job's crew by it}), makes the movers on the bill the
+   quote's crew plus the changes so far, and every stretch of the work with a different crew is its own line
+   on the bill at that crew's rate, by the minute: "4 movers from 10:15 AM, 3h 05m at $250/hr instead of
+   $140/hr". Those lines aren't held to the not-to-exceed price: the customer was quoted for the quote's crew,
+   and a mover more is extra, like stairs or parking. A crew size's rate is the quote's rate plus the Rate
+   card's difference between the two crew sizes (kept on the job at the first change, j.crewRates, so the
+   bill doesn't move when the Rate card does); past 4 movers each one adds what the 4th does. */
+function mvOn(){return opt('crewAdd')}
+function mvLeadOk(j,me){return state.ui.role==='lead'&&isLead(me)&&j.assign.crew.indexOf(me)>=0}
+// put in a change: the office, or the crew lead on the job (Options › Crew leads add movers on site), before or during the job
+function mvCan(j,me){return !!j&&['booked','active'].indexOf(j.status)>=0&&(canEditJobs()||(mvOn()&&mvLeadOk(j,me)))}
+// take one back: the office any time, the lead until the job is paid
+function mvCanUndo(j,me){return !!j&&(canEditJobs()||(mvOn()&&mvLeadOk(j,me)&&['booked','active','done'].indexOf(j.status)>=0))}
+function mvRates(j){var R=j.crewRates||state.settings.rates||{};return {r2:num(R.r2),r3:num(R.r3),r4:num(R.r4)}}
+function mvCard(j,n){var R=mvRates(j);if(n>=2&&n<=4)return R['r'+n];if(n>4)return R.r4+(n-4)*(R.r4-R.r3);return Math.max(0,R.r2-(2-n)*(R.r3-R.r2))}
+function mvRate(j,n){var q=j.quote||{};return Math.max(0,round2(num(q.rate)+mvCard(j,n)-mvCard(j,num(q.crew))))}
+function crewAdjs(j){return (j.crewAdj||[]).filter(function(e){return e&&(e.d===1||e.d===-1)&&e.ts>0}).sort(function(a,b){return a.ts-b.ts||(a.at||0)-(b.at||0)})}
+// the movers on the bill at a time: the quote's crew, plus who joined, less who left, up to then
+function billCrewAt(j,t){var n=num((j.quote||{}).crew)||2;crewAdjs(j).forEach(function(e){if(e.ts<=t)n+=e.d});return Math.max(1,n)}
+// does this job's bill follow crew changes? (by the clock, not a flat price)
+function mvBills(j){var q=j.quote||{};return (q.kind==='local'||q.kind==='mileage')&&!q.flat&&num(q.rate)>0&&num(q.crew)>0}
+// the stretches of the work with a crew other than the quote's: [{n, from, to, ms}]
+function mvStretches(j,upTo){
+  var q=j.quote||{},A=crewAdjs(j);if(!A.length||!mvBills(j))return [];
+  var p=j.phases||{},wins=[];
+  if(q.kind==='mileage'){
+    if(p.loadStart)wins.push([p.loadStart,p.loadEnd||upTo||0]);
+    if(p.unloadStart)wins.push([p.unloadStart,p.unloadEnd||upTo||0]);
+  }else{
+    var start=q.shopTravel?(j.startedAt||p.loadStart):(p.loadStart||j.startedAt),end=p.unloadEnd||j.finishedAt||upTo||0;
+    if(start)wins.push([start,end]);
+  }
+  var base=num(q.crew),out=[];
+  wins.forEach(function(w){
+    if(!(w[1]>w[0]))return;
+    var cuts=[w[0]].concat(A.map(function(e){return e.ts}).filter(function(t){return t>w[0]&&t<w[1]})).concat([w[1]]);
+    for(var i=0;i<cuts.length-1;i++){
+      var a=cuts[i],b=cuts[i+1];if(b<=a)continue;
+      var n=billCrewAt(j,a);if(n===base)continue;
+      var last=out[out.length-1];
+      if(last&&last.n===n&&last.to===a){last.to=b;last.ms+=b-a}else out.push({n:n,from:a,to:b,ms:b-a});
+    }
+  });
+  return out;
+}
+// the bill's lines for them (ids crew:0, crew:1…), tax included as on the rest of the bill
+function mvLines(j,upTo){
+  var q=j.quote||{},tax=num(q.taxPct);
+  return mvStretches(j,upTo).map(function(s,i){
+    var r=mvRate(j,s.n),amt=Math.round((r-num(q.rate))*s.ms/36e5);amt+=Math.round(amt*tax/100);
+    return {id:'crew:'+i,label:s.n+' mover'+(s.n===1?'':'s')+' from '+fmtClock(s.from)+', '+fmtDur(s.ms)+' at '+money(r)+'/hr instead of '+money(q.rate)+'/hr',amt:amt};
+  }).filter(function(l){return Math.abs(l.amt)>=0.01});
+}
+function isCrewLine(e){return !!e&&/^crew:\d+$/.test(String(e.id||''))}
+// "2 (as quoted) · 4 from 10:15 AM"
+function mvSummary(j){
+  var q=j.quote||{},base=num(q.crew)||2,A=crewAdjs(j),st=j.startedAt||0,parts=[base+' (as quoted)'];
+  // changes put in before the job started count from the start
+  var n=Math.max(1,base+A.filter(function(e){return !st||e.ts<=st}).reduce(function(a,e){return a+e.d},0));
+  if(n!==base)parts.push(n+' from the start');
+  A.filter(function(e){return st&&e.ts>st}).forEach(function(e){var m=billCrewAt(j,e.ts);if(m!==n){parts.push(m+' from '+fmtClock(e.ts));n=m}});
+  return parts.join(' · ');
+}
+// the roster's people who could join (not on the job's crew), and the ones on the job who could leave
+function mvJoinable(j){return state.settings.crew.filter(function(n){return j.assign.crew.indexOf(n)<0})}
+function mvLeavable(j,me){
+  var last={};crewAdjs(j).forEach(function(e){if(e.who)last[e.who]=e.d});
+  return j.assign.crew.concat(Object.keys(last)).filter(function(n,i,a){return a.indexOf(n)===i&&n!==me&&last[n]!==-1});
+}
+function mvAdd(j,name,d,ts,by){
+  var S=state.settings,ev={id:uid(),ts:ts,d:d,who:name,by:by||myName()||'',at:Date.now()};
+  if(!j.crewRates)j.crewRates={r2:num(S.rates.r2),r3:num(S.rates.r3),r4:num(S.rates.r4)};
+  var inRoster=S.crew.indexOf(name)>=0,note='';
+  if(d>0){
+    if(inRoster&&j.assign.crew.indexOf(name)<0){j.assign.crew.push(name);ev.added=true}
+    if(inRoster&&j.status==='active'&&!crewIsOn(j,name)&&!crewJoin(j,name,ts))note=name+' isn’t clocked in yet, so '+name+'’s own time starts at clock-in.';
+  }else if(j.status==='active')crewLeave(j,name,ts);
+  j.crewAdj=(j.crewAdj||[]).concat([ev]);
+  var n=billCrewAt(j,ts);
+  logEv(j,(d>0?name+' joined the crew':name+' left the job')+(j.status==='active'||ts>=(j.startedAt||Infinity)?' at '+fmtClock(ts):'')+(ev.by?' (put in by '+ev.by+')':'')+(mvBills(j)?': '+n+' mover'+(n===1?'':'s')+' on the bill':''));
+  if(j.clockAt)rebill(j,'crew changed');
+  save();
+  return note;
+}
+function mvUndo(j,id){
+  var e=(j.crewAdj||[]).filter(function(x){return x.id===id})[0];if(!e)return;
+  j.crewAdj=(j.crewAdj||[]).filter(function(x){return x.id!==id});
+  if(e.d>0&&e.added){   // he was put on the crew by it: off again, with the time it logged him on the job
+    var i=j.assign.crew.indexOf(e.who);if(i>=0)j.assign.crew.splice(i,1);
+    if(j.crewOn&&j.crewOn[e.who]){var keep=j.crewOn[e.who].filter(function(x){return x.in<e.ts});if(keep.length)j.crewOn[e.who]=keep;else delete j.crewOn[e.who]}
+  }
+  if(e.d<0&&j.status==='active'){var s=crewSegs(j,e.who).slice(),l=s[s.length-1];if(l&&l.out&&Math.abs(l.out-e.ts)<2000){s[s.length-1]=Object.assign({},l,{out:0});j.crewOn[e.who]=s}}
+  logEv(j,'Taken back: '+e.who+(e.d>0?' joining':' leaving')+' at '+fmtClock(e.ts));
+  if(j.clockAt)rebill(j,'crew changed');
+  save();
+}
+// the time someone joined or left, for the screens
+function mvWhen(j,e){return !j.startedAt||e.ts<=j.startedAt?'from the start':'at '+fmtClock(e.ts)}
+// the line under the crew on the job card and the job sheet
+function mvLine(j,me){
+  var A=crewAdjs(j),can=mvCan(j,me),btn=can||(A.length&&mvCanUndo(j,me));
+  if(!A.length&&!can)return '';
+  var txt=mvBills(j)?'Movers on the bill: '+esc(mvSummary(j)):A.length?'Crew changes: '+esc(A.map(function(e){return e.who+(e.d>0?' joined ':' left ')+mvWhen(j,e)}).join(', ')):'';
+  return '<div class="cc-sub cc-movers">'+(txt?'<span>'+txt+'</span>':'')+(btn?'<button class="btn sm" data-act="mv:open" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(A.length?'Change':'A mover joined or left')+'</button>':'')+'</div>';
+}
+/* the panel: who joined (or left), and when */
+function mvOpen(id,who){var j=byId(id);if(!j)return;ui.mv={jobId:id,who:who||'',mode:'join',pick:'',other:'',ago:0};renderMover()}
+function mvClose(){ui.mv=null;renderMover()}
+function mvAgos(j){var now=Date.now();return j.status!=='active'?[0]:[0,15,30,45,60].filter(function(a){return !a||!j.startedAt||now-a*6e4>j.startedAt})}
+function mvTs(j,m){return j.status==='active'?Date.now()-(m.ago||0)*6e4:Date.now()}
+function renderMover(){
+  var el=$('#mover');if(!el)return;
+  var m=ui.mv,j=m&&byId(m.jobId);
+  if(!m||!j){ui.mv=null;el.hidden=true;el.innerHTML='';syncLock();return}
+  var join=m.mode!=='left',q=j.quote||{},A=crewAdjs(j),can=mvCan(j,m.who);
+  var agos=mvAgos(j);if(agos.indexOf(m.ago)<0)m.ago=0;
+  var name=m.pick||String(m.other||'').trim(),ts=mvTs(j,m),n0=billCrewAt(j,ts),n1=Math.max(1,n0+(join?1:-1));
+  var people=join?mvJoinable(j):mvLeavable(j,m.who);
+  var chips=people.map(function(n){var on=m.pick===n;return '<button class="chip'+(on?' on':'')+'" data-act="mv:pick" data-n="'+esc(n)+'" aria-pressed="'+on+'">'+esc(n)+'</button>'}).join('');
+  var when=agos.map(function(a){var on=m.ago===a;return '<button class="chip'+(on?' on':'')+'" data-act="mv:ago" data-a="'+a+'" aria-pressed="'+on+'">'+(a?a+' min ago':j.status==='active'?'Now':'From the start')+'</button>'}).join('');
+  var at=j.status==='active'?'From '+fmtClock(ts):'From the start';
+  var what=!mvBills(j)?(q.flat?'Flat price: the bill stays at the quote.':'This job’s bill stays at its quote.')
+    :at+': '+n1+' mover'+(n1===1?'':'s')+' on the bill at '+money(mvRate(j,n1))+'/hr'+(n1===num(q.crew)?', as quoted.':' (the quote is '+money(q.rate)+'/hr for '+num(q.crew)+').')+
+      (n1>num(q.crew)&&!(n0>num(q.crew))?' The time with more movers goes on the bill on top of the quote and its not-to-exceed price, so let '+esc(j.d.name||'the customer')+' know.':'');
+  var list=A.length?'<div class="mv-list"><h4>Changes on this job</h4>'+A.map(function(e){
+      return '<div class="who"><span>'+esc(e.who)+(e.d>0?' joined ':' left ')+esc(mvWhen(j,e))+'<br><small>Put in by '+esc(e.by||'the crew')+(mvBills(j)?' · '+billCrewAt(j,e.ts)+' on the bill after':'')+'</small></span>'+
+        (mvCanUndo(j,m.who)?'<button class="btn sm ghost" data-act="mv:undo" data-e="'+e.id+'" aria-label="Take back '+esc(e.who)+(e.d>0?' joining':' leaving')+'">Take back</button>':'')+'</div>'}).join('')+'</div>':'';
+  var form=can?'<div class="crewtabs mv-tabs" role="tablist"><button role="tab" class="'+(join?'on':'')+'" aria-selected="'+join+'" data-act="mv:mode" data-m="join">Someone joined</button><button role="tab" class="'+(join?'':'on')+'" aria-selected="'+!join+'" data-act="mv:mode" data-m="left">Someone left</button></div>'+
+      '<div class="f"><span>'+(join?'Who joined?':'Who left?')+'</span></div><div class="chips">'+(chips||'<small>'+(join?'Everyone on the list is on this job already.':'Nobody else is on this job.')+'</small>')+'</div>'+
+      (join?'<label class="f" style="margin-top:6px"><span>Someone not on the list</span><input id="mvOther" placeholder="Their name" autocomplete="off" value="'+esc(m.other||'')+'"></label>':'')+
+      '<div class="f" style="margin-top:10px"><span>When?</span></div><div class="chips">'+when+'</div>'+
+      '<p class="hint mv-what" id="mvWhat">'+what+'</p>'+
+      '<button class="btn primary bigbtn" data-act="mv:save"'+(name?'':' disabled')+'>'+(name?(join?'Add '+esc(name)+' to the job':esc(name)+' left'):(join?'Pick who joined':'Pick who left'))+'</button>'
+    :'<p class="hint">'+(['booked','active'].indexOf(j.status)<0?'The job is finished, so nobody more joins or leaves.':'Crew leads can’t change the crew on site (Options).')+'</p>';
+  el.innerHTML='<div class="scrim" data-act="mv:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Movers on the job">'+
+    '<div class="row between"><h2>Movers on '+esc(j.d.name||'the job')+'</h2><button class="btn sm" data-act="mv:close">Close</button></div>'+
+    (mvBills(j)?'<p class="hint" style="margin:2px 0 8px">On the bill now: '+esc(mvSummary(j))+'.</p>':'')+form+list+'</div>';
+  el.hidden=false;syncLock();
+}
+// the pay line on the card for someone who joined late or left early: their own time, at least the minimum
+function mvPayHours(j,who){
+  var A=crewAdjs(j).filter(function(e){return e.who===who});if(!A.length||!j.finishedAt)return null;
+  var from=j.startedAt||0,to=j.finishedAt;
+  A.forEach(function(e){if(e.d>0&&e.ts>from)from=e.ts;if(e.d<0&&e.ts<to)to=e.ts});
+  var h=Math.round(Math.max(0,to-from)/36e5*10)/10;
+  return {h:h,paid:Math.round(Math.max(h,jobMinPaid(j))*10)/10};
+}
+// crew changes in words, for the bill's explanation (the job sheet, the lead's Quote part)
+function mvNote(j,applied){
+  var L=mvLines(j,j.status==='active'?Date.now():0);if(!L.length)return '';
+  return ' Crew changes'+(applied?' on the bill':' so far')+': '+L.map(function(l){return l.label+' ('+(l.amt<0?'−':'+')+money(Math.abs(l.amt))+')'}).join('; ')+(applied?'':', on top of the bill')+'.';
+}
+
 function crewKit(me){
   var S=state.settings,role=state.ui.role,t=todayISO();
   var asLead=role==='owner'||role==='dispatch'||(role==='lead'&&isLead(me));
@@ -2922,8 +3098,8 @@ function crewKit(me){
       (j.status==='active'||(j.phases&&j.phases.loadStart)?'<div class="phz">'+phaseRows(j)+(asLead&&j.status==='active'&&phaseNext(j)>0?'<button class="btn sm ghost" data-act="cr:phaseundo" data-id="'+j.id+'" data-who="'+esc(me)+'">Undo “'+PHASES[phaseNext(j)-1][1]+'”</button>':'')+'</div>':'')+
       mdrive+odoBox+tallySec+upd+(asLead?quoteSec(j):'')+(billIn?'<div class="cc-sec"><h4>Bill</h4>'+billPanel(j)+'</div>':'')+'</div>';
     var testTag=j.test?' <span class="pill" style="border:1px dashed var(--muted);background:transparent">Test</span>':'';
-    var body='<div class="cc-sub">Crew: '+(crewLine||'none yet')+'</div>'+crewHint+truckLines+
-      (j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true))+'</b></div>':'')+
+    var body='<div class="cc-sub">Crew: '+(crewLine||'none yet')+'</div>'+crewHint+(asLead?mvLine(j,me):'')+truckLines+
+      (j.actualHours>0&&(j.status==='done'||j.status==='paid')?'<div class="cc-sub"><b>'+esc(payLine(j,true,me))+'</b></div>':'')+
       '<div class="cc-route"><div><small>Pickup</small>'+map(j.d.from)+'</div><div><small>Delivery</small>'+map(j.d.to)+'</div></div>'+
       notesSec+matsSec+photoSec+runSec;
     var est=['booked','active'].indexOf(j.status)>=0?estLine(j):'';
@@ -3297,7 +3473,7 @@ function render(){
   if((role==='crew'||role==='lead')&&(ui.tab==='history'||ui.tab==='today')){if(ui.tab==='history')ui.crewView='history';ui.tab='crew'}
   if(!tabs.some(function(t){return t.id===ui.tab}))ui.tab=tabs[0].id;
   renderTabs();
-  renderTab();renderSheet();renderFlow();if(!ui.rqo||ui.rqo.step!=='sign')renderRq();renderMore();renderCall();renderStart();renderPvBar();renderSos();renderSosBar();
+  renderTab();renderSheet();renderFlow();if(!ui.rqo||ui.rqo.step!=='sign')renderRq();renderMore();renderCall();renderStart();renderMover();renderPvBar();renderSos();renderSosBar();
 }
 function renderTabs(){
   var un=unreadTotal(),nav=navTabs(),wide=window.innerWidth>=900,office=canEditJobs();
@@ -3938,7 +4114,7 @@ setInterval(function(){if(!document.hidden)sosRefresh();if(sosActive().length||u
 document.addEventListener('input',function(e){var t=e.target;if(t&&(t.tagName==='TEXTAREA'||t.tagName==='SELECT')&&t.id&&t.closest&&t.closest('#sos'))ui.sosDraft[t.id]=t.value});
 
 /* ---------- shared backend: identity, roles and synced data ---------- */
-var MAPKEYS=['payments','signed','extras','crewNotes','photos','log','materials','costs','confirm','crewOn'];
+var MAPKEYS=['payments','signed','extras','crewNotes','photos','log','materials','costs','confirm','crewOn','crewAdj'];
 function canon(v){
   if(v===null||v===undefined)return 'null';
   if(typeof v!=='object')return JSON.stringify(v);
@@ -3952,7 +4128,7 @@ function jobDoc(j){
   var dd=Object.assign({},j.d);
   dd.items=Object.keys(j.d.items||{}).map(function(k){return {id:k,q:j.d.items[k]}});
   var o={id:j.id,status:j.status,createdAt:j.createdAt,d:dd,quote:j.quote,items:j.items||[],assign:j.assign||{truckId:'',crew:[]},tally:j.tally||{}};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
   o.payments=toMap(j.payments,function(x){return x.id});
   o.signed=toMap(j.signed,function(x){return x.id});
   o.extras=toMap(j.extras,function(x){return x.id});
@@ -3962,6 +4138,7 @@ function jobDoc(j){
   o.costs=toMap(j.costs,function(x){return x.id});
   o.confirm=JSON.parse(JSON.stringify(j.confirm||{}));
   o.crewOn=JSON.parse(JSON.stringify(j.crewOn||{}));
+  o.crewAdj=toMap(j.crewAdj,function(x){return x.id});
   o.log=toMap(j.log,function(x){return 'l'+(x.ts||0).toString(36)+'_'+strHash(String(x.ev))});
   return JSON.parse(JSON.stringify(o));
 }
@@ -3975,9 +4152,9 @@ function docToJob(v){
     payments:mapArr(v.payments,'ts'),signed:mapArr(v.signed,'ts'),extras:mapArr(v.extras,'ts'),crewNotes:mapArr(v.crewNotes,'ts'),
     photos:mapArr(v.photos,'ts').map(function(p){return {id:p.id,kind:p.kind,ts:p.ts,data:sync.photoCache[p.id]}}),
     materials:mapArr(v.materials,'ts'),costs:mapArr(v.costs,'ts'),confirm:(v.confirm&&typeof v.confirm==='object')?v.confirm:{},
-    crewOn:(v.crewOn&&typeof v.crewOn==='object')?v.crewOn:undefined,
+    crewOn:(v.crewOn&&typeof v.crewOn==='object')?v.crewOn:undefined,crewAdj:mapArr(v.crewAdj,'ts'),
     log:mapArr(v.log,'ts').slice(-60)};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
   return j;
 }
 function jobDiff(prev,cur){
@@ -6015,17 +6192,18 @@ function adminAddCompany(){
 }
 
 /* ---------- signing and payment flow ---------- */
-function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||ui.rqo||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.emp||ui.mp||ui.sosOpen||ui.sosStart));navSync()}
+function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||ui.rqo||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.mv||ui.emp||ui.mp||ui.sosOpen||ui.sosStart));navSync()}
 /* In the installed app the phone's Back button should close whatever is open, not the app.
    One history entry stands in for "something is open"; Back closes the top screen. */
 var nav={pushed:false};
 function standalone(){try{return !!window.TALLY_STANDALONE||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||String(document.referrer).indexOf('android-app://')===0}catch(e){return false}}
-function topOverlay(){return (ui.sosOpen||ui.sosStart)?'sos':ui.mp?'matpick':ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.rqo?'rq':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':(ui.tab==='settings'&&ui.setSec)?'setsec':''}
+function topOverlay(){return (ui.sosOpen||ui.sosStart)?'sos':ui.mp?'matpick':ui.mv?'mover':ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.rqo?'rq':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':(ui.tab==='settings'&&ui.setSec)?'setsec':''}
 function navSync(){if(!standalone()||nav.pushed||!topOverlay())return;nav.pushed=true;try{history.pushState({tally:1},'')}catch(e){}}
 window.addEventListener('popstate',function(){
   nav.pushed=false;var t=topOverlay();
   if(t==='sos')sosHide();
   else if(t==='matpick')mpClose();
+  else if(t==='mover')mvClose();
   else if(t==='start'){ui.start=null;renderStart()}
   else if(t==='call'){ui.call=null;renderCall()}
   else if(t==='pick'){ui.pick=false;renderPick()}
@@ -6579,6 +6757,20 @@ document.addEventListener('click',function(e){
     case 'back:mode':if(ui.flow&&ui.flow.back){ui.flow.back.mode=t.dataset.m==='sofar'?'sofar':'odo';renderFlow()}break;
     case 'flow:close':closeFlow();break;
     case 'flow:clearsig':clearSig();break;
+    /* movers joining or leaving on site */
+    case 'mv:open':mvOpen(t.dataset.id,t.dataset.who||fieldMe());break;
+    case 'mv:close':mvClose();break;
+    case 'mv:mode':if(ui.mv){ui.mv.mode=t.dataset.m==='left'?'left':'join';ui.mv.pick='';ui.mv.other='';renderMover()}break;
+    case 'mv:pick':if(ui.mv){ui.mv.pick=ui.mv.pick===t.dataset.n?'':t.dataset.n;ui.mv.other='';renderMover()}break;
+    case 'mv:ago':if(ui.mv){ui.mv.ago=num(t.dataset.a);renderMover()}break;
+    case 'mv:save':{var mm=ui.mv,mj=mm&&byId(mm.jobId);if(!mj)break;
+      var mn=(mm.pick||String((($('#mvOther')||{}).value)||mm.other||'')).trim().slice(0,40);
+      if(!mn){toast(mm.mode==='left'?'Pick who left.':'Pick who joined.');break}
+      if(!mvCan(mj,mm.who)){toast('Nobody can join or leave this job now.');break}
+      var md=mm.mode==='left'?-1:1,mts=mvTs(mj,mm),mnote=mvAdd(mj,mn,md,mts,mm.who||myName()||''),mcn=billCrewAt(mj,mts);
+      mvClose();renderTab();renderSheet();
+      toast((md>0?mn+' is on the job':mn+' left the job')+(mvBills(mj)?'. '+mcn+' mover'+(mcn===1?'':'s')+' on the bill from '+(mj.status==='active'?fmtClock(mts):'the start')+'.':'.')+(mnote?' '+mnote:''));break}
+    case 'mv:undo':{var uj=ui.mv&&byId(ui.mv.jobId);if(!uj||!mvCanUndo(uj,ui.mv.who))break;mvUndo(uj,t.dataset.e);renderMover();renderTab();renderSheet();toast('Taken back.');break}
     /* a new quote on site, from the crew lead's job card */
     case 'rq:open':{var ro=byId(t.dataset.id);if(!ro)break;
       if(t.dataset.step==='sign'){if(!ro.rq||ro.rq.state!=='approved'||rqStale(ro)){toast('That new quote isn’t approved to sign.');renderTab();break}rqOpen(ro.id,t.dataset.who,'sign');break}
@@ -6745,6 +6937,7 @@ document.addEventListener('input',function(e){
   else if(t.dataset.dcf){state.draft.custom[t.dataset.dcf]=t.value;save()}
   else if(t.id==='clockNote'){ui.clockNote=t.value}
   else if(t.id==='qSearch'){filterItems(t.value)}
+  else if(t.id==='mvOther'&&ui.mv){ui.mv.other=t.value;ui.mv.pick='';var mvb=$('#mover [data-act="mv:save"]'),mvn=t.value.trim();$$('#mover [data-act="mv:pick"]').forEach(function(b){b.classList.remove('on');b.setAttribute('aria-pressed','false')});if(mvb){mvb.disabled=!mvn;mvb.textContent=mvn?(ui.mv.mode==='left'?mvn+' left':'Add '+mvn+' to the job'):(ui.mv.mode==='left'?'Pick who left':'Pick who joined')}}
   else if(t.id==='rqSearch'){rqFilter(t.value)}
   else if(t.id==='rqNote'&&ui.rqo){ui.rqo.note=t.value}
   else if(t.id==='rqPack'&&ui.rqo){ui.rqo.dr.pack=t.checked;rqFootUpdate(byId(ui.rqo.jobId),ui.rqo)}
@@ -6804,7 +6997,7 @@ document.addEventListener('change',function(e){
     var wasPast=isHistory(j);setStatus(j,t.value);save();renderSheet();
     if(!wasPast&&isHistory(j))toast(j.status==='lost'?'Marked lost. It is in Job history now.':'Closed. It is in Job history now.')}
 });
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.mp){mpClose();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Escape'&&ui.rqo){if(ui.rqo.leave){ui.rqo.leave=false;rqLeaveBar()}else rqExit();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId){if(ui.closeAsk){ui.closeAsk=null;renderSheet()}else leaveSheet(closeSheet)}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.mp){mpClose();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.mv){mvClose();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Escape'&&ui.rqo){if(ui.rqo.leave){ui.rqo.leave=false;rqLeaveBar()}else rqExit();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId){if(ui.closeAsk){ui.closeAsk=null;renderSheet()}else leaveSheet(closeSheet)}});
 
 /* ---------- errors are shown, not swallowed ---------- */
 var lastErrAt=0;
@@ -6854,7 +7047,7 @@ else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency te
 })();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,mvLines:mvLines,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock};
 })();
 </script>
 </body>

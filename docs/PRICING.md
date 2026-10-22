@@ -145,3 +145,32 @@ server (the `requote` action of the tally-twilio function). It works the price o
 job, the items and the job's rates, and saves it only if it's the price the customer signed, and, with
 office approval on, only the quote the office approved. No signal on site: the phone keeps the signed
 quote, says so on the card (**Try again now**), and sends it as soon as it can.
+
+## Movers joining or leaving on site
+
+When a mover shows up partway through a job (or one leaves early), the crew lead puts it in from the
+job card: under the crew, **Movers on the bill: 2 (as quoted)** and **A mover joined or left**. The
+panel has **Someone joined** (everyone on the list who isn't on the job, or a name typed in) and
+**Someone left**, and **When?**: Now, or 15 to 60 minutes ago (before the job starts, only "From the
+start"). It says what it does to the bill ("From 10:15 AM: 4 movers on the bill at $250/hr (the quote
+is $140/hr for 2)"). Each change can be taken back; after the job, only the office changes them.
+
+The bill is still worked out for the quote's crew, held to the not-to-exceed price. Every stretch of
+the work with a different crew is its own line on the bill, at that crew's rate instead of the quote's,
+by the minute, and not held to the not-to-exceed price (the customer was quoted for the quote's crew; a
+mover more is extra, like stairs or parking):
+
+> 2 movers quoted at $140/hr; 2 more join 2 hours in; the job takes 5 hours.
+> By the clock: 5 h at $140/hr. Then "4 movers from 10:15 AM, 3h 0m at $250/hr instead of $140/hr":
+> 3 h × $110 = $330. That's 2 movers for 2 hours and 4 movers for 3 hours.
+
+A crew size's rate is the quote's rate plus the Rate card's difference between the two crew sizes (the
+Rate card at the first change is kept on the job, so changing the Rate card later doesn't move the
+bill); past 4 movers each one adds what the 4th does, and 1 mover takes off what the 3rd adds. On a
+mileage move only loading and unloading time counts. A flat-price job's bill stays at the quote.
+
+Someone picked from the list goes on the job's crew, and on the job's times when they're clocked in;
+their pay on the card is their own time on the job (at least the minimum). Someone who left comes off
+the job's times then. The office sees the same line on the job sheet (with **Change**), and the bill
+lines on the sheet, the lead's bill and the customer's payment screen.
+

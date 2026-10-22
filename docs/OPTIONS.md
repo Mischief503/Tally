@@ -1,6 +1,6 @@
 # Options: what the owner can switch on and off
 
-**Setup › Options** has 39 switches, in eight groups. They apply to everyone in the company and save
+**Setup › Options** has 40 switches, in eight groups. They apply to everyone in the company and save
 as soon as they're flipped. Each switch also sits in the Setup section it belongs to, so the Rate
 card has the pricing switches, Roles has what crew, leads and dispatch can do, and so on. Only the
 owner can change them.
@@ -32,6 +32,7 @@ the old notes, tallies, photos and settings are still there.
 |---|---|
 | Crew leads collect payment | Leads get the signatures (**Get signatures**) and the job says *The office collects the payment*. The server refuses a lead's card payment or pay link too. |
 | Crew leads add charges and credits | No charge or credit box on the lead's bill. |
+| Crew leads add movers on site | The lead can't put in a mover joining or leaving; the office still can (the job sheet's Movers on the bill). See [PRICING.md](PRICING.md#movers-joining-or-leaving-on-site). |
 | Miles back to the shop by GPS | On a mileage move, the miles back come from the quote; the lead can still change them. |
 
 ## Time clock
