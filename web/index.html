@@ -188,6 +188,8 @@ details.acc.card .acc-body{padding-bottom:14px}
 .lines tr.total td{font:700 22px var(--display);border-bottom:0;padding-top:8px}
 .lines tr.sub td{font-weight:var(--w-strong);border-bottom:1px solid var(--line)}
 .lines tr.sub small{font-weight:400}
+.lines tr.hd td{padding:12px 0 4px;font:600 11.5px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);text-align:left;white-space:normal}
+.lines tr.ref td{border-bottom:0}
 .saved{font-weight:var(--w-mid)}
 .qbar{position:sticky;bottom:calc(58px + env(safe-area-inset-bottom));z-index:10;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:8px 10px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-lg)}
 .qbar .tot{font:700 22px/1 var(--display)}
@@ -1552,28 +1554,105 @@ function calc(d,S){
    At least the minimum hours, in 15-minute steps, and never more than the quote's not-to-exceed
    price. The difference from the quote is one line on the bill (extra 'clock'), worked out again
    when the office corrects the hours or miles (j.clockFix). Jobs quoted before move kinds keep
-   their quoted price. */
+   their quoted price.
+   The hours are billed by the movers on the bill (Richie, Oct 21: "the bill should show the quote,
+   then it should show the 1.5 hours as 2 man and 1.25 hours as a 3 man", and "Since its a 3 hour
+   minimum then you charge the 2 man for the beginning time then when the extra man gets there to
+   the 3 hour minimum. So the 3 men might of got it done in 1.25 hours but the company will charge
+   1.50 hours for those 3 guys"): each stretch with a different crew is its own row at that crew's
+   rate, a change of crew counts from the nearest quarter hour and the end goes up to the next one,
+   and the minimum (or the hours the office set) fills in, or comes off, at the end. The line keeps
+   the bill's rows (rows), so every screen shows the quote and then what the bill is made of. */
 function clockBill(j){
   var q=j.quote||{};if(!(q.kind==='local'||q.kind==='mileage')||!(q.rate>0)||!q.cf||q.flat)return null;
-  var p=j.phases||{},fix=j.clockFix||{},mileage=q.kind==='mileage',h=null,parts=null;
+  var p=j.phases||{},fix=j.clockFix||{},mileage=q.kind==='mileage',h=null,parts=null,wins=[],backMs=0;
   if(mileage){
-    if(p.loadStart&&p.loadEnd&&p.unloadStart&&p.unloadEnd){var ld=Math.max(0,p.loadEnd-p.loadStart),ul=Math.max(0,p.unloadEnd-p.unloadStart);h=(ld+ul)/36e5;parts={load:ld,unload:ul}}
+    if(p.loadStart&&p.loadEnd&&p.unloadStart&&p.unloadEnd){var ld=Math.max(0,p.loadEnd-p.loadStart),ul=Math.max(0,p.unloadEnd-p.unloadStart);h=(ld+ul)/36e5;parts={load:ld,unload:ul};wins=[[p.loadStart,p.loadEnd,'l'],[p.unloadStart,p.unloadEnd,'u']]}
   }else{
     // the drive back: what the crew lead put in at bill-out (j.back), or else the quote's estimate
     var crewBack=!!q.shopTravel&&!!j.back&&j.back.mins!=null;
     var end=p.unloadEnd||j.finishedAt,start=q.shopTravel?(j.startedAt||p.loadStart):(p.loadStart||j.startedAt),back=q.shopTravel?(crewBack?Math.max(0,num(j.back.mins))/60:num(q.backH)):0;
-    if(start&&end&&end>start){h=(end-start)/36e5+back;parts={span:end-start,back:back*36e5,backSet:crewBack}}
+    if(start&&end&&end>start){h=(end-start)/36e5+back;parts={span:end-start,back:back*36e5,backSet:crewBack};wins=[[start,end,'']];backMs=back*36e5}
   }
   var setH=num(fix.hours)>0,setMi=mileage&&fix.miles!=null&&fix.miles!=='';
   if(h==null&&!setH)return {missing:true};
   var billed=setH?num(fix.hours):Math.max(num(q.minHours),Math.ceil(h*4-1e-6)/4);
   var driven=j.milesDriven!=null&&j.milesDriven!=='';
   var miles=mileage?(setMi?num(fix.miles):driven?num(j.milesDriven):num(q.miles)):0;
-  var sub=Math.round(q.rate*billed)+(mileage?Math.round(miles*num(q.mileRate)):0)+num(q.fixed);
-  var total=Math.max(0,sub+Math.round(sub*num(q.taxPct)/100)),capped=false;
-  if(q.capNte!==false&&q.nte>0&&total>q.nte){total=q.nte;capped=true}
-  return {worked:h,parts:parts,billed:billed,miles:miles,total:total,capped:capped,adj:Math.round((total-q.total)*100)/100,setH:setH,setMi:setMi,driven:driven};
+  // the hours, by the movers on the bill, each at its crew's rate
+  var base=num(q.crew)||2,segs=billHours(j,h,wins,backMs,billed),hoursAmt=0;
+  segs.forEach(function(s){s.rate=s.n===base?num(q.rate):mvRate(j,s.n);s.amt=Math.round(s.rate*s.h);hoursAmt+=s.amt});
+  var milesAmt=mileage?Math.round(miles*num(q.mileRate)):0,tp=num(q.taxPct);
+  var sub=hoursAmt+milesAmt+num(q.fixed),tax=Math.round(sub*tp/100),total=Math.max(0,sub+tax);
+  // the not-to-exceed price is for the quote's crew: the bill is held to it as if they did all the hours, and the
+  // time with more (or fewer) movers is on top of that
+  var bsub=Math.round(q.rate*billed)+milesAmt+num(q.fixed),btotal=Math.max(0,bsub+Math.round(bsub*tp/100)),capped=false,capAmt=0;
+  if(q.capNte!==false&&q.nte>0&&btotal>q.nte){capAmt=Math.min(total,btotal-q.nte);total=total-capAmt;capped=true}
+  var c={worked:h,parts:parts,billed:billed,miles:miles,total:total,capped:capped,capAmt:capAmt,adj:Math.round((total-q.total)*100)/100,setH:setH,setMi:setMi,driven:driven,segs:segs};
+  c.rows=billRows(j,c,milesAmt,tax,sub+tax<0?-(sub+tax):0);
+  return c;
 }
+// the time on the clock, cut where the movers on the bill changed: [{n, from, to, ms, w}] in order; w: the
+// mileage move's windows in it ('l' loading, 'u' unloading)
+function billSegs(j,wins){
+  var q=j.quote||{},A=crewAdjs(j),base=num(q.crew)||2,out=[];
+  wins.forEach(function(w){
+    if(!(w[1]>w[0]))return;
+    var cuts=[w[0]].concat(A.map(function(e){return e.ts}).filter(function(t){return t>w[0]&&t<w[1]})).concat([w[1]]);
+    for(var i=0;i<cuts.length-1;i++){
+      var a=cuts[i],b=cuts[i+1];if(b<=a)continue;
+      var n=A.length?billCrewAt(j,a):base,last=out[out.length-1];
+      if(last&&last.n===n){last.to=b;last.ms+=b-a;if(last.w.indexOf(w[2])<0)last.w+=w[2]}else out.push({n:n,from:a,to:b,ms:b-a,w:w[2]});
+    }
+  });
+  return out;
+}
+// the billed hours of each stretch: {n, h, from, to, ms, back, w, fill (the minimum, or the office's hours, added
+// at the end), cut (the office's hours, taken off the end), set (no times: the office's hours)}
+function billHours(j,h,wins,backMs,billed){
+  var q=j.quote||{},base=num(q.crew)||2;
+  if(h==null)return [{n:crewAdjs(j).length?billCrewAt(j,j.startedAt||0):base,h:billed,ms:0,set:true}];
+  var segs=billSegs(j,wins);
+  if(!segs.length)segs=[{n:base,from:0,to:0,ms:Math.max(0,h*36e5-backMs),w:''}];
+  if(backMs>0)segs[segs.length-1].back=backMs;   // the drive back to the shop goes with the crew at the end
+  var end4=Math.ceil(h*4-1e-6)/4,C=0,R=0;
+  segs.forEach(function(s,i){C+=s.ms+(s.back||0);var r=i===segs.length-1?end4:Math.min(end4,Math.max(R,Math.round(C/36e5*4)/4));s.h=r-R;R=r});
+  var d=billed-end4;
+  if(d>1e-9){segs[segs.length-1].h+=d;segs[segs.length-1].fill=d}
+  else if(d<-1e-9){var cut=-d;for(var i=segs.length-1;i>=0&&cut>1e-9;i--){var t=Math.min(segs[i].h,cut);segs[i].h-=t;if(t>1e-9)segs[i].cut=t;cut-=t}}
+  segs.forEach(function(s){s.h=Math.round(s.h*1e6)/1e6});
+  return segs;
+}
+// the bill's rows: the hours by the movers on the bill, the miles, the quote's fees, tax, and the not-to-exceed price
+function billRows(j,c,milesAmt,tax,floor){
+  var q=j.quote||{},mileage=q.kind==='mileage',base=num(q.crew)||2,rows=[];
+  var hrs=c.segs.filter(function(s){return s.h>1e-9}),multi=hrs.length>1;
+  hrs.forEach(function(s){
+    var t=[];
+    if(s.to>s.from){
+      t.push(mileage?(s.w==='l'?'Loading':s.w==='u'?'Unloading':'Loading and unloading')+' '+fmtDur(s.ms)+(multi?' from '+fmtClock(s.from):'')
+        :fmtClock(s.from)+' to '+fmtClock(s.to)+' ('+fmtDur(s.ms)+')');
+      if(s.back)t.push(fmtDur(s.back)+' back to the shop');
+    }
+    if(s.set||(c.setH&&(s.fill||s.cut)))t.push('hours set by the office');
+    else if(s.fill)t.push('the '+num(q.minHours)+'-hour minimum');
+    rows.push({k:'hours',label:s.n+' mover'+(s.n===1?'':'s')+', '+(Math.round(s.h*100)/100)+' hr'+(mileage&&!multi?' loading and unloading':'')+' at '+money(s.rate)+'/hr',sub:t.join(' · '),amt:s.amt});
+  });
+  if(mileage){var bm=backMiles(j,c);rows.push({k:'miles',label:'Mileage: '+fmtMi(c.miles)+' mi'+(c.setMi?' set by the office':c.driven?' driven':'')+' at '+money(num(q.mileRate))+'/mi',sub:bm>0?'Incl. '+fmtMi(bm)+' mi back to the shop':'',amt:milesAmt})}
+  // the quote's fees as quoted (truck and fuel, stairs, packing, specialty items, a discount)
+  var fx=(q.lines||[]).filter(function(l){return l.k==='fixed'});
+  if(Math.abs(fx.reduce(function(a,l){return a+num(l.amt)},0)-num(q.fixed))<0.005)fx.forEach(function(l){rows.push({k:'fixed',label:l.label,sub:'',amt:num(l.amt)})});
+  else if(num(q.fixed))rows.push({k:'fixed',label:'Fees on the quote',sub:'',amt:num(q.fixed)});
+  if(tax)rows.push({k:'tax',label:'Tax ('+num(q.taxPct)+'%)',sub:'',amt:tax});
+  if(floor)rows.push({k:'floor',label:'A bill doesn’t go below $0',sub:'',amt:floor});
+  if(c.capped){
+    var more=c.segs.some(function(s){return s.n>base&&s.h>1e-9}),less=c.segs.some(function(s){return s.n<base&&s.h>1e-9});
+    rows.push({k:'cap',label:'Held to the not-to-exceed price',sub:more||less?money(q.nte)+' for '+base+' movers, as quoted. '+(more?'The time with more movers is on top of it.':'Less for the time with fewer movers.'):'Not to exceed '+money(q.nte),amt:-c.capAmt});
+  }
+  return rows;
+}
+// "2 movers 1.5 h, then 3 movers 1.5 h", when the crew changed during the job
+function segWords(c){var s=((c&&c.segs)||[]).filter(function(x){return x.h>1e-9});return s.length>1?s.map(function(x){return x.n+' mover'+(x.n===1?'':'s')+' '+fmtHrs(x.h)}).join(', then '):''}
 function fmtHrs(h){return (Math.round(h*100)/100)+' h'}
 // the time a quote's hours stand for: a mileage move's quote covers loading and unloading only
 function bidActual(j){var p=j.phases||{};if(j.quote&&j.quote.kind==='mileage')return p.loadStart&&p.loadEnd&&p.unloadStart&&p.unloadEnd?Math.round(((p.loadEnd-p.loadStart)+(p.unloadEnd-p.unloadStart))/36e5*10)/10:0;return j.actualHours||0}
@@ -1582,6 +1661,7 @@ function clockLabel(j,c){
   var hrs=c.setH?fmtHrs(c.billed)+' set by the office'
     :!mileage&&pt.backSet?fmtDur(pt.span)+' on the job'+(pt.back>0?' + '+fmtDur(pt.back)+' back to the shop':'')+', billed '+fmtHrs(c.billed)
     :c.worked!=null?fmtDur(c.worked*36e5)+(mileage?' loading and unloading':' on the job')+', billed '+fmtHrs(c.billed):'billed '+fmtHrs(c.billed);
+  if(segWords(c))hrs+=': '+segWords(c);   // the crew changed: the hours of each crew
   return 'By the clock: '+hrs+(mileage?', '+fmtMi(c.miles)+' mi'+(c.setMi||c.driven?' driven':'')+(backMiles(j,c)>0?' incl. '+fmtMi(backMiles(j,c))+' mi back to the shop':''):'')+' (quoted '+fmtHrs(q.hours)+(mileage?', '+fmtMi(q.miles)+' mi':'')+')'+(c.capped?', held to the not-to-exceed price':'');
 }
 // a mileage move's miles back to the shop, from bill-out, while the miles driven are still the ones
@@ -1591,15 +1671,24 @@ function backMiles(j,c){return backSplit(j,c)?num(j.back.mi):0}
 var BACK_HOW={gps:'by GPS',quote:'from the quote',typed:'typed in'};
 // what the bill line was worked out from. Stored with it (j.clockSig), so a phone that gets the job
 // from the database can tell when two phones changed it at once, and work the line out again.
-var CLOCK_V='c1';
+// A job whose crew changed is signed c2: its hours are billed by the movers on the bill, so a phone with
+// the version before (which put crew changes on lines of their own, signed c1) leaves its bill alone.
+var CLOCK_V='c1',CLOCK_V2='c2';
 function clockSig(j){
-  var q=j.quote||{},p=j.phases||{},f=j.clockFix||{},v=function(x){return x==null?'':String(x)};
-  return CLOCK_V+':'+[q.kind,q.total,q.hours,q.cf,q.rate,q.miles,q.mileRate,q.fixed,q.taxPct,q.minHours,q.nte,q.capNte,q.shopTravel,q.backH,
+  var q=j.quote||{},p=j.phases||{},f=j.clockFix||{},v=function(x){return x==null?'':String(x)},A=crewAdjs(j);
+  var core=[q.kind,q.total,q.hours,q.cf,q.rate,q.miles,q.mileRate,q.fixed,q.taxPct,q.minHours,q.nte,q.capNte,q.shopTravel,q.backH,
     j.startedAt,j.finishedAt,p.loadStart,p.loadEnd,p.unloadStart,p.unloadEnd,j.milesDriven,f.hours,f.miles,f.off].map(v).join('|')+
     // the drive back from bill-out, only when there is one (older jobs keep the signature they have)
-    (j.back?'|b:'+[j.back.mins,j.back.mi,j.back.soFar].map(v).join(','):'')+
-    // movers who joined or left, when there are any
-    (crewAdjs(j).length?'|m:'+crewAdjs(j).map(function(e){return e.ts+(e.d>0?'+':'-')}).join(',')+(j.crewRates?'/'+[j.crewRates.r2,j.crewRates.r3,j.crewRates.r4].map(v).join(','):''):'');
+    (j.back?'|b:'+[j.back.mins,j.back.mi,j.back.soFar].map(v).join(','):'');
+  if(!A.length)return CLOCK_V+':'+core;
+  // movers who joined or left, the quote's crew, and the rates
+  return CLOCK_V2+':'+core+'|n:'+v(q.crew)+'|m:'+A.map(function(e){return e.ts+(e.d>0?'+':'-')}).join(',')+(j.crewRates?'/'+[j.crewRates.r2,j.crewRates.r3,j.crewRates.r4].map(v).join(','):'');
+}
+// a bill line from another phone that's out of date here: worked out from other numbers, or the crew
+// changes on lines of their own (the version before). A signature from another version of Tally is left.
+function clockStale(j){
+  var s=j&&j.clockAt&&j.clockSig;if(typeof s!=='string'||(s.indexOf(CLOCK_V+':')!==0&&s.indexOf(CLOCK_V2+':')!==0))return false;
+  return s!==clockSig(j)||(j.extras||[]).some(isCrewLine);
 }
 // writes the bill line; returns what it worked out ({off:true} when the office bills at the quote),
 // or null for a job billed at its quote
@@ -1611,19 +1700,37 @@ function applyClock(j,why){
     if(j.clockAt||off)j.clockSig=clockSig(j);
     return off&&c?{off:true}:c;
   }
-  var line=Math.abs(c.adj)>=0.01?{id:'clock',label:clockLabel(j,c),amt:c.adj,ts:(had&&had.ts)||Date.now()}:null;
-  // movers joining or leaving: their own lines, after the clock's
-  var crew=mvLines(j).map(function(l){var h=hadCrew.filter(function(x){return x.id===l.id})[0];l.ts=(h&&h.ts)||Date.now();return l});
-  var key=function(L){return canon(L.map(function(x){return [x.id,x.label,x.amt]}))};
-  var same=(had?!!line&&had.label===line.label&&had.amt===line.amt:!line)&&key(hadCrew)===key(crew);
+  // one line: the difference from the quote, with the bill's rows (the version before also had crew:N lines; they go)
+  var line=Math.abs(c.adj)>=0.01?{id:'clock',label:clockLabel(j,c),amt:c.adj,rows:c.rows,ts:(had&&had.ts)||Date.now()}:null;
+  var same=(had?!!line&&had.label===line.label&&had.amt===line.amt:!line)&&!hadCrew.length;
   j.clockSig=clockSig(j);
-  if(same&&j.clockAt)return c;   // nothing changed: finishing, then closing, logs it once
-  j.extras=(line?keep.concat([line]):keep).concat(crew);
+  // nothing changed: finishing, then closing, logs it once (a line from before the rows gets them; the job's records
+  // can be frozen copies of the shared one, so the line is replaced, not changed)
+  if(same&&j.clockAt){if(line&&canon(had.rows||null)!==canon(line.rows))j.extras=j.extras.map(function(e){return e===had?Object.assign({},had,{rows:line.rows}):e});return c}
+  j.extras=line?keep.concat([line]):keep;
   j.clockAt=Date.now();
-  var mvT=crew.reduce(function(a,l){return a+l.amt},0);
-  logEv(j,'Billed by the clock: '+fmtHrs(c.billed)+(j.quote.kind==='mileage'?', '+fmtMi(c.miles)+' mi':'')+', '+money(c.total)+(crew.length?', crew changes '+(mvT<0?'−':'+')+money(Math.abs(mvT)):'')+(why?' ('+why+')':''));
+  logEv(j,'Billed by the clock: '+fmtHrs(c.billed)+(segWords(c)?' ('+segWords(c)+')':'')+(j.quote.kind==='mileage'?', '+fmtMi(c.miles)+' mi':'')+', '+money(c.total)+(why?' ('+why+')':''));
   return c;
 }
+// a job billed by the clock: the bill's rows, as on its line (or worked out here for a line from before the rows,
+// or a bill the same as the quote), only when they add up to the bill; null to show the quote and what changed it
+function clockRows(j){
+  if(!j||!j.clockAt||(j.clockFix||{}).off||(j.extras||[]).some(isCrewLine))return null;
+  var line=(j.extras||[]).filter(function(e){return e.id==='clock'})[0],want=round2(num((j.quote||{}).total)+(line?num(line.amt):0));
+  var adds=function(R){return Array.isArray(R)&&R.length>0&&Math.abs(round2(R.reduce(function(a,r){return a+num(r&&r.amt)},0))-want)<0.005};
+  if(line&&adds(line.rows))return line.rows;
+  var c=clockBill(j);return c&&!c.missing&&adds(c.rows)?c.rows:null;
+}
+// a row of a bill table: what it is (and how it was worked out), and the amount
+function billTr(l){return '<tr><td>'+esc(l.label)+(l.sub?'<br><small>'+esc(l.sub)+'</small>':'')+'</td><td>'+(num(l.amt)<0?'−':'')+money(Math.abs(num(l.amt)))+'</td></tr>'}
+// what comes after the quote on a bill: billed by the clock, the bill's rows (the hours by the movers on the bill
+// first); then the materials and the charges and credits added on the job
+function billBody(j){
+  var rows=clockRows(j),ex=(j.extras||[]).filter(function(e){return !rows||e.id!=='clock'});
+  return {it:!!rows,html:(rows?'<tr class="hd"><td colspan="2">Billed by the clock</td></tr>'+rows.map(billTr).join(''):'')+matRows(j)+ex.map(billTr).join('')};
+}
+// what the quote was for, in a few words: "10 hr, 2 movers"
+function quoteBasis(q){return [q.hours?(Math.round(num(q.hours)*100)/100)+' hr':'',q.crew?q.crew+' movers':'',q.kind==='mileage'&&q.miles?fmtMi(q.miles)+' mi':''].filter(Boolean).join(', ')}
 // work the bill out again; the job's status follows only when the bill really changed
 function rebill(j,why){var before=totalOf(j),c=applyClock(j,why);if(Math.abs(totalOf(j)-before)>=0.005)afterBillChange(j);return c}
 // a paid job whose bill went up owes again; a finished one the payments now cover is paid
@@ -1639,13 +1746,13 @@ function clockHtml(j,ro){
   var head=ro?'<p style="margin:10px 0 2px"><b>'+(mileage?'Mileage move':'Local move')+'</b></p>':'<h3 style="font-size:15px;margin:10px 0 2px">'+(mileage?'Mileage move':'Local move')+'</h3>';
   var kindTxt=q.flat?'Flat price: the bill is the quote (Final bill by the clock was off in Options when it was quoted).':mileage?'Billed per mile for the drive, plus loading and unloading time.':'Billed by the hour, the drive included. No mileage.';
   if(!c)return head+'<p class="hint" style="margin:0">'+kindTxt+'</p>';
-  if(!fin&&!j.clockAt&&(!j.startedAt||c.missing))return head+'<p class="hint" style="margin:0">'+kindTxt+' The final bill comes from the crew\u2019s times'+(mileage?' and the miles driven':'')+'.'+mvNote(j,false)+'</p>';
+  if(!fin&&!j.clockAt&&(!j.startedAt||c.missing))return head+'<p class="hint" style="margin:0">'+kindTxt+' The final bill comes from the crew\u2019s times'+(mileage?' and the miles driven':'')+'.'+mvNote(j,null)+'</p>';
   var body;
   if(c.missing)body=(mileage?'The crew didn\u2019t record loading and unloading times, so the bill is the quote.':'The job clock wasn\u2019t used, so the bill is the quote.')+(ed?' Enter the hours to bill by the clock.':'');
   else{
-    var pt=c.parts,how=c.setH?'Hours set by the office: '+fmtHrs(c.billed)+'.'
-      :mileage?'Loading '+fmtDur(pt.load)+' and unloading '+fmtDur(pt.unload)+': '+fmtDur(c.worked*36e5)+', billed '+fmtHrs(c.billed)+'.'
-      :'On the clock '+fmtDur(pt.span)+(pt.backSet?(pt.back?', plus '+fmtDur(pt.back)+' back to the shop':', no drive back added')+' (from '+esc(j.back.by||'the crew')+' at bill-out)':pt.back?', plus about '+fmtDur(pt.back)+' back to the shop':'')+': billed '+fmtHrs(c.billed)+'.';
+    var pt=c.parts,sw=segWords(c)?' ('+segWords(c)+')':'',how=c.setH?'Hours set by the office: '+fmtHrs(c.billed)+sw+'.'
+      :mileage?'Loading '+fmtDur(pt.load)+' and unloading '+fmtDur(pt.unload)+': '+fmtDur(c.worked*36e5)+', billed '+fmtHrs(c.billed)+sw+'.'
+      :'On the clock '+fmtDur(pt.span)+(pt.backSet?(pt.back?', plus '+fmtDur(pt.back)+' back to the shop':', no drive back added')+' (from '+esc(j.back.by||'the crew')+' at bill-out)':pt.back?', plus about '+fmtDur(pt.back)+' back to the shop':'')+': billed '+fmtHrs(c.billed)+sw+'.';
     var diff=Math.abs(c.adj)>=0.01?' ('+(c.adj>0?'+':'\u2212')+money(Math.abs(c.adj))+' on the quote)':', the same as the quote';
     var bill=money(c.total)+(c.capped?', held to the not-to-exceed price':'')+diff;
     body=how+(mileage?' '+fmtMi(c.miles)+' mi '+(c.setMi?'set by the office':c.driven?'driven, from the crew'+(backSplit(j,c)?' ('+(j.back.odoStart!=null&&j.back.odoEnd!=null?'odometer '+fmtMi(j.back.odoStart)+' to '+fmtMi(j.back.odoEnd)+', '+fmtMi(j.back.soFar)+' mi':fmtMi(j.back.soFar)+' mi so far')+', plus '+fmtMi(j.back.mi)+' mi back to the shop '+(BACK_HOW[j.back.src]||'typed in')+'; '+esc(j.back.by||'the crew')+' at bill-out)':''):'from the quote')+'.':'')+
@@ -1654,7 +1761,7 @@ function clockHtml(j,ro){
        :fin?' This job was closed at its quoted price. By the clock it would be '+bill+'.'
        :' Bill '+bill+'. It goes on the bill when the job is finished.');
   }
-  if(!c.missing&&!off)body+=mvNote(j,applied);
+  if(!c.missing&&!off)body+=mvNote(j,c);
   var over=fin?round2(paidOf(j)-totalOf(j)):0;
   if(over>0.004)body+=' The customer has paid '+money(over)+' more than the bill.';
   var mph=c.missing?'':String(c.billed),mip=mileage?fmtMi(c.missing?(j.milesDriven!=null&&j.milesDriven!==''?num(j.milesDriven):num(q.miles)):c.miles):'';
@@ -2378,7 +2485,9 @@ function renderSheet(){
   var crewChips=assignable().map(function(n){var on=j.assign.crew.indexOf(n)>=0;return '<button class="chip'+(on?' on':'')+'" data-act="sh:crew" data-n="'+esc(n)+'" aria-pressed="'+on+'">'+esc(n)+whoTag(n)+(on&&needsConfirm(j)&&isConfirmed(j,n)?' ✓':'')+'</button>'}).join('');
   // a clash opens the other job, to move one of them
   var clash=cf.map(function(c){return '<button class="note clashnote" data-act="job:open" data-id="'+c.other.id+'"><span>'+esc(c.what)+' is also on “'+esc(c.other.d.name||'another job')+'” at '+fmtTime(c.other.d.time)+'.</span><b>Open it ›</b></button>'}).join('');
-  var lines=q.lines.map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('')+matRows(j)+(j.extras||[]).map(function(e){return '<tr><td>'+esc(e.label)+'</td><td>'+(e.amt<0?'−':'')+money(Math.abs(e.amt))+'</td></tr>'}).join('')+'<tr class="total"><td>Total</td><td>'+money(totalOf(j))+'</td></tr>';
+  // the quote's lines; billed by the clock, the quote, then the bill's rows (the hours by the movers on the bill)
+  var bb=billBody(j);
+  var lines=q.lines.map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('')+(bb.it?'<tr class="sub"><td>Quote</td><td>'+money(q.total)+'</td></tr>':'')+bb.html+'<tr class="total"><td>'+(bb.it?'Bill':'Total')+'</td><td>'+money(totalOf(j))+'</td></tr>';
   var items=j.items.map(function(i){return esc(i.name)+' × '+i.qty}).join(', ')||'No items yet';
   var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+' · '+esc(/^\d{4}-\d\d-\d\d$/.test(p.date||'')?fmtDate(p.date):p.date||'')+(p.pending?' · pending':'')+'</td><td>'+money(p.amt)+'</td></tr>'}).join('')||'<tr><td><small>No payments yet.</small></td><td></td></tr>';
   var photos=j.photos.map(function(p){return '<figure>'+(p.data?'<img src="'+p.data+'" alt="'+esc(p.kind)+' photo">':'<div class="phold">Loading photo</div>')+'<figcaption>'+esc(p.kind)+' · '+fmtStamp(p.ts)+'<br><button class="btn sm ghost" data-act="sh:rmphoto" data-pid="'+p.id+'">Remove</button></figcaption></figure>'}).join('');
@@ -2844,14 +2953,13 @@ function rqNotice(){
 /* ---------- Movers joining or leaving on site (Richie, Oct 21) ----------
    "If a mover has to be added to the job we need a way for the lead to add the guy when he shows up. So the
    bill starts with 2 movers for 2 hours and then the last 3 hours with 4 movers."
-   The bill by the clock is worked out for the crew on the quote, as before (q.crew at q.rate, held to the
-   not-to-exceed price). A change on site, j.crewAdj ({id, ts: when it took effect, d: +1 joined or −1 left,
-   who, by, at: when it was put in, added: put on the job's crew by it}), makes the movers on the bill the
-   quote's crew plus the changes so far, and every stretch of the work with a different crew is its own line
-   on the bill at that crew's rate, by the minute: "4 movers from 10:15 AM, 3h 05m at $250/hr instead of
-   $140/hr". Those lines aren't held to the not-to-exceed price: the customer was quoted for the quote's crew,
-   and a mover more is extra, like stairs or parking. A crew size's rate is the quote's rate plus the Rate
-   card's difference between the two crew sizes (kept on the job at the first change, j.crewRates, so the
+   A change on site, j.crewAdj ({id, ts: when it took effect, d: +1 joined or −1 left, who, by, at: when it was
+   put in, added: put on the job's crew by it}), makes the movers on the bill the quote's crew plus the changes
+   so far. The bill by the clock charges each stretch at that crew's rate, one row each (clockBill, billHours):
+   "2 movers, 1.5 hr at $140/hr", then "3 movers, 1.5 hr at $195/hr" with the minimum filled in at the end. The
+   not-to-exceed price stays the quote's crew's: the time with more movers is on top of it (the customer was
+   quoted for the quote's crew, and a mover more is extra). A crew size's rate is the quote's rate plus the
+   Rate card's difference between the two crew sizes (kept on the job at the first change, j.crewRates, so the
    bill doesn't move when the Rate card does); past 4 movers each one adds what the 4th does. */
 function mvOn(){return opt('crewAdd')}
 function mvLeadOk(j,me){return state.ui.role==='lead'&&isLead(me)&&j.assign.crew.indexOf(me)>=0}
@@ -2867,38 +2975,7 @@ function crewAdjs(j){return (j.crewAdj||[]).filter(function(e){return e&&(e.d===
 function billCrewAt(j,t){var n=num((j.quote||{}).crew)||2;crewAdjs(j).forEach(function(e){if(e.ts<=t)n+=e.d});return Math.max(1,n)}
 // does this job's bill follow crew changes? (by the clock, not a flat price)
 function mvBills(j){var q=j.quote||{};return (q.kind==='local'||q.kind==='mileage')&&!q.flat&&num(q.rate)>0&&num(q.crew)>0}
-// the stretches of the work with a crew other than the quote's: [{n, from, to, ms}]
-function mvStretches(j,upTo){
-  var q=j.quote||{},A=crewAdjs(j);if(!A.length||!mvBills(j))return [];
-  var p=j.phases||{},wins=[];
-  if(q.kind==='mileage'){
-    if(p.loadStart)wins.push([p.loadStart,p.loadEnd||upTo||0]);
-    if(p.unloadStart)wins.push([p.unloadStart,p.unloadEnd||upTo||0]);
-  }else{
-    var start=q.shopTravel?(j.startedAt||p.loadStart):(p.loadStart||j.startedAt),end=p.unloadEnd||j.finishedAt||upTo||0;
-    if(start)wins.push([start,end]);
-  }
-  var base=num(q.crew),out=[];
-  wins.forEach(function(w){
-    if(!(w[1]>w[0]))return;
-    var cuts=[w[0]].concat(A.map(function(e){return e.ts}).filter(function(t){return t>w[0]&&t<w[1]})).concat([w[1]]);
-    for(var i=0;i<cuts.length-1;i++){
-      var a=cuts[i],b=cuts[i+1];if(b<=a)continue;
-      var n=billCrewAt(j,a);if(n===base)continue;
-      var last=out[out.length-1];
-      if(last&&last.n===n&&last.to===a){last.to=b;last.ms+=b-a}else out.push({n:n,from:a,to:b,ms:b-a});
-    }
-  });
-  return out;
-}
-// the bill's lines for them (ids crew:0, crew:1…), tax included as on the rest of the bill
-function mvLines(j,upTo){
-  var q=j.quote||{},tax=num(q.taxPct);
-  return mvStretches(j,upTo).map(function(s,i){
-    var r=mvRate(j,s.n),amt=Math.round((r-num(q.rate))*s.ms/36e5);amt+=Math.round(amt*tax/100);
-    return {id:'crew:'+i,label:s.n+' mover'+(s.n===1?'':'s')+' from '+fmtClock(s.from)+', '+fmtDur(s.ms)+' at '+money(r)+'/hr instead of '+money(q.rate)+'/hr',amt:amt};
-  }).filter(function(l){return Math.abs(l.amt)>=0.01});
-}
+// a bill line from the version before, which put each stretch with another crew on a line of its own
 function isCrewLine(e){return !!e&&/^crew:\d+$/.test(String(e.id||''))}
 // "2 (as quoted) · 4 from 10:15 AM"
 function mvSummary(j){
@@ -2969,7 +3046,7 @@ function renderMover(){
   var at=j.status==='active'?'From '+fmtClock(ts):'From the start';
   var what=!mvBills(j)?(q.flat?'Flat price: the bill stays at the quote.':'This job’s bill stays at its quote.')
     :at+': '+n1+' mover'+(n1===1?'':'s')+' on the bill at '+money(mvRate(j,n1))+'/hr'+(n1===num(q.crew)?', as quoted.':' (the quote is '+money(q.rate)+'/hr for '+num(q.crew)+').')+
-      (n1>num(q.crew)&&!(n0>num(q.crew))?' The time with more movers goes on the bill on top of the quote and its not-to-exceed price, so let '+esc(j.d.name||'the customer')+' know.':'');
+      (n1>num(q.crew)&&!(n0>num(q.crew))?' The time with more movers is billed at their rate, even past the not-to-exceed price, so let '+esc(j.d.name||'the customer')+' know.':'');
   var list=A.length?'<div class="mv-list"><h4>Changes on this job</h4>'+A.map(function(e){
       return '<div class="who"><span>'+esc(e.who)+(e.d>0?' joined ':' left ')+esc(mvWhen(j,e))+'<br><small>Put in by '+esc(e.by||'the crew')+(mvBills(j)?' · '+billCrewAt(j,e.ts)+' on the bill after':'')+'</small></span>'+
         (mvCanUndo(j,m.who)?'<button class="btn sm ghost" data-act="mv:undo" data-e="'+e.id+'" aria-label="Take back '+esc(e.who)+(e.d>0?' joining':' leaving')+'">Take back</button>':'')+'</div>'}).join('')+'</div>':'';
@@ -2993,10 +3070,16 @@ function mvPayHours(j,who){
   var h=Math.round(Math.max(0,to-from)/36e5*10)/10;
   return {h:h,paid:Math.round(Math.max(h,jobMinPaid(j))*10)/10};
 }
-// crew changes in words, for the bill's explanation (the job sheet, the lead's Quote part)
-function mvNote(j,applied){
-  var L=mvLines(j,j.status==='active'?Date.now():0);if(!L.length)return '';
-  return ' Crew changes'+(applied?' on the bill':' so far')+': '+L.map(function(l){return l.label+' ('+(l.amt<0?'−':'+')+money(Math.abs(l.amt))+')'}).join('; ')+(applied?'':', on top of the bill')+'.';
+// the movers on the bill in words, for the bill's explanation (the job sheet, the lead's Quote part): who's on
+// it so far, before the bill; on the bill, each crew's rate (the hours of each are in the words before it)
+function mvNote(j,c){
+  if(!crewAdjs(j).length||!mvBills(j))return '';
+  var q=j.quote||{},base=num(q.crew)||2,segs=((c&&!c.missing&&c.segs)||[]).filter(function(s){return s.h>1e-9});
+  if(!segs.length)return ' Movers on the bill so far: '+esc(mvSummary(j))+'. Each crew is billed at its own rate.';
+  var mv=function(n){return n+' mover'+(n===1?'':'s')};
+  if(segs.length===1)return segs[0].n===base?'':' Billed for '+mv(segs[0].n)+' at '+money(segs[0].rate)+'/hr; the quote is for '+base+' at '+money(q.rate)+'/hr.';
+  var seen={};
+  return ' Each crew at its own rate: '+segs.filter(function(s){if(seen[s.n])return false;seen[s.n]=1;return true}).map(function(s){return mv(s.n)+' '+money(s.rate)+'/hr'}).join(', ')+'.';
 }
 
 function crewKit(me){
@@ -3004,7 +3087,7 @@ function crewKit(me){
   var asLead=role==='owner'||role==='dispatch'||(role==='lead'&&isLead(me));
   function billPanel(j){
     var bal=balOf(j),pend=formsPending(j),req=formsRequired(),coll=canCollect(),closed=j.status==='paid';
-    var extras=(j.extras||[]).map(function(e){return '<tr><td>'+esc(e.label)+'</td><td>'+(e.amt<0?'−':'')+money(Math.abs(e.amt))+'</td></tr>'}).join('');
+    var bb=billBody(j);
     var bq=j.quote||{},bk=backApplies(j)?'<p class="hint" style="margin:8px 0 0">'+(j.back?(bq.kind==='mileage'?'Miles: '+fmtMi(num(j.back.soFar))+(j.back.odoEnd!=null?' on the odometer':' so far')+' + '+fmtMi(num(j.back.mi))+' back to the shop '+(BACK_HOW[j.back.src]||'typed in'):'Drive back to the shop: '+(num(j.back.mins)>0?fmtDur(num(j.back.mins)*60000):'none'))+' ('+esc(j.back.by||'')+') <button class="btn sm ghost" data-act="back:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Change</button>'
       :(bq.kind==='mileage'?'The miles back to the shop go':'The drive back to the shop goes')+' on the bill when you bill out.')+'</p>':'';
     var charge=canCharge()&&!closed?'<div class="grid2 stack" style="margin-top:8px">'+fld('Add a charge or credit','<input id="ce_l_'+j.id+'" placeholder="Stairs, parking, damage credit">','span2')+fld('Amount','<input id="ce_a_'+j.id+'" data-money="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0.00">')+fld('Type','<select id="ce_t_'+j.id+'"><option value="charge">Charge</option><option value="credit">Credit</option></select>')+'</div><button class="btn" style="margin-top:6px" data-act="cr:charge" data-id="'+j.id+'">Add to bill</button>':'';
@@ -3012,12 +3095,13 @@ function crewKit(me){
       :coll?'<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">'+(pend.length?'Sign forms and collect payment':'Collect payment')+'</button>'
       :pend.length?'<button class="btn primary big" data-act="flow:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Get signatures</button>'
       :'<p class="hint">The office collects the payment.</p>';
-    // the quote, then everything that changed it, then the bill: so the lead can explain the difference
-    var diff=round2(totalOf(j)-num(j.quote.total));
-    return '<div><table class="lines"><tr><td>Quote</td><td>'+money(j.quote.total)+'</td></tr>'+matRows(j)+extras+
-      '<tr class="sub"><td>Bill <small>('+(Math.abs(diff)>=0.01?(diff>0?'+':'−')+money(Math.abs(diff))+' on the quote':'the same as the quote')+')</small></td><td>'+money(totalOf(j))+'</td></tr><tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+bk+charge+
+    // the quote, then what the bill is made of (billed by the clock: the hours by the movers on the bill) or what
+    // changed it, then the bill: so the lead can explain the difference
+    var diff=round2(totalOf(j)-num(j.quote.total)),basis=bb.it?quoteBasis(bq):'';
+    return '<div><table class="lines"><tr'+(bb.it?' class="ref"':'')+'><td>Quote'+(basis?' <small>('+esc(basis)+')</small>':'')+'</td><td>'+money(j.quote.total)+'</td></tr>'+bb.html+
+      '<tr class="sub"><td>Bill'+(bb.it?'':' <small>('+(Math.abs(diff)>=0.01?(diff>0?'+':'−')+money(Math.abs(diff))+' on the quote':'the same as the quote')+')</small>')+'</td><td>'+money(totalOf(j))+'</td></tr><tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+bk+charge+
       (req.length?'<p class="hint">Forms signed: '+(req.length-pend.length)+' of '+req.length+'</p>':'')+
-      (savedOf(j)?'<p class="hint money-paid saved" style="margin:6px 0 0">The customer saved '+money(savedOf(j))+' off the quote.</p>':'')+
+      (savedOf(j)?'<p class="hint money-paid saved" style="margin:6px 0 0">The customer saved '+money(savedOf(j))+' off the quote.</p>':bb.it&&diff>=0.01?'<p class="hint" style="margin:6px 0 0">'+money(diff)+' more than the quote.</p>':'')+
       (bal>0?'<p class="hint money-due" style="margin:6px 0 0">'+money(bal)+' still to collect</p>':'<p class="hint money-paid" style="margin:6px 0 0">Paid in full</p>')+act+'</div>';
   }
   // The quote and what made it up, always on a lead's card (Richie, Oct 21: "the lead should always be able
@@ -4299,7 +4383,7 @@ function pullJobs(snap){
   state.jobs=Object.keys(byId).map(function(k){return byId[k]});
   // a bill line worked out on another phone from older numbers (two phones changed the job at once):
   // work it out again here, so the bill matches the job. Lines from another version of Tally are left.
-  Object.keys(remote).forEach(function(id){var cj=byId[id];if(cj&&cj.clockAt&&typeof cj.clockSig==='string'&&cj.clockSig.indexOf(CLOCK_V+':')===0&&cj.clockSig!==clockSig(cj)){rebill(cj,'worked out again');changed=true}});
+  Object.keys(remote).forEach(function(id){var cj=byId[id];if(clockStale(cj)){rebill(cj,'worked out again');changed=true}});
   sync.got.jobs=true;
   jobMsgNotice();noteNotice();onJobNotice(false);rqNotice();
   state.jobs.forEach(function(j){(j.photos||[]).forEach(function(p){if(!p.data)fetchPhoto(p.id,0)})});
@@ -6264,11 +6348,11 @@ function backSoFar(fb){
 }
 // the bill with the numbers on the drive-back step, without touching the job
 function backTry(j,fb){
-  var q=j.quote||{},t={quote:q,phases:j.phases,startedAt:j.startedAt,finishedAt:j.finishedAt,clockFix:j.clockFix,milesDriven:j.milesDriven};
+  var q=j.quote||{},t={quote:q,phases:j.phases,startedAt:j.startedAt,finishedAt:j.finishedAt,clockFix:j.clockFix,milesDriven:j.milesDriven,crewAdj:j.crewAdj,crewRates:j.crewRates};
   if(q.kind==='mileage'){var so=backSoFar(fb);if(so==null)return null;t.back={mins:null,mi:num(fb.mi),soFar:so};t.milesDriven=Math.round((so+num(fb.mi))*10)/10}
   else t.back={mins:Math.max(0,num(fb.mins)),mi:null,soFar:null};
   var c=clockBill(t);if(!c||c.missing)return null;
-  var other=(j.extras||[]).filter(function(e){return e.id!=='clock'}).reduce(function(a,e){return a+e.amt},0);
+  var other=(j.extras||[]).filter(function(e){return e.id!=='clock'&&!isCrewLine(e)}).reduce(function(a,e){return a+e.amt},0);
   return {c:c,total:round2(q.total+other+(Math.abs(c.adj)>=0.01?c.adj:0)+matTotal(j))};
 }
 function backBill(j,fb){
@@ -6282,6 +6366,8 @@ function backBill(j,fb){
       '<tr><td>Loading and unloading</td><td>'+fmtDur(c.worked*36e5)+'</td></tr><tr><td>Billed hours</td><td>'+fmtHrs(c.billed)+'</td></tr>'}
   else rows='<tr><td>On the job<br><small>'+(j.startedAt?'Left the shop '+fmtClock(j.startedAt)+' · ':'')+'done unloading '+fmtClock(p.unloadEnd||j.finishedAt)+'</small></td><td>'+fmtDur(pt.span)+'</td></tr>'+
     '<tr><td>Drive back to the shop</td><td>'+(pt.back>0?fmtDur(pt.back):'None')+'</td></tr><tr><td>Billed hours'+(c.billed>c.worked+0.25-1e-6?' <small>(the '+fmtHrs(num(q.minHours))+' minimum)</small>':'')+'</td><td>'+fmtHrs(c.billed)+'</td></tr>';
+  // the crew changed during the job: the hours of each crew, at its rate
+  if(segWords(c))rows+=c.rows.filter(function(x){return x.k==='hours'}).map(billTr).join('');
   var diff=round2(r.total-totalOf(j));
   return '<table class="lines">'+rows+'<tr class="total"><td>Bill</td><td>'+money(r.total)+'</td></tr></table>'+
     '<p class="hint">'+(c.capped?'Held to the not-to-exceed price of '+money(q.nte)+'. ':'')+'The quote was '+money(q.total)+'.'+(Math.abs(diff)>=0.01&&(j.clockAt||j.status==='done')?' This changes the bill by '+(diff>0?'+':'−')+money(Math.abs(diff))+'.':'')+'</p>';
@@ -7045,9 +7131,12 @@ else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency te
     if(!(j.log||[]).some(function(l){return l.ev==='Sample job'})||!j.assign.truckId||j.d.name==='Nadia Farouk'||(j.assign.drivers&&Object.keys(j.assign.drivers).length))return;
     var dv=j.assign.crew.filter(function(n){return S.drivers.indexOf(n)>=0})[0];if(dv){j.assign.drivers={};j.assign.drivers[j.assign.truckId]=dv}})}
 })();
+// a phone with no shared copy: a bill from the version before, with the crew changes on lines of their own, is
+// worked out again by the movers on the bill (a shared copy does it when the jobs come in)
+(function migrate11(){if(window.claude&&typeof window.claude.use==='function')return;var n=0;state.jobs.forEach(function(j){if(crewAdjs(j).length&&clockStale(j)){rebill(j,'worked out again');n++}});if(n)save()})();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,mvLines:mvLines,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock};
 })();
 </script>
 </body>

@@ -116,7 +116,7 @@ const H = 36e5;
   ok(J.log.some((l) => l.ev === 'Billed by the clock: 7 h, 120 mi, $1,205'), L('history says what was billed'));
   // the crew's bill panel
   const card = $$('.crewcard').find((c) => c.querySelector('[data-mdrive="' + J.id + '"]'));
-  ok(card && /By the clock: 7h 0m loading and unloading, billed 7 h, 120 mi driven \(quoted 6\.5 h, 110 mi\)\$85/.test(card.textContent) && /Balance\$1,205/.test(card.textContent), L('the bill out panel shows the line and a $1,205 balance'));
+  ok(card && /Quote \(6\.5 hr, 2 movers, 110 mi\)\$1,120Billed by the clock2 movers, 7 hr loading and unloading at \$140\/hrLoading and unloading 7h 0m\$980Mileage: 120 mi driven at \$1\.50\/mi\$180Truck and fuel\$45Bill\$1,205/.test(card.textContent) && /Balance\$1,205/.test(card.textContent), L('the bill out panel: the quote, then the bill by the clock (7 hr, 120 mi, the truck) and a $1,205 balance'));
   // the lead fixes the miles after finishing: the bill follows
   type('[data-mdrive="' + J.id + '"]', '130', true); await sleep(10);
   ok(J.milesDriven === 130 && Math.abs(J.extras.find((e) => e.id === 'clock').amt - 100) < 0.01 && /Bill updated: \$1,220\./.test(toastTxt()), L('130 mi after finishing: bill $1,220: ' + toastTxt()));

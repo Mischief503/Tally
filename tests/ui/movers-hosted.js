@@ -46,10 +46,27 @@ function seed(extra) {
   const B = await load(FILE, { db: db2, org: ORG, me: { uid: 'u-owner', email: 'o@x' }, fnReply: () => ({ ok: true, sent: 0 }) });
   await sleep(800);
   const r2 = db2.docs.find((d) => d.path === 'jobs/n1').data, ex = r2.extras || {};
-  ok(ex['crew:0'] && ex['crew:0'].amt === 330 && /^4 movers from \d+:\d\d [AP]M, 3h 0m at \$250\/hr instead of \$140\/hr$/.test(ex['crew:0'].label) && ex.clock && ex.clock.amt === 80, 'the office’s phone works the bill out again: the crew line +$330 next to the clock’s +$80');
-  ok(typeof r2.clockSig === 'string' && /\|m:\d+\+,\d+\+\/140,195,250$/.test(r2.clockSig), 'and saves the bill’s new signature, with the changes in it');
+  const rr = (ex.clock && ex.clock.rows) || [];
+  ok(!ex['crew:0'] && ex.clock && ex.clock.amt === 410 && rr.length === 5 && rr[0].label === '2 movers, 2 hr at $140/hr' && rr[0].amt === 280 && rr[1].label === '4 movers, 3 hr at $250/hr' && rr[1].amt === 750 && rr[4].amt === -200, 'the office’s phone works the bill out again: one line (+$410), with its rows: 2 movers 2 hr, then 4 movers 3 hr, held to $595 for the quote’s crew');
+  ok(typeof r2.clockSig === 'string' && /^c2:.*\|n:2\|m:\d+\+,\d+\+\/140,195,250$/.test(r2.clockSig), 'and saves the bill’s new signature, with the changes in it');
   B.T.ui.jobId = 'n1'; B.T.render(); await sleep(15);
-  ok(/Movers on the bill: 2 \(as quoted\) · 4 from/.test(B.$('#sheet .sheet-body').textContent) && /Total\$925/.test(B.$('#sheet .sheet-body').textContent.replace(/\s+/g, '')), 'its sheet: the movers line and the $925 total');
+  ok(/Movers on the bill: 2 \(as quoted\) · 4 from/.test(B.$('#sheet .sheet-body').textContent) && /Billedbytheclock2movers,2hrat\$140\/hr.*\$2804movers,3hrat\$250\/hr.*\$750.*Bill\$925/.test(B.$('#sheet .sheet-body').textContent.replace(/\s+/g, '')), 'its sheet: the movers line, the hours of each crew and the $925 bill');
+  // a phone on the version before writes the line again without rows: the rows left in the shared copy don't add up, so they don't show
+  const oldLine = { id: 'clock', label: 'By the clock: 5h 0m on the job, billed 5 h (quoted 3 h), held to the not-to-exceed price', amt: 80, ts: now };
+  const merged = JSON.parse(JSON.stringify(r2)); merged.extras.clock = Object.assign({}, r2.extras.clock, oldLine); merged.clockSig = 'c1:from-the-version-before';
+  ok(Array.isArray(merged.extras.clock.rows) && B.T.clockRows(B.T.docToJob(merged)) === null, 'a line from the version before keeps the old rows in the shared copy (a patch merges), but they don’t add up to it, so they don’t show');
+  merged.extras['crew:0'] = { id: 'crew:0', label: '4 movers from 9:00 AM, 3h 0m at $250/hr instead of $140/hr', amt: 330, ts: now };
+  ok(B.T.clockRows(B.T.docToJob(merged)) === null && B.T.clockStale(B.T.docToJob(merged)), 'and with its crew line, the bill is worked out again when it comes in');
   ok(B.errors.length === 0, 'hosted office: no errors (' + B.errors.slice(0, 3).join(' | ') + ')');
+
+  /* ---------------- a bill from before the rows, worked out again to the same line: it gets its rows ---------------- */
+  // (the job's records are frozen copies of the shared one, so the line is replaced, not changed)
+  const db3 = seed({ status: 'done', finishedAt: now, actualHours: 5, phases: { loadStart: t0, unloadEnd: now }, clockAt: now, clockSig: 'c1:two-phones-at-once',
+    extras: { clock: { id: 'clock', label: 'By the clock: 5h 0m on the job, billed 5 h (quoted 3 h), held to the not-to-exceed price', amt: 80, ts: now } } });
+  const C = await load(FILE, { db: db3, org: ORG, me: { uid: 'u-owner', email: 'o@x' }, fnReply: () => ({ ok: true, sent: 0 }) });
+  await sleep(800);
+  const r3 = db3.docs.find((d) => d.path === 'jobs/n1').data, c3 = r3.extras.clock || {};
+  ok(c3.amt === 80 && Array.isArray(c3.rows) && c3.rows.length === 4 && c3.rows[0].label === '2 movers, 5 hr at $140/hr' && c3.rows[3].amt === -200 && /^c1:/.test(r3.clockSig), 'the same $80 line, now with its rows (5 hr at $140/hr, the fees, held to $595), signed c1 as before');
+  ok(C.errors.length === 0, 'and no errors (' + C.errors.slice(0, 3).join(' | ') + ')');
   process.exit(summary('movers-hosted') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

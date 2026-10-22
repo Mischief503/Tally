@@ -128,12 +128,23 @@ async function moversJob(p, billed) {
     const T = window.__tally, st = T.state(), N = st.jobs.find((j) => j.d.name === 'Nadia Farouk'), H = 36e5, now = Date.now(), t0 = now - 5 * H, d = new Date();
     N.d.moveDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     Object.assign(N, { status: 'active', startedAt: t0, phases: { loadStart: t0 }, crewOn: { Marcus: [{ in: t0, out: 0 }], Kim: [{ in: t0, out: 0 }] } });
-    if (b) { T.mvAdd(N, 'Dee', 1, t0 + 2 * H, 'Marcus'); T.mvAdd(N, 'Luis', 1, t0 + 2 * H, 'Marcus'); Object.assign(N, { status: 'done', finishedAt: now, actualHours: 5 }); N.phases.unloadEnd = now; T.applyClock(N); }
+    if (b === 'third') {   // Richie's bill (Oct 21): 2 movers for 1h 31m, then a 3rd for 1h 09m, on a 3-hour minimum
+      const s0 = now - 160 * 6e4; Object.assign(N, { startedAt: s0, phases: { loadStart: s0 } });
+      T.mvAdd(N, 'Dee', 1, s0 + 91 * 6e4, 'Marcus'); Object.assign(N, { status: 'done', finishedAt: now, actualHours: 2.7 }); N.phases.unloadEnd = now; T.applyClock(N);
+    } else if (b) { T.mvAdd(N, 'Dee', 1, t0 + 2 * H, 'Marcus'); T.mvAdd(N, 'Luis', 1, t0 + 2 * H, 'Marcus'); Object.assign(N, { status: 'done', finishedAt: now, actualHours: 5 }); N.phases.unloadEnd = now; T.applyClock(N); }
     T.render(); return N.id;
-  }, !!billed);
+  }, billed || false);
+}
+// the lead's card of a finished job, opened, scrolled to its Bill
+async function leadBill(p, id) {
+  await pv(p, 'lead', 'Marcus');
+  await p.evaluate((jid) => { const d = document.querySelector(`#view details.hcard[data-job="${jid}"]`); if (d) d.open = true; }, id); await sleep(300);
+  await p.evaluate((jid) => { const c = document.querySelector(`#view [data-job="${jid}"]`), h = c && [...c.querySelectorAll('.cc-sec h4')].find((x) => x.textContent === 'Bill'); if (h) window.scrollTo(0, h.getBoundingClientRect().top + window.scrollY - 70); }, id); await sleep(200);
 }
 add('lead-movers', async (p) => { const id = await moversJob(p); await pv(p, 'lead', 'Marcus'); await tap(p, `#view [data-job="${id}"] .cc-movers [data-act="mv:open"]`, 500); await tap(p, '#mover [data-act="mv:pick"][data-n="Dee"]', 300); }, { overlay: '#mover' });
 add('lead-movers-left', async (p) => { const id = await moversJob(p, true); await pv(p, 'lead', 'Marcus'); await p.evaluate((jid) => { const d = document.querySelector(`#view details.hcard[data-job="${jid}"]`); if (d) d.open = true; }, id); await sleep(300); await tap(p, `#view [data-job="${id}"] .cc-movers [data-act="mv:open"]`, 500); }, { overlay: '#mover' });
+add('lead-movers-bill', async (p) => { const id = await moversJob(p, true); await leadBill(p, id); });
+add('lead-bill-third', async (p) => { const id = await moversJob(p, 'third'); await leadBill(p, id); });
 add('owner-movers-bill', async (p) => { const id = await moversJob(p, true); await tabTo(p, 'jobs'); await tap(p, `[data-act="job:open"][data-id="${id}"]`, 600); });
 add('lead-rq-rooms', async (p) => { await rqTo(p, 'items'); }, { overlay: '#rq' });
 add('lead-rq-review', async (p) => { await rqTo(p, 'review'); }, { overlay: '#rq' });
