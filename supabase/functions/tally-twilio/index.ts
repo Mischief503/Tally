@@ -577,7 +577,9 @@ async function startCall(org: string, me: J, jobId: string): Promise<J> {
   if (job.test) return { ok: false, message: "Test job: its phone numbers are made up, so nothing is sent." };
   const office = me.role === "owner" || me.role === "dispatch";
   const onJob = ((job.assign && job.assign.crew) || []).indexOf(me.staff) >= 0;
-  if (!office && !onJob) return { ok: false, message: "You can only call customers on your own jobs." };
+  // the call center calls customers on open quotes and on the schedule (what it can see)
+  const cc = me.role === "callcenter" && ["lead", "quoted", "booked", "active"].indexOf(job.status) >= 0;
+  if (!office && !onJob && !cc) return { ok: false, message: "You can only call customers on your own jobs." };
   const mine = e164(contacts(S)[me.staff]);
   if (!mine) return { ok: false, message: "Add your phone number in Setup first. The company line calls you, then connects you." };
   const cust = e164(job.d && job.d.phone);
@@ -2585,7 +2587,8 @@ async function handleApp(req: Request): Promise<Response> {
       return json({ ok: true, number: l ? l.phone_number : "", twilio: !!(env("TWILIO_ACCOUNT_SID") && env("TWILIO_AUTH_TOKEN")) });
     }
     if (b.action === "distance") {
-      if (!office) return json({ ok: false, message: "Only the owner and dispatch build quotes." }, 403);
+      // quotes: the office and the call center
+      if (!office && me.role !== "callcenter") return json({ ok: false, message: "Only the office and the call center build quotes." }, 403);
       return json(await driveDistance(b.from, b.to));
     }
     if (b.action === "shop_distance") {

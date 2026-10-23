@@ -82,7 +82,7 @@ const sent: any[] = [];
 const routesCalls: any[] = [];
 let twilioFail = "";
 let onSend: ((p: any) => Promise<void>) | null = null;   // runs once, as a text is being sent
-const USERS: Record<string, string> = { "tok-owner": "u-owner", "tok-dispatch": "u-dispatch", "tok-marcus": "u-marcus", "tok-kim": "u-kim", "tok-stranger": "u-stranger" };
+const USERS: Record<string, string> = { "tok-owner": "u-owner", "tok-dispatch": "u-dispatch", "tok-marcus": "u-marcus", "tok-kim": "u-kim", "tok-stranger": "u-stranger", "tok-jess": "u-jess" };
 (globalThis as any).fetch = async (input: string, init: any = {}) => {
   const u = new URL(input), method = (init.method || "GET").toUpperCase();
   const reply = (status: number, b: any) => new Response(b == null ? "" : JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
@@ -126,7 +126,7 @@ const tomorrow = new Date(Date.now() + 2 * 864e5).toISOString().slice(0, 10);
 const later = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10);
 const settings = {
   company: "Ace Moving — Austin",
-  contacts: { Owner: "512-555-0100", Dispatch: "(512) 555-0199", Marcus: "512-555-0101", Dee: "512.555.0102", Luis: "", Kim: "512-555-0106" },
+  contacts: { Owner: "512-555-0100", Dispatch: "(512) 555-0199", Marcus: "512-555-0101", Dee: "512.555.0102", Luis: "", Kim: "512-555-0106", Jess: "512-555-0107" },
   office: [{ name: "Owner", kind: "owner" }, { name: "Dispatch", kind: "dispatch" }],
   leads: ["Marcus"], trucks: [{ id: "t26", name: "Box 1 (26 ft)" }],
   forms: [{ id: "f1", title: "Delivery receipt", required: true }, { id: "f2", title: "Optional", required: false }],
@@ -150,6 +150,7 @@ DB.members.push(
   { org_id: ORG, user_id: "u-dispatch", role: "dispatch", staff: "Dispatch" },
   { org_id: ORG, user_id: "u-marcus", role: "lead", staff: "Marcus" },
   { org_id: ORG, user_id: "u-kim", role: "crew", staff: "Kim" },
+  { org_id: ORG, user_id: "u-jess", role: "callcenter", staff: "Jess" },
   { org_id: ORG2, user_id: "u-stranger", role: "owner", staff: "Zed" },
 );
 
@@ -314,6 +315,17 @@ putDoc(ORG, "org/settings", settings);
 for (let i = 0; i < 25; i++) DB.comm_log.push({ id: nextId++, org_id: ORG, channel: "call", purpose: "masked", staff: "Dispatch", created_at: new Date().toISOString() });
 r = await app("tok-dispatch", { action: "call", org: ORG, jobId: "j1" });
 ok(r.body.ok === false && /a lot of calls/.test(r.body.message), "runaway calling is capped per hour");
+
+// the call center (Oct 22): customers on open quotes and on the schedule, the jobs it can see
+putDoc(ORG, "jobs/q1", job("q1", { status: "quoted", assign: { truckId: "", crew: [] } }));
+putDoc(ORG, "jobs/d1", job("d1", { status: "done" }));
+n0 = sent.length;
+r = await app("tok-jess", { action: "call", org: ORG, jobId: "q1" });
+ok(r.body.ok && sent.length === n0 + 1 && sent[sent.length - 1].To === "+15125550107", "the call center calls a customer on an open quote through the company line");
+r = await app("tok-jess", { action: "call", org: ORG, jobId: "j1" });
+ok(r.body.ok, "and on a booked job");
+r = await app("tok-jess", { action: "call", org: ORG, jobId: "d1" });
+ok(r.body.ok === false && /your own jobs/.test(r.body.message), "but not on a finished job, which it can't see");
 
 twilioFail = "Unverified number";
 r = await app("tok-owner", { action: "call", org: ORG, jobId: "j1" });
@@ -495,6 +507,8 @@ ok(r.body.src === "google", "the answer says it came from Google, so the quote c
 ok(rc.h["X-Goog-FieldMask"] === "routes.distanceMeters,routes.duration" && rc.bd.travelMode === "DRIVE" && rc.bd.origin.address === "418 Oak St, Austin" && !rc.bd.routingPreference, "asks Google for driving distance only (the cheapest tier)");
 r = await app("tok-kim", { action: "distance", org: ORG, from: "a", to: "b" });
 ok(r.status === 403, "crew cannot use the lookup");
+r = await app("tok-jess", { action: "distance", org: ORG, from: "418 Oak St, Austin", to: "77 Ridge Rd, Round Rock" });
+ok(r.body.ok && r.body.miles === 22.4, "the call center looks up a quote's miles too");
 r = await app("tok-stranger", { action: "distance", org: ORG, from: "a", to: "b" });
 ok(r.status === 401, "outsiders cannot use your Google key");
 r = await app("tok-dispatch", { action: "distance", org: ORG, from: "418 Oak St", to: "nowhere special" });

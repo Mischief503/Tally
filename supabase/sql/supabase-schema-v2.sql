@@ -9,11 +9,16 @@
 --                    (jobs/…, shifts/…, vault/…, chat/…, locs/…, photos/…, formpages/…,
 --                    org/settings, meta/init)
 --
--- Roles: owner · dispatch · lead (crew lead) · crew. The rules live here, not just in the app.
---   owner     everything, and the only one who changes people, roles and company settings
---   dispatch  all jobs, schedule, payments, chat; not people or settings
---   lead      the jobs they are on, cards on file (to take payment), the crew's time clock
---   crew      the jobs they are on, their own time and location, chat, photos
+-- Roles: owner · dispatch · callcenter · lead (crew lead) · crew. The rules live here, not just in the app.
+--   owner       everything, and the only one who changes people, roles and company settings
+--   dispatch    all jobs, schedule, payments, chat; not people or settings
+--   callcenter  open quotes and leads (makes them, changes them, books them: booking is its last
+--               change), and the schedule as a copy without the money ('sched', kept by sched_sync);
+--               no discounts of its own, no payments
+--   lead        the jobs they are on, cards on file (to take payment), the crew's time clock
+--   crew        the jobs they are on, their own time and location, chat, photos
+-- The blocks between "-- @cc <name>" and "-- @cc end" are repeated, word for word, in
+-- supabase-callcenter.sql (the call center added to a database set up before it).
 
 create extension if not exists pgcrypto;
 
@@ -33,11 +38,15 @@ create table if not exists public.members (
   user_id  uuid not null references auth.users(id) on delete cascade,
   email    text not null default '',
   staff    text not null default '',
-  role     text not null default 'crew' check (role in ('owner','dispatch','lead','crew')),
+  role     text not null default 'crew' check (role in ('owner','dispatch','callcenter','lead','crew')),
   ts       bigint not null default (extract(epoch from now()) * 1000)::bigint,
   primary key (org_id, user_id)
 );
 create index if not exists members_user_idx on public.members(user_id);
+-- @cc members-role
+alter table public.members drop constraint if exists members_role_check;
+alter table public.members add constraint members_role_check check (role in ('owner','dispatch','callcenter','lead','crew'));
+-- @cc end
 
 create table if not exists public.access_requests (
   org_id   uuid not null references public.orgs(id) on delete cascade,
@@ -57,8 +66,13 @@ create table if not exists public.docs (
   updated_at  timestamptz not null default now(),
   primary key (org_id, path),
   check (path = collection || '/' || doc_id),
-  check (collection in ('org','meta','jobs','shifts','vault','chat','locs','photos','formpages'))
+  check (collection in ('org','meta','jobs','shifts','vault','chat','locs','photos','formpages','sched'))
 );
+-- @cc docs-collections
+alter table public.docs drop constraint if exists docs_collection_check;
+alter table public.docs add constraint docs_collection_check
+  check (collection in ('org','meta','jobs','shifts','vault','chat','locs','photos','formpages','sched'));
+-- @cc end
 create index if not exists docs_collection_idx on public.docs(org_id, collection);
 create index if not exists docs_move_date_idx on public.docs(org_id, ((data->'d'->>'moveDate'))) where collection = 'jobs';
 
@@ -84,6 +98,27 @@ create or replace function public.on_job(o uuid, job jsonb) returns boolean
 language sql stable security definer set search_path = public as $$
   select coalesce(public.staff_in(o) <> '' and (job->'assign'->'crew') ? public.staff_in(o), false)
 $$;
+-- @cc helpers
+-- Am I the call center here? A job it may read and change is an open quote or lead; what it saves is a
+-- quote, a booking or a lost quote, and a new one has no payment and no discount (the job guard keeps a
+-- discount the office gave, and the payments, as they were).
+create or replace function public.cc_in(o uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce(public.role_in(o) = 'callcenter', false)
+$$;
+create or replace function public.cc_open(d jsonb) returns boolean
+language sql immutable set search_path = public as $$
+  select coalesce(d->>'status', '') in ('lead','quoted')
+$$;
+create or replace function public.cc_clean(d jsonb, fresh boolean) returns boolean
+language sql immutable set search_path = public as $$
+  select coalesce(d->>'status', '') in ('lead','quoted','booked','lost')
+     and (not fresh or (coalesce(d->'payments', '{}'::jsonb) in ('{}'::jsonb, '[]'::jsonb)
+                        and coalesce(nullif(btrim(d->'d'->>'discount'), ''), '0') ~ '^0*(\.0*)?$'))
+$$;
+revoke all on function public.cc_in(uuid), public.cc_open(jsonb), public.cc_clean(jsonb, boolean) from public, anon;
+grant execute on function public.cc_in(uuid), public.cc_open(jsonb), public.cc_clean(jsonb, boolean) to authenticated;
+-- @cc end
 
 -- ---------- company actions the app calls ----------
 create or replace function public.new_join_code() returns text
@@ -202,6 +237,7 @@ drop policy if exists req_delete on public.access_requests;
 create policy req_delete on public.access_requests for delete to authenticated
   using (user_id = auth.uid() or public.role_in(org_id) = 'owner');
 
+-- @cc docs-rules
 -- docs: by collection.
 -- read
 drop policy if exists docs_read on public.docs;
@@ -210,17 +246,23 @@ create policy docs_read on public.docs for select to authenticated using (
     public.office_of(org_id)
     or collection in ('org','meta','chat','locs','photos','formpages')
     or (collection = 'jobs'   and public.on_job(org_id, data))
+    or (collection = 'jobs'   and public.cc_in(org_id) and public.cc_open(data))
+    or (collection = 'sched'  and public.cc_in(org_id))
     or (collection = 'vault'  and public.role_in(org_id) = 'lead')
     or (collection = 'shifts' and (public.role_in(org_id) = 'lead' or data->>'who' = public.staff_in(org_id)))
   ));
 
--- what a person may write, given the row as it would be saved
+-- what a person may write, given the row as it would be saved. 'sched' is the database's own, and
+-- the call center writes only through cc_save (supabase-payments.sql), which checks what it saves:
+-- a row rule couldn't let it book a quote, since a booked job is one it can't read.
 create or replace function public.can_write_doc(o uuid, col text, d jsonb) returns boolean
 language sql stable security definer set search_path = public as $$
   select case
     when not public.member_of(o) then false
     when col in ('org','meta')   then public.role_in(o) = 'owner'
+    when col = 'sched'           then false
     when public.office_of(o)     then true
+    when public.cc_in(o)         then false
     when col = 'jobs'            then public.on_job(o, d)
     when col = 'vault'           then public.role_in(o) = 'lead'
     when col = 'shifts'          then public.role_in(o) = 'lead' or d->>'who' = public.staff_in(o)
@@ -243,6 +285,7 @@ create policy docs_update on public.docs for update to authenticated
   using (public.can_write_doc(org_id, collection, data)
          or (collection = 'chat' and public.member_of(org_id) and data->>'from' = public.staff_in(org_id)))
   with check (public.can_write_doc(org_id, collection, data));
+-- @cc end
 
 -- delete: office anything (owner only for settings); people clear their own location and
 -- clock rows; anyone tidies photos and chat older than 60 days.
@@ -258,6 +301,63 @@ create policy docs_delete on public.docs for delete to authenticated using (
                                   and (data->>'ts')::numeric < extract(epoch from now() - interval '60 days') * 1000)
                                  or data->>'from' = public.staff_in(org_id)))
   ));
+
+-- @cc sched
+-- The schedule without the money, for the call center: every booked or in-progress job is copied to
+-- sched/<id> with the customer, the day and time, the addresses, the items, the crew size, the
+-- estimate and the trucks; never the price, the payments or the bill. Kept by a trigger on every
+-- save of a job (any role, or the server), and gone when the job is finished, lost or deleted.
+create or replace function public.sched_of(j jsonb) returns jsonb
+language sql immutable set search_path = public as $$
+  select jsonb_build_object(
+    'id', j->'id', 'status', j->'status', 'test', coalesce(j->'test', 'false'::jsonb),
+    'd', jsonb_build_object('name', j->'d'->'name', 'phone', j->'d'->'phone', 'email', j->'d'->'email',
+           'moveDate', j->'d'->'moveDate', 'time', j->'d'->'time', 'from', j->'d'->'from', 'to', j->'d'->'to',
+           'notes', j->'d'->'notes', 'flights', j->'d'->'flights', 'custom', j->'d'->'custom'),
+    'items', coalesce((select jsonb_agg(jsonb_build_object('id', i->'id', 'name', i->'name', 'qty', i->'qty'))
+                         from jsonb_array_elements(case when jsonb_typeof(j->'items') = 'array' then j->'items' else '[]'::jsonb end) i),
+                      '[]'::jsonb),
+    'quote', jsonb_build_object('crew', j->'quote'->'crew', 'hours', j->'quote'->'hours', 'kind', j->'quote'->'kind',
+           'driveH', j->'quote'->'driveH', 'nTrucks', j->'quote'->'nTrucks', 'truckId', j->'quote'->'truckId',
+           'truckName', j->'quote'->'truckName'),
+    'assign', jsonb_build_object('truckId', j->'assign'->'truckId', 'more', coalesce(j->'assign'->'more', '[]'::jsonb),
+           'crewN', case when jsonb_typeof(j->'assign'->'crew') = 'array' then jsonb_array_length(j->'assign'->'crew') else 0 end),
+    'startedAt', j->'startedAt')
+$$;
+create or replace function public.sched_sync() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'DELETE' then
+    delete from public.docs where org_id = old.org_id and path = 'sched/' || old.doc_id;
+    return old;
+  end if;
+  if coalesce(new.data->>'status', '') in ('booked','active') then
+    insert into public.docs(org_id, path, collection, doc_id, data, updated_at)
+    values (new.org_id, 'sched/' || new.doc_id, 'sched', new.doc_id, public.sched_of(new.data), now())
+    on conflict (org_id, path) do update set data = excluded.data, updated_at = excluded.updated_at
+      where public.docs.data is distinct from excluded.data;
+  else
+    delete from public.docs where org_id = new.org_id and path = 'sched/' || new.doc_id;
+  end if;
+  return new;
+end $$;
+revoke all on function public.sched_of(jsonb), public.sched_sync() from public, anon, authenticated;
+drop trigger if exists sched_sync on public.docs;
+create trigger sched_sync after insert or update on public.docs
+  for each row when (new.collection = 'jobs') execute function public.sched_sync();
+drop trigger if exists sched_gone on public.docs;
+create trigger sched_gone after delete on public.docs
+  for each row when (old.collection = 'jobs') execute function public.sched_sync();
+-- the copies for the jobs already there, and none for a job that's no longer on the schedule
+insert into public.docs(org_id, path, collection, doc_id, data, updated_at)
+select org_id, 'sched/' || doc_id, 'sched', doc_id, public.sched_of(data), now() from public.docs
+ where collection = 'jobs' and coalesce(data->>'status', '') in ('booked','active')
+on conflict (org_id, path) do update set data = excluded.data, updated_at = excluded.updated_at
+  where public.docs.data is distinct from excluded.data;
+delete from public.docs s where s.collection = 'sched' and not exists (
+  select 1 from public.docs j where j.org_id = s.org_id and j.path = 'jobs/' || s.doc_id
+     and coalesce(j.data->>'status', '') in ('booked','active'));
+-- @cc end
 
 -- ---------- grants ----------
 revoke all on public.orgs, public.members, public.access_requests, public.docs from anon;

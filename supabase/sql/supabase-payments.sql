@@ -21,7 +21,8 @@
 --                         through, so a changed name or phone can't point a job at someone else's card.
 -- pay_locks               one payment starting per job at a time (two phones can't both charge).
 -- pay_record(...)         adds, changes or removes one payment on a job document in one step.
--- jobs_guard              on every phone's save of a job: the quote stays the office's, and card
+-- jobs_guard              on every phone's save of a job: the quote stays the office's (and, on an
+--                         open quote, the call center's, without a discount of its own), and card
 --                         payments, refunds and disputes stay as the server wrote them.
 -- pay_reopen(...)         moves a Paid job back to Complete when money comes off it again (a bank
 --                         payment that bounced, a refund, a dispute), with a line in its history.
@@ -240,12 +241,24 @@ end $$;
 --   - a payment of zero or less, or one with no number for its amount, is never added.
 -- The change is kept as it was instead of refused, so a phone holding an old copy of a job still
 -- syncs everything else. The rules on docs still decide who may change a job at all.
+-- @cc jobs-guard
 create or replace function public.jobs_guard() returns trigger
 language plpgsql security invoker set search_path = public as $$
-declare k text; v jsonb; ov jsonb; pays jsonb; olds jsonb;
+declare k text; v jsonb; ov jsonb; pays jsonb; olds jsonb; cc boolean;
 begin
   if auth.uid() is null then return new; end if;   -- the server (service role) and the SQL editor
-  if not public.office_of(new.org_id) and (new.data -> 'quote') is distinct from (old.data -> 'quote') then
+  -- the call center prices an open quote (the row rules let it change nothing else), but gives no
+  -- discount of its own and never touches a payment
+  cc := public.cc_in(new.org_id) and public.cc_open(old.data);
+  if cc then
+    if coalesce(nullif(btrim(new.data->'d'->>'discount'), ''), '0') is distinct from coalesce(nullif(btrim(old.data->'d'->>'discount'), ''), '0') then
+      raise exception 'Only the office gives a discount';
+    end if;
+    if coalesce(new.data->'payments', '{}'::jsonb) is distinct from coalesce(old.data->'payments', '{}'::jsonb) then
+      raise exception 'The call center doesn''t take payments';
+    end if;
+  end if;
+  if not public.office_of(new.org_id) and not cc and (new.data -> 'quote') is distinct from (old.data -> 'quote') then
     new.data := case when old.data ? 'quote' then jsonb_set(new.data, '{quote}', old.data -> 'quote') else new.data - 'quote' end;
   end if;
   if not public.office_of(new.org_id) and (new.data -> 'quoteHist') is distinct from (old.data -> 'quoteHist') then
@@ -275,6 +288,37 @@ begin
 end $$;
 create or replace trigger jobs_guard before update on public.docs
   for each row when (new.collection = 'jobs') execute function public.jobs_guard();
+-- The call center saves jobs only through here (the app does it for them): a new quote or booking with
+-- no payment and no discount, or a change to an open quote: its price (the job guard keeps the office's
+-- discount and the payments as they were), booking it or marking it lost, each the last change it makes.
+-- 'ok'; 'missing' (a change to a job that isn't there); 'closed' (booked or closed meanwhile, so no
+-- longer the call center's).
+create or replace function public.cc_save(o uuid, p text, doc jsonb, patch jsonb) returns text
+language plpgsql volatile security definer set search_path = public as $$
+declare cur jsonb; nd jsonb;
+begin
+  if not public.cc_in(o) then raise exception 'Only the call center saves jobs this way'; end if;
+  if p is null or p !~ '^jobs/[A-Za-z0-9_-]{1,64}$' then raise exception 'The call center saves jobs only'; end if;
+  select data into cur from public.docs where org_id = o and path = p for update;
+  if found then
+    if not public.cc_open(cur) then return 'closed'; end if;
+    nd := case when patch is not null then public.jsonb_merge_patch(cur, patch) else doc end;
+    if nd is null or jsonb_typeof(nd) <> 'object' or not public.cc_clean(nd, false) then
+      raise exception 'The call center saves quotes, bookings and lost quotes';
+    end if;
+    update public.docs set data = nd, updated_at = now() where org_id = o and path = p;
+  else
+    if patch is not null then return 'missing'; end if;
+    if doc is null or jsonb_typeof(doc) <> 'object' or not public.cc_clean(doc, true) then
+      raise exception 'A new job from the call center is a quote or a booking, with no payment and no discount';
+    end if;
+    insert into public.docs(org_id, path, collection, doc_id, data, updated_at) values (o, p, 'jobs', substr(p, 6), doc, now());
+  end if;
+  return 'ok';
+end $$;
+revoke all on function public.cc_save(uuid, text, jsonb, jsonb) from public, anon;
+grant execute on function public.cc_save(uuid, text, jsonb, jsonb) to authenticated;
+-- @cc end
 
 grant execute on function public.jsonb_merge_patch(jsonb, jsonb), public.doc_patch(uuid, text, jsonb) to authenticated;
 grant all on public.pay_orgs, public.pay_customers, public.pay_links, public.pay_log, public.pay_config,

@@ -7,6 +7,26 @@ function deepFreeze(o) { if (o && typeof o === 'object' && !Object.isFrozen(o)) 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// the database's copy of the schedule without the money (sched_of), kept like the trigger sched_sync does
+function schedOf(j) {
+  const d = j.d || {}, q = j.quote || {}, a = j.assign || {}, pick = (o, ks) => { const r = {}; ks.forEach((k) => { r[k] = o[k] === undefined ? null : o[k]; }); return r; };
+  return { id: j.id === undefined ? null : j.id, status: j.status === undefined ? null : j.status, test: j.test === undefined ? false : j.test,
+    d: pick(d, ['name', 'phone', 'email', 'moveDate', 'time', 'from', 'to', 'notes', 'flights', 'custom']),
+    items: (Array.isArray(j.items) ? j.items : []).map((i) => pick(i, ['id', 'name', 'qty'])),
+    quote: pick(q, ['crew', 'hours', 'kind', 'driveH', 'nTrucks', 'truckId', 'truckName']),
+    assign: { truckId: a.truckId === undefined ? null : a.truckId, more: a.more || [], crewN: Array.isArray(a.crew) ? a.crew.length : 0 },
+    startedAt: j.startedAt === undefined ? null : j.startedAt };
+}
+function syncSched(db, row, fire) {
+  if (!db.__sched || !row || row.collection !== 'jobs') return;
+  const rows = db.docs, path = 'sched/' + row.doc_id, i = rows.findIndex((r) => r.org_id === row.org_id && r.path === path);
+  if (row.data && ['booked', 'active'].indexOf(row.data.status) >= 0) {
+    const s = { org_id: row.org_id, path, collection: 'sched', doc_id: row.doc_id, data: schedOf(row.data), updated_at: new Date().toISOString() };
+    if (i >= 0) rows[i] = s; else rows.push(s);
+    setTimeout(() => fire('docs', s), 6);
+  } else if (i >= 0) { const gone = rows.splice(i, 1)[0]; setTimeout(() => fire('docs', gone), 6); }
+}
+
 function makeSupabase(db, me, calls) {
   const listeners = [];
   function fire(table, row) { listeners.forEach((l) => { if (l.table === table) l.cb({ new: row, old: null }); }); }
@@ -33,6 +53,7 @@ function makeSupabase(db, me, calls) {
           if (op === 'select') {
             if (db.__failSelect && db.__failSelect(table, asked)) return Promise.resolve({ data: null, error: { message: 'network' } }).then(res, rej);
             let out = rows.filter((r) => filters.every((f) => f(r)));
+            if (table === 'docs' && db.__visible) out = out.filter(db.__visible);
             if (order) { const [c, desc] = order; out = out.slice().sort((a, b) => (val(a, c) < val(b, c) ? -1 : 1) * (desc ? -1 : 1)); }
             if (lim != null) out = out.slice(0, lim);
             out = deepFreeze(clone(out));
@@ -46,6 +67,7 @@ function makeSupabase(db, me, calls) {
             const row = clone(payload); if (i >= 0) rows[i] = row; else rows.push(row);
             calls.writes.push({ table, row });
             setTimeout(() => fire(table, row), 5);
+            if (table === 'docs') syncSched(db, row, fire);
             return Promise.resolve({ data: null, error: null }).then(res, rej);
           }
           if (op === 'insert') {
@@ -101,7 +123,36 @@ function makeSupabase(db, me, calls) {
         row.data = merge(clone(row.data), clone(args.patch)); row.updated_at = new Date().toISOString();
         calls.writes.push({ table: 'docs', op: 'patch', row: clone(row), patch: clone(args.patch) });
         setTimeout(() => fire('docs', row), 5);
+        syncSched(db, row, fire);
         return Promise.resolve({ data: true, error: null });
+      }
+      if (name === 'cc_save') {
+        // the call center's saves, checked like supabase-callcenter.sql's cc_save (and the job guard)
+        const rows = db.docs || (db.docs = []), open = (d) => d && (d.status === 'lead' || d.status === 'quoted');
+        const disc = (d) => { const v = String(((d || {}).d || {}).discount == null ? '' : d.d.discount).trim(); return v === '' ? '0' : v; };
+        const pays = (d) => JSON.stringify((d || {}).payments || {});
+        const err = (m) => Promise.resolve({ data: null, error: { message: m } });
+        if (db.__ccFail) return Promise.resolve({ data: null, error: { code: '08006', message: 'connection failure' } });
+        if (!/^jobs\/[A-Za-z0-9_-]{1,64}$/.test(args.p || '')) return err('The call center saves jobs only');
+        const row = rows.find((r) => r.org_id === args.o && r.path === args.p);
+        calls.writes.push({ table: 'docs', op: 'cc_save', path: args.p, doc: clone(args.doc), patch: clone(args.patch) });
+        if (row) {
+          if (!open(row.data)) return Promise.resolve({ data: 'closed', error: null });
+          const merge = (t, s) => { Object.keys(s).forEach((k) => { const v = s[k]; if (v && typeof v === 'object' && !Array.isArray(v) && t[k] && typeof t[k] === 'object' && !Array.isArray(t[k])) merge(t[k], v); else if (v === null) delete t[k]; else t[k] = v; }); return t; };
+          const nd = args.patch ? merge(clone(row.data), clone(args.patch)) : clone(args.doc);
+          if (['lead', 'quoted', 'booked', 'lost'].indexOf(nd.status) < 0) return err('The call center saves quotes, bookings and lost quotes');
+          if (disc(nd) !== disc(row.data)) return err('Only the office gives a discount');
+          if (pays(nd) !== pays(row.data)) return err("The call center doesn't take payments");
+          row.data = nd; row.updated_at = new Date().toISOString();
+          setTimeout(() => fire('docs', row), 5); syncSched(db, row, fire);
+          return Promise.resolve({ data: 'ok', error: null });
+        }
+        if (args.patch) return Promise.resolve({ data: 'missing', error: null });
+        const d = args.doc || {};
+        if (['lead', 'quoted', 'booked', 'lost'].indexOf(d.status) < 0 || pays(d) !== '{}' || !/^0*(\.0*)?$/.test(disc(d))) return err('A new job from the call center is a quote or a booking, with no payment and no discount');
+        const nr = { org_id: args.o, path: args.p, collection: 'jobs', doc_id: args.p.slice(5), data: clone(d), updated_at: new Date().toISOString() };
+        rows.push(nr); setTimeout(() => fire('docs', nr), 5); syncSched(db, nr, fire);
+        return Promise.resolve({ data: 'ok', error: null });
       }
       if (name === 'my_orgs') return Promise.resolve({ data: db.members.filter((m) => m.user_id === me.uid).map((m) => ({ id: m.org_id, name: 'Ace Moving', role: m.role, join_code: 'ABC123' })) });
       if (name === 'people') return Promise.resolve({ data: db.members.map((m) => ({ user_id: m.user_id, email: m.email })).concat((db.access_requests || []).map((r) => ({ user_id: r.user_id, email: r.email }))) });
@@ -183,4 +234,4 @@ let passes = 0, failures = 0;
 function ok(c, m) { if (c) { passes++; console.log('PASS', m); } else { failures++; console.log('FAIL', m); } }
 function summary(name) { console.log(`\n${name}: ${passes} passed, ${failures} failed`); return failures; }
 
-module.exports = { load, ok, sleep, summary, deepFreeze, clone };
+module.exports = { load, ok, sleep, summary, deepFreeze, clone, schedOf };

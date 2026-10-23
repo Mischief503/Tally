@@ -143,6 +143,11 @@ async function leadBill(p, id) {
 }
 add('lead-movers', async (p) => { const id = await moversJob(p); await pv(p, 'lead', 'Marcus'); await tap(p, `#view [data-job="${id}"] .cc-movers [data-act="mv:open"]`, 500); await tap(p, '#mover [data-act="mv:pick"][data-n="Dee"]', 300); }, { overlay: '#mover' });
 add('lead-movers-left', async (p) => { const id = await moversJob(p, true); await pv(p, 'lead', 'Marcus'); await p.evaluate((jid) => { const d = document.querySelector(`#view details.hcard[data-job="${jid}"]`); if (d) d.open = true; }, id); await sleep(300); await tap(p, `#view [data-job="${id}"] .cc-movers [data-act="mv:open"]`, 500); }, { overlay: '#mover' });
+// the call center (Oct 22): its schedule (a job opened), its open quotes, a new quote with the date's load
+add('cc-schedule', async (p) => { await pv(p, 'callcenter', 'Jess'); await p.evaluate(() => { const d = document.querySelector('#view details.schedcard'); if (d) d.open = true; }); await sleep(200); });
+add('cc-quotes', async (p) => { await pv(p, 'callcenter', 'Jess'); await tabTo(p, 'quotes'); });
+add('cc-newquote', async (p) => { await pv(p, 'callcenter', 'Jess'); await tap(p, '#fab', 400); await p.fill('[data-d="name"]', 'Dana Whit'); await p.fill('[data-d="moveDate"]', await p.evaluate(() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })); await sleep(200); });
+add('cc-price', async (p) => { await pv(p, 'callcenter', 'Jess'); await tabTo(p, 'quotes'); await tap(p, '#ccList [data-act="cc:open"]', 400); await tap(p, '[data-act="q:step"][data-s="3"]', 400); await p.evaluate(() => { const d = document.querySelector('[data-k="q:adj"]'); if (d) d.open = true; }); await sleep(150); });
 add('lead-movers-bill', async (p) => { const id = await moversJob(p, true); await leadBill(p, id); });
 add('lead-bill-third', async (p) => { const id = await moversJob(p, 'third'); await leadBill(p, id); });
 add('owner-movers-bill', async (p) => { const id = await moversJob(p, true); await tabTo(p, 'jobs'); await tap(p, `[data-act="job:open"][data-id="${id}"]`, 600); });

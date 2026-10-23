@@ -89,15 +89,19 @@ const SCREENS = {
   'owner job sheet, crew changes': async (p) => { await moversTo(p, true); await tap(p, '[data-act="pv:end"]', 250); await openJob(p, 'Nadia Farouk'); await p.evaluate(() => { const d = document.querySelector('#sheet details.acc[data-k="sh:Quote"]'); if (d) d.open = true; }); },
   // the lead's bill of that job: the quote, then the hours by the movers on the bill (Oct 21)
   'crew lead bill, crew changes': async (p) => { await moversTo(p, true); await p.evaluate(() => { document.querySelectorAll('#view details.hcard').forEach((d) => { d.open = true; }); }); },
+  // the call center (Oct 22): the schedule (a month, and the day's jobs, one opened), the open quotes, a new quote's date
+  'call center Schedule': async (p) => { await pv(p, 'callcenter', 'Jess'); await p.evaluate(() => { const d = document.querySelector('#view details.schedcard'); if (d) d.open = true; }); },
+  'call center Quotes': async (p) => { await pv(p, 'callcenter', 'Jess'); await tabTo(p, 'quotes'); },
+  'call center new quote, the move date': async (p) => { await pv(p, 'callcenter', 'Jess'); await tap(p, '#fab', 250); await p.fill('[data-d="moveDate"]', await p.evaluate(() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })); await sleep(150); },
   'crew Jobs': async (p) => { await pv(p, 'crew', 'Dee'); },
   'crew History': async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '[data-act="cr:view"][data-v="history"]', 200); },
   'crew More': async (p) => { await pv(p, 'crew', 'Dee'); await tap(p, '[data-act="more:open"]', 250); },
   'crew Chat': async (p) => { await pv(p, 'crew', 'Dee'); await tabTo(p, 'chat'); },
 };
 // the smallest phones (320 wide), a tablet held upright, and a phone turned sideways
-const SMALL = ['crew lead bill, crew changes', 'owner Today', 'owner Jobs', 'owner Reports', 'owner Setup › Inventory catalog', 'owner new quote, price', 'owner job sheet, booked', 'owner job sheet, finished', 'crew lead Jobs, all clocked in', 'crew lead Jobs, job running', 'crew Jobs', 'crew lead new quote, rooms', 'crew lead new quote, check it', 'crew lead new quote, signature', 'owner job sheet, new quote to approve', 'crew lead movers panel', 'owner job sheet, crew changes'];
+const SMALL = ['call center Schedule', 'call center Quotes', 'crew lead bill, crew changes', 'owner Today', 'owner Jobs', 'owner Reports', 'owner Setup › Inventory catalog', 'owner new quote, price', 'owner job sheet, booked', 'owner job sheet, finished', 'crew lead Jobs, all clocked in', 'crew lead Jobs, job running', 'crew Jobs', 'crew lead new quote, rooms', 'crew lead new quote, check it', 'crew lead new quote, signature', 'owner job sheet, new quote to approve', 'crew lead movers panel', 'owner job sheet, crew changes'];
 const TABLET = ['owner Today', 'owner Reports', 'owner job sheet, booked', 'crew lead Jobs, job running'];
-const SIDEWAYS = ['owner Today', 'owner job sheet, booked', 'owner new quote, price', 'crew lead Jobs, all clocked in', 'crew Jobs', 'crew lead new quote, rooms'];
+const SIDEWAYS = ['call center Schedule', 'owner Today', 'owner job sheet, booked', 'owner new quote, price', 'crew lead Jobs, all clocked in', 'crew Jobs', 'crew lead new quote, rooms'];
 const NARROW = ['owner Today', 'owner Jobs', 'owner Setup › Fleet', 'owner Setup › Custom job fields', 'owner Setup › Inventory catalog', 'owner Setup › Rate card', 'owner new quote, price', 'owner job sheet, booked', 'crew lead Jobs, all clocked in', 'crew Jobs'];
 
 /* ---------- the checks, in the page (shared with layout-hosted.js) ---------- */

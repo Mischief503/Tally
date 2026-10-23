@@ -190,6 +190,26 @@ details.acc.card .acc-body{padding-bottom:14px}
 .lines tr.sub small{font-weight:400}
 .lines tr.hd td{padding:12px 0 4px;font:600 11.5px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);text-align:left;white-space:normal}
 .lines tr.ref td{border-bottom:0}
+/* the call center's Schedule: a month of days, coloured by how many trucks are taken */
+.cal{padding:12px}
+.cal-nav{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+.cal-nav h2{flex:1;margin:0;font-size:18px;text-align:center}
+.cal-nav .btn{min-width:44px}
+.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-wd{font:600 11px var(--font);color:var(--muted);text-align:center;padding:2px 0 4px;letter-spacing:.04em;text-transform:uppercase}
+.cal-d{min-width:0;min-height:48px;border:1px solid var(--line);border-radius:var(--r2);background:var(--card);color:var(--text);padding:5px 0 3px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:1px;cursor:pointer;font:inherit}
+.cal-d b{font-size:14px;font-weight:var(--w-mid);line-height:1.15}
+.cal-d i{font-style:normal;font-size:12px;font-weight:var(--w-strong);line-height:1.2;min-height:14px}
+.cal-d.lvl1,.cal-key i.lvl1{background:color-mix(in srgb, var(--ok) 26%, var(--card))}
+.cal-d.lvl2,.cal-key i.lvl2{background:color-mix(in srgb, var(--warn) 32%, var(--card))}
+.cal-d.lvl3,.cal-key i.lvl3{background:color-mix(in srgb, var(--bad) 30%, var(--card))}
+.cal-d.today b{text-decoration:underline;text-underline-offset:3px;font-weight:var(--w-strong)}
+.cal-d.on{outline:2.5px solid var(--focus);outline-offset:1px}
+.cal-key{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12.5px;color:var(--text)}
+.cal-key span{display:inline-flex;align-items:center;gap:6px}
+.cal-key i{display:inline-block;width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
+.qcard .route{margin-top:2px}
+.daynote.full{color:var(--text);font-weight:var(--w-mid)}
 .saved{font-weight:var(--w-mid)}
 .qbar{position:sticky;bottom:calc(58px + env(safe-area-inset-bottom));z-index:10;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:8px 10px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-lg)}
 .qbar .tot{font:700 22px/1 var(--display)}
@@ -758,7 +778,8 @@ window.TALLY_ORG_KEY=ORG||'none';            // the app keeps a separate on-devi
 window.tallyOrg=null;                        // {id,name,role,join_code} once known
 var sb=window.supabase.createClient(CFG.url,CFG.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 var me={id:'',email:'',role:'',staff:'',isOwner:false,canEdit:false};
-var COLS=['org','meta','jobs','shifts','vault','chat','locs','photos','formpages'];
+var COLS=['org','meta','jobs','shifts','vault','chat','locs','photos','formpages','sched'];
+window.TALLY_SCHED=true;   // the database keeps a copy of the scheduled jobs without the money, for the call center
 
 /* ---------- little helpers ---------- */
 function split(path){var i=path.indexOf('/');return [path.slice(0,i),path.slice(i+1)]}
@@ -783,7 +804,7 @@ function ensureChannel(){
   channel=sb.channel('tally-'+ORG)
    .on('postgres_changes',{event:'*',schema:'public',table:'docs',filter:'org_id=eq.'+ORG},function(p){
       var c=(p.new&&p.new.collection)||(p.old&&p.old.collection)||'';
-      Object.keys(watchers).forEach(function(k){if(k.indexOf(c+'|')===0)bump(k)});
+      Object.keys(watchers).forEach(function(k){if(k.indexOf(c+'|')===0||(c==='sched'&&me.role==='callcenter'&&k.indexOf('jobs|')===0))bump(k)});
    })
    .on('postgres_changes',{event:'*',schema:'public',table:'members',filter:'org_id=eq.'+ORG},function(){Object.keys(watchers).forEach(function(k){if(k.indexOf('users|')===0)bump(k)});refreshMe()})
    .on('postgres_changes',{event:'*',schema:'public',table:'access_requests',filter:'org_id=eq.'+ORG},function(){Object.keys(watchers).forEach(function(k){if(k.indexOf('requests|')===0)bump(k)})})
@@ -841,11 +862,13 @@ function docRef(path){
     id:id,path:path,
     get:readOne,
     set:function(obj){
+      if(collection==='jobs'&&me.role==='callcenter')return ccSave(path,obj,null);
       if(collection==='users')return sb.from('members').upsert({org_id:ORG,user_id:id,email:obj.email||'',staff:obj.staff||'',role:obj.role||'crew',ts:obj.ts||Date.now()}).then(chk);
       if(collection==='requests')return sb.from('access_requests').upsert({org_id:ORG,user_id:id,email:obj.email||me.email,ts:obj.ts||Date.now()}).then(chk);
       return sb.from('docs').upsert({org_id:ORG,path:path,collection:collection,doc_id:id,data:obj,updated_at:new Date().toISOString()}).then(chk);
     },
     update:function(patch){
+      if(collection==='jobs'&&me.role==='callcenter')return ccSave(path,null,patch);
       if(collection==='users')return sb.from('members').update(patch).eq('org_id',ORG).eq('user_id',id).then(chk);
       // merged on the server in one step, so two phones (or a payment the server records) can't undo
       // each other; a database without doc_patch yet falls back to read, merge, write
@@ -876,6 +899,15 @@ function docRef(path){
   };
 }
 function chk(r){if(r&&r.error)throw r.error;return r}
+// The call center saves jobs only through cc_save (supabase-callcenter.sql), which checks what it saves. A
+// quote booked or closed by someone else meanwhile is no longer theirs: that comes back as e.closed.
+function ccSave(path,doc,patch){
+  return sb.rpc('cc_save',{o:ORG,p:path,doc:doc,patch:patch}).then(function(r){
+    if(r&&r.error)throw r.error;
+    if(r&&r.data==='ok')return r;
+    var e=new Error(r&&r.data==='closed'?'closed':'missing');if(r&&r.data==='closed')e.closed=true;throw e;
+  });
+}
 var patchRpc=null;   // null: not tried yet; false: this database has no doc_patch yet
 function noFunction(e){return e.code==='PGRST202'||/could not find the function/i.test(e.message||'')}
 
@@ -1161,6 +1193,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
       <option value="dispatch">Dispatch</option>
       <option value="lead">Crew lead</option>
       <option value="crew">Crew</option>
+      <option value="callcenter">Call center</option>
     </select>
   </label>
   </div>
@@ -1241,7 +1274,7 @@ function defaultSettings(){return {
   crew:['Marcus','Dee','Luis','Tanya','Andre','Kim'],
   sources:['Google','Referral','Yelp','Facebook','Repeat customer','Other'],
   customFields:[{id:'cf1',label:'Elevator reserved',type:'yesno'},{id:'cf2',label:'Parking notes',type:'text'}],
-  forms:[{id:'f_deliv',title:'Delivery receipt and release',kind:'text',required:true,pages:[],text:'I confirm that my belongings were delivered to the address on this job.\n\nI walked through and inspected the delivery. Any damage or missing items I noticed were pointed out to the crew before they left.\n\nBy signing, I accept delivery and agree to the final bill for this move.'}],perms:{},office:[{name:'Owner',kind:'owner'},{name:'Dispatch',kind:'dispatch'}],contacts:{Owner:'512-555-0100',Dispatch:'512-555-0199',Marcus:'512-555-0101',Dee:'512-555-0102',Luis:'512-555-0103',Tanya:'512-555-0104',Andre:'512-555-0105',Kim:'512-555-0106'},dirTs:0,leads:['Marcus','Tanya'],drivers:['Marcus','Tanya','Luis','Andre'],bidTol:10,materials:[
+  forms:[{id:'f_deliv',title:'Delivery receipt and release',kind:'text',required:true,pages:[],text:'I confirm that my belongings were delivered to the address on this job.\n\nI walked through and inspected the delivery. Any damage or missing items I noticed were pointed out to the crew before they left.\n\nBy signing, I accept delivery and agree to the final bill for this move.'}],perms:{},office:[{name:'Owner',kind:'owner'},{name:'Dispatch',kind:'dispatch'}],callcenter:[],contacts:{Owner:'512-555-0100',Dispatch:'512-555-0199',Marcus:'512-555-0101',Dee:'512-555-0102',Luis:'512-555-0103',Tanya:'512-555-0104',Andre:'512-555-0105',Kim:'512-555-0106'},dirTs:0,leads:['Marcus','Tanya'],drivers:['Marcus','Tanya','Luis','Andre'],bidTol:10,materials:[
     {id:'m_boxs',name:'Small box',unit:'each',price:3.5,cost:1.25},{id:'m_boxm',name:'Medium box',unit:'each',price:4.5,cost:1.75},
     {id:'m_boxl',name:'Large box',unit:'each',price:6,cost:2.5},{id:'m_boxw',name:'Wardrobe box',unit:'each',price:22,cost:9},
     {id:'m_dish',name:'Dish pack box',unit:'each',price:12,cost:5},{id:'m_tvbox',name:'TV box',unit:'each',price:25,cost:10},
@@ -1911,6 +1944,8 @@ var ICON={
   board:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 5v14"/></svg>',
   more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>',
   quote:'<svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
+  sched:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/><path d="M8 14h2M14 14h2M8 17h2"/></svg>',
+  quotes:'<svg viewBox="0 0 24 24"><path d="M8 3h11v15H8z"/><path d="M5 6v15h11"/><path d="M11 8h5M11 11h5M11 14h3"/></svg>',
   jobs:'<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',
   dispatch:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
   crew:'<svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>',
@@ -1921,11 +1956,11 @@ var ICON={
   admin:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
   history:'<svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.7h3.7"/><path d="M12 8v4.3l2.8 1.7"/></svg>'
 };
-var TABS=[{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
-var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['crew','chat'],crew:['crew','chat']};
+var TABS=[{id:'sched',label:'Schedule'},{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'quotes',label:'Quotes'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
+var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['crew','chat'],crew:['crew','chat'],callcenter:['sched','quotes']};
 function navTabs(){var ids=NAV[state.ui.role]||NAV.owner;return ids.map(function(id){return TABS.filter(function(t){return t.id===id})[0]})}
 function allowedTabs(role){
-  var ids=role==='crew'||role==='lead'?['crew','chat']:role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
+  var ids=role==='crew'||role==='lead'?['crew','chat']:role==='callcenter'?['sched','quote','quotes']:role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
     ['today','quote','jobs','dispatch','crew','history','chat','reports','settings'];
   if(typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // Tally's own admins, in any company
   return TABS.filter(function(t){return ids.indexOf(t.id)>=0});
@@ -1943,13 +1978,13 @@ function fieldMe(){
   var roster=fieldRoster();
   return roster.indexOf(state.ui.me)>=0?state.ui.me:(roster[0]||'');
 }
-function tabLabel(t){var r=state.ui.role;return t.id==='reports'&&r==='dispatch'?'Revenue':t.id==='crew'?(r==='owner'||r==='dispatch'?'Field view':'Jobs'):t.label}
+function tabLabel(t){var r=state.ui.role;return t.id==='quote'&&r==='callcenter'?'New quote':t.id==='reports'&&r==='dispatch'?'Revenue':t.id==='crew'?(r==='owner'||r==='dispatch'?'Field view':'Jobs'):t.label}
 var isLead=function(n){return state.settings.leads.indexOf(n)>=0};
 var officeRec=function(n){return (state.settings.office||[]).filter(function(o){return o.name===n})[0]||null};
 var isOfficeName=function(n){return !!officeRec(n)};
 var canRun=function(n){return isLead(n)||isOfficeName(n)};          // leads, owner and dispatch can all run a job
 function assignable(){var S=state.settings,out=S.crew.slice();(S.office||[]).forEach(function(o){if(out.indexOf(o.name)<0)out.push(o.name)});return out}
-function whoTag(n){var o=officeRec(n);if(o)return o.kind==='owner'?' (owner)':' (dispatch)';return isLead(n)?' (lead)':''}
+function whoTag(n){var o=officeRec(n);if(o)return o.kind==='owner'?' (owner)':' (dispatch)';if((state.settings.callcenter||[]).indexOf(n)>=0)return ' (call center)';return isLead(n)?' (lead)':''}
 /* ---------- trucks and drivers on a job ----------
    A job's trucks are assign.truckId (the first one, which older copies of the app read too) and
    assign.more (any others). assign.drivers says who drives each truck, by the truck's id. Who can
@@ -2166,11 +2201,11 @@ function renderMore(){
   if(isTallyAdmin())company.push(go('admin','Tally admin','Every company, fees and trials'));
   var look=row('more:theme','',SICON.theme,'Change the look','24 themes, light or dark');
   var you=[office?'':look,canMyProfile()?row('me:open','',SICON.profile,'My profile','Your details and documents'):'',
-    canPreview()?row('more:preview','',SICON.eye,'See it their way',previewing()?'Previewing '+(ui.preview.staff||ui.preview.role):'Owner, dispatch, lead or crew'):'',
+    canPreview()?row('more:preview','',SICON.eye,'See it their way',previewing()?'Previewing '+(ui.preview.staff||KIND[ui.preview.role]||ui.preview.role):'Owner, dispatch, call center, lead or crew'):'',
     office?look:'',
     window.tallySwitchCompany?row('more:company','',SICON.swap,'Switch company',(window.tallyOrg||{}).name||''):'',
     window.tallySignOut?row('more:signout','',SICON.signout,'Sign out',sync.meName||''):''];
-  var sosRow=opt('truckDown')||sosActive().length?'<div class="navlist" style="margin-top:16px">'+row('sos:open','',ICON.sos,'Truck down','Tell the office a truck broke down, and where','sosrow')+'</div>':'';
+  var sosRow=role!=='callcenter'&&(opt('truckDown')||sosActive().length)?'<div class="navlist" style="margin-top:16px">'+row('sos:open','',ICON.sos,'Truck down','Tell the office a truck broke down, and where','sosrow')+'</div>':'';
   el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="More"><div class="row between"><h2>More</h2><button class="btn sm" data-act="more:close">Done</button></div>'+
     grp('Work',work)+grp('Company',company)+grp('You',you)+sosRow+'</div>';
   el.hidden=!ui.more;syncLock();
@@ -2205,6 +2240,7 @@ function renderQuote(){
    '<section class="card"><h2>The move</h2><div class="grid2 stack">'+
      fld('Move date','<input data-d="moveDate" type="date" value="'+dv('moveDate')+'">')+
      fld('Start time','<input data-d="time" type="time" value="'+dv('time')+'">')+
+     '<div class="span2 hint" id="dayNote" aria-live="polite" style="margin:-2px 0 2px"></div>'+
      fld('Pickup address','<input data-d="from" value="'+dv('from')+'">','span2')+
      fld('Delivery address','<input data-d="to" value="'+dv('to')+'">','span2')+
      fld(S.shopAddress?'Pickup to delivery (miles)':'Distance (miles)','<input data-d="miles" type="number" inputmode="decimal" value="'+dv('miles')+'">')+
@@ -2218,20 +2254,20 @@ function renderQuote(){
      (opt('packing')?'<label class="check span2"><input type="checkbox" data-d="pack"'+(d.pack?' checked':'')+'> Packing service for boxes</label>':'')+
    '</div></section>':'')+
    (step===2?'<section class="card"><h2>What is moving</h2><label class="f"><span>Search items</span><input id="qSearch" type="search" placeholder="Sofa, bed, piano" autocomplete="off"></label><div id="qGroups" style="margin-top:8px">'+groups+'</div></section>':'')+
-   (step===3?'<section class="card"><h2>Price</h2><details class="acc" data-k="q:adj"'+(ui.open['q:adj']?' open':'')+'><summary><span>Adjust move type, crew, truck, hours or discount</span></summary><div class="acc-body"><div class="grid2 stack">'+
+   (step===3?'<section class="card"><h2>Price</h2><details class="acc" data-k="q:adj"'+(ui.open['q:adj']?' open':'')+'><summary><span>Adjust move type, crew, truck, hours'+(isCC()?'':' or discount')+'</span></summary><div class="acc-body"><div class="grid2 stack">'+
      fld('Move type','<select data-d="moveKind"><option value="">'+(!opt('mileage')?'Auto (mileage moves are off: local)':num(S.includedMiles)>0?'Auto, by your '+fmtMi(num(S.includedMiles))+'-mile radius':'Auto (no radius set: local)')+'</option><option value="local"'+(d.moveKind==='local'?' selected':'')+'>Local: by the hour</option><option value="mileage"'+(d.moveKind==='mileage'?' selected':'')+'>Mileage: per mile, plus loading and unloading</option></select>','span2')+
      fld('Crew size','<select data-d="crew"><option value="">Auto</option>'+[2,3,4].map(function(n){return '<option value="'+n+'"'+(String(d.crew)===String(n)?' selected':'')+'>'+n+' movers</option>'}).join('')+'</select>')+
      fld('Truck','<select data-d="truckId">'+truckOpts+'</select>')+
      fld('Hours (leave blank for auto)','<input data-d="hoursOverride" type="number" inputmode="decimal" step="0.5" value="'+dv('hoursOverride')+'">')+
-     fld('Discount ($)','<input data-d="discount" type="number" inputmode="decimal" value="'+dv('discount')+'">')+
+     (isCC()?'':fld('Discount ($)','<input data-d="discount" type="number" inputmode="decimal" value="'+dv('discount')+'">'))+
    '</div></div></details><table class="lines" id="qLines" style="margin-top:6px"></table><p class="hint" id="kindNote" aria-live="polite" style="margin:8px 0 12px"></p>'+
-   fld('Job notes','<textarea data-d="notes" placeholder="Elevator reserved, drop-off at 2 PM">'+dv('notes')+'</textarea>')+'<p class="hint">Crew and leads can read job notes but cannot change them. Only dispatch and the owner can.</p></section>':'')+
+   fld('Job notes','<textarea data-d="notes" placeholder="Elevator reserved, drop-off at 2 PM">'+dv('notes')+'</textarea>')+'<p class="hint">'+(isCC()?'The crew reads these on the job. Once it’s booked, only dispatch and the owner change them.':'Crew and leads can read job notes but cannot change them. Only dispatch and the owner can.')+'</p></section>':'')+
    '<div class="qbar"><div class="grow"><div class="tot" id="qTot">$0</div><small id="qSub"></small></div>'+
      (step<3?'<button class="btn primary" data-act="q:step" data-s="'+(step+1)+'">'+(step===1?'Add items':'See the price')+'</button>':
       '<button class="btn" data-act="q:save" id="qSave">Save quote</button><button class="btn primary" data-act="q:book">Book job</button>')+
    '</div>';
   updateQuote();
-  if(step===1){renderDistNote();renderShopNote();var dd=state.draft;if(dd.from.trim()&&dd.to.trim()&&!String(dd.miles||'').trim())distLookup();shopLookup(false)}
+  if(step===1){renderDistNote();renderShopNote();renderDayNote();var dd=state.draft;if(dd.from.trim()&&dd.to.trim()&&!String(dd.miles||'').trim())distLookup();shopLookup(false)}
 }
 function updateQuote(){
   if(ui.tab!=='quote'||!$('#qMeter'))return;
@@ -2258,8 +2294,14 @@ function filterItems(txt){
   });
 }
 function saveQuote(kind){
-  var d=state.draft,S=state.settings;
+  var d=state.draft,S=state.settings,cc=isCC(),who=myName()||'';
   if(!d.name.trim()){toast('Add the customer name first.');var n=$('[data-d=name]');if(n)n.focus();return}
+  if(cc){   // the call center: open quotes only, no discount of their own, and a booking goes on the schedule
+    var j0=d.editId?byId(d.editId):null;
+    if(d.editId&&!isOpenQuote(j0)){state.draft=blankDraft();ui.qstep=1;save();ui.tab='quotes';render();toast('That quote was booked or closed meanwhile, so it can’t change here.');return}
+    d.discount=j0?(j0.d.discount||''):'';
+    if(kind==='book'&&!d.moveDate){ui.qstep=1;renderQuote();window.scrollTo(0,0);var md=$('[data-d=moveDate]');if(md)md.focus();toast('Pick the move date first, so it goes on the schedule.');return}
+  }
   var q=calc(d,S);
   if(kind==='book'&&!q.cf){toast('Add at least one item before booking.');return}
   var j=d.editId?byId(d.editId):null;
@@ -2267,14 +2309,20 @@ function saveQuote(kind){
     var oldNotes=String(j.d.notes||'');
     var hadOk=!!(j.quote&&j.quote.rqOk);j.d=clone(d);delete j.d.editId;j.quote=q;if(hadOk)q.rqOk=null;j.items=itemsOf(d,S);logEv(j,'Quote updated');
     if(String(j.d.notes||'')!==oldNotes){j.d.notesBy=myName()||'Office';j.d.notesAt=Date.now();logEv(j,'Job notes updated by '+j.d.notesBy)}
-    if(kind==='book'&&(j.status==='lead'||j.status==='quoted'))setStatus(j,'booked');
+    if(kind==='book'&&(j.status==='lead'||j.status==='quoted')){setStatus(j,'booked');if(cc)logEv(j,'Booked by '+(who||'the call center'))}
     else if(j.status==='lead'&&q.cf)setStatus(j,'quoted');
     // a finished job billed by the clock is worked out again against the new quote
     if(j.clockAt)rebill(j,'quote changed');
   }else{
     var s=kind==='book'?'booked':(q.cf?'quoted':'lead');
-    j=newJob(d,S,s);logEv(j,'Created as '+LABEL[s]);state.jobs.push(j);
+    j=newJob(d,S,s);if(who)j.createdBy=who;logEv(j,'Created as '+LABEL[s]+(who?' by '+who:''));state.jobs.push(j);
     if(String(j.d.notes||'').trim()){j.d.notesBy=myName()||'Office';j.d.notesAt=Date.now()}
+  }
+  if(cc){
+    state.draft=blankDraft();ui.qstep=1;save();
+    if(j.status==='booked'){ui.schedDay=j.d.moveDate;ui.schedMon=j.d.moveDate.slice(0,7);ui.tab='sched';render();window.scrollTo(0,0);toast('Booked for '+fmtDate(j.d.moveDate)+' at '+fmtTime(j.d.time)+'. Dispatch adds the crew and trucks.')}
+    else{ui.tab='quotes';render();window.scrollTo(0,0);toast('Saved. It’s in Quotes.')}
+    return;
   }
   state.draft=blankDraft();ui.qstep=1;save();ui.tab='jobs';ui.filter='all';render();openJob(j.id);
   toast(kind==='book'?'Job booked. Add a date, truck and crew.':'Saved.');
@@ -2537,7 +2585,7 @@ function renderSheet(){
    '</div>'+jedBarHtml(j,'cust')+'</div>'+
    '<div class="sec" data-meta="'+esc(secMeta(j,'notes'))+'"><h3>Job notes</h3><textarea data-j="notes" aria-label="Job notes" placeholder="Gate code, elevator booking, what to bring" style="width:100%;min-height:72px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:16px;color:var(--text)">'+esc(jv(j,'notes'))+'</textarea>'+jedBarHtml(j,'notes')+'</div>'+
    (onJob||(j.crewNotes||[]).length?'<div class="sec" data-meta="'+((j.crewNotes||[]).length||'')+'"><h3>Crew notes</h3><p class="hint" style="margin:-4px 0 6px">Written by the crew in the field. Gate codes, access details, anything for the office.</p>'+cnotes+'</div>':'')+
-   '<div class="sec" data-meta="'+money(totalOf(j))+'"><h3>Quote</h3><table class="lines">'+lines+'</table><p class="hint">'+esc(items)+'</p>'+clockHtml(j)+rqHistHtml(j,true)+'</div>'+
+   '<div class="sec" data-meta="'+money(totalOf(j))+'"><h3>Quote</h3><table class="lines">'+lines+'</table>'+(j.createdBy?'<p class="hint" style="margin:6px 0 0">Quote made by '+esc(j.createdBy)+whoTag(j.createdBy)+'</p>':'')+'<p class="hint">'+esc(items)+'</p>'+clockHtml(j)+rqHistHtml(j,true)+'</div>'+
    (shownMats?'<div class="sec" data-meta="'+esc(secMeta(j,'mats'))+'"><h3>Materials and costs</h3>'+matSection(j,'s',myName()||'Office',true)+'</div>':'')+
    (shownPay?payHtml:'')+
    (shownForms?fsec:'')+
@@ -3082,6 +3130,164 @@ function mvNote(j,c){
   return ' Each crew at its own rate: '+segs.filter(function(s){if(seen[s.n])return false;seen[s.n]=1;return true}).map(function(s){return mv(s.n)+' '+money(s.rate)+'/hr'}).join(', ')+'.';
 }
 
+/* ---------- the call center (Richie, Oct 22: "I guess i also need a call center side . They will not see anything
+   but scheduled jobs and being able to make quotes") ----------
+   A role of its own, 'callcenter' (Setup › Employees, App access; the people are settings.callcenter). Three
+   screens: Schedule (a calendar of how busy each day is, and each day's jobs: the customer, the day and time, the
+   addresses, the items and the crew size, no prices or payments), New quote (the round button; the crew size,
+   truck, hours and move type can change the price, but only the office gives a discount) and Quotes (every open
+   quote and lead: open one to change it or book it, call the customer, or mark it lost). Booking needs the move
+   date, so the job lands on the schedule; dispatch adds the crew and trucks. In the hosted app the database keeps
+   them to that (supabase-callcenter.sql): they read the open quotes and a copy of the scheduled jobs without the
+   money (the 'sched' collection, kept by a trigger), write only open quotes (booking one is their last change), and
+   can't change a discount or a payment. */
+function isCC(){return state.ui.role==='callcenter'}
+function canQuote(){var r=state.ui.role;return r==='owner'||r==='dispatch'||r==='callcenter'}
+function ccNames(){return (state.settings.callcenter||[]).slice()}
+function isOpenQuote(j){return !!j&&(j.status==='lead'||j.status==='quoted')}
+var SCHED_ST=['booked','active'];
+// a scheduled job as the call center sees it: everything but the money (supabase-callcenter.sql's sched_of)
+function schedOf(j){
+  var q=j.quote||{},a=j.assign||{},d=j.d||{};
+  return {id:j.id,status:j.status,test:!!j.test,
+    d:{name:d.name||'',phone:d.phone||'',email:d.email||'',moveDate:d.moveDate||'',time:d.time||'',from:d.from||'',to:d.to||'',notes:d.notes||'',flights:d.flights||'',custom:d.custom||{}},
+    items:(j.items||[]).map(function(i){return {id:i.id,name:i.name,qty:i.qty}}),
+    quote:{crew:q.crew,hours:q.hours,kind:q.kind,driveH:q.driveH,nTrucks:q.nTrucks,truckId:q.truckId,truckName:q.truckName},
+    assign:{truckId:a.truckId||'',more:(a.more||[]).slice(),crewN:(a.crew||[]).length},startedAt:j.startedAt||0};
+}
+// the hosted call center reads the scheduled jobs from the database's copy; everyone else from the jobs
+function schedFromDb(){return !!window.TALLY_SCHED&&sync.mode==='shared'&&sync.identity.status==='ok'&&sync.identity.role==='callcenter'&&!previewing()}
+function schedRec(v){   // a copy from the database, filled out so the screens can count on its shape
+  if(!v||typeof v!=='object'||!v.id)return null;
+  var d=v.d||{},q=v.quote||{},a=v.assign||{};
+  return {id:String(v.id),status:v.status,test:!!v.test,d:{name:d.name||'',phone:d.phone||'',email:d.email||'',moveDate:d.moveDate||'',time:d.time||'',from:d.from||'',to:d.to||'',notes:d.notes||'',flights:d.flights||'',custom:(d.custom&&typeof d.custom==='object')?d.custom:{}},
+    items:(Array.isArray(v.items)?v.items:[]).filter(function(i){return i&&i.name}),quote:q,assign:{truckId:a.truckId||'',more:Array.isArray(a.more)?a.more:[],crewN:num(a.crewN)},startedAt:num(v.startedAt)};
+}
+function schedRecs(){
+  if(schedFromDb()){
+    var have={},out=(state.sched||[]).filter(function(r){if(r&&SCHED_ST.indexOf(r.status)>=0){have[r.id]=1;return true}return false});
+    return out.concat(state.jobs.filter(function(j){return SCHED_ST.indexOf(j.status)>=0&&!have[j.id]}).map(schedOf));
+  }
+  return state.jobs.filter(function(j){return SCHED_ST.indexOf(j.status)>=0}).map(schedOf);
+}
+function pullSched(snap){
+  state.sched=snap.docs.map(function(d){return schedRec(d.data())}).filter(Boolean);
+  if(ui.tab==='sched'||ui.tab==='quote')softRefresh();
+}
+// how busy a day is: its jobs, and the trucks on them out of the fleet (a job with no truck picked yet counts the
+// trucks its quote needs). lvl: 0 nothing booked, 1 some, 2 half the fleet or more, 3 every truck
+function dayLoad(day,recs,skip){
+  var list=(recs||schedRecs()).filter(function(r){return r.d.moveDate===day&&r.id!==skip}),fleet=(state.settings.trucks||[]).length,used={},need=0;
+  list.forEach(function(r){var ids=jobTrucks(r);if(ids.length)ids.forEach(function(id){used[id]=1});else need+=Math.max(1,num((r.quote||{}).nTrucks)||1)});
+  var trucks=Object.keys(used).length+need;
+  return {jobs:list.length,trucks:trucks,fleet:fleet,list:list,lvl:!list.length?0:fleet&&trucks>=fleet?3:fleet&&trucks*2>=fleet?2:1};
+}
+function loadWords(L){
+  if(!L.jobs)return 'nothing booked yet';
+  return L.jobs+' job'+(L.jobs===1?'':'s')+' booked'+(L.fleet?', '+(L.trucks>=L.fleet?'all '+L.fleet+' truck'+(L.fleet===1?'':'s')+' taken':L.trucks+' of '+L.fleet+' truck'+(L.fleet===1?'':'s')+' taken'):'');
+}
+// under the quote's move date: how busy that day already is (everyone sees it; the call center books by it)
+function renderDayNote(){
+  var el=$('#dayNote');if(!el)return;
+  var d=state.draft;if(!d.moveDate){el.textContent='';return}
+  var L=dayLoad(d.moveDate,null,d.editId);
+  el.textContent=fmtDate(d.moveDate)+': '+loadWords(L)+(L.lvl===3?'. Check with dispatch before booking it.':'.');
+  el.className='span2 hint'+(L.lvl===3?' daynote full':'');
+}
+
+/* the Schedule screen: a month of days, each showing how busy it is, then the jobs on the day picked */
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function renderSched(){
+  var v=$('#view'),t=todayISO(),recs=schedRecs();
+  var day=ui.schedDay||t,mon=ui.schedMon||day.slice(0,7),y=+mon.slice(0,4),m=+mon.slice(5,7);
+  var first=mon+'-01',last=iso(new Date(y,m,0)),lead=(parseISO(first).getDay()+6)%7,cells='';
+  for(var i=0;i<lead;i++)cells+='<span class="cal-x" aria-hidden="true"></span>';
+  for(var d0=first;d0<=last;d0=addDays(d0,1)){
+    var L=dayLoad(d0,recs),sel=d0===day;
+    cells+='<button class="cal-d lvl'+L.lvl+(sel?' on':'')+(d0===t?' today':'')+'" data-act="cal:day" data-day="'+d0+'" aria-pressed="'+sel+'" aria-label="'+esc(fmtDate(d0)+': '+loadWords(L))+'"><b>'+(+d0.slice(8))+'</b><i>'+(L.jobs||'')+'</i></button>';
+  }
+  var L1=dayLoad(day,recs),list=L1.list.slice().sort(function(a,b){return startMin(a)-startMin(b)});
+  var nodate=recs.filter(function(r){return !r.d.moveDate});
+  v.innerHTML='<div class="hero-day" style="padding-bottom:4px"><h1>Schedule</h1><p class="sub" style="margin:2px 0 0">How busy each day is, and what’s booked. Tap a day.</p></div>'+
+    '<section class="card cal"><div class="cal-nav"><button class="btn sm" data-act="cal:mon" data-dir="-1" aria-label="Month before">‹</button><h2>'+MONTHS[m-1]+' '+y+'</h2><button class="btn sm" data-act="cal:mon" data-dir="1" aria-label="Month after">›</button></div>'+
+      '<div class="cal-g">'+['Mo','Tu','We','Th','Fr','Sa','Su'].map(function(w){return '<span class="cal-wd" aria-hidden="true">'+w+'</span>'}).join('')+cells+'</div>'+
+      '<div class="cal-key" aria-hidden="true"><span><i class="lvl1"></i>Some trucks taken</span><span><i class="lvl2"></i>Half or more</span><span><i class="lvl3"></i>Every truck</span></div>'+
+      (day!==t||mon!==t.slice(0,7)?'<button class="btn sm ghost" style="margin-top:8px" data-act="cal:today">Back to today</button>':'')+'</section>'+
+    '<div class="secline" id="calDay"><h2>'+esc(fmtDate(day))+'</h2><small>'+esc(loadWords(L1))+'</small></div>'+
+    (list.length?list.map(schedCard).join(''):'<div class="card empty"><h3>Nothing booked this day</h3><p>'+(state.settings.trucks.length?'Every truck is open.':'No jobs yet.')+'</p></div>')+
+    (nodate.length?'<div class="secline"><h2>Booked, no date yet</h2><small>'+nodate.length+'</small></div>'+nodate.map(schedCard).join(''):'');
+}
+// one scheduled job, folded to the time, the customer and the route; open, the rest (never the money)
+function schedCard(r){
+  var q=r.quote||{},ids=jobTrucks(r),items=(r.items||[]).map(function(i){return esc(i.name)+' × '+num(i.qty)}).join(', ');
+  var trucks=ids.length?ids.map(function(id){return esc(truckName(id))}).join(', '):'Not picked yet'+(q.truckName?' (quoted: '+esc(num(q.nTrucks)>1?num(q.nTrucks)+' × '+q.truckName:q.truckName)+')':'');
+  var cfs=(state.settings.customFields||[]).filter(function(f){var x=(r.d.custom||{})[f.id];return x!=null&&x!==''}).map(function(f){return '<div><small>'+esc(f.label)+':</small> '+esc(r.d.custom[f.id])+'</div>'}).join('');
+  var est=estLine(r),k='sc:'+r.id,sub=[q.crew?num(q.crew)+' movers':'',est,r.status==='active'?'In progress now':''].filter(Boolean).join(' · ');
+  return '<details class="acc card hcard schedcard" data-job="'+esc(r.id)+'" data-k="'+esc(k)+'"'+(ui.open[k]?' open':'')+'><summary><span class="hsum"><b>'+esc((r.d.moveDate?fmtTime(r.d.time):'No date')+' · '+(r.d.name||'Customer'))+'</b>'+
+      '<small>'+esc((r.d.from||'?')+' → '+(r.d.to||'?'))+'</small>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span><span class="hmore">Details</span><span class="hpill">'+pill(r.status)+'</span></summary>'+
+    '<div class="hbody"><div class="row between" style="align-items:center;gap:8px"><span>'+(r.d.phone?esc(r.d.phone):'<small>No phone yet</small>')+'</span>'+(r.d.phone?'<button class="btn sm" data-act="cc:call" data-id="'+esc(r.id)+'">Call</button>':'')+'</div>'+
+      (r.d.email?'<div><small>'+esc(r.d.email)+'</small></div>':'')+
+      '<div style="margin-top:6px"><small>Pickup:</small> '+esc(r.d.from||'Not set')+'</div><div><small>Delivery:</small> '+esc(r.d.to||'Not set')+'</div>'+
+      (num(r.d.flights)>0?'<div><small>Stairs:</small> '+num(r.d.flights)+' flight'+(num(r.d.flights)===1?'':'s')+'</div>':'')+
+      '<div><small>Crew:</small> '+(q.crew?num(q.crew)+' movers':'Not set')+(r.assign.crewN?' ('+r.assign.crewN+' on the job so far)':' (dispatch picks who)')+'</div>'+
+      '<div><small>Truck'+(ids.length>1?'s':'')+':</small> '+trucks+'</div>'+cfs+
+      (items?'<p class="hint" style="margin:6px 0 0">Items: '+items+'</p>':'')+
+      (r.d.notes?'<p class="hint" style="margin:6px 0 0;white-space:pre-wrap">Notes: '+esc(r.d.notes)+'</p>':'')+
+      '</div></details>';
+}
+
+/* the Quotes screen: every open quote and lead, newest first */
+function ccQuotes(){
+  return state.jobs.filter(isOpenQuote).sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0)});
+}
+function ccMatch(j,q){
+  if(!q)return true;
+  var s=[j.d.name,j.d.phone,j.d.email,j.d.from,j.d.to].join(' ').toLowerCase(),dg=q.replace(/\D/g,'');
+  return q.split(/\s+/).every(function(w){return s.indexOf(w)>=0})||(dg.length>=3&&String(j.d.phone||'').replace(/\D/g,'').indexOf(dg)>=0);
+}
+function renderQuotes(){
+  var v=$('#view'),all=ccQuotes();
+  v.innerHTML='<div class="hero-day" style="padding-bottom:4px"><h1>Quotes</h1><p class="sub" style="margin:2px 0 0">Every open quote and lead. Open one to change it or book it.</p></div>'+
+    (all.length?'<input id="ccQ" class="setsearch" type="search" placeholder="Name, phone or address" aria-label="Find a quote" autocomplete="off" value="'+esc(ui.ccq||'')+'">':'')+
+    '<div id="ccList" style="margin-top:8px"></div>';
+  ccFill();
+}
+function ccFill(){
+  var el=$('#ccList');if(!el)return;
+  var all=ccQuotes(),q=String(ui.ccq||'').trim().toLowerCase(),list=all.filter(function(j){return ccMatch(j,q)});
+  if(!all.length){el.innerHTML='<div class="card empty"><h3>No open quotes</h3><p>Tap + to make one.</p></div>';return}
+  el.innerHTML='<div class="secline"><h2>'+(q?'Found':'Open quotes and leads')+'</h2><small>'+list.length+'</small></div>'+
+    (list.length?list.map(ccCard).join(''):'<div class="card empty"><h3>Nothing matches “'+esc(ui.ccq)+'”</h3><p>Try part of the name, the phone number or a street.</p></div>');
+}
+function ccCard(j){
+  var q=j.quote||{},a='cc:lost:'+j.id,by=j.createdBy?' by '+esc(j.createdBy):'';
+  return '<section class="card qcard" data-job="'+esc(j.id)+'"><div class="row between" style="align-items:flex-start;gap:8px"><h3 style="margin:0">'+esc(j.d.name||'Customer')+'</h3>'+pill(j.status)+'</div>'+
+    '<div class="cc-sub">'+(j.d.moveDate?esc(fmtDate(j.d.moveDate)+' · '+fmtTime(j.d.time)):'No move date yet')+'</div>'+
+    ((j.d.from||j.d.to)?'<div class="route">'+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</div>':'')+
+    '<div class="row between" style="margin-top:4px"><b>'+(num(q.total)>0?money(q.total):'No price yet')+'</b><small>'+esc(j.createdAt?madeWhen(j.createdAt):'')+by+'</small></div>'+
+    '<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="btn primary sm" data-act="cc:open" data-id="'+esc(j.id)+'">Open quote</button>'+
+      (j.d.phone?'<button class="btn sm" data-act="cc:call" data-id="'+esc(j.id)+'">Call</button>':'')+
+      '<button class="btn sm ghost" data-act="cc:lost" data-id="'+esc(j.id)+'">'+(ui.armed===a?'Tap again: not moving with us':'Mark lost')+'</button></div></section>';
+}
+// when a quote was made, in calendar days: "Made today", "Made yesterday", "Made 4 days ago", "Made Oct 2"
+function madeWhen(ts){
+  var a=parseISO(iso(new Date(ts))),b=parseISO(todayISO()),n=Math.round((b-a)/864e5);
+  return 'Made '+(n<=0?'today':n===1?'yesterday':n<14?n+' days ago':new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+}
+// a quote opened from the list goes into the quote builder, the way the office's Edit quote does it
+function ccOpen(id){
+  var j=byId(id);if(!isOpenQuote(j)){toast('That quote was booked or closed meanwhile.');render();return}
+  state.draft=Object.assign(blankDraft(),clone(j.d),{editId:j.id});ui.qstep=1;save();ui.tab='quote';render();window.scrollTo(0,0);
+}
+function ccLost(id){
+  var j=byId(id);if(!isOpenQuote(j))return;
+  setStatus(j,'lost');logEv(j,'Marked lost by '+(myName()||'the call center'));save();toast('Marked lost. It’s off the open quotes.');render();
+}
+function ccCall(id){
+  var j=byId(id)||schedRecs().filter(function(r){return r.id===id})[0];if(!j)return;
+  askCall(j.d.name,j.d.phone,custKey(j),j.id);
+}
+
 function crewKit(me){
   var S=state.settings,role=state.ui.role,t=todayISO();
   var asLead=role==='owner'||role==='dispatch'||(role==='lead'&&isLead(me));
@@ -3490,10 +3696,11 @@ function setupSecs(){
     '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="'+tcols+';margin-top:4px"><input id="nTruckName" placeholder="New truck" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" inputmode="numeric" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div></section>'+drvCard,'trucks drivers driver drives driving license');
   add('employees','people','Employees',nIn+' '+(nIn===1?'person':'people'),employeesCard(),'crew staff people hiring documents phone');
   add('access','people','App access',sync.mode==='shared'?'Who can sign in, and as what':'Sign-in for your team',accessCard(),'sign in login users approve revoke');
-  add('roles','people','Roles','What crew, crew leads and dispatch can do',
-    '<section class="card"><h2>Roles</h2><p class="sub">Four levels. Use “See it their way” in More to try each one.</p>'+
+  add('roles','people','Roles','What crew, crew leads, the call center and dispatch can do',
+    '<section class="card"><h2>Roles</h2><p class="sub">Five levels. Use “See it their way” in More to try each one.</p>'+
     '<div class="who" style="display:block"><b>Crew</b><br><small>Sees the jobs they are on, adds photos, reads job notes, leaves crew notes'+(opt('tally')?', ticks off the load tally':'')+(opt('clock')?', and uses the time clock':'')+'.</small></div>'+
     '<div class="who" style="display:block"><b>Crew lead</b><br><small>Everything crew can do, plus the job timer, prices, and billing out'+(opt('leadCharges')?' with extra charges':'')+(opt('leadPay')?' and payments':' (the office collects the payment)')+'.</small></div>'+
+    '<div class="who" style="display:block"><b>Call center</b><br><small>Makes quotes and books them onto the schedule, and sees the schedule: how busy each day is, and each job’s customer, day, time, addresses, items and crew size. No prices on booked jobs, no discounts, no payments, and nothing else in Tally.</small></div>'+
     '<div class="who" style="display:block"><b>Dispatch</b><br><small>Books quotes and schedules crews and trucks'+(opt('dispatchMoney')?', and sees company revenue and revenue by crew':'')+'. Can also work in the field with lead-level access'+(opt('dispatchPay')?', including billing':'')+'.</small></div>'+
     '<div class="who" style="display:block"><b>Owner</b><br><small>Everything, plus employee hours, job hours, and bid accuracy for the company and each crew. Can also work in the field and waive a form for a job.</small></div></section>'+
     optGroup('field','Crew and field')+optGroup('bill','Billing out')+optGroup('office','Office'),'permissions crew lead dispatch owner can');
@@ -3545,7 +3752,7 @@ function setListHtml(secs){
 
 /* ---------- render core ---------- */
 function renderTab(){
-  var fn={today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,history:renderHistory,chat:renderChat,reports:renderReports,settings:renderSettings,admin:renderAdmin}[ui.tab];
+  var fn={sched:renderSched,quotes:renderQuotes,today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,history:renderHistory,chat:renderChat,reports:renderReports,settings:renderSettings,admin:renderAdmin}[ui.tab];
   if(fn)fn();
 }
 function render(){
@@ -3563,9 +3770,9 @@ function renderTabs(){
   var un=unreadTotal(),nav=navTabs(),wide=window.innerWidth>=900,office=canEditJobs();
   var list=wide?allowedTabs(state.ui.role):nav;
   // the round button: a new quote, for the office. (The crew clock in and out on the clock card on Today and the crew's Jobs screen.)
-  var hasFab=office;
+  var hasFab=office||state.ui.role==='callcenter';
   var btn=function(t){return '<button data-act="tab" data-tab="'+t.id+'"'+(t.id===ui.tab?' aria-current="page"':'')+'>'+(t.id==='crew'&&!office?ICON.jobs:ICON[t.id])+'<span>'+tabLabel(t)+'</span>'+(t.id==='chat'&&un?'<i class="badge" aria-label="'+un+' unread">'+(un>9?'9+':un)+'</i>':'')+'</button>'};
-  var moreBtn='<button data-act="more:open"'+((!wide&&!list.some(function(t){return t.id===ui.tab}))?' aria-current="page"':'')+'>'+ICON.more+'<span>More</span></button>';
+  var moreBtn='<button data-act="more:open"'+((!wide&&!list.some(function(t){return t.id===ui.tab})&&!(hasFab&&ui.tab==='quote'))?' aria-current="page"':'')+'>'+ICON.more+'<span>More</span></button>';
   var html=wide||!hasFab?(list.map(btn).join('')+moreBtn)
     :(list.slice(0,2).map(btn).join('')+'<button class="spacer" tabindex="-1" aria-hidden="true"></button>'+list.slice(2).map(btn).join('')+moreBtn);
   var el=$('#tabs');el.className='tabs'+(wide||!hasFab?'':' has-fab');el.innerHTML=html;
@@ -3622,26 +3829,31 @@ function takePhotos(fileList){
 $('#photoIn').addEventListener('change',function(e){takePhotos(e.target.files);e.target.value=''});
 
 /* ---------- directory, chat, calls, location ---------- */
-var KIND={owner:'Owner',dispatch:'Dispatch',lead:'Crew lead',crew:'Crew'};
+var KIND={owner:'Owner',dispatch:'Dispatch',lead:'Crew lead',crew:'Crew',callcenter:'Call center'};
 var UPDATES=['On my way','Arrived at pickup','Loading done','Arrived at delivery','Running late'];
 function directory(){
   var S=state.settings,out=[];
   (S.office||[]).forEach(function(o){out.push({name:o.name,kind:o.kind,phone:S.contacts[o.name]||''})});
   S.crew.forEach(function(n){out.push({name:n,kind:isLead(n)?'lead':'crew',phone:S.contacts[n]||''})});
+  (S.callcenter||[]).forEach(function(n){if(!out.some(function(x){return x.name===n}))out.push({name:n,kind:'callcenter',phone:S.contacts[n]||''})});
   return out;
 }
+// the people in chat: everyone but the call center, who has no chat
+function chatDir(){return directory().filter(function(x){return x.kind!=='callcenter'})}
 function lockedStaff(){if(ui.preview&&(sync.mode!=='shared'||sync.isOwner))return ui.preview.staff||'';return sync.mode==='shared'&&sync.identity.status==='ok'&&!sync.isOwner?sync.identity.staff:''}
 function chatRoster(){
   var lk=lockedStaff();if(lk)return [lk];
   var role=state.ui.role,S=state.settings;
   if(role==='crew')return S.crew.filter(function(n){return !isLead(n)});
   if(role==='lead')return S.crew.filter(isLead);
-  return directory().map(function(x){return x.name});
+  if(role==='callcenter')return ccNames();
+  return chatDir().map(function(x){return x.name});
 }
 function myName(){
   var r=chatRoster(),role=state.ui.role,S=state.settings,pick=(role==='crew'||role==='lead')?state.ui.me:state.ui.who;
   if(pick&&r.indexOf(pick)>=0)return pick;
   if(role==='owner'||role==='dispatch'){var o=(S.office||[]).find(function(x){return x.kind===role});if(o)return o.name}
+  if(role==='callcenter')return ccNames()[0]||'Call center';
   return r[0]||'';
 }
 function ago(ts){var m=Math.round((Date.now()-ts)/60000);return m<1?'just now':m<60?m+' min ago':Math.floor(m/60)+' h ago'}
@@ -3705,7 +3917,7 @@ function updateMsgList(first){
 function renderChat(){
   var v=$('#view'),me=myName(),S=state.settings;
   if(!me){v.innerHTML='<div class="card empty"><h3>No one to chat as yet</h3><p>Add people in Setup.</p></div>';return}
-  var dir=directory(),vis=visibleMsgs(me);
+  var dir=chatDir(),vis=visibleMsgs(me);
   if(ui.chatThread==='jobs'){v.innerHTML=jobMsgsView(me);return}
   if(ui.chatThread){
     var t=ui.chatThread,dm=t!=='all',other=dm?t.slice(3).split('|').filter(function(n){return n!==me})[0]:'',pr=dm?dir.find(function(x){return x.name===other}):null;
@@ -4212,7 +4424,7 @@ function jobDoc(j){
   var dd=Object.assign({},j.d);
   dd.items=Object.keys(j.d.items||{}).map(function(k){return {id:k,q:j.d.items[k]}});
   var o={id:j.id,status:j.status,createdAt:j.createdAt,d:dd,quote:j.quote,items:j.items||[],assign:j.assign||{truckId:'',crew:[]},tally:j.tally||{}};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
   o.payments=toMap(j.payments,function(x){return x.id});
   o.signed=toMap(j.signed,function(x){return x.id});
   o.extras=toMap(j.extras,function(x){return x.id});
@@ -4238,7 +4450,7 @@ function docToJob(v){
     materials:mapArr(v.materials,'ts'),costs:mapArr(v.costs,'ts'),confirm:(v.confirm&&typeof v.confirm==='object')?v.confirm:{},
     crewOn:(v.crewOn&&typeof v.crewOn==='object')?v.crewOn:undefined,crewAdj:mapArr(v.crewAdj,'ts'),
     log:mapArr(v.log,'ts').slice(-60)};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
   return j;
 }
 function jobDiff(prev,cur){
@@ -4258,9 +4470,18 @@ function settingsDoc(){
   S.forms=(S.forms||[]).map(function(f){var g=Object.assign({},f);g.pageIds=f.pageIds||[];delete g.pages;return g});
   return S;
 }
+function ccClosed(e){if(e&&e.closed)return 'closed';throw e}
+// the call center's change to a quote booked or closed meanwhile: it's no longer theirs, so it leaves their phone
+function ccGone(id){
+  var j=byId(id);
+  state.jobs=state.jobs.filter(function(x){return x.id!==id});delete sync.lastJobs[id];
+  if(state.draft.editId===id){state.draft=blankDraft();ui.qstep=1}
+  cacheSave();softRefresh();
+  toast((j&&j.d.name?j.d.name:'That quote')+' was booked or closed by the office meanwhile, so your last change to it didn’t save.');
+}
 function qwrite(key,fn,ok){
   sync.inflight[key]=1;
-  sync.q[key]=(sync.q[key]||Promise.resolve()).then(fn).then(function(){sync.retryMs=5000;if(ok)ok()}).catch(function(){
+  sync.q[key]=(sync.q[key]||Promise.resolve()).then(fn).then(function(res){sync.retryMs=5000;if(ok)ok(res)}).catch(function(){
     sync.retryMs=Math.min(60000,sync.retryMs*2);setTimeout(syncOut,sync.retryMs);
     if(!sync.warned){sync.warned=true;toast('Sync hit a problem. Your changes will retry.')}
   }).then(function(){delete sync.inflight[key];setTimeout(syncOut,30)});
@@ -4294,11 +4515,12 @@ function syncOut(){
       seen[j.id]=1;syncPhotos(j);
       var key='jobs/'+j.id;if(sync.inflight[key])return;
       var cur=jobDoc(j),prev=sync.lastJobs[j.id];
-      if(!prev)qwrite(key,function(){return db.doc(key).set(cur)},function(){sync.lastJobs[j.id]=cur});
+      if(!prev)qwrite(key,function(){return db.doc(key).set(cur).catch(ccClosed)},function(res){if(res==='closed')return ccGone(j.id);sync.lastJobs[j.id]=cur});
       else{var diff=jobDiff(prev,cur);if(diff)qwrite(key,function(){return db.doc(key).update(diff).catch(function(e){
+        if(e&&e.closed)return 'closed';
         // only a job that is gone is written whole; any other trouble retries the change itself, so this
         // phone's copy never lands on top of payments the server has recorded since
-        return db.doc(key).get().then(function(s){if(s&&s.exists)throw e;return db.doc(key).set(cur)})})},function(){sync.lastJobs[j.id]=cur;
+        return db.doc(key).get().then(function(s){if(s&&s.exists)throw e;return db.doc(key).set(cur).catch(ccClosed)})})},function(res){if(res==='closed')return ccGone(j.id);sync.lastJobs[j.id]=cur;
           if(diff.payments||diff.extras||diff.materials||diff.quote)payCheckSoon(j.id)})}
     });
     Object.keys(sync.lastJobs).forEach(function(id){if(seen[id])return;var key='jobs/'+id;if(sync.inflight[key])return;qwrite(key,function(){return db.doc(key).delete()},function(){delete sync.lastJobs[id]})});
@@ -4327,7 +4549,7 @@ function softRefresh(){
     if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&(a.closest('#view')||a.closest('#sheet'))&&a.id!=='hSearch'&&rfTries<6){rfTries++;softRefresh();return}
     rfTries=0;renderTabs();
     if(ui.jobId)renderSheet();
-    if(['jobs','dispatch','crew','history','reports','today'].indexOf(ui.tab)>=0||(ui.tab==='chat'&&ui.chatThread==='jobs'))renderTab();
+    if(['jobs','dispatch','crew','history','reports','today','sched','quotes'].indexOf(ui.tab)>=0||(ui.tab==='chat'&&ui.chatThread==='jobs'))renderTab();
   },300);
 }
 function softSettings(){var a=document.activeElement;if(ui.tab==='settings'&&!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))renderSettings()}
@@ -4422,7 +4644,7 @@ function pullSettings(snap){
 function stopData(){
   sync.unsubs.forEach(function(u){try{u()}catch(e){}});sync.unsubs=[];
   sync.started=false;sync.got={settings:false,jobs:false,shifts:false,vault:false};sync.settingsSeen=false;
-  sync.lastJobs={};sync.lastShifts={};sync.lastVault={};sync.lastSettings='';chat.db=null;chat.mode='local';chat.sos=[];pay.cfg=null;member.st=null;member.wait=false;adm.data=null;
+  sync.lastJobs={};sync.lastShifts={};sync.lastVault={};sync.lastSettings='';chat.db=null;chat.mode='local';chat.sos=[];pay.cfg=null;member.st=null;member.wait=false;adm.data=null;state.sched=[];
   if(sos.id)sosGeoStop();sosWake(false);sosAlarm(false);
 }
 function startData(){
@@ -4434,6 +4656,7 @@ function startData(){
   sync.unsubs.push(db.collection('jobs').onSnapshot(pullJobs,ef));
   sync.unsubs.push(db.collection('shifts').where('inAt','>',Date.now()-400*864e5).onSnapshot(pullShifts,ef));
   sync.unsubs.push(db.collection('vault').onSnapshot(pullVault,ef));
+  if(window.TALLY_SCHED&&sync.identity.role==='callcenter')sync.unsubs.push(db.collection('sched').onSnapshot(pullSched,ef));
   chatStart(db);
   payLoad();
   if(sync.isOwner){
@@ -4518,7 +4741,7 @@ function syncBoot(){
 function accessCard(){
   if(sync.mode!=='shared')return '<section class="card"><h2>App access</h2><p class="sub">Sign-in and access control switch on when Tally is opened with shared storage. Right now this copy runs on one device.</p></section>';
   var dir=directory(),staffOpts='<option value="">Choose a person</option>'+(peopleHosted()?empRoster().filter(function(x){return !x.rec||(!x.rec.user_id&&x.rec.active!==false)}).map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''):dir.map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''));
-  var roleOpts=function(sel){return ['crew','lead','dispatch','owner'].map(function(r){return '<option value="'+r+'"'+(r===sel?' selected':'')+'>'+KIND[r]+'</option>'}).join('')};
+  var roleOpts=function(sel){return ['crew','lead','callcenter','dispatch','owner'].map(function(r){return '<option value="'+r+'"'+(r===sel?' selected':'')+'>'+KIND[r]+'</option>'}).join('')};
   var nm=function(id){return esc(sync.names[id]||'Someone')};
   var pend=sync.requests.map(function(r){var f={kind:'crew'};return '<div class="who" style="display:block"><b>'+nm(r.uid)+'</b> <small>is asking for access</small><div class="accpick"><label class="f"><span>This person is</span><select id="accStaff_'+esc(r.uid)+'">'+staffOpts+'</select></label><label class="f"><span>Role</span><select id="accRole_'+esc(r.uid)+'">'+roleOpts(f.kind)+'</select></label></div><div class="row" style="margin-top:6px"><button class="btn primary sm" data-act="acc:approve" data-uid="'+esc(r.uid)+'">Approve</button><button class="btn sm ghost" data-act="acc:deny" data-uid="'+esc(r.uid)+'">Deny</button></div></div>'}).join('');
   var appr=sync.users.map(function(u){return '<div class="who"><span><b>'+nm(u.uid)+'</b><br><small>'+esc(u.staff||'')+' · '+esc(KIND[u.role]||u.role)+'</small></span><button class="btn sm danger" data-act="acc:revoke" data-uid="'+esc(u.uid)+'">Revoke</button></div>'}).join('');
@@ -4534,7 +4757,7 @@ function accessCard(){
    employees table, which only the owner can read; each person sees their own through My profile,
    and signing in with the profile's email links them to it (claim_invites). Without a server
    (the claude.ai artifact, or an app without Supabase) profiles stay on this device only. */
-var EMP_ROLES=[['crew','Crew'],['lead','Crew lead'],['dispatch','Dispatch'],['owner','Owner']];
+var EMP_ROLES=[['crew','Crew'],['lead','Crew lead'],['callcenter','Call center'],['dispatch','Dispatch'],['owner','Owner']];
 var EMP_SELF=['phone','address','city','state','zip','emergencyName','emergencyRelation','emergencyPhone','shirtSize'];
 var SHIRTS=['','S','M','L','XL','2XL','3XL'];
 var EMP_SECS=[
@@ -4584,8 +4807,10 @@ function empStatus(e){
 function dirApply(e){
   var S=state.settings,n=e.name,ci=S.crew.indexOf(n),oi=(S.office||[]).findIndex(function(o){return o.name===n});
   S.crew=S.crew.filter(function(x){return x!==n});S.leads=S.leads.filter(function(x){return x!==n});S.office=(S.office||[]).filter(function(o){return o.name!==n});
+  var cci=(S.callcenter||[]).indexOf(n);S.callcenter=(S.callcenter||[]).filter(function(x){return x!==n});
   if(e.active!==false){
-    if(e.role==='crew'||e.role==='lead'){if(ci>=0)S.crew.splice(ci,0,n);else S.crew.push(n);if(e.role==='lead')S.leads.push(n)}
+    if(e.role==='callcenter'){if(cci>=0)S.callcenter.splice(cci,0,n);else S.callcenter.push(n)}
+    else if(e.role==='crew'||e.role==='lead'){if(ci>=0)S.crew.splice(ci,0,n);else S.crew.push(n);if(e.role==='lead')S.leads.push(n)}
     else{var ob={name:n,kind:e.role};if(oi>=0)S.office.splice(oi,0,ob);else S.office.push(ob)}
   }
   var ph=String((e.info&&e.info.phone)||'').trim();if(ph)S.contacts[n]=ph;
@@ -5234,6 +5459,7 @@ function previewPeople(role){
   var S=state.settings;
   if(role==='crew')return S.crew.filter(function(n){return !isLead(n)});
   if(role==='lead')return S.crew.filter(isLead);
+  if(role==='callcenter')return (S.callcenter||[]).slice();
   return (S.office||[]).filter(function(o){return o.kind===role}).map(function(o){return o.name});
 }
 function startPreview(role,staff){
@@ -5259,7 +5485,7 @@ function renderPvBar(){
   b.hidden=false;document.body.classList.add('previewing');
 }
 function previewSheet(){
-  var roles=[['owner','Owner'],['dispatch','Dispatch'],['lead','Crew lead'],['crew','Crew']];
+  var roles=[['owner','Owner'],['dispatch','Dispatch'],['callcenter','Call center'],['lead','Crew lead'],['crew','Crew']];
   var rows=roles.map(function(r){
     var people=previewPeople(r[0]);
     var who=people.length?people.map(function(n){return '<button class="chip" data-act="pv:set" data-role="'+r[0]+'" data-staff="'+esc(n)+'">'+esc(n)+'</button>'}).join('')
@@ -6644,7 +6870,7 @@ function accordify(root,itemSel,titleTag,prefix,defOpen){
 document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.tagName==='DETAILS'&&d.dataset&&d.dataset.k)ui.open[d.dataset.k]=d.open},true);
 
 /* ---------- events ---------- */
-function armed(a){if(ui.armed===a){ui.armed='';return true}ui.armed=a;renderTab();setTimeout(function(){if(ui.armed===a){ui.armed='';if(ui.tab==='settings')renderTab()}},4000);return false}
+function armed(a){if(ui.armed===a){ui.armed='';return true}ui.armed=a;renderTab();setTimeout(function(){if(ui.armed===a){ui.armed='';if(ui.tab==='settings'||ui.tab==='quotes')renderTab()}},4000);return false}
 document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
   var a=t.dataset.act,S=state.settings,d=state.draft,j;
@@ -6666,7 +6892,7 @@ document.addEventListener('click',function(e){
     case 'q:save':saveQuote('save');break;
     case 'q:book':saveQuote('book');break;
     case 'q:clear':state.draft=blankDraft();ui.qstep=1;save();renderQuote();break;
-    case 'q:cancel':state.draft=blankDraft();ui.qstep=1;save();renderQuote();break;
+    case 'q:cancel':state.draft=blankDraft();ui.qstep=1;save();if(isCC()){ui.tab='quotes';render();window.scrollTo(0,0)}else renderQuote();break;
     case 'filter':ui.filter=t.dataset.f;renderJobs();break;
     case 'job:open':openJob(t.dataset.id);break;
     case 'sheet:close':leaveSheet(closeSheet);break;
@@ -6829,6 +7055,12 @@ document.addEventListener('click',function(e){
     case 'me:open':ui.more=false;renderMore();openMyProfile();break;
     case 'me:save':mySave();break;
     case 'more:theme':ui.more=false;renderMore();ui.pick=true;renderPick();break;
+    case 'cal:day':ui.schedDay=t.dataset.day;ui.schedMon=t.dataset.day.slice(0,7);renderSched();var cd=$('#calDay');if(cd&&cd.scrollIntoView)cd.scrollIntoView({block:'start'});break;
+    case 'cal:mon':{var cm=ui.schedMon||(ui.schedDay||todayISO()).slice(0,7),cy=+cm.slice(0,4),cmo=+cm.slice(5,7)-1+(+t.dataset.dir);var nd=new Date(cy,cmo,1);ui.schedMon=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0');ui.schedDay=ui.schedMon===todayISO().slice(0,7)?todayISO():ui.schedMon+'-01';renderSched();break}
+    case 'cal:today':ui.schedDay=todayISO();ui.schedMon=ui.schedDay.slice(0,7);renderSched();break;
+    case 'cc:open':ccOpen(t.dataset.id);break;
+    case 'cc:call':ccCall(t.dataset.id);break;
+    case 'cc:lost':if(armed('cc:lost:'+t.dataset.id))ccLost(t.dataset.id);else ccFill();break;
     case 'fab:quote':ui.tab='quote';ui.qstep=1;ui.armed='';render();window.scrollTo(0,0);break;
     case 'theme:open':ui.pick=true;renderPick();break;
     case 'theme:close':ui.pick=false;renderPick();break;
@@ -7019,7 +7251,7 @@ document.addEventListener('input',function(e){
   else if(t.id==='mpQ'&&ui.mp){ui.mp.q=t.value;mpFilter()}
   else if((t.id==='mpOn'||t.id==='mpOq')&&ui.mp){ui.mp.other[t.id==='mpOn'?'n':'q']=t.value}
   else if(t.dataset.phone!==undefined){state.settings.contacts[t.dataset.phone]=t.value;dirChanged()}
-  else if(t.dataset.d!==undefined){state.draft[t.dataset.d]=t.type==='checkbox'?t.checked:t.value;if(t.dataset.d==='miles'){state.draft.milesAuto=false;renderDistNote()}if(t.dataset.d==='milesOut'||t.dataset.d==='milesBack'){state.draft.shopManual=Object.assign({},state.draft.shopManual);state.draft.shopManual[t.dataset.d==='milesOut'?'out':'back']=true;renderShopNote()}save();updateQuote()}
+  else if(t.dataset.d!==undefined){state.draft[t.dataset.d]=t.type==='checkbox'?t.checked:t.value;if(t.dataset.d==='moveDate')renderDayNote();if(t.dataset.d==='miles'){state.draft.milesAuto=false;renderDistNote()}if(t.dataset.d==='milesOut'||t.dataset.d==='milesBack'){state.draft.shopManual=Object.assign({},state.draft.shopManual);state.draft.shopManual[t.dataset.d==='milesOut'?'out':'back']=true;renderShopNote()}save();updateQuote()}
   else if(t.dataset.dcf){state.draft.custom[t.dataset.dcf]=t.value;save()}
   else if(t.id==='clockNote'){ui.clockNote=t.value}
   else if(t.id==='qSearch'){filterItems(t.value)}
@@ -7028,6 +7260,7 @@ document.addEventListener('input',function(e){
   else if(t.id==='rqNote'&&ui.rqo){ui.rqo.note=t.value}
   else if(t.id==='rqPack'&&ui.rqo){ui.rqo.dr.pack=t.checked;rqFootUpdate(byId(ui.rqo.jobId),ui.rqo)}
   else if(t.id==='hSearch'){ui.hq=t.value;ui.hShow=50;ui.hShowC=0;histFill()}
+  else if(t.id==='ccQ'){ui.ccq=t.value;ccFill()}
   else if(/^(backSoFar|backMi|odoA|odoB)$/.test(t.id)&&ui.flow&&ui.flow.back){var fbk=ui.flow.back;fbk[{backSoFar:'soFar',backMi:'mi',odoA:'odoStart',odoB:'odoEnd'}[t.id]]=t.value;if(t.id==='backMi')fbk.miSrc='typed';backRedraw()}
   else if(t.id==='odoStartIn'&&ui.start){ui.start.odo=t.value}
   else if(t.id==='setQ'){ui.setQ=t.value;var sl=$('#setList');if(sl)sl.innerHTML=setListHtml(setupSecs())}
@@ -7092,7 +7325,7 @@ window.addEventListener('error',function(e){showErr(e&&e.message)});
 window.addEventListener('unhandledrejection',function(e){showErr(e&&e.reason&&(e.reason.message||e.reason.code||e.reason))});
 
 /* ---------- boot ---------- */
-function freshState(demo){var s={v:1,settings:defaultSettings(),jobs:[],shifts:[],vault:[],chatMsgs:[],locs:{},draft:blankDraft(),ui:{role:'owner',me:'',who:'',reads:{},theme:'movingday',mode:'auto'},demo:false};if(demo){s.jobs=demoJobs(s.settings);s.shifts=demoShifts();s.vault=demoVault();s.chatMsgs=demoChat();s.demo=true;s.demoV2=true}return s}
+function freshState(demo){var s={v:1,settings:defaultSettings(),jobs:[],shifts:[],vault:[],chatMsgs:[],locs:{},draft:blankDraft(),ui:{role:'owner',me:'',who:'',reads:{},theme:'movingday',mode:'auto'},demo:false};if(demo){s.settings.callcenter=['Jess'];s.settings.contacts.Jess='512-555-0107';s.jobs=demoJobs(s.settings);s.shifts=demoShifts();s.vault=demoVault();s.chatMsgs=demoChat();s.demo=true;s.demoV2=true}return s}
 state=loadState();
 if(!state||!state.settings||!Array.isArray(state.jobs))state=freshState(true);
 state.draft=Object.assign(blankDraft(),state.draft||{});
@@ -7136,7 +7369,7 @@ else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency te
 (function migrate11(){if(window.claude&&typeof window.claude.use==='function')return;var n=0;state.jobs.forEach(function(j){if(crewAdjs(j).length&&clockStale(j)){rebill(j,'worked out again');n++}});if(n)save()})();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,schedRecs:schedRecs,schedOf:schedOf,dayLoad:dayLoad,dirApply:dirApply,openJob:openJob,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock};
 })();
 </script>
 </body>
