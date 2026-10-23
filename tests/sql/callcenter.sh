@@ -83,6 +83,15 @@ check $JESS "0" "select count(*) from docs where collection='sched' and (data ? 
 check $JESS "Priya Nair|512-555-0142|2026-10-30|08:00|418 Oak St|77 Ridge Rd|Gate 4411|Sofa (3-seat)|1|3|4|Box 1 (26 ft)|2|false" "select concat_ws('|', data->'d'->>'name', data->'d'->>'phone', data->'d'->>'moveDate', data->'d'->>'time', data->'d'->>'from', data->'d'->>'to', data->'d'->>'notes', data->'items'->0->>'name', data->'items'->0->>'qty', data->'quote'->>'crew', data->'quote'->>'hours', data->'quote'->>'truckName', data->'assign'->>'crewN', (data->'assign' ? 'crew')::text) from docs where path='sched/b1'" "what a copy has: the customer, day and time, addresses, notes, items, crew size, hours, truck, how many on the crew (not who)"
 check $MARCUS 0 "select count(*) from docs where collection='sched'" "the crew doesn't read the copies (their own jobs are theirs to read)"
 check $ZOE 0 "select count(*) from docs where org_id='$O'" "another company's call center reads nothing of ours"
+# the rest of the company's records: the settings are the call center's to read (rates, trucks, items for
+# its quotes); the team's own are not
+for d in 'org/settings:{"company":"Acme Moving"}' 'meta/init:{"ts":1}' 'chat/m1:{"id":"m1","from":"Dispatch","text":"Gate code is 4411"}' \
+         'locs/marcus:{"name":"Marcus","lat":30.27,"lng":-97.74}' 'photos/ph1:{"id":"ph1","jobId":"q1","data":"data:image/jpeg;base64,xx"}' \
+         'formpages/fp1:{"id":"fp1","data":"data:image/png;base64,xx"}'; do
+  p=${d%%:*}; as $OWN "insert into docs(org_id,path,collection,doc_id,data) values ('$O','$p','${p%%/*}','${p#*/}','${d#*:}') on conflict (org_id,path) do update set data=excluded.data returning 1" >/dev/null; done
+check $OWN 6 "select count(*) from docs where collection in ('org','meta','chat','locs','photos','formpages')" "(the company's settings, a chat message, a crew location, a photo and a form page)"
+check $JESS "meta,org" "select string_agg(distinct collection, ',' order by collection) from docs where collection not in ('jobs','sched')" "besides its quotes and the schedule, the call center reads the company's settings: not the chat, the crew's locations, the photos or the forms"
+check $MARCUS "chat,formpages,locs,meta,org,photos" "select string_agg(distinct collection, ',' order by collection) from docs where collection in ('org','meta','chat','locs','photos','formpages')" "(the crew still reads those)"
 
 # writing: only through cc_save, which checks what the call center saves
 cc(){ echo "select public.cc_save('$O','jobs/$1',$2,$3)"; }

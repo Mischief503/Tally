@@ -45,12 +45,14 @@ grant execute on function public.cc_in(uuid), public.cc_open(jsonb), public.cc_c
 
 -- ---------- docs-rules (as in supabase-schema-v2.sql) ----------
 -- docs: by collection.
--- read
+-- read. The call center reads the company's settings, its open quotes and the schedule's copies, and
+-- nothing of the team's own: not the chat, the crew's locations, the job photos or the forms' pages.
 drop policy if exists docs_read on public.docs;
 create policy docs_read on public.docs for select to authenticated using (
   public.member_of(org_id) and (
     public.office_of(org_id)
-    or collection in ('org','meta','chat','locs','photos','formpages')
+    or collection in ('org','meta')
+    or (collection in ('chat','locs','photos','formpages') and not public.cc_in(org_id))
     or (collection = 'jobs'   and public.on_job(org_id, data))
     or (collection = 'jobs'   and public.cc_in(org_id) and public.cc_open(data))
     or (collection = 'sched'  and public.cc_in(org_id))

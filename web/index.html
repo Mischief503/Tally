@@ -3155,8 +3155,10 @@ function schedOf(j){
     quote:{crew:q.crew,hours:q.hours,kind:q.kind,driveH:q.driveH,nTrucks:q.nTrucks,truckId:q.truckId,truckName:q.truckName},
     assign:{truckId:a.truckId||'',more:(a.more||[]).slice(),crewN:(a.crew||[]).length},startedAt:j.startedAt||0};
 }
+// signed in as the call center (not the owner seeing it their way)
+function ccDb(){return sync.mode==='shared'&&sync.identity.status==='ok'&&sync.identity.role==='callcenter'}
 // the hosted call center reads the scheduled jobs from the database's copy; everyone else from the jobs
-function schedFromDb(){return !!window.TALLY_SCHED&&sync.mode==='shared'&&sync.identity.status==='ok'&&sync.identity.role==='callcenter'&&!previewing()}
+function schedFromDb(){return !!window.TALLY_SCHED&&ccDb()&&!previewing()}
 function schedRec(v){   // a copy from the database, filled out so the screens can count on its shape
   if(!v||typeof v!=='object'||!v.id)return null;
   var d=v.d||{},q=v.quote||{},a=v.assign||{};
@@ -4608,7 +4610,8 @@ function pullJobs(snap){
   Object.keys(remote).forEach(function(id){var cj=byId[id];if(clockStale(cj)){rebill(cj,'worked out again');changed=true}});
   sync.got.jobs=true;
   jobMsgNotice();noteNotice();onJobNotice(false);rqNotice();
-  state.jobs.forEach(function(j){(j.photos||[]).forEach(function(p){if(!p.data)fetchPhoto(p.id,0)})});
+  // the call center's screens have no photos, and the hosted database doesn't give it them
+  if(!ccDb())state.jobs.forEach(function(j){(j.photos||[]).forEach(function(p){if(!p.data)fetchPhoto(p.id,0)})});
   commsBaseline();
   if(changed){cacheSave();softRefresh();if(ui.flow)flowRefresh()}
   syncOut();
@@ -4637,7 +4640,8 @@ function pullSettings(snap){
     if(!state.settings.comms||!state.settings.comms.alerts)state.settings.comms=defaultSettings().comms;
     if(!state.settings.opt||typeof state.settings.opt!=='object')state.settings.opt={};
     sync.lastSettings=canon(settingsDoc());
-    fetchPages();cacheSave();applyIdentityUI();softRefresh();
+    if(!ccDb())fetchPages();   // the forms' pages: signed on the job, never the call center's
+    cacheSave();applyIdentityUI();softRefresh();
   }
   syncOut();
 }

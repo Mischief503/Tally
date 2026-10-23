@@ -13,23 +13,33 @@ function seed() {
   const docs = [], put = (path, data) => { const [c, id] = path.split('/'); docs.push({ org_id: ORG, path, collection: c, doc_id: id, data, updated_at: 'x' }); };
   put('meta/init', { ts: 1 });
   put('org/settings', { company: 'Ace Moving', crew: ['Marcus', 'Kim'], leads: ['Marcus'], callcenter: ['Jess'], office: [{ name: 'Owner', kind: 'owner' }, { name: 'Dispatch', kind: 'dispatch' }],
-    contacts: { Owner: '512-555-0100', Jess: '512-555-0107' }, rates: { r2: 140, r3: 195, r4: 250 }, trucks: [{ id: 't16', name: 'Van (16 ft)', cf: 800 }, { id: 't26', name: 'Box 1 (26 ft)', cf: 1700 }], forms: [], opt: {} });
+    contacts: { Owner: '512-555-0100', Jess: '512-555-0107' }, rates: { r2: 140, r3: 195, r4: 250 }, trucks: [{ id: 't16', name: 'Van (16 ft)', cf: 800 }, { id: 't26', name: 'Box 1 (26 ft)', cf: 1700 }],
+    forms: [{ id: 'f_bol', title: 'Bill of lading', kind: 'pages', required: false, pages: [], pageIds: ['fp1'] }], opt: {} });
   const job = (id, status, over) => Object.assign({ id, status, createdAt: Date.now() - 864e5, d: { name: 'Customer ' + id, phone: '512-555-01' + id.length + '0', moveDate: '', time: '08:00', from: '1 A St', to: '2 B St', items: [{ id: 'sofa3', q: 1 }], custom: {}, discount: '' },
     quote: quote(515), items: [{ id: 'sofa3', name: 'Sofa (3-seat)', cf: 55, qty: 1 }], assign: { truckId: '', crew: [] }, tally: {}, payments: {}, signed: {}, extras: {}, crewNotes: {}, photos: {}, materials: {}, costs: {}, log: {}, confirm: {} }, over || {});
-  put('jobs/q1', job('q1', 'quoted', { d: { name: 'Ortega family', phone: '512-555-0170', moveDate: later, time: '09:00', from: '88 Elm Ct', to: '12 Lakeview Dr', items: [{ id: 'sofa3', q: 1 }], custom: {}, discount: '50' } }));
+  put('jobs/q1', job('q1', 'quoted', { d: { name: 'Ortega family', phone: '512-555-0170', moveDate: later, time: '09:00', from: '88 Elm Ct', to: '12 Lakeview Dr', items: [{ id: 'sofa3', q: 1 }], custom: {}, discount: '50' },
+    photos: { ph1: { id: 'ph1', kind: 'before', ts: 1 } } }));
   put('jobs/l1', job('l1', 'lead', { d: { name: 'Sam Kowalski', phone: '512-555-0180', moveDate: '', time: '08:00', from: 'Austin', to: 'San Antonio', items: [], custom: {}, discount: '' }, quote: { cf: 0, total: 0, lines: [] }, items: [] }));
   put('jobs/b1', job('b1', 'booked', { d: { name: 'Priya Nair', phone: '512-555-0142', moveDate: today, time: '08:00', from: '418 Oak St', to: '77 Ridge Rd', notes: 'Gate 4411', items: [{ id: 'sofa3', q: 1 }], custom: {} },
     assign: { truckId: 't26', crew: ['Marcus', 'Kim'] }, payments: { p1: { id: 'p1', amt: 129, method: 'Card', ts: 1 } } }));
   // the database's copies of the schedule (supabase-callcenter.sql)
   docs.filter((r) => r.collection === 'jobs' && ['booked', 'active'].indexOf(r.data.status) >= 0).forEach((r) => put('sched/' + r.doc_id, schedOf(r.data)));
+  // the team's own: a photo on the open quote, a form's page, a chat message and a crew location
+  put('photos/ph1', { id: 'ph1', jobId: 'q1', kind: 'before', ts: 1, data: 'data:image/jpeg;base64,xx' });
+  put('formpages/fp1', { id: 'fp1', data: 'data:image/png;base64,xx' });
+  put('chat/m1', { id: 'm1', from: 'Dispatch', to: 'all', text: 'Gate code is 4411', ts: Date.now() - 6e4 });
+  put('locs/marcus', { name: 'Marcus', lat: 30.27, lng: -97.74, ts: Date.now() });
   return { docs, access_requests: [], comm_log: [], comm_lines: [], __sched: true,
-    // the row rules, for Jess: the open quotes and leads, and the copies; never the booked jobs themselves
-    __visible: (r) => r.collection !== 'jobs' || open(r.data),
+    // the row rules, for Jess: the company's settings, the open quotes and leads, and the copies; never the booked
+    // jobs themselves, and nothing of the team's own (chat, locations, photos, form pages)
+    __visible: (r) => ['org', 'meta', 'sched'].indexOf(r.collection) >= 0 || (r.collection === 'jobs' && open(r.data)),
     members: [{ org_id: ORG, user_id: 'u-owner', email: 'o@x', staff: 'Owner', role: 'owner', ts: 1 }, { org_id: ORG, user_id: 'u-jess', email: 'j@x', staff: 'Jess', role: 'callcenter', ts: 1 }] };
 }
 
 (async () => {
   const db = seed();
+  const asks = [];   // every read her phone makes, to see it never asks for the team's photos or form pages
+  db.__failSelect = (table, asked) => { asks.push(table + ':' + asked.map(([c, v]) => c + '=' + v).join('&')); return false; };
   const A = await load(FILE, { db, org: ORG, me: { uid: 'u-jess', email: 'j@x' }, fnReply: () => ({ ok: true, sent: 0 }) });
   const { $, $$, click, T, w } = A;
   await sleep(300);
@@ -42,6 +52,8 @@ function seed() {
   ok(/Priya Nair/.test(view()) && /418 Oak St → 77 Ridge Rd/.test(view()) && !/\$/.test(view()), 'today’s booked job is on her schedule, with no money on the screen');
   const pri = $('#view details.schedcard[data-job="b1"]');
   ok(!!pri && /Gate 4411/.test(pri.textContent) && /Truck: Box 1 \(26 ft\)/.test(pri.textContent) && /2 movers \(2 on the job so far\)/.test(pri.textContent) && !/Marcus|Kim/.test(pri.textContent), 'opened: the notes, the truck and how many movers (not who)');
+  ok(asks.some((a) => /^docs:.*collection=jobs/.test(a)) && !asks.some((a) => /path=(photos|formpages)\//.test(a)) && T.chat.msgs.length === 0 && !Object.keys(T.chat.locs || {}).length,
+    'nothing of the team’s: no chat, no crew locations, and her phone doesn’t ask for the quote’s photo or the form’s page');
 
   /* ---------- an open quote: changed, then booked ---------- */
   click('[data-act="tab"][data-tab="quotes"]'); await sleep(15);

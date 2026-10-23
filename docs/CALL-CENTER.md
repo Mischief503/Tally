@@ -59,6 +59,9 @@ From `supabase-callcenter.sql` (the same rules are in `supabase-schema-v2.sql`,
   (`sched/<job id>`: the customer, day and time, addresses, notes, custom fields, items, crew size,
   hours, trucks and how many movers). A trigger keeps the copies as every job is saved, by anyone,
   and removes a copy when the job is finished, lost or deleted. Nobody writes the copies.
+- **Nothing of the team's own:** not the chat, the crew's locations, the job photos or the forms'
+  pages (the crew and the office read those as before). They read the company's settings, like
+  everyone: the rates, trucks and items a quote needs.
 - **Writing:** only through `cc_save`, which the app calls for them. A new job is a quote or a
   booking with no payment and no discount. A change is to an open quote only. It can change the
   price but not the discount or the payments, and booking it or marking it lost is the last change.
