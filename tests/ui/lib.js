@@ -17,7 +17,17 @@ function schedOf(j) {
     assign: { truckId: a.truckId === undefined ? null : a.truckId, more: a.more || [], crewN: Array.isArray(a.crew) ? a.crew.length : 0 },
     startedAt: j.startedAt === undefined ? null : j.startedAt };
 }
+// the database's rate card copy (ratecard_of): the settings' prices and what makes them, kept like ratecard_sync
+const CARD_KEYS = ['company', 'rates', 'minHours', 'prod', 'mph', 'shopAddress', 'shopTravel', 'shopGeo', 'includedMiles', 'mileRate', 'truckFee', 'stairFee', 'packPerBox', 'taxPct', 'depositPct', 'ntePct', 'nteCap', 'trucks', 'catalog', 'sources', 'customFields', 'opt'];
+function ratecardOf(s) { const o = {}; CARD_KEYS.forEach((k) => { if (s && s[k] !== undefined) o[k] = clone(s[k]); }); return o; }
 function syncSched(db, row, fire) {
+  if (db.__sched && row && row.path === 'org/settings') {
+    const rows = db.docs, i = rows.findIndex((r) => r.org_id === row.org_id && r.path === 'ratecard/main');
+    const c = { org_id: row.org_id, path: 'ratecard/main', collection: 'ratecard', doc_id: 'main', data: ratecardOf(row.data), updated_at: new Date().toISOString() };
+    if (i >= 0) rows[i] = c; else rows.push(c);
+    setTimeout(() => fire('docs', c), 6);
+    return;
+  }
   if (!db.__sched || !row || row.collection !== 'jobs') return;
   const rows = db.docs, path = 'sched/' + row.doc_id, i = rows.findIndex((r) => r.org_id === row.org_id && r.path === path);
   if (row.data && ['booked', 'active'].indexOf(row.data.status) >= 0) {
@@ -42,6 +52,7 @@ function makeSupabase(db, me, calls) {
     };
     const api = {
       select() { if (op !== 'select') returning = true; return api; }, eq(c, v) { asked.push([c, v]); filters.push((r) => String(val(r, c)) === String(v)); return api; },
+      in(c, vs) { asked.push([c, vs.join(',')]); filters.push((r) => vs.map(String).indexOf(String(val(r, c))) >= 0); return api; },
       filter(c, o, v) { asked.push([c, v]); filters.push((r) => { const x = val(r, c); return o === 'eq' ? String(x) === String(v) : o === 'gt' ? x > v : o === 'lt' ? x < v : true; }); return api; },
       order(c, opts) { order = [c, opts && opts.ascending === false]; return api; }, limit(n) { lim = n; return api; },
       maybeSingle() { single = true; return api; },
@@ -154,7 +165,12 @@ function makeSupabase(db, me, calls) {
         rows.push(nr); setTimeout(() => fire('docs', nr), 5); syncSched(db, nr, fire);
         return Promise.resolve({ data: 'ok', error: null });
       }
-      if (name === 'my_orgs') return Promise.resolve({ data: db.members.filter((m) => m.user_id === me.uid).map((m) => ({ id: m.org_id, name: 'Ace Moving', role: m.role, join_code: 'ABC123' })) });
+      // Tally's call center team (db.__ccTeam: {uid: name}) and the companies with the service (db.__ccOrgs: [{id, name}])
+      const agent = db.__ccTeam && me && db.__ccTeam[me.uid];
+      if (name === 'claim_cc_team') return Promise.resolve({ data: !!agent });
+      if (name === 'cc_me') return Promise.resolve({ data: agent || null });
+      if (name === 'my_orgs') return Promise.resolve({ data: db.members.filter((m) => m.user_id === me.uid).map((m) => ({ id: m.org_id, name: (db.__orgNames || {})[m.org_id] || 'Ace Moving', role: m.role, join_code: 'ABC123' }))
+        .concat(agent ? (db.__ccOrgs || []).filter((o) => !db.members.some((m) => m.user_id === me.uid && m.org_id === o.id)).map((o) => ({ id: o.id, name: o.name, role: 'callcenter', join_code: null, pending: false })) : []) });
       if (name === 'people') return Promise.resolve({ data: db.members.map((m) => ({ user_id: m.user_id, email: m.email })).concat((db.access_requests || []).map((r) => ({ user_id: r.user_id, email: r.email }))) });
       return Promise.resolve({ data: null });
     },
@@ -234,4 +250,4 @@ let passes = 0, failures = 0;
 function ok(c, m) { if (c) { passes++; console.log('PASS', m); } else { failures++; console.log('FAIL', m); } }
 function summary(name) { console.log(`\n${name}: ${passes} passed, ${failures} failed`); return failures; }
 
-module.exports = { load, ok, sleep, summary, deepFreeze, clone, schedOf };
+module.exports = { load, ok, sleep, summary, deepFreeze, clone, schedOf, ratecardOf };

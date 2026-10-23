@@ -208,6 +208,78 @@ details.acc.card .acc-body{padding-bottom:14px}
 .cal-key{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12.5px;color:var(--text)}
 .cal-key span{display:inline-flex;align-items:center;gap:6px}
 .cal-key i{display:inline-block;width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
+/* the call center's Companies screen: the customer, the map, each company's rate card */
+.dkcust h2{margin:0 0 6px;font-size:17px}
+.dkcust #dkNote{margin:8px 0 0}
+.dkmapcard{padding:0;overflow:hidden;position:relative}
+.dkmap{position:relative;height:250px;background:color-mix(in srgb, var(--line2) 55%, var(--card))}
+.dkmap.leafy{height:300px;background:var(--line2)}
+.dksvg{display:block;width:100%;height:100%}
+.dkring{fill:none;stroke:var(--muted);stroke-opacity:.55;stroke-width:1;stroke-dasharray:3 4}
+.dkringt{font:600 10.5px var(--font);fill:var(--muted)}
+.dkhomeg rect{fill:var(--text)}
+.dkhomeg path,.dkhome path{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.dkhomeg path{stroke:var(--card)}
+.dkdot{cursor:pointer}
+.dkdot circle{fill:var(--card);stroke:var(--text);stroke-width:1.6}
+.dkdot circle.dkhit{fill:transparent!important;stroke:none}
+.dkdot text{font:700 12.5px var(--font);fill:var(--text);text-anchor:middle}
+.dkdot.lvl1 circle,.dknum.lvl1{background:color-mix(in srgb, var(--ok) 40%, var(--card));fill:color-mix(in srgb, var(--ok) 40%, var(--card))}
+.dkdot.lvl2 circle,.dknum.lvl2{background:color-mix(in srgb, var(--warn) 45%, var(--card));fill:color-mix(in srgb, var(--warn) 45%, var(--card))}
+.dkdot.lvl3 circle,.dknum.lvl3{background:color-mix(in srgb, var(--bad) 40%, var(--card));fill:color-mix(in srgb, var(--bad) 40%, var(--card))}
+.dkempty{display:flex;align-items:center;justify-content:center;height:100%;padding:16px;text-align:center}
+.dkcap{margin:0;padding:6px 12px 8px;font-size:12px;border-top:1px solid var(--line2)}
+details.hcard>summary>.dknum{flex:none}
+details.hcard.deskcard>summary>.hpill.dkkeep{display:inline-block}
+.dknum{flex:none;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:1.6px solid var(--text);background:var(--card);color:var(--text);font:700 13px var(--font);box-sizing:border-box}
+.dkhome{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.dkhome svg{width:18px;height:18px}.dkhome path{stroke:var(--card)}
+.dkpin{background:none;border:0;display:flex!important;align-items:center;justify-content:center}
+.dkpin .dknum{box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.pill.dkav.lvl1{background:color-mix(in srgb, var(--ok) 32%, var(--card))}
+.pill.dkav.lvl2{background:color-mix(in srgb, var(--warn) 38%, var(--card))}
+.pill.dkav.lvl3{background:color-mix(in srgb, var(--bad) 32%, var(--card))}
+.dkday{margin:0 0 8px;padding:7px 10px;border-radius:var(--r2);background:var(--line2);font-weight:var(--w-mid)}
+.dkday.lvl1{background:color-mix(in srgb, var(--ok) 26%, var(--card))}
+.dkday.lvl2{background:color-mix(in srgb, var(--warn) 32%, var(--card))}
+.dkday.lvl3{background:color-mix(in srgb, var(--bad) 30%, var(--card))}
+.ratecard td:first-child{color:var(--muted)}
+.ratecard td:last-child{white-space:normal;font-weight:var(--w-mid);color:var(--text)}
+/* Leaflet's own layout (the map in the phone app), and its controls in the app's colours */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden;-webkit-tap-highlight-color:transparent;outline-offset:1px;font:12px var(--font)}
+.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.leaflet-marker-icon,.leaflet-marker-shadow{display:block}
+.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-tile-pane img,.leaflet-container .leaflet-tile{max-width:none!important;max-height:none!important;width:auto;padding:0}
+.leaflet-container.leaflet-touch-zoom{touch-action:pan-x pan-y}
+.leaflet-container.leaflet-touch-drag{touch-action:pinch-zoom}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{touch-action:none}
+.leaflet-tile{filter:inherit;visibility:hidden}
+.leaflet-tile-loaded{visibility:inherit}
+.leaflet-zoom-box{width:0;height:0;box-sizing:border-box;z-index:800}
+.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}
+.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}
+.leaflet-control{position:relative;z-index:800;pointer-events:auto;float:left;clear:both}
+.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}
+.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}
+.leaflet-right .leaflet-control{float:right}
+.leaflet-top .leaflet-control{margin-top:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:0}.leaflet-bottom .leaflet-control{margin-bottom:0}
+.leaflet-zoom-animated{transform-origin:0 0}
+.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+.leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{transition:none}
+.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}
+.leaflet-interactive{cursor:pointer}
+.leaflet-grab{cursor:grab}
+.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive{cursor:grabbing}
+.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-image-layer,.leaflet-tile-container{pointer-events:none}
+.leaflet-marker-icon.leaflet-interactive{pointer-events:auto}
+.leaflet-bar{border-radius:var(--r2);border:1px solid var(--line);background:var(--card);overflow:hidden}
+.leaflet-bar a{display:block;width:40px;height:40px;line-height:40px;text-align:center;text-decoration:none;color:var(--text);background:var(--card);font:600 22px var(--font)}
+.leaflet-bar a+a{border-top:1px solid var(--line)}
+.leaflet-bar a.leaflet-disabled{color:var(--muted);cursor:default}
+.leaflet-control-attribution{background:color-mix(in srgb, var(--card) 85%, transparent);margin:0;padding:1px 6px;color:var(--text);font-size:11px;line-height:1.5}
+.leaflet-control-attribution a{color:var(--text)}
+html[data-theme=dark] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88)}
 .qcard .route{margin-top:2px}
 .daynote.full{color:var(--text);font-weight:var(--w-mid)}
 .saved{font-weight:var(--w-mid)}
@@ -778,7 +850,7 @@ window.TALLY_ORG_KEY=ORG||'none';            // the app keeps a separate on-devi
 window.tallyOrg=null;                        // {id,name,role,join_code} once known
 var sb=window.supabase.createClient(CFG.url,CFG.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 var me={id:'',email:'',role:'',staff:'',isOwner:false,canEdit:false};
-var COLS=['org','meta','jobs','shifts','vault','chat','locs','photos','formpages','sched'];
+var COLS=['org','meta','jobs','shifts','vault','chat','locs','photos','formpages','sched','ratecard'];
 window.TALLY_SCHED=true;   // the database keeps a copy of the scheduled jobs without the money, for the call center
 
 /* ---------- little helpers ---------- */
@@ -804,6 +876,7 @@ function ensureChannel(){
   channel=sb.channel('tally-'+ORG)
    .on('postgres_changes',{event:'*',schema:'public',table:'docs',filter:'org_id=eq.'+ORG},function(p){
       var c=(p.new&&p.new.collection)||(p.old&&p.old.collection)||'';
+      if(c==='ratecard'&&me.role==='callcenter')c='org';   // the call center's settings are the rate card's copy
       Object.keys(watchers).forEach(function(k){if(k.indexOf(c+'|')===0||(c==='sched'&&me.role==='callcenter'&&k.indexOf('jobs|')===0))bump(k)});
    })
    .on('postgres_changes',{event:'*',schema:'public',table:'members',filter:'org_id=eq.'+ORG},function(){Object.keys(watchers).forEach(function(k){if(k.indexOf('users|')===0)bump(k)});refreshMe()})
@@ -854,6 +927,9 @@ function collectionRef(collection){
 function docRef(path){
   var parts=split(path),collection=parts[0],id=parts[1];
   function readOne(){
+    // Tally's call center team isn't one of the company's people: who they are comes from the team list
+    if(collection==='users'&&me.role==='callcenter'&&id===me.id)return Promise.resolve(snapOne(path,{data:{uid:me.id,staff:me.staff,role:'callcenter',email:me.email,ts:0}}));
+    if(path==='org/settings'&&me.role==='callcenter')return sb.from('docs').select('data').eq('org_id',ORG).eq('path','ratecard/main').maybeSingle().then(function(r){if(r.error)throw r.error;return snapOne(path,r.data)});
     if(collection==='users')return sb.from('members').select('*').eq('org_id',ORG).eq('user_id',id).maybeSingle().then(function(r){return snapOne(path,r.data?{data:membersToDoc(r.data)}:null)});
     if(collection==='requests')return sb.from('access_requests').select('*').eq('org_id',ORG).eq('user_id',id).maybeSingle().then(function(r){return snapOne(path,r.data?{data:reqToDoc(r.data)}:null)});
     return sb.from('docs').select('data').eq('org_id',ORG).eq('path',path).maybeSingle().then(function(r){if(r.error)throw r.error;return snapOne(path,r.data)});
@@ -918,6 +994,8 @@ function refreshMe(){
     var m=r.data;
     me.role=m?m.role:'';me.staff=m?m.staff:'';
     me.isOwner=!!(m&&m.role==='owner');me.canEdit=me.isOwner;
+    // Tally's call center team, in a company with the service (supabase-callcenter.sql): not a member
+    if(!m&&window.tallyOrg&&window.tallyOrg.role==='callcenter')return sb.rpc('cc_me').then(function(x){me.role='callcenter';me.staff=(x&&x.data)||'Call center';return me});
     return me;
   }).catch(function(){return me});
 }
@@ -1004,7 +1082,7 @@ function hideLogin(){if(el){el.remove();el=null}document.documentElement.classLi
 function showLogin(){document.documentElement.classList.add('pre-auth');state.step='email';state.busy=false;state.msg='';render()}
 
 /* ---------- choose a company ---------- */
-var pick={mode:'list',orgs:[],busy:false,msg:'',kind:''};
+var pick={mode:'list',orgs:[],busy:false,msg:'',kind:'',agent:false};
 function useOrg(id){try{localStorage.setItem(ORG_KEY,id)}catch(e){}reload()}
 window.tallySwitchCompany=function(){try{localStorage.removeItem(ORG_KEY)}catch(e){}reload()};
 function renderPicker(){
@@ -1016,9 +1094,12 @@ function renderPicker(){
   var body='';
   if(pick.mode==='list'){
     var rows=pick.orgs.map(function(o){
-      var sub=o.pending?'Waiting for the owner to approve you':({owner:'Owner',dispatch:'Dispatch',lead:'Crew lead',crew:'Crew'}[o.role]||o.role);
+      var sub=o.pending?'Waiting for the owner to approve you':({owner:'Owner',dispatch:'Dispatch',lead:'Crew lead',crew:'Crew',callcenter:'Call center'}[o.role]||o.role);
       return '<button class="org" data-org="'+esc(o.id)+'"><b>'+esc(o.name)+'</b><small>'+esc(sub)+'</small></button>'}).join('');
-    body='<h1>Tally</h1><p>'+(pick.orgs.length?'Pick a company to work in.':'You are not part of a company yet.')+'</p>'+rows+
+    // someone on Tally's call center team with no company switched on yet: nothing to start or join
+    if(pick.agent&&!pick.orgs.length)body='<h1>Tally</h1><p>You’re on Tally’s call center team. No company has the call center switched on yet; Tally admin turns it on for each company that buys it.</p>'+
+      '<button class="link" id="pkOut">Sign out ('+esc(me.email)+')</button>';
+    else body='<h1>Tally</h1><p>'+(pick.orgs.length?'Pick a company to work in.':'You are not part of a company yet.')+'</p>'+rows+
       '<button id="pkNew">Start a new company</button><button class="link" id="pkJoin">Join a company with a code</button>'+
       '<button class="link" id="pkOut">Sign out ('+esc(me.email)+')</button>';
   }else if(pick.mode==='new'){
@@ -1065,15 +1146,43 @@ function onSession(session){
   if(window.__tallyBooted){reload();return}   // a different person signed in on this device: start clean
   // a profile the owner set up with this email links now, so the person walks straight in
   // and a company Tally's admin added for this email becomes theirs
-  sb.rpc('claim_invites').then(function(){},function(){}).then(function(){return sb.rpc('claim_company_invites')}).then(function(){},function(){}).then(function(){return sb.rpc('my_orgs')}).then(function(r){
+  sb.rpc('claim_invites').then(function(){},function(){}).then(function(){return sb.rpc('claim_company_invites')}).then(function(){},function(){}).then(function(){return sb.rpc('claim_cc_team')}).then(function(r){pick.agent=!!(r&&r.data===true)},function(){}).then(function(){return sb.rpc('my_orgs')}).then(function(r){
     var list=r.data||[],hit=list.filter(function(o){return o.id===ORG})[0],ready=list.filter(function(o){return !o.pending});
     if(!hit&&!ORG&&ready.length===1){useOrg(ready[0].id);return}
+    // the call center team: any of its companies opens the Companies screen, where they pick the one on the call
+    if(!hit&&ready.length&&ready.every(function(o){return o.role==='callcenter'})){useOrg(ready[0].id);return}
     if(!hit){pick.orgs=list;pick.mode='list';pick.msg='';hideLoginOnly();renderPicker();return}
     window.tallyOrg={id:hit.id,name:hit.name,role:hit.role,join_code:hit.join_code,pending:hit.pending,plan:hit.plan};
     hideLogin();
     return Promise.all([refreshMe(),commsApi.refresh()]).then(function(){window.__tallyBooted=true;readyGo()});
   }).catch(function(){hideLoginOnly();renderPicker()});
 }
+/* ---------- the call center's Companies screen: every company with the service, from the database ----------
+   companies(): [{id,name,here,card}] (card: the rate card copy); sched(ids): {org: [schedule copies]};
+   open(id,pre): that company, with the quote (or its schedule) to open once it's loaded. */
+window.tallyDesk={
+  companies:function(){
+    return sb.rpc('my_orgs').then(function(r){
+      if(r.error)throw r.error;
+      var cc=(r.data||[]).filter(function(o){return o.role==='callcenter'}),ids=cc.map(function(o){return o.id});
+      if(!ids.length)return [];
+      return sb.from('docs').select('org_id,data').eq('path','ratecard/main').in('org_id',ids).then(function(x){
+        if(x.error)throw x.error;
+        var by={};(x.data||[]).forEach(function(d){by[d.org_id]=d.data});
+        return cc.map(function(o){return {id:o.id,name:o.name,here:o.id===ORG,card:by[o.id]||{company:o.name}}});
+      });
+    });
+  },
+  sched:function(ids){
+    if(!ids.length)return Promise.resolve({});
+    return sb.from('docs').select('org_id,data').eq('collection','sched').in('org_id',ids).then(function(x){
+      if(x.error)throw x.error;
+      var by={};(x.data||[]).forEach(function(d){(by[d.org_id]=by[d.org_id]||[]).push(d.data)});return by;
+    });
+  },
+  open:function(id,pre){try{sessionStorage.setItem('tally.deskOpen',JSON.stringify(pre||{}))}catch(e){}useOrg(id)}
+};
+
 /* ---------- texts and calls through the company line (Twilio, via the tally-twilio Edge Function) ---------- */
 var commsLine='';
 function commsPost(body){
@@ -1152,7 +1261,9 @@ window.tallyAdmin={
   list:function(){return commsPost({action:'admin_list'})},
   set:function(target,patch){return commsPost(Object.assign({action:'admin_set',target:target},patch))},
   plan:function(patch){return commsPost(Object.assign({action:'admin_plan'},patch))},
-  add:function(name,email,test){return commsPost({action:'admin_add',name:name,email:email,test:!!test})}
+  add:function(name,email,test){return commsPost({action:'admin_add',name:name,email:email,test:!!test})},
+  ccAdd:function(name,email,phone){return commsPost({action:'admin_cc_add',name:name,email:email,phone:phone||''})},
+  ccRemove:function(email){return commsPost({action:'admin_cc_remove',email:email})}
 };
 var readyGo,ready=new Promise(function(r){readyGo=r});   // the app waits here until we know who is signed in
 window.claude={use:function(what){
@@ -1274,7 +1385,7 @@ function defaultSettings(){return {
   crew:['Marcus','Dee','Luis','Tanya','Andre','Kim'],
   sources:['Google','Referral','Yelp','Facebook','Repeat customer','Other'],
   customFields:[{id:'cf1',label:'Elevator reserved',type:'yesno'},{id:'cf2',label:'Parking notes',type:'text'}],
-  forms:[{id:'f_deliv',title:'Delivery receipt and release',kind:'text',required:true,pages:[],text:'I confirm that my belongings were delivered to the address on this job.\n\nI walked through and inspected the delivery. Any damage or missing items I noticed were pointed out to the crew before they left.\n\nBy signing, I accept delivery and agree to the final bill for this move.'}],perms:{},office:[{name:'Owner',kind:'owner'},{name:'Dispatch',kind:'dispatch'}],callcenter:[],contacts:{Owner:'512-555-0100',Dispatch:'512-555-0199',Marcus:'512-555-0101',Dee:'512-555-0102',Luis:'512-555-0103',Tanya:'512-555-0104',Andre:'512-555-0105',Kim:'512-555-0106'},dirTs:0,leads:['Marcus','Tanya'],drivers:['Marcus','Tanya','Luis','Andre'],bidTol:10,materials:[
+  forms:[{id:'f_deliv',title:'Delivery receipt and release',kind:'text',required:true,pages:[],text:'I confirm that my belongings were delivered to the address on this job.\n\nI walked through and inspected the delivery. Any damage or missing items I noticed were pointed out to the crew before they left.\n\nBy signing, I accept delivery and agree to the final bill for this move.'}],perms:{},office:[{name:'Owner',kind:'owner'},{name:'Dispatch',kind:'dispatch'}],contacts:{Owner:'512-555-0100',Dispatch:'512-555-0199',Marcus:'512-555-0101',Dee:'512-555-0102',Luis:'512-555-0103',Tanya:'512-555-0104',Andre:'512-555-0105',Kim:'512-555-0106'},dirTs:0,leads:['Marcus','Tanya'],drivers:['Marcus','Tanya','Luis','Andre'],bidTol:10,materials:[
     {id:'m_boxs',name:'Small box',unit:'each',price:3.5,cost:1.25},{id:'m_boxm',name:'Medium box',unit:'each',price:4.5,cost:1.75},
     {id:'m_boxl',name:'Large box',unit:'each',price:6,cost:2.5},{id:'m_boxw',name:'Wardrobe box',unit:'each',price:22,cost:9},
     {id:'m_dish',name:'Dish pack box',unit:'each',price:12,cost:5},{id:'m_tvbox',name:'TV box',unit:'each',price:25,cost:10},
@@ -1944,6 +2055,7 @@ var ICON={
   board:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 5v14"/></svg>',
   more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>',
   quote:'<svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
+  desk:'<svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.9-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 15.1 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/></svg>',
   sched:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/><path d="M8 14h2M14 14h2M8 17h2"/></svg>',
   quotes:'<svg viewBox="0 0 24 24"><path d="M8 3h11v15H8z"/><path d="M5 6v15h11"/><path d="M11 8h5M11 11h5M11 14h3"/></svg>',
   jobs:'<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',
@@ -1956,11 +2068,11 @@ var ICON={
   admin:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
   history:'<svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.7h3.7"/><path d="M12 8v4.3l2.8 1.7"/></svg>'
 };
-var TABS=[{id:'sched',label:'Schedule'},{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'quotes',label:'Quotes'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
-var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['crew','chat'],crew:['crew','chat'],callcenter:['sched','quotes']};
+var TABS=[{id:'desk',label:'Companies'},{id:'sched',label:'Schedule'},{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'quotes',label:'Quotes'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
+var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['crew','chat'],crew:['crew','chat'],callcenter:['desk','sched','quotes']};
 function navTabs(){var ids=NAV[state.ui.role]||NAV.owner;return ids.map(function(id){return TABS.filter(function(t){return t.id===id})[0]})}
 function allowedTabs(role){
-  var ids=role==='crew'||role==='lead'?['crew','chat']:role==='callcenter'?['sched','quote','quotes']:role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
+  var ids=role==='crew'||role==='lead'?['crew','chat']:role==='callcenter'?['desk','sched','quote','quotes']:role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
     ['today','quote','jobs','dispatch','crew','history','chat','reports','settings'];
   if(typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // Tally's own admins, in any company
   return TABS.filter(function(t){return ids.indexOf(t.id)>=0});
@@ -1984,7 +2096,7 @@ var officeRec=function(n){return (state.settings.office||[]).filter(function(o){
 var isOfficeName=function(n){return !!officeRec(n)};
 var canRun=function(n){return isLead(n)||isOfficeName(n)};          // leads, owner and dispatch can all run a job
 function assignable(){var S=state.settings,out=S.crew.slice();(S.office||[]).forEach(function(o){if(out.indexOf(o.name)<0)out.push(o.name)});return out}
-function whoTag(n){var o=officeRec(n);if(o)return o.kind==='owner'?' (owner)':' (dispatch)';if((state.settings.callcenter||[]).indexOf(n)>=0)return ' (call center)';return isLead(n)?' (lead)':''}
+function whoTag(n){var o=officeRec(n);if(o)return o.kind==='owner'?' (owner)':' (dispatch)';return isLead(n)?' (lead)':''}
 /* ---------- trucks and drivers on a job ----------
    A job's trucks are assign.truckId (the first one, which older copies of the app read too) and
    assign.more (any others). assign.drivers says who drives each truck, by the truck's id. Who can
@@ -2203,7 +2315,7 @@ function renderMore(){
   var you=[office?'':look,canMyProfile()?row('me:open','',SICON.profile,'My profile','Your details and documents'):'',
     canPreview()?row('more:preview','',SICON.eye,'See it their way',previewing()?'Previewing '+(ui.preview.staff||KIND[ui.preview.role]||ui.preview.role):'Owner, dispatch, call center, lead or crew'):'',
     office?look:'',
-    window.tallySwitchCompany?row('more:company','',SICON.swap,'Switch company',(window.tallyOrg||{}).name||''):'',
+    window.tallySwitchCompany&&state.ui.role!=='callcenter'?row('more:company','',SICON.swap,'Switch company',(window.tallyOrg||{}).name||''):'',   // the call center switches from Companies
     window.tallySignOut?row('more:signout','',SICON.signout,'Sign out',sync.meName||''):''];
   var sosRow=role!=='callcenter'&&(opt('truckDown')||sosActive().length)?'<div class="navlist" style="margin-top:16px">'+row('sos:open','',ICON.sos,'Truck down','Tell the office a truck broke down, and where','sosrow')+'</div>':'';
   el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="More"><div class="row between"><h2>More</h2><button class="btn sm" data-act="more:close">Done</button></div>'+
@@ -2294,7 +2406,7 @@ function filterItems(txt){
   });
 }
 function saveQuote(kind){
-  var d=state.draft,S=state.settings,cc=isCC(),who=myName()||'';
+  var d=state.draft,S=state.settings,cc=isCC(),who=(cc?ccName():myName())||'';
   if(!d.name.trim()){toast('Add the customer name first.');var n=$('[data-d=name]');if(n)n.focus();return}
   if(cc){   // the call center: open quotes only, no discount of their own, and a booking goes on the schedule
     var j0=d.editId?byId(d.editId):null;
@@ -2309,13 +2421,13 @@ function saveQuote(kind){
     var oldNotes=String(j.d.notes||'');
     var hadOk=!!(j.quote&&j.quote.rqOk);j.d=clone(d);delete j.d.editId;j.quote=q;if(hadOk)q.rqOk=null;j.items=itemsOf(d,S);logEv(j,'Quote updated');
     if(String(j.d.notes||'')!==oldNotes){j.d.notesBy=myName()||'Office';j.d.notesAt=Date.now();logEv(j,'Job notes updated by '+j.d.notesBy)}
-    if(kind==='book'&&(j.status==='lead'||j.status==='quoted')){setStatus(j,'booked');if(cc)logEv(j,'Booked by '+(who||'the call center'))}
+    if(kind==='book'&&(j.status==='lead'||j.status==='quoted')){setStatus(j,'booked');if(cc)logEv(j,'Booked by '+ccWho())}
     else if(j.status==='lead'&&q.cf)setStatus(j,'quoted');
     // a finished job billed by the clock is worked out again against the new quote
     if(j.clockAt)rebill(j,'quote changed');
   }else{
     var s=kind==='book'?'booked':(q.cf?'quoted':'lead');
-    j=newJob(d,S,s);if(who)j.createdBy=who;logEv(j,'Created as '+LABEL[s]+(who?' by '+who:''));state.jobs.push(j);
+    j=newJob(d,S,s);if(who)j.createdBy=who;if(cc)j.createdCC=true;logEv(j,'Created as '+LABEL[s]+(cc?' by '+ccWho():who?' by '+who:''));state.jobs.push(j);
     if(String(j.d.notes||'').trim()){j.d.notesBy=myName()||'Office';j.d.notesAt=Date.now()}
   }
   if(cc){
@@ -2585,7 +2697,7 @@ function renderSheet(){
    '</div>'+jedBarHtml(j,'cust')+'</div>'+
    '<div class="sec" data-meta="'+esc(secMeta(j,'notes'))+'"><h3>Job notes</h3><textarea data-j="notes" aria-label="Job notes" placeholder="Gate code, elevator booking, what to bring" style="width:100%;min-height:72px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:16px;color:var(--text)">'+esc(jv(j,'notes'))+'</textarea>'+jedBarHtml(j,'notes')+'</div>'+
    (onJob||(j.crewNotes||[]).length?'<div class="sec" data-meta="'+((j.crewNotes||[]).length||'')+'"><h3>Crew notes</h3><p class="hint" style="margin:-4px 0 6px">Written by the crew in the field. Gate codes, access details, anything for the office.</p>'+cnotes+'</div>':'')+
-   '<div class="sec" data-meta="'+money(totalOf(j))+'"><h3>Quote</h3><table class="lines">'+lines+'</table>'+(j.createdBy?'<p class="hint" style="margin:6px 0 0">Quote made by '+esc(j.createdBy)+whoTag(j.createdBy)+'</p>':'')+'<p class="hint">'+esc(items)+'</p>'+clockHtml(j)+rqHistHtml(j,true)+'</div>'+
+   '<div class="sec" data-meta="'+money(totalOf(j))+'"><h3>Quote</h3><table class="lines">'+lines+'</table>'+(j.createdBy||j.createdCC?'<p class="hint" style="margin:6px 0 0">Quote made by '+(j.createdCC?esc(j.createdBy?j.createdBy+' (call center)':'the call center'):esc(j.createdBy)+whoTag(j.createdBy))+'</p>':'')+'<p class="hint">'+esc(items)+'</p>'+clockHtml(j)+rqHistHtml(j,true)+'</div>'+
    (shownMats?'<div class="sec" data-meta="'+esc(secMeta(j,'mats'))+'"><h3>Materials and costs</h3>'+matSection(j,'s',myName()||'Office',true)+'</div>':'')+
    (shownPay?payHtml:'')+
    (shownForms?fsec:'')+
@@ -3131,19 +3243,25 @@ function mvNote(j,c){
 }
 
 /* ---------- the call center (Richie, Oct 22: "I guess i also need a call center side . They will not see anything
-   but scheduled jobs and being able to make quotes") ----------
-   A role of its own, 'callcenter' (Setup › Employees, App access; the people are settings.callcenter). Three
-   screens: Schedule (a calendar of how busy each day is, and each day's jobs: the customer, the day and time, the
-   addresses, the items and the crew size, no prices or payments), New quote (the round button; the crew size,
-   truck, hours and move type can change the price, but only the office gives a discount) and Quotes (every open
-   quote and lead: open one to change it or book it, call the customer, or mark it lost). Booking needs the move
-   date, so the job lands on the schedule; dispatch adds the crew and trucks. In the hosted app the database keeps
-   them to that (supabase-callcenter.sql): they read the open quotes and a copy of the scheduled jobs without the
-   money (the 'sched' collection, kept by a trigger), write only open quotes (booking one is their last change), and
-   can't change a discount or a payment. */
+   but scheduled jobs and being able to make quotes"; then: "Call center is a service that the moving companys will be
+   able to purchase to help get bookings . So call center will only be able to see companys that pay for that
+   service .") ----------
+   Tally's own team (Tally admin lists them, and switches the service on for each company that buys it), not a
+   company's employees. Four screens: Companies (below: a map of the companies, their rate cards, Make a quote),
+   and for the company they're working in, Schedule (a calendar of how busy each day is, and each day's jobs: the
+   customer, the day and time, the addresses, the items and the crew size, no prices or payments), New quote (the
+   round button; the crew size, truck, hours and move type can change the price, but only the office gives a
+   discount) and Quotes (every open quote and lead: open one to change it or book it, call the customer, or mark it
+   lost). Booking needs the move date, so the job lands on the schedule; dispatch adds the crew and trucks. In the
+   hosted app the database keeps them to that (supabase-callcenter.sql): only companies with the service, and of
+   those the rate card (a copy without the company's own business), the open quotes and a copy of the scheduled
+   jobs without the money; they write only open quotes (booking one is their last change), and can't change a
+   discount or a payment. The owner sees it all through See it their way › Call center. */
 function isCC(){return state.ui.role==='callcenter'}
 function canQuote(){var r=state.ui.role;return r==='owner'||r==='dispatch'||r==='callcenter'}
-function ccNames(){return (state.settings.callcenter||[]).slice()}
+// the call center person: signed in (the hosted app), or the one picked in See it their way
+function ccName(){return String((ccDb()?sync.identity.staff:(ui.preview&&ui.preview.role==='callcenter'?ui.preview.staff:''))||'')}
+function ccWho(){var n=ccName();return n?n+' (call center)':'the call center'}
 function isOpenQuote(j){return !!j&&(j.status==='lead'||j.status==='quoted')}
 var SCHED_ST=['booked','active'];
 // a scheduled job as the call center sees it: everything but the money (supabase-callcenter.sql's sched_of)
@@ -3178,8 +3296,9 @@ function pullSched(snap){
 }
 // how busy a day is: its jobs, and the trucks on them out of the fleet (a job with no truck picked yet counts the
 // trucks its quote needs). lvl: 0 nothing booked, 1 some, 2 half the fleet or more, 3 every truck
-function dayLoad(day,recs,skip){
-  var list=(recs||schedRecs()).filter(function(r){return r.d.moveDate===day&&r.id!==skip}),fleet=(state.settings.trucks||[]).length,used={},need=0;
+function dayLoad(day,recs,skip){return dayLoadIn(day,recs||schedRecs(),(state.settings.trucks||[]).length,skip)}
+function dayLoadIn(day,recs,fleet,skip){
+  var list=recs.filter(function(r){return r.d.moveDate===day&&r.id!==skip}),used={},need=0;
   list.forEach(function(r){var ids=jobTrucks(r);if(ids.length)ids.forEach(function(id){used[id]=1});else need+=Math.max(1,num((r.quote||{}).nTrucks)||1)});
   var trucks=Object.keys(used).length+need;
   return {jobs:list.length,trucks:trucks,fleet:fleet,list:list,lvl:!list.length?0:fleet&&trucks>=fleet?3:fleet&&trucks*2>=fleet?2:1};
@@ -3283,11 +3402,295 @@ function ccOpen(id){
 }
 function ccLost(id){
   var j=byId(id);if(!isOpenQuote(j))return;
-  setStatus(j,'lost');logEv(j,'Marked lost by '+(myName()||'the call center'));save();toast('Marked lost. It’s off the open quotes.');render();
+  setStatus(j,'lost');logEv(j,'Marked lost by '+ccWho());save();toast('Marked lost. It’s off the open quotes.');render();
 }
 function ccCall(id){
   var j=byId(id)||schedRecs().filter(function(r){return r.id===id})[0];if(!j)return;
   askCall(j.d.name,j.d.phone,custKey(j),j.id);
+}
+
+/* ---------- the call center's Companies screen (Richie, Oct 22: "Call center is a service that the moving companys
+   will be able to purchase to help get bookings . So call center will only be able to see companys that pay for that
+   service ."; asked how they move between companies: "Really a map with rate cards available would be awesome then a
+   place on their rate card to take you to making a quote for them .") ----------
+   The call center is Tally's own team: Tally admin lists the people and switches the service on for each company
+   (Richie bills the companies himself). Their first screen: the customer's pickup address and move date, a map of
+   the companies with the service, nearest first, each with how busy it is that day, each company's rate card (its
+   prices, nothing of its own business), and Make a quote, which opens that company's quote builder with the address
+   and the date filled in. In the hosted app window.tallyDesk lists the companies from the database's rate card
+   copies (supabase-callcenter.sql); the claude.ai copy shows this company, and with the sample data three sample
+   companies beside it. */
+// What a rate card holds: the prices and what makes them. The database keeps the same keys in its copy
+// (supabase-callcenter.sql, ratecard_of), so the call center never reads a company's crew, pay, costs or phones.
+var CARD_KEYS=['company','rates','minHours','prod','mph','shopAddress','shopTravel','shopGeo','includedMiles','mileRate','truckFee','stairFee','packPerBox','taxPct','depositPct','ntePct','nteCap','trucks','catalog','sources','customFields','opt'];
+function rateCardOf(S){var o={};CARD_KEYS.forEach(function(k){if(S&&S[k]!==undefined)o[k]=clone(S[k])});return o}
+// under a rate card in the call center's app, so none of the sample company's own people or numbers show through
+var CARD_BLANK={crew:[],leads:[],drivers:[],office:[],contacts:{},perms:{},materials:[],forms:[],costCats:[],crewCost:0,comms:{alerts:{},ring:[],appUrl:''}};
+// Sample companies beside the sample one, so the map has something to show (the sample data only)
+var DESK_SAMPLES=[
+  {id:'smp-lonestar',name:'Lone Star Haulers',town:'round rock',addr:'2100 Sam Bass Rd, Round Rock, TX',busy:[2,0,1,2,1,0,2],
+   card:{rates:{r2:129,r3:179,r4:229},minHours:2,includedMiles:25,mileRate:1.4,truckFee:55,stairFee:20,packPerBox:7,depositPct:20,ntePct:10,taxPct:0,
+     trucks:[{id:'a',name:'Box (26 ft)',cf:1700},{id:'b',name:'Box (20 ft)',cf:1000}],opt:{packing:false}}},
+  {id:'smp-bluebonnet',name:'Bluebonnet Moving',town:'georgetown',addr:'500 Leander Rd, Georgetown, TX',busy:[1,1,0,2,4,3,0],
+   card:{rates:{r2:135,r3:190,r4:245},minHours:3,includedMiles:30,mileRate:1.6,truckFee:40,stairFee:30,packPerBox:9,depositPct:25,ntePct:15,taxPct:8.25,
+     trucks:[{id:'a',name:'Box (26 ft)',cf:1700},{id:'b',name:'Box (26 ft)',cf:1700},{id:'c',name:'Van (16 ft)',cf:800},{id:'d',name:'Van (16 ft)',cf:800}],opt:{}}},
+  {id:'smp-hillcountry',name:'Hill Country Movers',town:'san marcos',addr:'1400 Hwy 123, San Marcos, TX',busy:[0,1,1,1,0,1,0],
+   card:{rates:{r2:119,r3:169,r4:219},minHours:2,includedMiles:20,mileRate:1.25,truckFee:65,stairFee:25,packPerBox:8,depositPct:0,ntePct:15,taxPct:0,
+     trucks:[{id:'a',name:'Box (24 ft)',cf:1400}],opt:{deposit:false}}}
+];
+// Town centres, for a copy that can't look addresses up (the claude.ai one): an address with one of these towns in it
+// is put at the town's middle
+var TOWNS={'austin':[30.2672,-97.7431],'round rock':[30.5083,-97.6789],'georgetown':[30.6333,-97.6779],'pflugerville':[30.4394,-97.62],
+  'cedar park':[30.5052,-97.8203],'leander':[30.5788,-97.8531],'hutto':[30.5427,-97.5467],'taylor':[30.5708,-97.4095],'manor':[30.3405,-97.5569],
+  'elgin':[30.3497,-97.3703],'bastrop':[30.1105,-97.3153],'lakeway':[30.3638,-97.9797],'bee cave':[30.3085,-97.945],'dripping springs':[30.1902,-98.0867],
+  'buda':[30.0852,-97.8403],'kyle':[29.9891,-97.8772],'san marcos':[29.8833,-97.9414],'new braunfels':[29.703,-98.1245],'lockhart':[29.8849,-97.67],
+  'wimberley':[29.9974,-98.0986],'liberty hill':[30.6649,-97.9225],'jarrell':[30.8249,-97.6045],'temple':[31.0982,-97.3428],'killeen':[31.1171,-97.7278],
+  'waco':[31.5493,-97.1467],'san antonio':[29.4241,-98.4936],'houston':[29.7604,-95.3698],'dallas':[32.7767,-96.797],'fort worth':[32.7555,-97.3308]};
+function townOf(addr){
+  var s=' '+String(addr||'').toLowerCase().replace(/[^a-z ]+/g,' ').replace(/\s+/g,' ')+' ',best='';
+  Object.keys(TOWNS).forEach(function(k){if(s.indexOf(' '+k+' ')>=0&&k.length>best.length)best=k});
+  return best?{lat:TOWNS[best][0],lon:TOWNS[best][1],town:best}:null;
+}
+// the town in an address: "1200 Industrial Blvd, Austin, TX" is Austin
+function townPart(addr){var p=String(addr||'').split(',').map(function(x){return x.trim()}).filter(Boolean);if(p.length>=3)return p[p.length-2];if(p.length===2)return /^[A-Za-z]{2}(\s+\d{5}(-\d{4})?)?$/.test(p[1])?p[0]:p[1];var t=townOf(addr);return t?titleCase(t.town):''}
+function titleCase(s){return String(s||'').replace(/\b[a-z]/g,function(c){return c.toUpperCase()})}
+// straight-line miles between two points
+function geoMiles(a,b){
+  var r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r,x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)*Math.sin(dn/2);
+  return 3958.8*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+var desk={cos:null,sched:null,busy:false,seq:0,geo:{},err:''};
+function deskUi(){return ui.desk||(ui.desk={addr:'',date:'',geo:null,msg:'',busy:false})}
+// the companies on the desk: the hosted call center's (from the database), or this one and the samples
+function deskCos(){
+  if(deskHosted())return desk.cos||[];
+  var S=state.settings,out=[{id:'here',name:S.company||'This company',here:true,card:rateCardOf(S)}];
+  if(state.demo)DESK_SAMPLES.forEach(function(x){
+    out.push({id:x.id,name:x.name,sample:x,card:Object.assign(rateCardOf(defaultSettings()),clone(x.card),{company:x.name,shopAddress:x.addr,shopGeo:null})});
+  });
+  return out;
+}
+function deskHosted(){return !!window.tallyDesk&&ccDb()&&!previewing()}
+// where a company's shop is: the spot the owner's app saved, the town in the address (a copy that can't look it up),
+// or what the call center's own lookup found
+function deskGeo(c){
+  var k=c.card||{},a=String(k.shopAddress||'').trim(),g=k.shopGeo;
+  if(c.sample){var t0=TOWNS[c.sample.town];return {lat:t0[0],lon:t0[1]}}
+  if(g&&isFinite(g.lat)&&isFinite(g.lon)&&(!a||g.addr===a))return {lat:+g.lat,lon:+g.lon};
+  if(!a)return c.here&&state.demo?{lat:30.2672,lon:-97.7431,sample:true}:null;   // the sample company has no shop address: Austin
+  if(desk.geo[a])return desk.geo[a];
+  if(!canFree()){var t=townOf(a);return t?{lat:t.lat,lon:t.lon}:null}
+  return null;
+}
+// how busy a company is on a day: this company's own schedule, a sample's made-up week, or the database's copies
+function deskLoad(c,day){
+  var fleet=((c.card||{}).trucks||[]).length;
+  if(c.sample){var n=c.sample.busy[parseISO(day).getDay()]||0,t=Math.min(n,fleet);return {jobs:n,trucks:t,fleet:fleet,lvl:!n?0:t>=fleet?3:t*2>=fleet?2:1}}
+  if(c.here&&!deskHosted())return dayLoad(day,schedRecs());
+  return dayLoadIn(day,((desk.sched||{})[c.id]||[]).map(schedRec),fleet);
+}
+function availWords(L){
+  if(!L.jobs)return 'Open';
+  if(L.fleet&&L.trucks>=L.fleet)return 'Full';
+  return L.fleet?L.trucks+' of '+L.fleet+' trucks':L.jobs+' job'+(L.jobs===1?'':'s');
+}
+// the rate card, as a table: what the call center quotes from
+function rateCardHtml(k){
+  var r=k.rates||{},row=function(a,b){return '<tr><td>'+a+'</td><td>'+b+'</td></tr>'},out='';
+  [2,3,4].forEach(function(n){if(num(r['r'+n])>0)out+=row(n+' movers',money(r['r'+n])+'/hr')});
+  out+=row('Minimum',num(k.minHours)+' hour'+(num(k.minHours)===1?'':'s'));
+  if(opt('truckFee',k)&&num(k.truckFee)>0)out+=row('Truck and fuel',money(k.truckFee)+' a truck');
+  if(opt('stairs',k)&&num(k.stairFee)>0)out+=row('Stairs',money(k.stairFee)+' a flight');
+  if(opt('packing',k)&&num(k.packPerBox)>0)out+=row('Packing',money(k.packPerBox)+' a box');
+  if(opt('mileage',k)&&num(k.includedMiles)>0)out+=row('Local area',fmtMi(num(k.includedMiles))+' mi from the shop')+row('Past that',money(k.mileRate)+' a mile');
+  else out+=row('Distance','Every move by the hour');
+  if(opt('deposit',k)&&num(k.depositPct)>0)out+=row('Deposit',num(k.depositPct)+'% to book');
+  if(opt('tax',k))out+=row('Sales tax',num(k.taxPct)+'%');
+  if(k.nteCap!==false&&num(k.ntePct)>=0)out+=row('Price cap','The quote + '+num(k.ntePct)+'% at most');
+  var fees=(k.catalog||[]).filter(function(it){return num(it.fee)>0}).map(function(it){return esc(it.name)+' '+money(it.fee)});
+  if(fees.length)out+=row('Specialty items',fees.join(', '));
+  return '<table class="lines ratecard">'+out+'</table>';
+}
+function renderDesk(){
+  var v=$('#view'),D=deskUi();
+  if(deskHosted()&&!desk.busy&&(!desk.cos||Date.now()-(desk.at||0)>60000))deskLoadCos();   // the companies, and their bookings, at most a minute old
+  v.innerHTML='<div class="hero-day" style="padding-bottom:4px"><h1>Companies</h1><p class="sub" style="margin:2px 0 0">'+(deskHosted()?'Every company your call center books for.':'The companies the call center books for'+(state.demo?' (three samples beside this one)':'')+'.')+' Find the customer, then pick one.</p></div>'+
+    '<section class="card dkcust"><h2>The customer</h2><div class="grid2 stack">'+
+      fld('Pickup address','<input id="dkAddr" autocomplete="off" placeholder="418 Oak St, Austin" value="'+esc(D.addr)+'">')+
+      fld('Move date','<input id="dkDate" type="date" value="'+esc(D.date)+'">')+'</div>'+
+      '<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="btn primary sm" data-act="desk:find" id="dkFind">Find companies</button><button class="btn sm ghost" data-act="desk:clear">Clear</button></div>'+
+      '<p class="hint" id="dkNote" role="status"></p></section><div id="dkRes"></div>';
+  renderDeskRes();
+}
+// the part under the customer: the note, the map and the companies (redrawn as the address or the date changes,
+// so the fields and their buttons stay put)
+function renderDeskRes(){
+  var el=$('#dkRes'),D=deskUi();if(!el)return;
+  var cos=deskCos(),rows=cos.map(function(c){var g=deskGeo(c);return {c:c,g:g,mi:D.geo&&g?geoMiles(D.geo,g):null,L:D.date?deskLoad(c,D.date):null}});
+  rows.sort(function(a,b){if(a.mi==null||b.mi==null)return (a.mi==null)-(b.mi==null)||(a.c.name<b.c.name?-1:1);return a.mi-b.mi});
+  rows.forEach(function(r,i){r.n=i+1});
+  desk.rows=rows;
+  var nt=$('#dkNote');if(nt)nt.textContent=D.msg||(D.geo?'Nearest first, in a straight line from the pickup.':'Add the pickup address to put the companies in order of distance.');
+  var fb=$('#dkFind');if(fb){fb.disabled=!!D.busy;fb.textContent=D.busy?'Finding…':'Find companies'}
+  var waiting=deskHosted()&&desk.busy&&!cos.length;
+  el.innerHTML='<div class="card dkmapcard"><div id="dkMap" class="dkmap"></div>'+(window.TALLY_ARTIFACT?'<p class="hint dkcap">The phone app shows a street map here. This shows how far each company is.</p>':'')+'</div>'+
+    '<div class="secline"><h2>'+(D.geo?'Nearest first':'Companies')+'</h2><small>'+(waiting?'Loading…':rows.length)+'</small></div>'+
+    (rows.length?rows.map(deskCard).join(''):(waiting?'':'<div class="card empty"><h3>No companies yet</h3><p>'+esc(desk.err||'Tally admin switches the call center on for each company that buys it.')+'</p></div>'));
+  deskMapDraw();
+}
+// one company, folded to its number, name, distance and that day's trucks; open, its rate card and Make a quote
+function deskCard(r){
+  var c=r.c,k=c.card||{},D=deskUi(),key='dk:'+c.id,where=String(k.shopAddress||'').trim();
+  var town=townPart(where);
+  var dist=r.mi!=null?(r.mi<0.95?'Under a mile':(r.mi<9.95?r.mi.toFixed(1):Math.round(r.mi))+' mi')+' from the pickup':(where?'':'No shop address yet');
+  var local=r.mi!=null&&opt('mileage',k)&&num(k.includedMiles)>0?(r.mi<=num(k.includedMiles)?'Inside their '+fmtMi(num(k.includedMiles))+'-mile local area':'Past their '+fmtMi(num(k.includedMiles))+'-mile local area: a mileage move'):'';
+  var fleet=(k.trucks||[]).length,lvl=r.L?r.L.lvl:0;
+  var sub=[town,dist].filter(Boolean).join(' · ');
+  var rate=num((k.rates||{}).r2)>0?'From '+money(k.rates.r2)+'/hr for 2 movers · '+num(k.minHours)+' h minimum':'';
+  var avail=r.L?'<span class="pill dkav lvl'+lvl+'" title="'+esc(fmtDate(D.date)+': '+loadWords(r.L))+'">'+esc(availWords(r.L))+'</span>':'';
+  return '<details class="acc card hcard deskcard" data-co="'+esc(c.id)+'" data-k="'+esc(key)+'"'+(ui.open[key]?' open':'')+'><summary><span class="dknum lvl'+lvl+'" aria-hidden="true">'+r.n+'</span><span class="hsum"><b>'+esc(c.name)+(c.sample?' <small>(sample)</small>':'')+'</b>'+
+      (sub?'<small>'+esc(sub)+'</small>':'')+(rate?'<small>'+esc(rate)+'</small>':'')+'</span>'+(avail?'<span class="hpill dkkeep">'+avail+'</span>':'<span class="hmore">Rate card</span>')+'</summary>'+
+    '<div class="hbody">'+(r.L?'<p class="dkday lvl'+lvl+'">'+esc(fmtDate(D.date)+': '+loadWords(r.L)+'.')+'</p>':'')+(local?'<p class="hint" style="margin:0 0 6px">'+esc(local)+'.</p>':'')+
+      rateCardHtml(k)+
+      '<p class="hint" style="margin:6px 0 0">'+(where?'Shop: '+esc(where)+' · ':'')+fleet+' truck'+(fleet===1?'':'s')+(fleet?': '+esc((k.trucks||[]).map(function(t){return t.name}).join(', ')):'')+'</p>'+
+      '<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="desk:quote" data-co="'+esc(c.id)+'">Make a quote for '+esc(c.name)+'</button>'+
+        '<button class="btn sm" data-act="desk:sched" data-co="'+esc(c.id)+'">Their schedule</button></div>'+
+    '</div></details>';
+}
+// the customer's pickup, on the map: looked up (OpenStreetMap), or the town's middle in a copy that can't look it up
+function deskFind(){
+  var D=deskUi(),a=String(D.addr||'').trim(),mine=++desk.seq;
+  if(!a){D.geo=null;D.msg='';D.busy=false;renderDeskRes();return}
+  if(!canFree()){
+    var t=townOf(a);D.geo=t?{lat:t.lat,lon:t.lon}:null;D.busy=false;
+    D.msg=t?'Distances from the middle of '+titleCase(t.town)+'. The phone app looks up the street address.':'This copy can’t look up street addresses. Add the town, like “Round Rock”.';
+    renderDeskRes();return;
+  }
+  D.busy=true;D.msg='Finding the address…';renderDeskRes();
+  geocode(a).then(function(g){if(mine!==desk.seq)return;D.geo={lat:g.lat,lon:g.lon};D.msg=''},function(){if(mine!==desk.seq)return;D.geo=null;D.msg='Couldn’t find “'+a+'” on the map. Add the city and state.'})
+    .then(function(){if(mine!==desk.seq)return;D.busy=false;if(ui.tab==='desk')renderDeskRes()});
+}
+// a company's shop the database had no spot for: looked up once on this phone (kept for next time)
+function deskShops(){
+  if(!canFree())return;
+  var need=(desk.cos||[]).filter(function(c){var a=String((c.card||{}).shopAddress||'').trim();return a&&!deskGeo(c)&&!desk.geo['?'+a]});
+  need.forEach(function(c){
+    var a=String(c.card.shopAddress).trim();desk.geo['?'+a]=1;
+    geocode(a).then(function(g){desk.geo[a]={lat:g.lat,lon:g.lon};try{var m=JSON.parse(localStorage.getItem('tally.shopGeo')||'{}');m[a]=desk.geo[a];localStorage.setItem('tally.shopGeo',JSON.stringify(m))}catch(e){}if(ui.tab==='desk')renderDeskRes()},function(){});
+  });
+}
+function deskLoadCos(){
+  desk.busy=true;desk.err='';desk.at=Date.now();
+  try{var m=JSON.parse(localStorage.getItem('tally.shopGeo')||'{}');Object.keys(m).forEach(function(a){if(!desk.geo[a])desk.geo[a]=m[a]})}catch(e){}
+  window.tallyDesk.companies().then(function(list){
+    desk.cos=list||[];
+    return window.tallyDesk.sched(desk.cos.map(function(c){return c.id})).then(function(s){desk.sched=s||{}},function(){desk.sched={}});
+  },function(){desk.cos=null;desk.err='The companies didn’t load. Check the connection, then open Companies again.'}).then(function(){desk.busy=false;deskShops();if(ui.tab==='desk')renderDeskRes()});
+}
+function deskCo(id){return deskCos().filter(function(c){return c.id===id})[0]||null}
+// Make a quote (or Their schedule): this company's own screens, or another company's in the hosted app
+function deskGo(id,tab){
+  var c=deskCo(id),D=deskUi();if(!c)return;
+  if(c.sample){toast(c.name+' is a sample. For a company with the service, this opens its '+(tab==='quote'?'quote builder with the address and date filled in':'schedule')+'.');return}
+  var pre={tab:tab,from:String(D.addr||'').trim(),moveDate:D.date||'',day:D.date||''};
+  if(deskHosted()&&!c.here){window.tallyDesk.open(c.id,pre);return}
+  deskApply(pre);
+}
+// the call center opened another company from Companies (window.tallyDesk.open): its quote or its schedule
+function deskBoot(){
+  var pre=null;try{pre=JSON.parse(sessionStorage.getItem('tally.deskOpen')||'null');sessionStorage.removeItem('tally.deskOpen')}catch(e){}
+  if(pre&&pre.tab)setTimeout(function(){deskApply(pre)},0);
+}
+function deskApply(pre){
+  if(pre.tab==='sched'){ui.schedDay=pre.day||todayISO();ui.schedMon=ui.schedDay.slice(0,7);ui.tab='sched';render();window.scrollTo(0,0);return}
+  var d=state.draft;
+  if(d.editId||String(d.name||'').trim()||String(d.from||'').trim())d=state.draft=blankDraft();   // a quote half made for someone else starts over
+  if(pre.from)d.from=pre.from;if(pre.moveDate)d.moveDate=pre.moveDate;
+  ui.qstep=1;save();ui.tab='quote';render();window.scrollTo(0,0);
+  var n=$('[data-d=name]');if(n)try{n.focus()}catch(e){}
+}
+// The shop's spot, for the call center's map: the owner's phone looks it up once when the shop address is new and
+// saves it with the settings (the rate card copy carries it). The claude.ai copy can't look addresses up.
+var shopGeo={busy:'',failed:{}};
+function shopGeoCheck(){
+  var S=state.settings,a=String(S.shopAddress||'').trim();
+  if(!a||!canFree()||sync.mode!=='shared'||!sync.isAdmin||shopGeo.busy===a||shopGeo.failed[a])return;
+  if(S.shopGeo&&S.shopGeo.addr===a)return;
+  shopGeo.busy=a;
+  geocode(a).then(function(g){
+    if(String(state.settings.shopAddress||'').trim()!==a)return;
+    state.settings.shopGeo={lat:Math.round(g.lat*1e5)/1e5,lon:Math.round(g.lon*1e5)/1e5,addr:a};save();
+  },function(){shopGeo.failed[a]=1}).then(function(){shopGeo.busy=''});
+}
+function deskPick(id){
+  var key='dk:'+id;ui.open[key]=true;
+  var el=document.querySelector('#view details.deskcard[data-co="'+id.replace(/"/g,'')+'"]');
+  if(el){el.open=true;try{el.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){el.scrollIntoView()}}
+}
+/* The map. In the phone app: OpenStreetMap, through Leaflet (loaded the first time). Where that can't load (the
+   claude.ai copy, or no connection): a drawing of how far each company is from the pickup, rings every few miles. */
+var LEAF={p:null};
+function leafletLoad(){
+  if(window.L&&window.L.map)return Promise.resolve(window.L);
+  if(window.TALLY_ARTIFACT||!window.tallyDesk)return Promise.reject(new Error('off'));
+  if(LEAF.p)return LEAF.p;
+  LEAF.p=new Promise(function(res,rej){
+    var s=document.createElement('script'),done=false,to=setTimeout(function(){if(!done){done=true;rej(new Error('slow'))}},9000);
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';s.crossOrigin='anonymous';
+    s.onload=function(){if(done)return;done=true;clearTimeout(to);window.L&&window.L.map?res(window.L):rej(new Error('none'))};
+    s.onerror=function(){if(done)return;done=true;clearTimeout(to);rej(new Error('load'))};
+    document.head.appendChild(s);
+  });
+  LEAF.p.catch(function(){LEAF.p=null});
+  return LEAF.p;
+}
+function deskMapDraw(){
+  var el=$('#dkMap'),D=deskUi(),rows=desk.rows||[];if(!el)return;
+  el.innerHTML=deskSvg(rows,D.geo);
+  leafletLoad().then(function(L){
+    if(!el.isConnected)return;
+    var pts=rows.filter(function(r){return r.g});if(!pts.length&&!D.geo)return;
+    el.innerHTML='';el.classList.add('leafy');
+    var map=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false});
+    map.attributionControl.setPrefix(false);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+    var b=[];
+    if(D.geo){L.marker([D.geo.lat,D.geo.lon],{icon:L.divIcon({className:'dkpin',html:'<span class="dkhome" title="The pickup">'+DESK_HOME+'</span>',iconSize:[30,30],iconAnchor:[15,15]}),keyboard:false,title:'The pickup'}).addTo(map);b.push([D.geo.lat,D.geo.lon])}
+    pts.forEach(function(r){
+      var m=L.marker([r.g.lat,r.g.lon],{icon:L.divIcon({className:'dkpin',html:'<span class="dknum lvl'+(r.L?r.L.lvl:0)+'">'+r.n+'</span>',iconSize:[40,40],iconAnchor:[20,20]}),title:r.c.name,alt:r.c.name});
+      m.on('click',function(){deskPick(r.c.id)});m.addTo(map);b.push([r.g.lat,r.g.lon]);
+    });
+    if(b.length===1)map.setView(b[0],11);else map.fitBounds(b,{padding:[28,28],maxZoom:13});
+  },function(){});
+}
+var DESK_HOME='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>';
+function deskSvg(rows,geo){
+  var pts=rows.filter(function(r){return r.g});
+  if(!pts.length&&!geo)return '<div class="dkempty"><p class="hint">The map shows each company’s shop once it has an address'+(deskHosted()?'':' (Setup › Company)')+'.</p></div>';
+  var c=geo||{lat:pts.reduce(function(s,r){return s+r.g.lat},0)/pts.length,lon:pts.reduce(function(s,r){return s+r.g.lon},0)/pts.length};
+  var xy=function(g){var cl=Math.cos(c.lat*Math.PI/180);return {x:(g.lon-c.lon)*69.17*cl,y:-(g.lat-c.lat)*69.17}};
+  var far=pts.reduce(function(m,r){var p=xy(r.g);return Math.max(m,Math.sqrt(p.x*p.x+p.y*p.y))},0)||5;
+  var step=[1,2,5,10,15,25,50,100,250,500,1000].filter(function(s){return far/s<=4})[0]||1000,R=Math.max(step,Math.ceil(far/step)*step);
+  var W=340,H=230,k=Math.min(W,H)/2/R*0.92,out='';
+  if(geo){for(var ring=step;ring<=R+1e-9;ring+=step){out+='<circle cx="0" cy="0" r="'+(ring*k).toFixed(1)+'" class="dkring"/><text x="'+(ring*k*0.7071+3).toFixed(1)+'" y="'+(-ring*k*0.7071-3).toFixed(1)+'" class="dkringt">'+ring+' mi</text>'}
+    out+='<g class="dkhomeg" transform="translate(-11,-11) scale(.92)"><rect x="-2" y="-2" width="28" height="28" rx="14"/><g transform="translate(2,2) scale(.84)">'+DESK_HOME.replace(/<svg[^>]*>|<\/svg>/g,'')+'</g></g>'}
+  // a tap on a dot opens that company below (the list has every one too, for the keyboard and screen readers);
+  // the clear ring around each dot makes it big enough to tap
+  // dots closer than a tap apart are eased apart (a few pixels; the list below has the exact miles)
+  var P=pts.map(function(r){var p=xy(r.g);return {r:r,x:p.x*k,y:p.y*k}}),gap=44;
+  for(var it=0;it<60;it++){
+    var moved=false;
+    for(var i=0;i<P.length;i++)for(var j=i+1;j<P.length;j++){
+      var a=P[i],b=P[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d>=gap)continue;
+      var ux=d>0.01?dx/d:Math.cos(j*2.4),uy=d>0.01?dy/d:Math.sin(j*2.4),push=(gap-d)/2+0.5;
+      a.x-=ux*push;a.y-=uy*push;b.x+=ux*push;b.y+=uy*push;moved=true;
+    }
+    P.forEach(function(q){q.x=Math.max(-W/2+22,Math.min(W/2-22,q.x));q.y=Math.max(-H/2+22,Math.min(H/2-22,q.y))});
+    if(!moved)break;
+  }
+  P.forEach(function(q){var r=q.r;out+='<g class="dkdot lvl'+(r.L?r.L.lvl:0)+'" data-act="desk:pick" data-co="'+esc(r.c.id)+'" transform="translate('+q.x.toFixed(1)+','+q.y.toFixed(1)+')"><circle class="dkhit" r="22"/><circle r="12"/><text y="4.5">'+r.n+'</text></g>'});
+  return '<svg class="dksvg" viewBox="'+(-W/2)+' '+(-H/2)+' '+W+' '+H+'" role="img" aria-label="'+esc((geo?'How far each company is from the pickup: ':'Where the companies are: ')+pts.map(function(r){return r.n+' '+r.c.name+(r.mi!=null?', '+Math.round(r.mi)+' mi':'')}).join('; '))+'">'+out+'</svg>';
 }
 
 function crewKit(me){
@@ -3698,13 +4101,13 @@ function setupSecs(){
     '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="'+tcols+';margin-top:4px"><input id="nTruckName" placeholder="New truck" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" inputmode="numeric" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div></section>'+drvCard,'trucks drivers driver drives driving license');
   add('employees','people','Employees',nIn+' '+(nIn===1?'person':'people'),employeesCard(),'crew staff people hiring documents phone');
   add('access','people','App access',sync.mode==='shared'?'Who can sign in, and as what':'Sign-in for your team',accessCard(),'sign in login users approve revoke');
-  add('roles','people','Roles','What crew, crew leads, the call center and dispatch can do',
-    '<section class="card"><h2>Roles</h2><p class="sub">Five levels. Use “See it their way” in More to try each one.</p>'+
+  add('roles','people','Roles','What crew, crew leads and dispatch can do, and the call center',
+    '<section class="card"><h2>Roles</h2><p class="sub">Four levels for your people. Use “See it their way” in More to try each one.</p>'+
     '<div class="who" style="display:block"><b>Crew</b><br><small>Sees the jobs they are on, adds photos, reads job notes, leaves crew notes'+(opt('tally')?', ticks off the load tally':'')+(opt('clock')?', and uses the time clock':'')+'.</small></div>'+
     '<div class="who" style="display:block"><b>Crew lead</b><br><small>Everything crew can do, plus the job timer, prices, and billing out'+(opt('leadCharges')?' with extra charges':'')+(opt('leadPay')?' and payments':' (the office collects the payment)')+'.</small></div>'+
-    '<div class="who" style="display:block"><b>Call center</b><br><small>Makes quotes and books them onto the schedule, and sees the schedule: how busy each day is, and each job’s customer, day, time, addresses, items and crew size. No prices on booked jobs, no discounts, no payments, and nothing else in Tally.</small></div>'+
     '<div class="who" style="display:block"><b>Dispatch</b><br><small>Books quotes and schedules crews and trucks'+(opt('dispatchMoney')?', and sees company revenue and revenue by crew':'')+'. Can also work in the field with lead-level access'+(opt('dispatchPay')?', including billing':'')+'.</small></div>'+
-    '<div class="who" style="display:block"><b>Owner</b><br><small>Everything, plus employee hours, job hours, and bid accuracy for the company and each crew. Can also work in the field and waive a form for a job.</small></div></section>'+
+    '<div class="who" style="display:block"><b>Owner</b><br><small>Everything, plus employee hours, job hours, and bid accuracy for the company and each crew. Can also work in the field and waive a form for a job.</small></div>'+
+    '<div class="who" style="display:block"><b>Call center</b> <small>(a Tally service)</small><br><small>Tally’s call center team, when Tally switches the service on for your company. They see your rate card, your open quotes and your schedule without the money: how busy each day is, and each job’s customer, day, time, addresses, items and crew size. They make quotes and book them. No discounts, no payments, and nothing else in Tally.</small></div></section>'+
     optGroup('field','Crew and field')+optGroup('bill','Billing out')+optGroup('office','Office'),'permissions crew lead dispatch owner can');
   add('clock','people','Time clock',opt('clock')?'On · '+S.activities.length+' work types'+(opt('lateNote')?' · note after '+num(S.lateMins)+' min':''):'Off',
     '<section class="card"><h2>Time clock</h2><p class="sub">Separate from the job clock: job days, warehouse work, dump runs and the rest.</p><div class="f" style="margin-top:4px"><span>Work types</span></div>'+chips(S.activities,'st:rmact')+'<div class="row"><input id="nAct" placeholder="Work type" aria-label="New work type" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addact">Add</button></div></section>'+
@@ -3754,7 +4157,7 @@ function setListHtml(secs){
 
 /* ---------- render core ---------- */
 function renderTab(){
-  var fn={sched:renderSched,quotes:renderQuotes,today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,history:renderHistory,chat:renderChat,reports:renderReports,settings:renderSettings,admin:renderAdmin}[ui.tab];
+  var fn={desk:renderDesk,sched:renderSched,quotes:renderQuotes,today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,history:renderHistory,chat:renderChat,reports:renderReports,settings:renderSettings,admin:renderAdmin}[ui.tab];
   if(fn)fn();
 }
 function render(){
@@ -3837,25 +4240,24 @@ function directory(){
   var S=state.settings,out=[];
   (S.office||[]).forEach(function(o){out.push({name:o.name,kind:o.kind,phone:S.contacts[o.name]||''})});
   S.crew.forEach(function(n){out.push({name:n,kind:isLead(n)?'lead':'crew',phone:S.contacts[n]||''})});
-  (S.callcenter||[]).forEach(function(n){if(!out.some(function(x){return x.name===n}))out.push({name:n,kind:'callcenter',phone:S.contacts[n]||''})});
   return out;
 }
-// the people in chat: everyone but the call center, who has no chat
-function chatDir(){return directory().filter(function(x){return x.kind!=='callcenter'})}
+// the people in chat (the call center, Tally's own team, has no chat)
+function chatDir(){return directory()}
 function lockedStaff(){if(ui.preview&&(sync.mode!=='shared'||sync.isOwner))return ui.preview.staff||'';return sync.mode==='shared'&&sync.identity.status==='ok'&&!sync.isOwner?sync.identity.staff:''}
 function chatRoster(){
   var lk=lockedStaff();if(lk)return [lk];
   var role=state.ui.role,S=state.settings;
   if(role==='crew')return S.crew.filter(function(n){return !isLead(n)});
   if(role==='lead')return S.crew.filter(isLead);
-  if(role==='callcenter')return ccNames();
+  if(role==='callcenter')return [];
   return chatDir().map(function(x){return x.name});
 }
 function myName(){
   var r=chatRoster(),role=state.ui.role,S=state.settings,pick=(role==='crew'||role==='lead')?state.ui.me:state.ui.who;
   if(pick&&r.indexOf(pick)>=0)return pick;
   if(role==='owner'||role==='dispatch'){var o=(S.office||[]).find(function(x){return x.kind===role});if(o)return o.name}
-  if(role==='callcenter')return ccNames()[0]||'Call center';
+  if(role==='callcenter')return ccName();
   return r[0]||'';
 }
 function ago(ts){var m=Math.round((Date.now()-ts)/60000);return m<1?'just now':m<60?m+' min ago':Math.floor(m/60)+' h ago'}
@@ -4426,7 +4828,7 @@ function jobDoc(j){
   var dd=Object.assign({},j.d);
   dd.items=Object.keys(j.d.items||{}).map(function(k){return {id:k,q:j.d.items[k]}});
   var o={id:j.id,status:j.status,createdAt:j.createdAt,d:dd,quote:j.quote,items:j.items||[],assign:j.assign||{truckId:'',crew:[]},tally:j.tally||{}};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy','createdCC'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
   o.payments=toMap(j.payments,function(x){return x.id});
   o.signed=toMap(j.signed,function(x){return x.id});
   o.extras=toMap(j.extras,function(x){return x.id});
@@ -4452,7 +4854,7 @@ function docToJob(v){
     materials:mapArr(v.materials,'ts'),costs:mapArr(v.costs,'ts'),confirm:(v.confirm&&typeof v.confirm==='object')?v.confirm:{},
     crewOn:(v.crewOn&&typeof v.crewOn==='object')?v.crewOn:undefined,crewAdj:mapArr(v.crewAdj,'ts'),
     log:mapArr(v.log,'ts').slice(-60)};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy','createdCC'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
   return j;
 }
 function jobDiff(prev,cur){
@@ -4551,7 +4953,7 @@ function softRefresh(){
     if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&(a.closest('#view')||a.closest('#sheet'))&&a.id!=='hSearch'&&rfTries<6){rfTries++;softRefresh();return}
     rfTries=0;renderTabs();
     if(ui.jobId)renderSheet();
-    if(['jobs','dispatch','crew','history','reports','today','sched','quotes'].indexOf(ui.tab)>=0||(ui.tab==='chat'&&ui.chatThread==='jobs'))renderTab();
+    if(['jobs','dispatch','crew','history','reports','today','sched','quotes','desk'].indexOf(ui.tab)>=0||(ui.tab==='chat'&&ui.chatThread==='jobs'))renderTab();
   },300);
 }
 function softSettings(){var a=document.activeElement;if(ui.tab==='settings'&&!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))renderSettings()}
@@ -4636,11 +5038,12 @@ function pullSettings(snap){
   if(snap.exists&&(first||canon(settingsDoc())===sync.lastSettings)){
     var v=clone(snap.data());
     v.forms=(v.forms||[]).map(function(f){f.pages=(f.pageIds||[]).map(function(id){return sync.pageCache[id]||''});return f});
-    state.settings=Object.assign(defaultSettings(),v);
+    state.settings=Object.assign(defaultSettings(),ccDb()?CARD_BLANK:{},v);   // the call center reads the rate card, with nothing of the company's own under it
     if(!state.settings.comms||!state.settings.comms.alerts)state.settings.comms=defaultSettings().comms;
     if(!state.settings.opt||typeof state.settings.opt!=='object')state.settings.opt={};
     sync.lastSettings=canon(settingsDoc());
     if(!ccDb())fetchPages();   // the forms' pages: signed on the job, never the call center's
+    shopGeoCheck();
     cacheSave();applyIdentityUI();softRefresh();
   }
   syncOut();
@@ -4663,6 +5066,7 @@ function startData(){
   if(window.TALLY_SCHED&&sync.identity.role==='callcenter')sync.unsubs.push(db.collection('sched').onSnapshot(pullSched,ef));
   chatStart(db);
   payLoad();
+  if(sync.identity.role==='callcenter')deskBoot();
   if(sync.isOwner){
     sync.unsubs.push(db.collection('requests').onSnapshot(function(snap){sync.requests=snap.docs.map(function(d){return d.data()}).filter(function(x){return x&&x.uid});resolveNames(sync.requests.map(function(x){return x.uid}));softSettings()},ef));
     sync.unsubs.push(db.collection('users').onSnapshot(function(snap){sync.users=snap.docs.map(function(d){return d.data()}).filter(function(x){return x&&x.uid});resolveNames(sync.users.map(function(x){return x.uid}));softSettings()},ef));
@@ -4745,7 +5149,7 @@ function syncBoot(){
 function accessCard(){
   if(sync.mode!=='shared')return '<section class="card"><h2>App access</h2><p class="sub">Sign-in and access control switch on when Tally is opened with shared storage. Right now this copy runs on one device.</p></section>';
   var dir=directory(),staffOpts='<option value="">Choose a person</option>'+(peopleHosted()?empRoster().filter(function(x){return !x.rec||(!x.rec.user_id&&x.rec.active!==false)}).map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''):dir.map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''));
-  var roleOpts=function(sel){return ['crew','lead','callcenter','dispatch','owner'].map(function(r){return '<option value="'+r+'"'+(r===sel?' selected':'')+'>'+KIND[r]+'</option>'}).join('')};
+  var roleOpts=function(sel){return ['crew','lead','dispatch','owner'].map(function(r){return '<option value="'+r+'"'+(r===sel?' selected':'')+'>'+KIND[r]+'</option>'}).join('')};
   var nm=function(id){return esc(sync.names[id]||'Someone')};
   var pend=sync.requests.map(function(r){var f={kind:'crew'};return '<div class="who" style="display:block"><b>'+nm(r.uid)+'</b> <small>is asking for access</small><div class="accpick"><label class="f"><span>This person is</span><select id="accStaff_'+esc(r.uid)+'">'+staffOpts+'</select></label><label class="f"><span>Role</span><select id="accRole_'+esc(r.uid)+'">'+roleOpts(f.kind)+'</select></label></div><div class="row" style="margin-top:6px"><button class="btn primary sm" data-act="acc:approve" data-uid="'+esc(r.uid)+'">Approve</button><button class="btn sm ghost" data-act="acc:deny" data-uid="'+esc(r.uid)+'">Deny</button></div></div>'}).join('');
   var appr=sync.users.map(function(u){return '<div class="who"><span><b>'+nm(u.uid)+'</b><br><small>'+esc(u.staff||'')+' · '+esc(KIND[u.role]||u.role)+'</small></span><button class="btn sm danger" data-act="acc:revoke" data-uid="'+esc(u.uid)+'">Revoke</button></div>'}).join('');
@@ -4761,7 +5165,7 @@ function accessCard(){
    employees table, which only the owner can read; each person sees their own through My profile,
    and signing in with the profile's email links them to it (claim_invites). Without a server
    (the claude.ai artifact, or an app without Supabase) profiles stay on this device only. */
-var EMP_ROLES=[['crew','Crew'],['lead','Crew lead'],['callcenter','Call center'],['dispatch','Dispatch'],['owner','Owner']];
+var EMP_ROLES=[['crew','Crew'],['lead','Crew lead'],['dispatch','Dispatch'],['owner','Owner']];
 var EMP_SELF=['phone','address','city','state','zip','emergencyName','emergencyRelation','emergencyPhone','shirtSize'];
 var SHIRTS=['','S','M','L','XL','2XL','3XL'];
 var EMP_SECS=[
@@ -4811,11 +5215,9 @@ function empStatus(e){
 function dirApply(e){
   var S=state.settings,n=e.name,ci=S.crew.indexOf(n),oi=(S.office||[]).findIndex(function(o){return o.name===n});
   S.crew=S.crew.filter(function(x){return x!==n});S.leads=S.leads.filter(function(x){return x!==n});S.office=(S.office||[]).filter(function(o){return o.name!==n});
-  var cci=(S.callcenter||[]).indexOf(n);S.callcenter=(S.callcenter||[]).filter(function(x){return x!==n});
   if(e.active!==false){
-    if(e.role==='callcenter'){if(cci>=0)S.callcenter.splice(cci,0,n);else S.callcenter.push(n)}
-    else if(e.role==='crew'||e.role==='lead'){if(ci>=0)S.crew.splice(ci,0,n);else S.crew.push(n);if(e.role==='lead')S.leads.push(n)}
-    else{var ob={name:n,kind:e.role};if(oi>=0)S.office.splice(oi,0,ob);else S.office.push(ob)}
+    if(e.role==='crew'||e.role==='lead'){if(ci>=0)S.crew.splice(ci,0,n);else S.crew.push(n);if(e.role==='lead')S.leads.push(n)}
+    else if(e.role==='owner'||e.role==='dispatch'){var ob={name:n,kind:e.role};if(oi>=0)S.office.splice(oi,0,ob);else S.office.push(ob)}
   }
   var ph=String((e.info&&e.info.phone)||'').trim();if(ph)S.contacts[n]=ph;
   dirChanged();
@@ -5463,7 +5865,7 @@ function previewPeople(role){
   var S=state.settings;
   if(role==='crew')return S.crew.filter(function(n){return !isLead(n)});
   if(role==='lead')return S.crew.filter(isLead);
-  if(role==='callcenter')return (S.callcenter||[]).slice();
+  if(role==='callcenter')return [];   // Tally's call center team: anyone of them
   return (S.office||[]).filter(function(o){return o.kind===role}).map(function(o){return o.name});
 }
 function startPreview(role,staff){
@@ -5485,7 +5887,7 @@ function renderPvBar(){
   var b=$('#pvBar');if(!b)return;
   if(!previewing()){b.hidden=true;b.innerHTML='';document.body.classList.remove('previewing');return}
   var p=ui.preview;
-  b.innerHTML='<span class="grow">Previewing <b>'+esc(p.staff||KIND[p.role]||p.role)+'</b> · '+esc(KIND[p.role]||p.role)+'</span><button data-act="pv:end">Back to my view</button>';
+  b.innerHTML='<span class="grow">Previewing <b>'+esc(p.staff||KIND[p.role]||p.role)+'</b>'+(p.staff?' · '+esc(KIND[p.role]||p.role):'')+'</span><button data-act="pv:end">Back to my view</button>';
   b.hidden=false;document.body.classList.add('previewing');
 }
 function previewSheet(){
@@ -6447,10 +6849,11 @@ function admCompany(c){
   var cards={platform:'Cards: Tally’s own Stripe account',connected:'Cards: its own Stripe account',connecting:'Cards: Stripe still checking',disconnected:'Cards: Stripe disconnected',none:'Cards: not set up'}[c.cards]||'';
   var open=adm.open===c.id;
   return '<div class="card adm-co'+(c.test?' is-test':'')+'"><div class="row between" style="align-items:flex-start"><div class="grow"><h3>'+esc(c.name)+(c.test?' <b class="testtag">TEST</b>':'')+'</h3>'+
-    '<small>'+who+'</small><br><small>'+esc(st+detail)+' · '+c.members+' '+(c.members===1?'person':'people')+' · since '+esc(shortDay(c.created))+'</small><br><small>'+esc(cards)+'</small>'+(c.note?'<br><small>Note: '+esc(c.note)+'</small>':'')+'</div>'+
+    '<small>'+who+'</small><br><small>'+esc(st+detail)+' · '+c.members+' '+(c.members===1?'person':'people')+' · since '+esc(shortDay(c.created))+'</small><br><small>'+esc(cards)+'</small>'+(c.cc?'<br><small><b>Call center: on</b></small>':'')+(c.note?'<br><small>Note: '+esc(c.note)+'</small>':'')+'</div>'+
     '<button class="btn sm" data-act="adm:open" data-id="'+id+'" aria-expanded="'+open+'">'+(open?'Close':'Change')+'</button></div>'+
     (open?'<div class="adm-edit"><label class="check"><input type="checkbox" id="admT_'+id+'"'+(c.test?' checked':'')+'> Test company (never charged)</label>'+
       '<label class="check"><input type="checkbox" id="admW_'+id+'"'+(c.waived?' checked':'')+'> Waive the membership fee</label>'+
+      (adm.data&&adm.data.team?'<label class="check"><input type="checkbox" id="admC_'+id+'"'+(c.cc?' checked':'')+'> Call center service (your team quotes and books for them)</label>':'')+
       '<div class="grid2 stack">'+fld('Discount (%)','<input id="admD_'+id+'" type="number" inputmode="numeric" min="0" max="100" step="1" value="'+(c.discount_pct||0)+'">')+fld('Note (only you see it)','<input id="admN_'+id+'" maxlength="500" value="'+esc(c.note||'')+'">')+'</div>'+
       '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="adm:save" data-id="'+id+'">Save</button></div>'+
       '<p class="hint">A running membership follows right away: waived and test companies stop being charged, a discount is taken off every month.</p></div>':'')+'</div>';
@@ -6472,14 +6875,44 @@ function renderAdmin(){
     fld('Company name','<input id="admName" maxlength="120" autocomplete="off">')+fld('Owner’s email','<input id="admEmail" type="email" autocomplete="off" placeholder="owner@company.com">')+'</div>'+
     '<label class="check"><input type="checkbox" id="admTest"> Test company (never charged)</label><div class="row"><button class="btn primary" data-act="adm:add">Add company</button></div>'+
     '<p class="hint">The owner goes straight in when they sign in to Tally with that email. Use your own email to be its owner yourself.</p>'+(adm.addMsg?'<p class="hint" role="status">'+esc(adm.addMsg)+'</p>':'')+'</section>';
-  v.innerHTML=head+sum+'<div class="secline"><h2>Companies</h2><button data-act="adm:reload">Refresh</button></div>'+(cos.length?cos.map(admCompany).join(''):'<p class="hint">No companies yet.</p>')+plan+add;
+  v.innerHTML=head+sum+'<div class="secline"><h2>Companies</h2><button data-act="adm:reload">Refresh</button></div>'+(cos.length?cos.map(admCompany).join(''):'<p class="hint">No companies yet.</p>')+admTeam(d)+plan+add;
+}
+// The call center: Tally's own team, who quote and book for the companies switched on above (Richie bills them)
+function admTeam(d){
+  var on=(d.companies||[]).filter(function(c){return c.cc}).length;
+  if(!d.team)return '<section class="card" id="admTeam"><h2>Call center team</h2><p class="sub">Your own people, who quote and book for the companies that buy the call center.</p><div class="note">The database isn’t set up for it yet. Run <b>supabase-callcenter.sql</b> in the Supabase SQL editor, then come back here.</div></section>';
+  var rows=d.team.map(function(t){var a='adm:ccrm:'+t.email;
+    return '<div class="row between adm-cc" style="align-items:flex-start;gap:8px;padding:8px 0;border-top:1px solid var(--line2)"><div class="grow" style="min-width:0"><b>'+esc(t.name||t.email)+'</b><br><small>'+esc(t.email)+(t.phone?' · '+esc(t.phone):' · no phone yet')+'</small><br><small>'+(t.signedIn?'Signed in':'Hasn’t signed in yet')+'</small></div>'+
+      '<button class="btn sm ghost" data-act="adm:ccrm" data-email="'+esc(t.email)+'">'+(ui.armed===a?'Tap again to remove':'Remove')+'</button></div>'}).join('');
+  return '<section class="card" id="admTeam"><h2>Call center team</h2><p class="sub">Your own people. They quote and book for the '+on+' compan'+(on===1?'y':'ies')+' with the call center switched on (Change on a company), and see no other company. They sign in to Tally with the email here.</p>'+
+    (rows||'<p class="hint">Nobody yet.</p>')+
+    '<div class="grid2 stack" style="margin-top:8px">'+fld('Name','<input id="admCcName" maxlength="80" autocomplete="off">')+fld('Email they sign in with','<input id="admCcEmail" type="email" autocomplete="off" placeholder="name@yourcallcenter.com">')+fld('Their phone (for calls through a company’s line)','<input id="admCcPhone" type="tel" autocomplete="off" placeholder="512-555-0107">')+'</div>'+
+    '<div class="row"><button class="btn primary" data-act="adm:ccadd">Add to the team</button></div>'+(adm.ccMsg?'<p class="hint" role="status">'+esc(adm.ccMsg)+'</p>':'')+'</section>';
+}
+function adminCcAdd(){
+  var n=(($('#admCcName')||{}).value||'').trim(),e=(($('#admCcEmail')||{}).value||'').trim(),ph=(($('#admCcPhone')||{}).value||'').trim();
+  if(!n)return toast('Give their name.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))return toast('Enter the email they sign in with.');
+  window.tallyAdmin.ccAdd(n,e,ph).then(function(r){
+    if(!r||!r.ok){toast((r&&r.message)||'Could not add them.');return}
+    adm.ccMsg=r.message||'Added.';if(adm.data&&r.team)adm.data.team=r.team;renderAdmin();
+  });
+}
+function adminCcRemove(email){
+  if(!armed('adm:ccrm:'+email))return;   // the first tap asks again
+  window.tallyAdmin.ccRemove(email).then(function(r){
+    if(!r||!r.ok){toast((r&&r.message)||'Could not remove them.');return}
+    adm.ccMsg=r.message||'Removed.';if(adm.data&&r.team)adm.data.team=r.team;renderAdmin();
+  });
 }
 function adminSave(id){
   var g=function(k){return $('#'+k+'_'+id)};
   if(!g('admT'))return;
   var dsc=Number(g('admD').value||0);
   if(!(dsc>=0&&dsc<=100)||Math.round(dsc)!==dsc){toast('A discount is a whole percent from 0 to 100.');return}
-  window.tallyAdmin.set(id,{test:g('admT').checked,waived:g('admW').checked,discount:dsc,note:g('admN').value||''}).then(function(r){
+  var patch={test:g('admT').checked,waived:g('admW').checked,discount:dsc,note:g('admN').value||''},co=((adm.data&&adm.data.companies)||[]).filter(function(c){return c.id===id})[0];
+  if(g('admC')&&co&&g('admC').checked!==!!co.cc)patch.cc=g('admC').checked;   // only a change: the switch needs supabase-callcenter.sql
+  window.tallyAdmin.set(id,patch).then(function(r){
     if(!r||!r.ok){toast((r&&r.message)||'Could not save.');return}
     if(r.company&&adm.data&&adm.data.companies)adm.data.companies=adm.data.companies.map(function(c){return c.id===id?r.company:c});
     adm.open='';toast(r.message||'Saved.');renderAdmin();
@@ -6874,7 +7307,7 @@ function accordify(root,itemSel,titleTag,prefix,defOpen){
 document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.tagName==='DETAILS'&&d.dataset&&d.dataset.k)ui.open[d.dataset.k]=d.open},true);
 
 /* ---------- events ---------- */
-function armed(a){if(ui.armed===a){ui.armed='';return true}ui.armed=a;renderTab();setTimeout(function(){if(ui.armed===a){ui.armed='';if(ui.tab==='settings'||ui.tab==='quotes')renderTab()}},4000);return false}
+function armed(a){if(ui.armed===a){ui.armed='';return true}ui.armed=a;renderTab();setTimeout(function(){if(ui.armed===a){ui.armed='';if(ui.tab==='settings'||ui.tab==='quotes'||ui.tab==='admin')renderTab()}},4000);return false}
 document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
   var a=t.dataset.act,S=state.settings,d=state.draft,j;
@@ -7059,6 +7492,11 @@ document.addEventListener('click',function(e){
     case 'me:open':ui.more=false;renderMore();openMyProfile();break;
     case 'me:save':mySave();break;
     case 'more:theme':ui.more=false;renderMore();ui.pick=true;renderPick();break;
+    case 'desk:find':deskFind();break;
+    case 'desk:clear':var dkc=deskUi();dkc.addr='';dkc.date='';dkc.geo=null;dkc.msg='';dkc.busy=false;desk.seq++;renderDesk();var dka=$('#dkAddr');if(dka)dka.focus();break;
+    case 'desk:quote':deskGo(t.dataset.co,'quote');break;
+    case 'desk:sched':deskGo(t.dataset.co,'sched');break;
+    case 'desk:pick':deskPick(t.dataset.co);break;
     case 'cal:day':ui.schedDay=t.dataset.day;ui.schedMon=t.dataset.day.slice(0,7);renderSched();var cd=$('#calDay');if(cd&&cd.scrollIntoView)cd.scrollIntoView({block:'start'});break;
     case 'cal:mon':{var cm=ui.schedMon||(ui.schedDay||todayISO()).slice(0,7),cy=+cm.slice(0,4),cmo=+cm.slice(5,7)-1+(+t.dataset.dir);var nd=new Date(cy,cmo,1);ui.schedMon=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0');ui.schedDay=ui.schedMon===todayISO().slice(0,7)?todayISO():ui.schedMon+'-01';renderSched();break}
     case 'cal:today':ui.schedDay=todayISO();ui.schedMon=ui.schedDay.slice(0,7);renderSched();break;
@@ -7155,6 +7593,8 @@ document.addEventListener('click',function(e){
     case 'adm:save':adminSave(t.dataset.id);break;
     case 'adm:plan':adminPlanSave();break;
     case 'adm:add':adminAddCompany();break;
+    case 'adm:ccadd':adminCcAdd();break;
+    case 'adm:ccrm':adminCcRemove(t.dataset.email);break;
     case 'adm:reload':adm.data=null;adm.msg='';adminLoad();renderAdmin();break;
     case 'pay:retry':pay.cfg=null;payLoad(true);renderFlow();break;
     case 'pl:make':case 'pl:text':{var oj=byId(ui.jobId);if(!oj||pay.busy)break;var ol=pay.links[oj.id];
@@ -7265,6 +7705,7 @@ document.addEventListener('input',function(e){
   else if(t.id==='rqPack'&&ui.rqo){ui.rqo.dr.pack=t.checked;rqFootUpdate(byId(ui.rqo.jobId),ui.rqo)}
   else if(t.id==='hSearch'){ui.hq=t.value;ui.hShow=50;ui.hShowC=0;histFill()}
   else if(t.id==='ccQ'){ui.ccq=t.value;ccFill()}
+  else if(t.id==='dkAddr'){deskUi().addr=t.value}
   else if(/^(backSoFar|backMi|odoA|odoB)$/.test(t.id)&&ui.flow&&ui.flow.back){var fbk=ui.flow.back;fbk[{backSoFar:'soFar',backMi:'mi',odoA:'odoStart',odoB:'odoEnd'}[t.id]]=t.value;if(t.id==='backMi')fbk.miSrc='typed';backRedraw()}
   else if(t.id==='odoStartIn'&&ui.start){ui.start.odo=t.value}
   else if(t.id==='setQ'){ui.setQ=t.value;var sl=$('#setList');if(sl)sl.innerHTML=setListHtml(setupSecs())}
@@ -7273,6 +7714,9 @@ document.addEventListener('input',function(e){
   else if(t.dataset.jcf){var j2=canEditJobs()?byId(ui.jobId):null;if(j2)jedSet(j2,'cf:'+t.dataset.jcf,t.value)}
 });
 document.addEventListener('change',function(e){
+  if(e.target&&e.target.id==='dkAddr'){deskUi().addr=e.target.value;deskFind();return}
+  if(e.target&&e.target.id==='dkDate'){deskUi().date=e.target.value;renderDeskRes();return}
+  if(e.target&&e.target.dataset&&e.target.dataset.s==='shopAddress')setTimeout(shopGeoCheck,50);
   if(e.target&&e.target.id==='etaOn'&&ui.start){ui.start.text=e.target.checked;renderStart();return}
   if(e.target&&e.target.id==='rqPack'&&ui.rqo){ui.rqo.dr.pack=e.target.checked;var rpj=byId(ui.rqo.jobId);if(rpj)rqFootUpdate(rpj,ui.rqo);return}
   if(e.target&&ui.flow&&e.target.id==='saveLink'){ui.flow.saveLink=e.target.checked;renderFlow();return}
@@ -7320,7 +7764,7 @@ document.addEventListener('change',function(e){
     var wasPast=isHistory(j);setStatus(j,t.value);save();renderSheet();
     if(!wasPast&&isHistory(j))toast(j.status==='lost'?'Marked lost. It is in Job history now.':'Closed. It is in Job history now.')}
 });
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.mp){mpClose();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.mv){mvClose();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Escape'&&ui.rqo){if(ui.rqo.leave){ui.rqo.leave=false;rqLeaveBar()}else rqExit();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId){if(ui.closeAsk){ui.closeAsk=null;renderSheet()}else leaveSheet(closeSheet)}});
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target&&e.target.id==='dkAddr'){e.preventDefault();deskUi().addr=e.target.value;deskFind();return}if(e.key==='Escape'&&(ui.sosOpen||ui.sosStart)){sosHide();return}if(e.key==='Escape'&&ui.mp){mpClose();return}if(e.key==='Escape'&&ui.emp){closeEmp();return}if(e.key==='Escape'&&ui.mv){mvClose();return}if(e.key==='Escape'&&ui.start){ui.start=null;renderStart();return}if(e.key==='Escape'&&ui.call){ui.call=null;renderCall();return}if(e.key==='Escape'&&ui.more){ui.more=false;renderMore();return}if(e.key==='Escape'&&ui.pick){ui.pick=false;renderPick();return}if(e.key==='Escape'&&ui.rqo){if(ui.rqo.leave){ui.rqo.leave=false;rqLeaveBar()}else rqExit();return}if(e.key==='Enter'&&!e.shiftKey&&e.target&&e.target.id==='msgIn'&&window.innerWidth>=900){e.preventDefault();var b=document.querySelector('[data-act="chat:send"]');if(b)b.click();return}if(e.key!=='Escape')return;if(ui.flow)closeFlow();else if(ui.jobId){if(ui.closeAsk){ui.closeAsk=null;renderSheet()}else leaveSheet(closeSheet)}});
 
 /* ---------- errors are shown, not swallowed ---------- */
 var lastErrAt=0;
@@ -7329,7 +7773,7 @@ window.addEventListener('error',function(e){showErr(e&&e.message)});
 window.addEventListener('unhandledrejection',function(e){showErr(e&&e.reason&&(e.reason.message||e.reason.code||e.reason))});
 
 /* ---------- boot ---------- */
-function freshState(demo){var s={v:1,settings:defaultSettings(),jobs:[],shifts:[],vault:[],chatMsgs:[],locs:{},draft:blankDraft(),ui:{role:'owner',me:'',who:'',reads:{},theme:'movingday',mode:'auto'},demo:false};if(demo){s.settings.callcenter=['Jess'];s.settings.contacts.Jess='512-555-0107';s.jobs=demoJobs(s.settings);s.shifts=demoShifts();s.vault=demoVault();s.chatMsgs=demoChat();s.demo=true;s.demoV2=true}return s}
+function freshState(demo){var s={v:1,settings:defaultSettings(),jobs:[],shifts:[],vault:[],chatMsgs:[],locs:{},draft:blankDraft(),ui:{role:'owner',me:'',who:'',reads:{},theme:'movingday',mode:'auto'},demo:false};if(demo){s.jobs=demoJobs(s.settings);s.shifts=demoShifts();s.vault=demoVault();s.chatMsgs=demoChat();s.demo=true;s.demoV2=true}return s}
 state=loadState();
 if(!state||!state.settings||!Array.isArray(state.jobs))state=freshState(true);
 state.draft=Object.assign(blankDraft(),state.draft||{});

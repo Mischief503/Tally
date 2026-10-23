@@ -43,10 +43,13 @@ function fnReplies(ctl) {
     if (b.action === 'member_status') return clone(typeof ctl.status === 'function' ? ctl.status(b) : ctl.status);
     if (b.action === 'member_start') return ctl.start ? clone(ctl.start) : { ok: true, url: CHECKOUT };
     if (b.action === 'member_portal') return ctl.portal ? clone(ctl.portal) : { ok: true, url: PORTAL };
-    if (b.action === 'admin_list') return { ok: true, plan: ctl.plan || { monthly_cents: 14900, trial_days: 14 }, payments: 'test', companies: ctl.companies || COMPANIES() };
+    if (b.action === 'admin_list') return { ok: true, plan: ctl.plan || { monthly_cents: 14900, trial_days: 14 }, payments: 'test', companies: ctl.companies || COMPANIES(), team: ctl.team === undefined ? null : clone(ctl.team) };
+    if (b.action === 'admin_cc_add') { ctl.team = (ctl.team || []).filter((t) => t.email !== b.email.toLowerCase()).concat([{ email: b.email.toLowerCase(), name: b.name, phone: b.phone, signedIn: false }]); return { ok: true, message: b.name + ' is on the call center team. They sign in to Tally with ' + b.email.toLowerCase() + '.', team: clone(ctl.team) }; }
+    if (b.action === 'admin_cc_remove') { ctl.team = (ctl.team || []).filter((t) => t.email !== b.email); return { ok: true, message: 'Taken off the call center team. They see no company’s work from now on.', team: clone(ctl.team) }; }
     if (b.action === 'admin_set') {
       const c = (ctl.companies || COMPANIES()).find((x) => x.id === b.target);
       const nc = Object.assign(clone(c), { test: b.test, waived: b.waived, discount_pct: b.discount, note: b.note });
+      if (b.cc !== undefined) nc.cc = b.cc;
       nc.member = Object.assign(nc.member, { state: b.test ? 'test' : b.waived ? 'waived' : nc.member.state, discount_pct: b.discount, price_cents: Math.round(14900 * (100 - b.discount) / 100) });
       return { ok: true, message: 'Saved.', company: nc };
     }
@@ -197,6 +200,42 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   J.click('#view [data-act="adm:add"]'); await sleep(30);
   ok(fnCalls(J, 'admin_add').length === 1 && /owner’s email/.test(J.$('#toast').textContent), 'a company without a proper email isn’t sent');
   ok(J.errors.length === 0, 'no errors in Tally admin (' + J.errors.slice(0, 3).join(' | ') + ')');
+  ok(/Call center team.*The database isn’t set up for it yet\. Run supabase-callcenter\.sql/.test(say(J.$('#view'))) && !J.$('[id^="admC_"]'), 'before supabase-callcenter.sql: the call center team says to run it first, and Change has no call center switch');
+
+  /* ---------------- Tally admin: the call center team and the switch ---------------- */
+  const cos = COMPANIES(); cos[0].cc = true;
+  const cctl = { status: ST.test(true), team: [{ email: 'jess@calls.example', name: 'Jess', phone: '512-555-0107', signedIn: true }], companies: cos };
+  const M = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies(cctl), setup: browser(rec0()) });
+  M.click('[data-act="more:open"]'); await sleep(10); M.click('[data-act="more:go"][data-tab="admin"]'); await sleep(60);
+  v = say(M.$('#view'));
+  ok(/Blue Moving.*Call center: on/.test(v) && !/Green Movers[^]*Call center: on[^]*Live company/.test(v), 'a company with the service says so');
+  ok(/Call center team.*They quote and book for the 1 company with the call center switched on/.test(v) && /Jess.*jess@calls\.example · 512-555-0107.*Signed in/.test(v), 'the team: Jess, her email and phone, signed in, working for the one company switched on');
+  M.click('#view [data-act="adm:open"][data-id="org-green"]'); await sleep(20);
+  ok(M.$('#admC_org-green') && !M.$('#admC_org-green').checked, 'Change has the call center switch (off for Green Movers)');
+  M.$('#admD_org-green').value = '0';
+  M.click('#view [data-act="adm:save"][data-id="org-green"]'); await sleep(60);
+  let cs = fnCalls(M, 'admin_set').pop();
+  ok(cs && !('cc' in cs.body), 'saving without touching the switch doesn’t send it');
+  M.click('#view [data-act="adm:open"][data-id="org-green"]'); await sleep(20);
+  M.$('#admC_org-green').checked = true;
+  M.click('#view [data-act="adm:save"][data-id="org-green"]'); await sleep(60);
+  cs = fnCalls(M, 'admin_set').pop();
+  ok(cs && cs.body.cc === true && cs.body.target === 'org-green' && /Green Movers.*Call center: on/.test(say(M.$('#view'))), 'switched on for Green Movers: it says so');
+  M.$('#admCcName').value = 'Bo Diaz'; M.$('#admCcEmail').value = 'Bo@Calls.example'; M.$('#admCcPhone').value = '512-555-0111';
+  M.click('#view [data-act="adm:ccadd"]'); await sleep(60);
+  const ca = fnCalls(M, 'admin_cc_add').pop();
+  ok(ca && ca.body.name === 'Bo Diaz' && ca.body.email === 'Bo@Calls.example' && ca.body.phone === '512-555-0111', 'Add to the team sends the name, email and phone');
+  v = say(M.$('#view'));
+  ok(/Bo Diaz is on the call center team\. They sign in to Tally with bo@calls\.example\./.test(v) && /Bo Diaz.*bo@calls\.example · 512-555-0111.*Hasn’t signed in yet/.test(v), 'and Bo is on the list, not signed in yet');
+  M.$('#admCcName').value = 'No Email'; M.$('#admCcEmail').value = 'nope';
+  M.click('#view [data-act="adm:ccadd"]'); await sleep(30);
+  ok(fnCalls(M, 'admin_cc_add').length === 1 && /email they sign in with/.test(M.$('#toast').textContent), 'someone without a proper email isn’t sent');
+  M.click('#view [data-act="adm:ccrm"][data-email="jess@calls.example"]'); await sleep(20);
+  ok(!fnCalls(M, 'admin_cc_remove').length && /Tap again to remove/.test(M.$('#view [data-act="adm:ccrm"][data-email="jess@calls.example"]').textContent), 'Remove asks for a second tap');
+  M.click('#view [data-act="adm:ccrm"][data-email="jess@calls.example"]'); await sleep(60);
+  ok(fnCalls(M, 'admin_cc_remove').length === 1 && !/jess@calls\.example/.test(say(M.$('#view'))) && /Taken off the call center team/.test(say(M.$('#view'))), 'the second tap takes Jess off the team');
+  ok(M.errors.length === 0, 'no errors (' + M.errors.slice(0, 3).join(' | ') + ')');
+
   // not an admin: the screen says so even if reached
   const K = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies({ status: ST.trial(13) }), setup: browser(rec0()) });
   K.click('[data-act="more:open"]'); await sleep(10);

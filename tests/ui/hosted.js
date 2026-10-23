@@ -42,7 +42,7 @@ function seed(opts = {}) {
   ok(!$('#login') && $('#view').textContent.length > 20, 'signs in and boots past the login');
   ok(w.tallyComms && w.tallyComms.number() === '+15125550000', 'adapter reads the company line');
   ok(T.state().jobs.length === 2, 'jobs arrive from the database');
-  T.comms.SETTLE = 60;
+  T.comms.SETTLE = 200;   // short for the test, but long enough that a busy machine doesn't send before the taps end
 
   // ---- setup card
   await A.go('settings');

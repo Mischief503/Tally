@@ -1,16 +1,34 @@
--- tests/sql/callcenter.sh: a database as it was before the call center (commit ab624a2, Oct 21, 2026),
--- made from one set up with today's files: the constraints, rules and job guard as they were, and none
--- of the call center's own functions, triggers or schedule copies. supabase-callcenter.sql then has to
--- bring it to exactly what today's files make.
-alter table public.members drop constraint if exists members_role_check;
-alter table public.members add constraint members_role_check check (role in ('owner','dispatch','lead','crew'));
-alter table public.employees drop constraint if exists employees_role_check;
-alter table public.employees add constraint employees_role_check check (role in ('owner','dispatch','lead','crew'));
-delete from public.docs where collection = 'sched';
+-- tests/sql/callcenter.sh: a database as it was before the call center (commit ab624a2, Oct 21, 2026, which
+-- is what the live database has), made from one set up with today's files: the constraint, rules, company
+-- list and job guard as they were, and none of the call center's own tables, functions, triggers or copies.
+-- supabase-callcenter.sql then has to bring it to exactly what today's files make.
+delete from public.docs where collection in ('sched','ratecard');
 drop trigger if exists sched_sync on public.docs;
 drop trigger if exists sched_gone on public.docs;
 drop function if exists public.sched_sync();
 drop function if exists public.sched_of(jsonb);
+drop trigger if exists ratecard_sync on public.docs;
+drop trigger if exists ratecard_gone on public.docs;
+drop function if exists public.ratecard_sync();
+drop function if exists public.ratecard_of(jsonb);
+-- The companies I'm in, and the ones I've asked to join.
+create or replace function public.my_orgs()
+returns table(id uuid, name text, role text, join_code text, pending boolean, plan text, trial_ends timestamptz)
+language sql stable security definer set search_path = public as $$
+  select o.id, o.name, m.role,
+         case when m.role in ('owner','dispatch') then o.join_code else null end,
+         false, o.plan, o.trial_ends
+    from public.members m join public.orgs o on o.id = m.org_id
+   where m.user_id = auth.uid()
+  union all
+  select o.id, o.name, '', null, true, o.plan, o.trial_ends
+    from public.access_requests r join public.orgs o on o.id = r.org_id
+   where r.user_id = auth.uid()
+     and not exists (select 1 from public.members m where m.org_id = r.org_id and m.user_id = auth.uid())
+  order by 2
+$$;
+drop policy if exists orgs_read on public.orgs;
+create policy orgs_read on public.orgs for select to authenticated using (public.member_of(id));
 alter table public.docs drop constraint if exists docs_collection_check;
 alter table public.docs add constraint docs_collection_check
   check (collection in ('org','meta','jobs','shifts','vault','chat','locs','photos','formpages'));
@@ -95,3 +113,8 @@ drop function if exists public.cc_save(uuid, text, jsonb, jsonb);
 drop function if exists public.cc_clean(jsonb, boolean);
 drop function if exists public.cc_open(jsonb);
 drop function if exists public.cc_in(uuid);
+drop function if exists public.cc_agent();
+drop function if exists public.claim_cc_team();
+drop function if exists public.cc_me();
+drop table if exists public.tally_cc_team;
+drop table if exists public.cc_orgs;

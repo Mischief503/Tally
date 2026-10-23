@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# The call center (Oct 22): what it reads (the open quotes and leads, and the schedule as a copy
-# without the money) and writes (open quotes: changing one, booking it, marking it lost; no discount
-# of its own, no payments), the copy the trigger keeps, and supabase-callcenter.sql bringing a database
-# set up before the call center to exactly the rules today's files make.
+# The call center service (Oct 22): Tally's own team (tally_cc_team, linked at sign-in by claim_cc_team),
+# working for the companies that have the service (cc_orgs). For those companies only, what they read (the
+# rate card copy, the open quotes and leads, and the schedule as a copy without the money) and write (open
+# quotes through cc_save: changing one, booking it, marking it lost; no discount of its own, no payments),
+# the copies the triggers keep, and supabase-callcenter.sql bringing a database set up before the call
+# center to exactly the rules today's files make.
 set -e
 PGBIN=$(ls -d /usr/lib/postgresql/*/bin | head -1)
 D=$(mktemp -d); $PGBIN/initdb -D $D -U postgres >/dev/null
@@ -30,7 +32,8 @@ grant usage on schema storage to anon, authenticated;
 insert into auth.users values
  ('cccccccc-0000-0000-0000-000000000001','own@x.com', now()),('cccccccc-0000-0000-0000-000000000002','dis@x.com', now()),
  ('cccccccc-0000-0000-0000-000000000003','jess@x.com', now()),('cccccccc-0000-0000-0000-000000000004','marcus@x.com', now()),
- ('cccccccc-0000-0000-0000-000000000005','other@x.com', now()),('cccccccc-0000-0000-0000-000000000006','zoe@x.com', now());
+ ('cccccccc-0000-0000-0000-000000000005','other@x.com', now()),('cccccccc-0000-0000-0000-000000000006','zoe@x.com', now()),
+ ('cccccccc-0000-0000-0000-000000000007','kim@x.com', null);
 SQL
 $P -d $1 -f supabase/sql/supabase-schema-v2.sql
 $P -d $1 -f supabase/sql/supabase-employees.sql
@@ -38,6 +41,7 @@ $P -d $1 -f supabase/sql/supabase-payments.sql
 }
 OWN=cccccccc-0000-0000-0000-000000000001; DIS=cccccccc-0000-0000-0000-000000000002; JESS=cccccccc-0000-0000-0000-000000000003
 MARCUS=cccccccc-0000-0000-0000-000000000004; OTHER=cccccccc-0000-0000-0000-000000000005; ZOE=cccccccc-0000-0000-0000-000000000006
+KIM=cccccccc-0000-0000-0000-000000000007
 DB=t
 as(){ $P -d $DB -tA -c "set role authenticated; set request.jwt.claim.sub='$1'; $2" 2>&1 | tail -1; }
 pg(){ $P -d $DB -tA -c "$1" 2>&1 | tail -1; }
@@ -47,33 +51,61 @@ denied(){ got=$(as "$1" "$2"); case "$got" in *ERROR*|0|"") echo "PASS $3";; *) 
 same(){ if [ "$1" = "$2" ]; then echo "PASS $3"; else echo "FAIL $3: got '$1' want '$2'"; FAILS=1; fi; }
 # every definition the call center touches, to compare two databases
 defs(){ $P -d $1 -tA -c "select string_agg(x, E'\n' order by x) from (
-  select 'policy '||polname||' '||coalesce(pg_get_expr(polqual, polrelid),'')||' / '||coalesce(pg_get_expr(polwithcheck, polrelid),'') x from pg_policy where polrelid='public.docs'::regclass
+  select 'policy '||polrelid::regclass||' '||polname||' '||coalesce(pg_get_expr(polqual, polrelid),'')||' / '||coalesce(pg_get_expr(polwithcheck, polrelid),'') x
+    from pg_policy where polrelid in ('public.docs'::regclass,'public.orgs'::regclass)
   union all select 'fn '||p.proname||' '||md5(pg_get_functiondef(p.oid)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.proname in ('can_write_doc','cc_in','cc_open','cc_clean','cc_save','sched_of','sched_sync','jobs_guard')
+    where n.nspname='public' and p.proname in ('can_write_doc','cc_agent','cc_in','cc_open','cc_clean','cc_save','claim_cc_team','cc_me','my_orgs','sched_of','sched_sync','ratecard_of','ratecard_sync','jobs_guard')
   union all select 'con '||conrelid::regclass||' '||conname||' '||pg_get_constraintdef(oid) from pg_constraint
-    where conrelid in ('public.members'::regclass,'public.docs'::regclass,'public.employees'::regclass) and contype='c'
+    where conrelid in ('public.members'::regclass,'public.docs'::regclass,'public.employees'::regclass,'public.tally_cc_team'::regclass,'public.cc_orgs'::regclass)
+  union all select 'col '||table_name||' '||column_name||' '||data_type||' '||is_nullable||' '||coalesce(column_default,'') from information_schema.columns
+    where table_schema='public' and table_name in ('tally_cc_team','cc_orgs')
+  union all select 'idx '||indexname||' '||indexdef from pg_indexes where schemaname='public' and tablename in ('tally_cc_team','cc_orgs')
+  union all select 'tbl '||relname||' rls='||relrowsecurity||' '||coalesce(relacl::text,'') from pg_class where oid in ('public.tally_cc_team'::regclass,'public.cc_orgs'::regclass)
   union all select 'trg '||tgname||' '||pg_get_triggerdef(oid) from pg_trigger where tgrelid='public.docs'::regclass and not tgisinternal
   union all select 'acl '||p.proname||' '||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.proname in ('cc_in','cc_open','cc_clean','cc_save','sched_of','sched_sync')) s"; }
+    where n.nspname='public' and p.proname in ('cc_agent','cc_in','cc_open','cc_clean','cc_save','claim_cc_team','cc_me','my_orgs','sched_of','sched_sync','ratecard_of','ratecard_sync')) s"; }
 job(){ echo "insert into docs(org_id,path,collection,doc_id,data) values ('$O','jobs/$1','jobs','$1','$2') on conflict (org_id,path) do update set data=excluded.data returning 1"; }
+doc(){ echo "insert into docs(org_id,path,collection,doc_id,data) values ('$1','$2','${2%%/*}','${2#*/}','$3') on conflict (org_id,path) do update set data=excluded.data returning 1"; }
+SETTINGS='{"company":"Acme Moving","rates":{"r2":140,"r3":195,"r4":250},"minHours":3,"truckFee":45,"includedMiles":20,"mileRate":1.5,"shopAddress":"1200 Industrial Blvd, Austin, TX","shopGeo":{"lat":30.33,"lon":-97.7,"addr":"1200 Industrial Blvd, Austin, TX"},"trucks":[{"id":"t26","name":"Box 1 (26 ft)","cf":1700}],"opt":{"tax":false},"crew":["Marcus","Dee"],"contacts":{"Owner":"512-555-0100","Marcus":"512-555-0101"},"crewCost":24,"perms":{},"materials":[{"id":"m1","name":"Box","price":4,"cost":1.5}],"office":[{"name":"Owner","kind":"owner"}]}'
 
 # ---------- a fresh install, with supabase-callcenter.sql run on top (twice) ----------
 setup t
 $P -d t -f supabase/sql/supabase-callcenter.sql
 $P -d t -f supabase/sql/supabase-callcenter.sql && echo "PASS supabase-callcenter.sql runs again cleanly"
 O=$(as $OWN "select public.create_org('Acme Moving')"); O2=$(as $OTHER "select public.create_org('Other Co')")
-for p in "$DIS:Dispatch:dispatch" "$JESS:Jess:callcenter" "$MARCUS:Marcus:crew"; do IFS=: read U N R <<<"$p"
+for p in "$DIS:Dispatch:dispatch" "$MARCUS:Marcus:crew"; do IFS=: read U N R <<<"$p"
   as $OWN "insert into members(org_id,user_id,email,staff,role,ts) values ('$O','$U','x','$N','$R',1)" >/dev/null; done
-as $OTHER "insert into members(org_id,user_id,email,staff,role,ts) values ('$O2','$ZOE','x','Zoe','callcenter',1)" >/dev/null
-check $OWN "callcenter" "select role from members where user_id='$JESS'" "the owner lets someone in as the call center"
-check $JESS "callcenter|" "select role||'|'||coalesce(join_code,'') from my_orgs()" "the call center sees its role, and not the company code"
-# the office's jobs: open ones, scheduled ones, and ones done with
+says $OWN "insert into members(org_id,user_id,email,staff,role,ts) values ('$O','$JESS','x','Jess','callcenter',1) returning 1" "members_role_check" "a company can't make its own people the call center (it's Tally's service)"
+says $OWN "insert into employees(org_id,name,role,email) values ('$O','Riley','callcenter','riley@x.com') returning 1" "employees_role_check" "nor an employee profile"
+# Tally admin (the Edge Function, as the service role) adds the team and switches the service on
+pg "insert into tally_cc_team(email,name,added_by) values ('jess@x.com','Jess','richie'),('zoe@x.com','Zoe','richie'),('kim@x.com','Kim','richie'),('marcus@x.com','Marcus','richie')" >/dev/null
+denied $JESS "select count(*) from tally_cc_team" "nobody in the app reads the team list"
+denied $JESS "insert into tally_cc_team(email,name) values ('me@x.com','Me') returning 1" "or adds to it"
+denied $OWN "insert into cc_orgs(org_id) values ('$O') returning 1" "and an owner can't switch the service on (Tally admin does)"
+check $JESS "" "select string_agg(name, ',') from my_orgs()" "before Jess signs in, she has no companies"
+check $JESS "true" "select public.claim_cc_team()::text" "signing in links her to the team"
+check $JESS "Jess" "select public.cc_me()" "under her name"
+check $KIM "false|" "select public.claim_cc_team()||'|'||coalesce(public.cc_me(),'')" "someone whose email isn't confirmed yet isn't linked"
+as $ZOE "select public.claim_cc_team()" >/dev/null; as $MARCUS "select public.claim_cc_team()" >/dev/null
+check $JESS "" "select string_agg(name, ',') from my_orgs()" "with no company switched on, the team has none"
+pg "insert into cc_orgs(org_id,on_by) values ('$O','richie')" >/dev/null
+check $JESS "Acme Moving|callcenter||false" "select name||'|'||role||'|'||coalesce(join_code,'')||'|'||pending from my_orgs()" "Acme switched on: the team's company list has it, as the call center, without its company code"
+check $OTHER "Other Co|owner" "select string_agg(name||'|'||role, ',') from my_orgs()" "a company without the service sees no change"
+check $MARCUS "Acme Moving|crew" "select string_agg(name||'|'||role, ',') from my_orgs()" "a company's own crew on the team is still just crew there"
+check $JESS "Acme Moving" "select string_agg(name, ',') from orgs" "the team reads the company's name, and no other company's"
+# the office's jobs and settings: open ones, scheduled ones, and ones done with
 BOOK='{"id":"b1","status":"booked","d":{"name":"Priya Nair","phone":"512-555-0142","moveDate":"2026-10-30","time":"08:00","from":"418 Oak St","to":"77 Ridge Rd","notes":"Gate 4411","discount":"25"},"quote":{"total":900,"rate":140,"crew":3,"hours":4,"lines":[{"label":"3 movers","amt":780}],"nte":1035,"deposit":225,"truckId":"t26","truckName":"Box 1 (26 ft)","nTrucks":1},"items":[{"id":"sofa3","name":"Sofa (3-seat)","cf":55,"qty":1}],"assign":{"truckId":"t26","crew":["Marcus","Dee"]},"payments":{"p1":{"id":"p1","amt":225,"method":"Card"}},"extras":{"x":{"id":"x","label":"Parking","amt":20}}}'
 for j in "q1:{\"id\":\"q1\",\"status\":\"quoted\",\"d\":{\"name\":\"Ortega\",\"discount\":\"50\"},\"quote\":{\"total\":465},\"payments\":{}}" \
          "l1:{\"id\":\"l1\",\"status\":\"lead\",\"d\":{\"name\":\"Sam\"},\"payments\":{}}" "b1:$BOOK" \
          "a1:{\"id\":\"a1\",\"status\":\"active\",\"d\":{\"name\":\"Nadia\",\"moveDate\":\"2026-10-22\"},\"quote\":{\"total\":515},\"assign\":{\"truckId\":\"t16\",\"crew\":[\"Marcus\"]}}" \
          "d1:{\"id\":\"d1\",\"status\":\"done\",\"d\":{\"name\":\"Hollis\"},\"quote\":{\"total\":700}}" "x1:{\"id\":\"x1\",\"status\":\"lost\",\"d\":{\"name\":\"Gone\"}}"; do
   id=${j%%:*}; as $DIS "$(job $id "${j#*:}")" >/dev/null; done
+as $OWN "$(doc $O org/settings "$SETTINGS")" >/dev/null
+for d in 'meta/init:{"ts":1}' 'chat/m1:{"id":"m1","from":"Dispatch","text":"Gate code is 4411"}' 'locs/marcus:{"name":"Marcus","lat":30.27,"lng":-97.74}' \
+         'photos/ph1:{"id":"ph1","jobId":"q1","data":"data:image/jpeg;base64,xx"}' 'formpages/fp1:{"id":"fp1","data":"data:image/png;base64,xx"}'; do
+  as $OWN "$(doc $O ${d%%:*} "${d#*:}")" >/dev/null; done
+as $OTHER "$(doc $O2 jobs/o1 '{"id":"o1","status":"quoted","d":{"name":"Not yours"}}')" >/dev/null
+as $OTHER "$(doc $O2 org/settings '{"company":"Other Co","rates":{"r2":99}}')" >/dev/null
 check $OWN 6 "select count(*) from docs where collection='jobs'" "the office has its 6 jobs"
 
 # reading
@@ -81,21 +113,19 @@ check $JESS "l1,q1" "select string_agg(doc_id, ',' order by doc_id) from docs wh
 check $JESS "a1,b1" "select string_agg(doc_id, ',' order by doc_id) from docs where collection='sched'" "and the schedule: the booked and in-progress jobs, as copies"
 check $JESS "0" "select count(*) from docs where collection='sched' and (data ? 'payments' or data ? 'extras' or data->'quote' ? 'total' or data->'quote' ? 'rate' or data->'quote' ? 'lines' or data->'quote' ? 'deposit' or data->'quote' ? 'nte' or data->'d' ? 'discount')" "the copies have no money in them: no price, rate, lines, deposit, payments, charges or discount"
 check $JESS "Priya Nair|512-555-0142|2026-10-30|08:00|418 Oak St|77 Ridge Rd|Gate 4411|Sofa (3-seat)|1|3|4|Box 1 (26 ft)|2|false" "select concat_ws('|', data->'d'->>'name', data->'d'->>'phone', data->'d'->>'moveDate', data->'d'->>'time', data->'d'->>'from', data->'d'->>'to', data->'d'->>'notes', data->'items'->0->>'name', data->'items'->0->>'qty', data->'quote'->>'crew', data->'quote'->>'hours', data->'quote'->>'truckName', data->'assign'->>'crewN', (data->'assign' ? 'crew')::text) from docs where path='sched/b1'" "what a copy has: the customer, day and time, addresses, notes, items, crew size, hours, truck, how many on the crew (not who)"
-check $MARCUS 0 "select count(*) from docs where collection='sched'" "the crew doesn't read the copies (their own jobs are theirs to read)"
-check $ZOE 0 "select count(*) from docs where org_id='$O'" "another company's call center reads nothing of ours"
-# the rest of the company's records: the settings are the call center's to read (rates, trucks, items for
-# its quotes); the team's own are not
-for d in 'org/settings:{"company":"Acme Moving"}' 'meta/init:{"ts":1}' 'chat/m1:{"id":"m1","from":"Dispatch","text":"Gate code is 4411"}' \
-         'locs/marcus:{"name":"Marcus","lat":30.27,"lng":-97.74}' 'photos/ph1:{"id":"ph1","jobId":"q1","data":"data:image/jpeg;base64,xx"}' \
-         'formpages/fp1:{"id":"fp1","data":"data:image/png;base64,xx"}'; do
-  p=${d%%:*}; as $OWN "insert into docs(org_id,path,collection,doc_id,data) values ('$O','$p','${p%%/*}','${p#*/}','${d#*:}') on conflict (org_id,path) do update set data=excluded.data returning 1" >/dev/null; done
-check $OWN 6 "select count(*) from docs where collection in ('org','meta','chat','locs','photos','formpages')" "(the company's settings, a chat message, a crew location, a photo and a form page)"
-check $JESS "meta,org" "select string_agg(distinct collection, ',' order by collection) from docs where collection not in ('jobs','sched')" "besides its quotes and the schedule, the call center reads the company's settings: not the chat, the crew's locations, the photos or the forms"
-check $MARCUS "chat,formpages,locs,meta,org,photos" "select string_agg(distinct collection, ',' order by collection) from docs where collection in ('org','meta','chat','locs','photos','formpages')" "(the crew still reads those)"
+check $JESS "Acme Moving|140|3|45|30.33|Box 1 (26 ft)|false|false|false|false|false|false" "select concat_ws('|', data->>'company', data->'rates'->>'r2', data->>'minHours', data->>'truckFee', data->'shopGeo'->>'lat', data->'trucks'->0->>'name', (data ? 'crew')::text, (data ? 'contacts')::text, (data ? 'crewCost')::text, (data ? 'perms')::text, (data ? 'materials')::text, (data ? 'office')::text) from docs where path='ratecard/main'" "the rate card: the prices, the shop's spot and the trucks; not the crew, phones, crew cost, permissions, material costs or the office"
+check $JESS "meta,ratecard,sched" "select string_agg(distinct collection, ',' order by collection) from docs where collection <> 'jobs'" "besides the open quotes, the rate card, the schedule copies and the company's start mark: not the settings, the chat, the crew's locations, the photos or the forms"
+check $JESS "0|0" "select (select count(*) from members)||'|'||(select count(*) from access_requests)" "nor the company's people"
+check $MARCUS "chat,formpages,locs,meta,org,photos" "select string_agg(distinct collection, ',' order by collection) from docs where collection not in ('jobs','shifts','vault')" "the crew reads what it did before, and not the rate card or the copies"
+check $MARCUS "a1,b1" "select string_agg(doc_id, ',' order by doc_id) from docs where collection='jobs'" "and a crew member on the team is crew in his own company: his jobs, not the open quotes"
+check $ZOE "l1,q1" "select string_agg(doc_id, ',' order by doc_id) from docs where collection='jobs'" "everyone on the team works for Acme"
+check $JESS 0 "select count(*) from docs where org_id='$O2'" "a company without the service: nothing"
+check $KIM 0 "select count(*) from docs" "and someone not linked to the team reads nothing"
+check $OWN "1|1" "select (select count(*) from docs where path='ratecard/main')||'|'||(select count(*) from docs where collection='sched' and doc_id='b1')" "the office reads the copies too"
 
 # writing: only through cc_save, which checks what the call center saves
 cc(){ echo "select public.cc_save('$O','jobs/$1',$2,$3)"; }
-check $JESS ok "$(cc n1 "'{\"id\":\"n1\",\"status\":\"quoted\",\"d\":{\"name\":\"New One\",\"discount\":\"\"},\"quote\":{\"total\":420},\"payments\":{},\"createdBy\":\"Jess\"}'" null)" "the call center makes a quote"
+check $JESS ok "$(cc n1 "'{\"id\":\"n1\",\"status\":\"quoted\",\"d\":{\"name\":\"New One\",\"discount\":\"\"},\"quote\":{\"total\":420},\"payments\":{},\"createdBy\":\"Jess\",\"createdCC\":true}'" null)" "the call center makes a quote"
 check $JESS ok "$(cc n2 "'{\"id\":\"n2\",\"status\":\"booked\",\"d\":{\"name\":\"Booked Now\",\"moveDate\":\"2026-11-02\",\"time\":\"09:00\"},\"quote\":{\"total\":515,\"crew\":2,\"hours\":3},\"payments\":{}}'" null)" "and books one straight away"
 check $JESS "0|1" "select (select count(*) from docs where path='jobs/n2')||'|'||(select count(*) from docs where path='sched/n2')" "the booking is on its schedule at once (the copy), and the job itself isn't the call center's to read"
 says $JESS "$(cc n3 "'{\"id\":\"n3\",\"status\":\"done\",\"d\":{\"name\":\"Done\"}}'" null)" "is a quote or a booking" "it can't make a job that's finished"
@@ -108,7 +138,8 @@ denied $JESS "$(job n7 '{"id":"n7","status":"quoted","d":{"name":"Direct"}}')" "
 denied $JESS "update docs set data=jsonb_set(data,'{d,notes}','\"x\"') where path='jobs/q1' returning 1" "or change one directly"
 check $JESS "f" "select public.doc_patch('$O','jobs/q1','{\"d\":{\"notes\":\"x\"}}')" "or through doc_patch"
 says $DIS "$(cc n8 "'{\"id\":\"n8\",\"status\":\"quoted\"}'" null)" "Only the call center" "cc_save is the call center's alone"
-says $ZOE "$(cc n9 "'{\"id\":\"n9\",\"status\":\"quoted\"}'" null)" "Only the call center" "and only in its own company"
+says $MARCUS "$(cc n8 "'{\"id\":\"n8\",\"status\":\"quoted\"}'" null)" "Only the call center" "and not a team member's in their own company"
+says $JESS "select public.cc_save('$O2','jobs/n9','{\"id\":\"n9\",\"status\":\"quoted\"}',null)" "Only the call center" "and only for a company with the service"
 says $JESS "select public.cc_save('$O','chat/m1','{\"from\":\"Jess\"}',null)" "saves jobs only" "and only for jobs"
 
 # writing: open quotes
@@ -126,12 +157,14 @@ check $JESS 0 "select count(*) from docs where path='jobs/l1'" "and it's off the
 check $JESS missing "$(cc zz null "'{\"status\":\"quoted\"}'")" "a change to a job that isn't there says so"
 denied $JESS "delete from docs where collection='jobs' returning 1" "it can't delete a job"
 denied $JESS "insert into docs(org_id,path,collection,doc_id,data) values ('$O','sched/z1','sched','z1','{\"id\":\"z1\",\"status\":\"booked\"}') returning 1" "or write a copy"
-denied $JESS "update docs set data='{}' where collection='sched' returning 1" "or change one"
-denied $DIS "insert into docs(org_id,path,collection,doc_id,data) values ('$O','sched/z2','sched','z2','{\"id\":\"z2\",\"status\":\"booked\"}') returning 1" "the office can't write a copy either (only the database keeps them)"
-denied $JESS "insert into docs(org_id,path,collection,doc_id,data) values ('$O','chat/m1','chat','m1','{\"from\":\"Jess\",\"ts\":1}') returning 1" "the call center has no chat"
+denied $JESS "update docs set data='{}' where collection in ('sched','ratecard') returning 1" "or change one"
+denied $DIS "insert into docs(org_id,path,collection,doc_id,data) values ('$O','sched/z2','sched','z2','{\"id\":\"z2\",\"status\":\"booked\"}') returning 1" "the office can't write a schedule copy (only the database keeps them)"
+denied $OWN "update docs set data='{\"rates\":{\"r2\":1}}' where path='ratecard/main' returning 1" "nor the owner the rate card copy"
+denied $JESS "insert into docs(org_id,path,collection,doc_id,data) values ('$O','chat/m2','chat','m2','{\"from\":\"Jess\",\"ts\":1}') returning 1" "the call center has no chat"
 check $JESS 1 "select count(*) from docs where collection='jobs' and doc_id='n1'" "it reads its own new quote"
+check $OWN "Jess|true" "select (data->>'createdBy')||'|'||(data->>'createdCC') from docs where path='jobs/n1'" "the job keeps who made the quote, and that it was the call center"
 
-# the copies follow the jobs, whoever changes them
+# the copies follow the jobs and the settings, whoever changes them
 as $DIS "update docs set data=jsonb_set(data,'{d,moveDate}','\"2026-10-31\"') where path='jobs/b1'" >/dev/null
 check $JESS "2026-10-31" "select data->'d'->>'moveDate' from docs where path='sched/b1'" "dispatch moves a job: the copy moves too"
 as $DIS "update docs set data=jsonb_set(data,'{status}','\"done\"') where path='jobs/a1'" >/dev/null
@@ -140,21 +173,34 @@ as $DIS "delete from docs where path='jobs/b1'" >/dev/null
 check $JESS 0 "select count(*) from docs where path='sched/b1'" "a job deleted too"
 $P -d t -tA -c "set role service_role; update docs set data=jsonb_set(data,'{status}','\"active\"') where path='jobs/n2'" >/dev/null
 check $JESS "active" "select data->>'status' from docs where path='sched/n2'" "and a change the server makes (it skips the rules) reaches the copy as well"
-check $OWN "Jess" "select data->>'createdBy' from docs where path='jobs/n1'" "the job keeps who made the quote"
-check $OWN 1 "insert into employees(org_id,name,role,email) values ('$O','Riley','callcenter','riley@x.com') returning 1" "an employee profile can be the call center"
+as $OWN "update docs set data=jsonb_set(data,'{rates,r2}','150') where path='org/settings'" >/dev/null
+check $JESS "150" "select data->'rates'->>'r2' from docs where path='ratecard/main'" "the owner changes a rate: the rate card has it"
+as $OWN "update docs set data=jsonb_set(data,'{contacts,Kim}','\"512-555-0106\"') where path='org/settings'" >/dev/null
+check $JESS "false" "select (data ? 'contacts')::text from docs where path='ratecard/main'" "a new phone number never reaches it"
 
-# ---------- a database set up before the call center, then supabase-callcenter.sql ----------
+# the service switched off, and a team member removed
+pg "delete from cc_orgs where org_id='$O'" >/dev/null
+check $JESS "0||" "select (select count(*) from docs where org_id='$O')||'|'||coalesce((select string_agg(name, ',') from my_orgs()),'')||'|'||coalesce((select string_agg(name, ',') from orgs),'')" "switched off: the team reads nothing of Acme, and it's off their list"
+says $JESS "$(cc n10 "'{\"id\":\"n10\",\"status\":\"quoted\"}'" null)" "Only the call center" "and can't save there"
+pg "insert into cc_orgs(org_id,on_by) values ('$O','richie')" >/dev/null
+pg "delete from tally_cc_team where email='zoe@x.com'" >/dev/null
+check $ZOE "0|" "select (select count(*) from docs)||'|'||coalesce((select string_agg(name, ',') from my_orgs()),'')" "Zoe off the team: nothing"
+check $JESS "Acme Moving" "select string_agg(name, ',') from my_orgs()" "Jess, still on it, has Acme back"
+
+# ---------- a database set up before the call center (the live one), then supabase-callcenter.sql ----------
 setup u
 $P -d u -f tests/sql/before-callcenter.sql
 DB=u
 O=$(as $OWN "select public.create_org('Acme Moving')")
 $P -d u -tA -c "insert into members(org_id,user_id,email,staff,role) values ('$O','$DIS','x','Dispatch','dispatch')" >/dev/null
-says $OWN "insert into members(org_id,user_id,email,staff,role,ts) values ('$O','$JESS','x','Jess','callcenter',1) returning 1" "members_role_check" "before: there's no call center role"
 as $DIS "$(job b1 "$BOOK")" >/dev/null
-same "$(pg "select count(*) from docs where collection='sched'")" 0 "before: no copies of the schedule"
+as $OWN "$(doc $O org/settings "$SETTINGS")" >/dev/null
+same "$(pg "select count(*) from docs where collection in ('sched','ratecard')")" 0 "before: no copies"
+says $JESS "select public.claim_cc_team()" "does not exist" "before: no call center team"
 $P -d u -f supabase/sql/supabase-callcenter.sql
 $P -d u -f supabase/sql/supabase-callcenter.sql
-same "$(defs u)" "$(defs t)" "after supabase-callcenter.sql: the rules, functions, constraints and triggers are exactly a fresh install's"
-check $OWN 1 "insert into members(org_id,user_id,email,staff,role,ts) values ('$O','$JESS','x','Jess','callcenter',1) returning 1" "after: the owner can let someone in as the call center"
-check $JESS "b1|0" "select string_agg(doc_id,',')||'|'||(select count(*) from docs where collection='jobs') from docs where collection='sched'" "and the jobs booked before it are on its schedule (copied when the file ran)"
+same "$(defs u)" "$(defs t)" "after supabase-callcenter.sql: the tables, rules, functions, constraints and triggers are exactly a fresh install's"
+pg "insert into tally_cc_team(email,name) values ('jess@x.com','Jess')" >/dev/null; pg "insert into cc_orgs(org_id) values ('$O')" >/dev/null
+check $JESS "true" "select public.claim_cc_team()::text" "after: Tally admin adds Jess and switches Acme on"
+check $JESS "b1|0|140" "select string_agg(doc_id,',')||'|'||(select count(*) from docs where collection='jobs')||'|'||(select data->'rates'->>'r2' from docs where path='ratecard/main') from docs where collection='sched'" "and the jobs booked before it are on her schedule, with the rate card there too (copied when the file ran)"
 [ $FAILS = 0 ] || exit 1

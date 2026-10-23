@@ -12,7 +12,7 @@ let failures = 0, passes = 0;
 function ok(c: unknown, m: string) { if (c) { passes++; console.log("PASS", m); } else { failures++; console.log("FAIL", m); } }
 
 /* ---------- in-memory database ---------- */
-const DB: Record<string, any[]> = { docs: [], members: [], comm_lines: [], comm_log: [], comm_job_state: [] };
+const DB: Record<string, any[]> = { docs: [], members: [], comm_lines: [], comm_log: [], comm_job_state: [], tally_cc_team: [], cc_orgs: [] };
 let nextId = 1;
 const clone = (o: any) => JSON.parse(JSON.stringify(o));
 function deepFreeze(o: any) { if (o && typeof o === "object") { Object.freeze(o); Object.values(o).forEach(deepFreeze); } return o; }
@@ -150,7 +150,6 @@ DB.members.push(
   { org_id: ORG, user_id: "u-dispatch", role: "dispatch", staff: "Dispatch" },
   { org_id: ORG, user_id: "u-marcus", role: "lead", staff: "Marcus" },
   { org_id: ORG, user_id: "u-kim", role: "crew", staff: "Kim" },
-  { org_id: ORG, user_id: "u-jess", role: "callcenter", staff: "Jess" },
   { org_id: ORG2, user_id: "u-stranger", role: "owner", staff: "Zed" },
 );
 
@@ -316,16 +315,31 @@ for (let i = 0; i < 25; i++) DB.comm_log.push({ id: nextId++, org_id: ORG, chann
 r = await app("tok-dispatch", { action: "call", org: ORG, jobId: "j1" });
 ok(r.body.ok === false && /a lot of calls/.test(r.body.message), "runaway calling is capped per hour");
 
-// the call center (Oct 22): customers on open quotes and on the schedule, the jobs it can see
+// the call center (Oct 22): Tally's own team, for the companies with the service; customers on open quotes
+// and on the schedule, the jobs it can see
 putDoc(ORG, "jobs/q1", job("q1", { status: "quoted", assign: { truckId: "", crew: [] } }));
 putDoc(ORG, "jobs/d1", job("d1", { status: "done" }));
+DB.tally_cc_team.push({ email: "jess@x.com", name: "Jess", phone: "", user_id: "u-jess" });
+r = await app("tok-jess", { action: "call", org: ORG, jobId: "q1" });
+ok(r.status === 401, "on the team, but the company hasn't the service: the server doesn't know her there");
+DB.cc_orgs.push({ org_id: ORG });
 n0 = sent.length;
 r = await app("tok-jess", { action: "call", org: ORG, jobId: "q1" });
-ok(r.body.ok && sent.length === n0 + 1 && sent[sent.length - 1].To === "+15125550107", "the call center calls a customer on an open quote through the company line");
+ok(r.body.ok === false && /Tally admin adds your phone number/.test(r.body.message) && sent.length === n0, "switched on: with no phone of hers on the team list, the company line can't ring her (and says how to fix it)");
+DB.tally_cc_team[0].phone = "512-555-0107";
+r = await app("tok-jess", { action: "call", org: ORG, jobId: "q1" });
+ok(r.body.ok && sent.length === n0 + 1 && sent[sent.length - 1].To === "+15125550107", "the call center calls a customer on an open quote through the company line (her phone from the team list)");
+ok(DB.comm_log[DB.comm_log.length - 1].staff === "Jess", "the call is logged under her name");
 r = await app("tok-jess", { action: "call", org: ORG, jobId: "j1" });
 ok(r.body.ok, "and on a booked job");
 r = await app("tok-jess", { action: "call", org: ORG, jobId: "d1" });
 ok(r.body.ok === false && /your own jobs/.test(r.body.message), "but not on a finished job, which it can't see");
+r = await app("tok-jess", { action: "call", org: ORG2, jobId: "s1" });
+ok(r.status === 401, "and not for a company without the service");
+r = await app("tok-jess", { action: "job", org: ORG, jobId: "j1" });
+ok(r.status === 403, "the call center doesn't schedule crews");
+r = await app("tok-jess", { action: "eta", org: ORG, jobId: "j1", minutes: 20 });
+ok(r.body.ok === false, "or text a customer the crew's arrival");
 
 twilioFail = "Unverified number";
 r = await app("tok-owner", { action: "call", org: ORG, jobId: "j1" });
@@ -509,6 +523,10 @@ r = await app("tok-kim", { action: "distance", org: ORG, from: "a", to: "b" });
 ok(r.status === 403, "crew cannot use the lookup");
 r = await app("tok-jess", { action: "distance", org: ORG, from: "418 Oak St, Austin", to: "77 Ridge Rd, Round Rock" });
 ok(r.body.ok && r.body.miles === 22.4, "the call center looks up a quote's miles too");
+DB.cc_orgs.length = 0;
+r = await app("tok-jess", { action: "distance", org: ORG, from: "418 Oak St, Austin", to: "77 Ridge Rd, Round Rock" });
+ok(r.status === 401, "the service switched off: not any more");
+DB.cc_orgs.push({ org_id: ORG });
 r = await app("tok-stranger", { action: "distance", org: ORG, from: "a", to: "b" });
 ok(r.status === 401, "outsiders cannot use your Google key");
 r = await app("tok-dispatch", { action: "distance", org: ORG, from: "418 Oak St", to: "nowhere special" });

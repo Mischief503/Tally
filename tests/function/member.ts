@@ -333,6 +333,44 @@ ok(!r.body.ok && /name/.test(r.body.message), "a company needs a name");
 r = await app("tok-richie", TEST, { action: "admin_add", name: "Nope", email: "not an email" });
 ok(!r.body.ok && /email/.test(r.body.message), "and its owner's email");
 
+/* ---------- the call center service (Oct 22): Tally's own team, switched on for each company that buys it ---------- */
+r = await app("tok-richie", TEST, { action: "admin_list" });
+ok(r.body.ok && r.body.team === null && r.body.companies.every((c: any) => c.cc === false), "before supabase-callcenter.sql: no team list, and no company has the service");
+r = await app("tok-richie", TEST, { action: "admin_cc_add", name: "Jess", email: "jess@calls.example" });
+ok(!r.body.ok && /supabase-callcenter\.sql/.test(r.body.message), "adding someone says the database file comes first");
+r = await app("tok-richie", TEST, { action: "admin_set", target: BLUE, cc: true });
+ok(!r.body.ok && /supabase-callcenter\.sql/.test(r.body.message), "and so does the switch");
+DB.tally_cc_team = []; DB.cc_orgs = []; KEYS.tally_cc_team = ["email"]; KEYS.cc_orgs = ["org_id"];
+r = await app("tok-ana", BLUE, { action: "admin_cc_add", name: "Ana", email: "ana@x.example" });
+ok(r.status === 403 && DB.tally_cc_team.length === 0, "a company owner can't add to Tally's call center team");
+r = await app("tok-richie", TEST, { action: "admin_cc_add", name: "  Jess  Rivera ", email: "Jess@Calls.example", phone: "512-555-0107" });
+ok(r.body.ok && DB.tally_cc_team.length === 1 && DB.tally_cc_team[0].email === "jess@calls.example" && DB.tally_cc_team[0].name === "Jess Rivera" && DB.tally_cc_team[0].phone === "512-555-0107" && /jess@calls\.example/.test(r.body.message), "Richie adds Jess to the team: " + r.body.message);
+ok(r.body.team.length === 1 && r.body.team[0].signedIn === false && r.body.team[0].phone === "512-555-0107", "the list has her phone, and says she hasn't signed in yet");
+r = await app("tok-richie", TEST, { action: "admin_cc_add", name: "Jess Rivera", email: "jess@calls.example", phone: "12" });
+ok(!r.body.ok && /phone number/.test(r.body.message), "a phone number that isn't one is refused");
+r = await app("tok-richie", TEST, { action: "admin_cc_add", name: "Jess R.", email: "jess@calls.example", phone: "512 555 0108" });
+ok(r.body.ok && DB.tally_cc_team.length === 1 && DB.tally_cc_team[0].name === "Jess R." && DB.tally_cc_team[0].phone === "512 555 0108", "adding her again changes her name and phone, not a second her");
+r = await app("tok-richie", TEST, { action: "admin_cc_add", name: "", email: "x@y.example" });
+ok(!r.body.ok && /name/.test(r.body.message), "a person needs a name");
+r = await app("tok-richie", TEST, { action: "admin_cc_add", name: "X", email: "nope" });
+ok(!r.body.ok && /email/.test(r.body.message), "and an email");
+r = await app("tok-dot", BLUE, { action: "admin_set", target: BLUE, cc: true });
+ok(r.status === 403 && DB.cc_orgs.length === 0, "a company can't switch the service on for itself");
+const deals0 = JSON.stringify(DB.member_deals), subCalls0 = count("/v1/subscriptions/" + sub1.id);
+r = await app("tok-richie", TEST, { action: "admin_set", target: BLUE, cc: true });
+ok(r.body.ok && r.body.company.cc === true && DB.cc_orgs.length === 1 && DB.cc_orgs[0].org_id === BLUE, "Richie switches the call center on for Blue Moving");
+ok(JSON.stringify(DB.member_deals) === deals0 && count("/v1/subscriptions/" + sub1.id) === subCalls0, "which leaves its membership deal, and its Stripe subscription, as they were (he bills it himself)");
+r = await app("tok-richie", TEST, { action: "admin_set", target: BLUE, cc: true });
+ok(r.body.ok && DB.cc_orgs.length === 1, "switching it on twice is still once");
+r = await app("tok-richie", TEST, { action: "admin_list" });
+ok(r.body.team.length === 1 && r.body.companies.find((c: any) => c.id === BLUE).cc === true && r.body.companies.find((c: any) => c.id === TEST).cc === false, "Tally admin lists the team, and which companies have the service");
+r = await app("tok-richie", TEST, { action: "admin_set", target: BLUE, cc: false });
+ok(r.body.ok && r.body.company.cc === false && DB.cc_orgs.length === 0, "and switches it off");
+r = await app("tok-ana", BLUE, { action: "admin_cc_remove", email: "jess@calls.example" });
+ok(r.status === 403 && DB.tally_cc_team.length === 1, "an owner can't take someone off the team");
+r = await app("tok-richie", TEST, { action: "admin_cc_remove", email: "jess@calls.example" });
+ok(r.body.ok && DB.tally_cc_team.length === 0 && r.body.team.length === 0, "Richie takes Jess off the team");
+
 /* ---------- Stripe's later news about the membership ---------- */
 ST.subs[sub1.id].status = "past_due";
 h = await hook({ id: "evt_2", type: "customer.subscription.updated", livemode: false, data: { object: { id: sub1.id, object: "subscription", customer: cus.id, metadata: { tally_member: BLUE } } } });

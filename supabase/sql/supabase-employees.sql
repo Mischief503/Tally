@@ -25,7 +25,7 @@ create table if not exists public.employees (
   id          uuid primary key default gen_random_uuid(),
   org_id      uuid not null references public.orgs(id) on delete cascade,
   name        text not null check (length(btrim(name)) between 1 and 60),
-  role        text not null default 'crew' check (role in ('owner','dispatch','callcenter','lead','crew')),
+  role        text not null default 'crew' check (role in ('owner','dispatch','lead','crew')),
   email       text not null default '',
   user_id     uuid references auth.users(id) on delete set null,
   active      boolean not null default true,
@@ -38,14 +38,6 @@ create unique index if not exists employees_name_uq  on public.employees(org_id,
 create unique index if not exists employees_email_uq on public.employees(org_id, email) where email <> '';
 create unique index if not exists employees_user_uq  on public.employees(org_id, user_id) where user_id is not null;
 create index if not exists employees_email_idx on public.employees(email) where email <> '';
--- @cc employees-role
-do $$ begin
-  if to_regclass('public.employees') is not null then
-    alter table public.employees drop constraint if exists employees_role_check;
-    alter table public.employees add constraint employees_role_check check (role in ('owner','dispatch','callcenter','lead','crew'));
-  end if;
-end $$;
--- @cc end
 
 -- ---------- before saving: tidy the row, and only link a login that belongs here ----------
 create or replace function public.employees_check() returns trigger

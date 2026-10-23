@@ -315,8 +315,25 @@ async function whoIs(req: Request, org: string): Promise<J> {
   const u = await r.json();
   if (!u || !u.id) return null;
   const rows = await rest("GET", "members?select=role,staff&org_id=eq." + q(org) + "&user_id=eq." + q(u.id) + "&limit=1");
-  if (!rows || !rows[0]) return null;
-  return { uid: u.id, role: rows[0].role, staff: rows[0].staff || "", email: String(u.email || "") };
+  if (rows && rows[0]) return { uid: u.id, role: rows[0].role, staff: rows[0].staff || "", email: String(u.email || "") };
+  // Tally's call center team, in a company with the service (supabase-callcenter.sql)
+  const cc = await ccAgentFor(u.id, org);
+  return cc ? { uid: u.id, role: "callcenter", staff: cc.name, phone: cc.phone, email: String(u.email || ""), cc: true } : null;
+}
+// Someone on Tally's call center team working for this company ({name, phone}), or null: not on the team,
+// the company hasn't the service, or the database hasn't supabase-callcenter.sql yet.
+async function ccAgentFor(uid: string, org: string): Promise<J> {
+  if (!uid || !org) return null;
+  try {
+    const [t, on] = await Promise.all([
+      rest("GET", "tally_cc_team?select=name,email,phone&user_id=eq." + q(uid) + "&limit=1"),
+      rest("GET", "cc_orgs?select=org_id&org_id=eq." + q(org) + "&limit=1"),
+    ]);
+    if (!(t && t[0] && on && on[0])) return null;
+    return { name: String(t[0].name || "").trim() || String(t[0].email || "").split("@")[0] || "Call center", phone: String(t[0].phone || "") };
+  } catch {
+    return null;
+  }
 }
 
 /* ---------- the app's actions ---------- */
@@ -580,8 +597,9 @@ async function startCall(org: string, me: J, jobId: string): Promise<J> {
   // the call center calls customers on open quotes and on the schedule (what it can see)
   const cc = me.role === "callcenter" && ["lead", "quoted", "booked", "active"].indexOf(job.status) >= 0;
   if (!office && !onJob && !cc) return { ok: false, message: "You can only call customers on your own jobs." };
-  const mine = e164(contacts(S)[me.staff]);
-  if (!mine) return { ok: false, message: "Add your phone number in Setup first. The company line calls you, then connects you." };
+  // the call center's own phone is on Tally's team list, not in the company's contacts
+  const mine = e164(me.cc ? me.phone : contacts(S)[me.staff]);
+  if (!mine) return { ok: false, message: me.cc ? "Tally admin adds your phone number to the call center team first. The company line calls you, then connects you." : "Add your phone number in Setup first. The company line calls you, then connects you." };
   const cust = e164(job.d && job.d.phone);
   if (!cust) return { ok: false, message: "This job has no customer phone number." };
   const since = new Date(Date.now() - 3600e3).toISOString();
@@ -1899,7 +1917,7 @@ function adminCompany(o: J, ctx: J): J {
   const cards = ctx.payOrgs[o.id] ? "platform" : !acct ? "none" : acct.disabled_reason === "disconnected" ? "disconnected" : acct.charges_enabled ? "connected" : "connecting";
   return { id: o.id, name: o.name, created: o.created_at, trial_ends: o.trial_ends, owners: ctx.owners[o.id] || [], invited: ctx.invited[o.id] || [],
     members: ctx.count[o.id] || 0, test: !!deal.is_test, waived: !!deal.waived, discount_pct: Number(deal.discount_pct) || 0, note: deal.note || "",
-    member: st, cards };
+    member: st, cards, cc: !!ctx.cc[o.id] };
 }
 async function adminContext(): Promise<J> {
   const live = liveNow();
@@ -1913,7 +1931,15 @@ async function adminContext(): Promise<J> {
     rest("GET", "pay_orgs?select=org_id,enabled&limit=1000"),
     planRow(),
   ]);
-  const ctx: J = { orgs: orgs || [], plan, deals: {}, subs: {}, owners: {}, invited: {}, count: {}, accts: {}, payOrgs: {} };
+  const ctx: J = { orgs: orgs || [], plan, deals: {}, subs: {}, owners: {}, invited: {}, count: {}, accts: {}, payOrgs: {}, cc: {}, team: null };
+  // the call center service: which companies have it, and Tally's team (null: no supabase-callcenter.sql yet)
+  try {
+    const [on, team] = await Promise.all([rest("GET", "cc_orgs?select=org_id&limit=1000"), ccTeam()]);
+    (on || []).forEach((r: J) => { ctx.cc[r.org_id] = true; });
+    ctx.team = team;
+  } catch {
+    ctx.team = null;
+  }
   (mem || []).forEach((m: J) => { ctx.count[m.org_id] = (ctx.count[m.org_id] || 0) + 1; if (m.role === "owner") (ctx.owners[m.org_id] = ctx.owners[m.org_id] || []).push(m.email || ""); });
   (deals || []).forEach((d: J) => { ctx.deals[d.org_id] = d; });
   (subs || []).forEach((s: J) => { ctx.subs[s.org_id] = s; });
@@ -1925,13 +1951,27 @@ async function adminContext(): Promise<J> {
 export async function adminList(me: J): Promise<J> {
   if (!(await isAdmin(me.uid))) return adminOnly();
   const ctx = await adminContext();
-  return { ok: true, plan: ctx.plan, payments: stripeMode() || "", companies: ctx.orgs.map((o: J) => adminCompany(o, ctx)) };
+  return { ok: true, plan: ctx.plan, payments: stripeMode() || "", companies: ctx.orgs.map((o: J) => adminCompany(o, ctx)), team: ctx.team };
 }
-// One company's deal: test company, fee waived, discount, note. Any running membership follows at once.
+// One company's deal: test company, fee waived, discount, note, and the call center service. Any running
+// membership follows at once.
 export async function adminSet(me: J, b: J): Promise<J> {
   if (!(await isAdmin(me.uid))) return adminOnly();
   const org = String(b.target || "");
   if (!UUID_RE.test(org) || !(await orgRow(org))) return { ok: false, message: "Company not found." };
+  if (b.cc !== undefined) {
+    try {
+      if (b.cc) await rest("POST", "cc_orgs?on_conflict=org_id", { org_id: org, on_by: String(me.email || "admin").slice(0, 200), on_at: nowIso() }, "resolution=ignore-duplicates");
+      else await rest("DELETE", "cc_orgs?org_id=eq." + q(org));
+    } catch (e) {
+      console.error("call center switch", e);
+      return { ok: false, message: CC_SQL };
+    }
+  }
+  if (b.test === undefined && b.waived === undefined && b.discount === undefined && b.note === undefined) {
+    const ctx0 = await adminContext(), o0 = ctx0.orgs.find((x: J) => x.id === org);
+    return { ok: true, message: "Saved.", company: o0 ? adminCompany(o0, ctx0) : null };
+  }
   const row: J = { org_id: org, updated_by: String(me.email || "admin").slice(0, 200), updated_at: nowIso() };
   if (b.test !== undefined) row.is_test = !!b.test;
   if (b.waived !== undefined) row.waived = !!b.waived;
@@ -1946,6 +1986,43 @@ export async function adminSet(me: J, b: J): Promise<J> {
   try { await memberSyncDiscount(org); } catch (e) { console.error("membership discount", e); warn = " Stripe didn't take the change on the running membership yet: " + stripeTrouble(e); }
   const ctx = await adminContext(), o = ctx.orgs.find((x: J) => x.id === org);
   return { ok: true, message: "Saved." + warn, company: o ? adminCompany(o, ctx) : null };
+}
+/* ---------- the call center: Tally's own team, for the companies Tally admin switches it on for ----------
+   Richie (Oct 22): "Call center is a service that the moving companys will be able to purchase to help get
+   bookings . So call center will only be able to see companys that pay for that service ." He bills them himself.
+   A person on the team is linked to their sign-in by claim_cc_team() when they open Tally with that email. */
+const CC_SQL = "The call center isn't set up in the database yet. Run supabase-callcenter.sql in the Supabase SQL editor first.";
+async function ccTeam(): Promise<J[]> {
+  const rows = await rest("GET", "tally_cc_team?select=email,name,phone,user_id,added_at&order=added_at.asc&limit=500");
+  return (rows || []).map((r: J) => ({ email: r.email, name: r.name || "", phone: r.phone || "", signedIn: !!r.user_id, added: r.added_at }));
+}
+export async function adminCcAdd(me: J, b: J): Promise<J> {
+  if (!(await isAdmin(me.uid))) return adminOnly();
+  const name = String(b.name || "").trim().replace(/\s+/g, " ");
+  if (!name || name.length > 80) return { ok: false, message: "Give their name (up to 80 letters)." };
+  const email = validEmail(b.email).toLowerCase();
+  if (!email) return { ok: false, message: "Enter the email they sign in with." };
+  const phone = String(b.phone || "").trim();
+  if (phone && !e164(phone)) return { ok: false, message: "That phone number doesn't look right. Use the 10 digits, like 512-555-0107." };
+  try {
+    await rest("POST", "tally_cc_team?on_conflict=email", { email, name, phone: phone.slice(0, 40), added_by: String(me.email || "admin").slice(0, 200) }, "resolution=merge-duplicates");
+    return { ok: true, message: name + " is on the call center team. They sign in to Tally with " + email + ".", team: await ccTeam() };
+  } catch (e) {
+    console.error("call center team", e);
+    return { ok: false, message: CC_SQL };
+  }
+}
+export async function adminCcRemove(me: J, b: J): Promise<J> {
+  if (!(await isAdmin(me.uid))) return adminOnly();
+  const email = validEmail(b.email).toLowerCase();
+  if (!email) return { ok: false, message: "Which person?" };
+  try {
+    await rest("DELETE", "tally_cc_team?email=eq." + q(email));
+    return { ok: true, message: "Taken off the call center team. They see no company's work from now on.", team: await ccTeam() };
+  } catch (e) {
+    console.error("call center team", e);
+    return { ok: false, message: CC_SQL };
+  }
 }
 // The price and the free trial, for memberships started from now on.
 export async function adminPlan(me: J, b: J): Promise<J> {
@@ -2626,6 +2703,7 @@ async function handleApp(req: Request): Promise<Response> {
       member_status: memberStatus, member_start: (o: string, m: J) => memberStart(o, m), member_portal: (o: string, m: J) => memberPortal(o, m),
       admin_list: (_o: string, m: J) => adminList(m), admin_set: (_o: string, m: J, x: J) => adminSet(m, x),
       admin_plan: (_o: string, m: J, x: J) => adminPlan(m, x), admin_add: (_o: string, m: J, x: J) => adminAdd(m, x),
+      admin_cc_add: (_o: string, m: J, x: J) => adminCcAdd(m, x), admin_cc_remove: (_o: string, m: J, x: J) => adminCcRemove(m, x),
     };
     if (member[b.action]) {
       try {
