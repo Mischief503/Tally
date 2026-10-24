@@ -70,17 +70,17 @@ function seed(extra) {
   ok(C.errors.length === 0, 'and no errors (' + C.errors.slice(0, 3).join(' | ') + ')');
 
   /* ---------------- the bill follows the people put on the job (Oct 24) ---------------- */
-  // a finished job billed for the 2 quoted, and another phone has since put Dee on its crew: the office's phone works the
-  // bill out again for the 3 on it
-  const db4 = seed({ status: 'done', finishedAt: now, actualHours: 5, phases: { loadStart: t0, unloadEnd: now }, clockAt: now, clockSig: 'c3:before-dee-was-put-on',
+  // a finished job billed for the 2 quoted on Build 43 (c4: held to the not-to-exceed price), and another phone has since
+  // put Dee on its crew: the office's phone works the bill out again for the 3 on it, every hour (the price is a guide)
+  const db4 = seed({ status: 'done', finishedAt: now, actualHours: 5, phases: { loadStart: t0, unloadEnd: now }, clockAt: now, clockSig: 'c4:before-dee-was-put-on',
     extras: { clock: { id: 'clock', label: 'By the clock: 5h 0m on the job, billed 5 h (quoted 3 h), held to the not-to-exceed price', amt: 80, ts: now } }, assign: { truckId: 't16', crew: ['Marcus', 'Kim', 'Dee'] } });
   const D = await load(FILE, { db: db4, org: ORG, me: { uid: 'u-owner', email: 'o@x' }, fnReply: () => ({ ok: true, sent: 0 }) });
   await sleep(800);
   const r4 = db4.docs.find((d) => d.path === 'jobs/n1').data, c4 = (r4.extras || {}).clock || {}, rw4 = c4.rows || [];
-  ok(c4.amt === 355 && rw4.length === 4 && rw4[0].label === '3 movers, 5 hr at $195/hr' && rw4[0].amt === 975 && rw4[3].amt === -200, 'hosted: a bill another phone made before Dee was put on the crew is worked out again for the 3 on it (+$355)');
-  ok(/^c4:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\]\/140,195,250$/.test(r4.clockSig) && r4.crewRates && r4.crewRates.r3 === 195, 'and saved with its signature (c4, the crew in it) and the Rate card it used');
+  ok(c4.amt === 555 && rw4.length === 3 && rw4[0].label === '3 movers, 5 hr at $195/hr' && rw4[0].amt === 975 && !rw4.some((r) => r.k === 'cap'), 'hosted: a Build 43 bill another phone made before Dee was put on the crew is worked out again for the 3 on it, every hour, past the not-to-exceed price (+$555)');
+  ok(/^c5:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\]\/140,195,250$/.test(r4.clockSig) && r4.crewRates && r4.crewRates.r3 === 195, 'and saved with its signature (c5, the crew in it) and the Rate card it used');
   D.T.ui.jobId = 'n1'; D.T.render(); await sleep(15);
-  ok(/Movers on the bill: 2 \(as quoted\) · 3 from the start/.test(D.$('#sheet .sheet-body').textContent) && /Bill\$870/.test(D.$('#sheet .sheet-body').textContent.replace(/\s+/g, '')), 'its sheet: 3 from the start, and the $870 bill');
+  ok(/Movers on the bill: 2 \(as quoted\) · 3 from the start/.test(D.$('#sheet .sheet-body').textContent) && /Bill\$1,070/.test(D.$('#sheet .sheet-body').textContent.replace(/\s+/g, '')) && /past the \$595 not-to-exceed price/.test(D.$('#sheet .sheet-body').textContent), 'its sheet: 3 from the start, and the $1,070 bill, past the $595 not-to-exceed price');
   ok(D.errors.length === 0, 'and no errors (' + D.errors.slice(0, 3).join(' | ') + ')');
 
   // a crew that went out short ("if it was booked and quoted as a three man, but only two guys go out ... the bill is only
@@ -91,7 +91,7 @@ function seed(extra) {
   const E = await load(FILE, { db: db5, org: ORG, me: { uid: 'u-owner', email: 'o@x' }, fnReply: () => ({ ok: true, sent: 0 }) });
   await sleep(800);
   const r5 = db5.docs.find((d) => d.path === 'jobs/n1').data, c5 = (r5.extras || {}).clock || {}, rw5 = c5.rows || [];
-  ok(rw5[0] && rw5[0].label === '2 movers, 5 hr at $140/hr' && rw5[0].amt === 700 && q3.total + c5.amt === 795 && /^c4:/.test(r5.clockSig), 'hosted: a Build 42 bill for the 3 quoted, when 2 went out, is worked out again: 2 movers at $140/hr, $795 (it was $840)');
+  ok(rw5[0] && rw5[0].label === '2 movers, 5 hr at $140/hr' && rw5[0].amt === 700 && q3.total + c5.amt === 795 && /^c5:/.test(r5.clockSig), 'hosted: a Build 42 bill for the 3 quoted, when 2 went out, is worked out again: 2 movers at $140/hr, $795 (it was $840)');
   ok(E.errors.length === 0, 'and no errors (' + E.errors.slice(0, 3).join(' | ') + ')');
   process.exit(summary('movers-hosted') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

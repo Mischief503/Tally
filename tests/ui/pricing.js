@@ -140,13 +140,13 @@ const H = 36e5;
   ok(J.extras.find((e) => e.id === 'clock').amt === 85 && !$('[data-act="clk:reset"]'), L('Use the clock again: back to $1,205'));
   $('#clkH_' + J.id).value = '-2'; click('[data-act="clk:set"][data-id="' + J.id + '"]'); await sleep(10);
   ok(/Enter the hours to bill/.test(toastTxt()) && J.extras.find((e) => e.id === 'clock').amt === 85, L('a bad number is refused'));
-  // paid in full, then the bill goes up: it owes again; held to the not-to-exceed price
+  // paid in full, then the bill goes up: it owes again; the not-to-exceed price is a guide, so the bill goes past it
   J.payments.push({ id: 'p-cash', amt: 1205, method: 'Cash', date: '2026-10-01', ts: Date.now() }); J.status = 'paid'; T.render(); await sleep(5);
   click('[data-act="job:open"][data-id="' + J.id + '"]'); await sleep(15);
   const fin0 = J.finishedAt, ah0 = J.actualHours;
   $('#clkH_' + J.id).value = '8'; click('[data-act="clk:set"][data-id="' + J.id + '"]'); await sleep(10);
-  ok(J.quote.nte === 1290 && Math.abs(J.quote.total + J.extras.reduce((a, e) => a + e.amt, 0) - 1290) < 0.01 && /held to the not-to-exceed price/.test(J.extras.find((e) => e.id === 'clock').label), L('8 h would be $1,345: held to the $1,290 not-to-exceed price'));
-  ok(J.status === 'done' && /\$85/.test($('#sheet .kpis').textContent), L('a paid job whose bill went up owes again: $85 due, back to Complete'));
+  ok(J.quote.nte === 1290 && Math.abs(J.quote.total + J.extras.reduce((a, e) => a + e.amt, 0) - 1345) < 0.01 && !/held/.test(J.extras.find((e) => e.id === 'clock').label) && /Bill \$1,345, past the \$1,290 not-to-exceed price/.test($('#sheet').textContent), L('8 h: $1,345, past the $1,290 not-to-exceed price (a guide, not a cap)'));
+  ok(J.status === 'done' && /\$140/.test($('#sheet .kpis').textContent), L('a paid job whose bill went up owes again: $140 due, back to Complete'));
   ok(J.finishedAt === fin0 && J.actualHours === ah0 && fin0 > 0, L('and it keeps the time it finished (crew hours and reports unchanged)'));
   click('[data-act="clk:reset"][data-id="' + J.id + '"]'); await sleep(10);
   ok(J.status === 'paid', L('back to the clock, the $1,205 paid covers it: Paid again'));
@@ -196,7 +196,7 @@ const H = 36e5;
   finish(LJ3, { loadStart: t3, loadEnd: t3 + 2 * H, unloadStart: t3 + 2.5 * H, unloadEnd: t3 + 6 * H }, t3);
   await more('crew');
   click('[data-act="cr:finish"][data-id="' + LJ3.id + '"]'); await sleep(20); click('#flow [data-act="flow:close"]'); await sleep(5);
-  ok(Math.abs(LJ3.quote.total + LJ3.extras.reduce((a, e) => a + e.amt, 0) - 535) < 0.01 && LJ3.quote.nte === 535, L('6 h would be $885: held to the $535 not-to-exceed price'));
+  ok(Math.abs(LJ3.quote.total + LJ3.extras.reduce((a, e) => a + e.amt, 0) - 885) < 0.01 && LJ3.quote.nte === 535, L('6 h: $885, past the $535 not-to-exceed price (a guide)'));
   // with a shop address: Start job (leaving the shop) to Done unloading, plus the drive back
   st().settings.shopAddress = '1200 Industrial Blvd, Austin';
   const LJ4 = await mk('Local shop', { milesOut: '10', miles: '8', milesBack: '15', items: { boxm: 60 } });
@@ -221,7 +221,7 @@ const H = 36e5;
   click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);
   click('[data-act="job:open"][data-id="' + OF.id + '"]'); await sleep(15);
   click('#sheet [data-act="sh:next"]'); await sleep(20);
-  ok(OF.status === 'done' && /Finished in 4 h\. Billed by the clock: \$535\./.test(toastTxt()) && /held to the not-to-exceed/.test(OF.extras.find((e) => e.id === 'clock').label), L('finished from the sheet: 4 h on the job timer, held to $535, and the message says so: ' + toastTxt()));
+  ok(OF.status === 'done' && /Finished in 4 h\. Billed by the clock: \$640\./.test(toastTxt()) && !/held/.test(OF.extras.find((e) => e.id === 'clock').label), L('finished from the sheet: 4 h on the job timer (billed 4.25 h, a moment past 4), $640, and the message says so: ' + toastTxt()));
   click('#flow [data-act="flow:close"]'); await sleep(5);
   click('[data-act="sheet:close"]'); await sleep(5);
 
@@ -283,10 +283,10 @@ const H = 36e5;
   click('#flow [data-act="flow:close"]'); await sleep(10);
   ok(SP.status === 'active' && SP.clockAt > 0 && SP.extras.find((e) => e.id === 'clock').amt === 70, L('finish tapped, customer not signed yet: the job is open, the line (+$70) is on the bill'));
   type('[data-mdrive="' + SP.id + '"]', '200', true); await sleep(10);
-  ok(SP.extras.find((e) => e.id === 'clock').amt === 170 && /Bill updated: \$1,290\./.test(toastTxt()), L('200 mi typed before signing: the bill follows ($1,325, held to $1,290): ' + toastTxt()));
+  ok(SP.extras.find((e) => e.id === 'clock').amt === 205 && /Bill updated: \$1,325\./.test(toastTxt()), L('200 mi typed before signing: the bill follows, $1,325: ' + toastTxt()));
   click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);
   click('[data-act="job:open"][data-id="' + SP.id + '"]'); await sleep(15);
-  ok(/Bill \$1,290, held to the not-to-exceed price \(\+\$170 on the quote\)\./.test($('#sheet').textContent) && !/It goes on the bill when the job is finished/.test($('#sheet').textContent), L('the sheet says it is on the bill, not "when the job is finished"'));
+  ok(/Bill \$1,325, past the \$1,290 not-to-exceed price \(\+\$205 on the quote\)\./.test($('#sheet').textContent) && !/It goes on the bill when the job is finished/.test($('#sheet').textContent), L('the sheet says it is on the bill, not "when the job is finished", and that it went past the not-to-exceed price'));
   click('[data-act="sheet:close"]'); await sleep(5);
   // an undone tap works the bill out again
   await more('crew');
@@ -303,13 +303,13 @@ const H = 36e5;
   [B1, B2].forEach((b, i) => { b.d.moveDate = '2030-01-15'; b.d.time = i ? '16:00' : '08:00'; b.assign = { truckId: 't26', crew: ['Andre'] }; });
   ok(T.conflictsFor(B2).some((c) => c.other === B1), L('a 195 mi mileage move at 8 AM (3 h + 6.5 h drive) clashes with a 4 PM job on the same truck'));
   B1.status = 'lost'; B2.status = 'lost';
-  // the not-to-exceed cap is the company's choice
+  // the not-to-exceed price on quotes is the company's choice (a guide: the bill is the time either way)
   await more('settings', 'rates');
   const capBox = $('input[data-s="nteCap"]');
-  ok(capBox && capBox.checked && /Not-to-exceed price/.test(capBox.closest('.opt').textContent) && /the final bill never goes over it/.test(capBox.closest('.opt').textContent), L('Rate card: the Not-to-exceed price switch, on by default'));
+  ok(capBox && capBox.checked && /Not-to-exceed price/.test(capBox.closest('.opt').textContent) && /as a guide: the final bill is the time the move takes, even past it/.test(capBox.closest('.opt').textContent), L('Rate card: the Not-to-exceed price switch, on by default, a guide'));
   capBox.checked = false; capBox.dispatchEvent(new w.Event('input', { bubbles: true })); await sleep(5);
   const NC = await mk('No cap', { miles: '8', items: { boxm: 60 } });
-  ok(NC.quote.capNte === false, L('switched off: new quotes are not held to it'));
+  ok(NC.quote.capNte === false, L('switched off: new quotes have no not-to-exceed price'));
   click('#fab'); await sleep(10); Object.assign(st().draft, blank({ name: 'Peek', miles: '8', items: { boxm: 60 } })); click('[data-act="q:step"][data-s="3"]'); await sleep(10);
   ok(!/Not-to-exceed/.test($('#qLines').textContent), L('and the quote no longer shows a not-to-exceed price'));
   click('[data-act="q:clear"]'); await sleep(5); click('[data-act="q:clear"]'); await sleep(5);
@@ -317,7 +317,7 @@ const H = 36e5;
   finish(NC, { loadStart: t7, loadEnd: t7 + 2 * H, unloadStart: t7 + 2.5 * H, unloadEnd: t7 + 6 * H }, t7);
   await more('crew');
   click('[data-act="cr:finish"][data-id="' + NC.id + '"]'); await sleep(20); click('#flow [data-act="flow:close"]'); await sleep(5);
-  ok(Math.abs(NC.quote.total + NC.extras.reduce((a, e) => a + e.amt, 0) - 885) < 0.01, L('6 h billed in full: $885 (the not-to-exceed would have been $535)'));
+  ok(Math.abs(NC.quote.total + NC.extras.reduce((a, e) => a + e.amt, 0) - 885) < 0.01, L('6 h billed in full: $885, as with the switch on'));
   st().settings.nteCap = true;
   // the office can bill a job at its quote
   click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);

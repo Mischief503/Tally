@@ -49,13 +49,20 @@ not-to-exceed price and no drive-back step):
 - Example: 120 miles driven, 4 hours loading and 3 hours unloading. The bill is 7 hours and
   120 miles.
 - Hours are billed in 15-minute steps, with the minimum hours as the least.
-- The bill is held to the quote's not-to-exceed price. To bill the full time and miles even past it,
-  switch off **Not-to-exceed price** in Setup › Options (or the Rate card). With it off, quotes stop
-  showing a not-to-exceed price.
+- The quote's not-to-exceed price is a guide, not a cap (Richie, Oct 24: "The not to exceed amount is a
+  suggestion not a rule"): the bill is the time and miles, even past it, and the job sheet says when it
+  went past ("Bill $1,070, past the $595 not-to-exceed price"), so the office can decide whether to give
+  the customer a break (set the billed hours, or add a credit). Switch off **Not-to-exceed price** in
+  Setup › Options (or the Rate card) and quotes stop showing one. A bill made before Oct 24 was held to
+  the price, and keeps that when it's worked out again.
+- One place still uses it as a limit: a crew lead charging a card kept on file (the customer not there)
+  can charge up to the not-to-exceed amount. Past it the office charges the card, or the customer pays
+  with a pay link.
 - The bill shows the quote first, then what the bill is made of, under **Billed by the clock**: the
   hours at the hourly rate (with the times, and "the 3-hour minimum" when the minimum filled it in),
   the miles on a mileage move, the quote's fees (truck and fuel, stairs, packing, specialty items,
-  a discount), tax, and **Held to the not-to-exceed price** when it was. Then the materials and the
+  a discount), and tax (a bill from before Oct 24 also has **Held to the not-to-exceed price** when it
+  was). Then the materials and the
   charges added on the job, and the bill. For example, quoted $1,445 for 10 hours:
 
   > Quote (10 hr, 2 movers) $1,445 · *Billed by the clock* · 2 movers, 3.25 hr at $140/hr, 6:30 PM
@@ -129,8 +136,9 @@ it (not once it's billed out).
    (1 → 2)", "−2 Medium box (30 → 28)"), the new quote's lines, its not-to-exceed price, and a note
    for the office about why.
 3. **The customer signs.** "New estimate: $1,788", how the bill still works (by the time and miles,
-   never over the not-to-exceed price; or the flat price), the printed name, a tick box and the
-   signature. Only then does the new quote go on the job.
+   and the not-to-exceed price is a guide, not a limit; or the flat price), the printed name, a tick
+   box ("I agree to the new estimate of $1,788.") and the signature. Only then does the new quote go
+   on the job.
 
 The new quote is worked out the same way as the office's, at the rates on the job's quote: the same
 hourly and mileage rates, tax, minimum hours, truck, stair and packing fees, and the same crew and
@@ -166,8 +174,7 @@ shorthanded, the bill should reflect what went out").
 - Put 3 people on a job quoted for 2 movers, and the bill by the clock charges 3 movers at the 3-man
   rate for the whole job. Under the crew, the job sheet and the crew lead's card say **Movers on the
   bill: 2 (as quoted) · 3 from the start**. Before the job, the Local move (or Mileage move) part gives
-  the rate and says to let the customer know, since the time with more movers is on top of the
-  not-to-exceed price.
+  the rate and says to let the customer know.
 - A crew that goes out short is billed for who went out: quoted as a 3-man move, 2 on the crew, and the
   bill is 2 movers at the 2-man rate ("if it was booked and quoted as a three man, but only two guys go
   out because someone gets sick or calls in, then the bill is only two"). The line says **Movers on the
@@ -179,24 +186,19 @@ shorthanded, the bill should reflect what went out").
   off too (they weren't on the job). Putting someone on after the job (a mover the office forgot)
   works the bill out again.
 - A driver picked who isn't on the crew goes on it, and on the bill.
-- The not-to-exceed price stays the quote's, for the quote's crew: the time with more movers is on top
-  of it, as with a mover who joins on site. With fewer movers the bill is at their rate, and still never
-  past the price.
 
 > 2 movers quoted at $140/hr, not to exceed $595. The office puts 3 on it; the job takes 5 hours.
-> 3 movers, 5 hr at $195/hr = $975. Fees $95. Held to the not-to-exceed price, −$200 ($595 for
-> 2 movers for the 5 hours). Bill $870.
+> 3 movers, 5 hr at $195/hr = $975. Fees $95. Bill $1,070 (past the not-to-exceed price, a guide).
 
 > 3 movers quoted at $195/hr, not to exceed $840. Someone calls in sick and 2 go out; the job takes
 > 4 hours. 2 movers, 4 hr at $140/hr = $560. Truck and fuel $45. Bill $605 (the quote was $728).
-> Had it taken 10 hours: 2 movers, 10 hr at $140/hr = $1,400, plus $45, held to the not-to-exceed
-> price: $840.
 
 A bill made before Oct 24 (its record of the numbers starts with `c1` or `c2`) keeps the quote's crew,
-plus the changes on site. A bill from now on starts with `c4` and has who's on the crew in it, so a
-phone that gets a job whose crew another phone changed works the bill out again, and a phone on a
-version before leaves it alone. Build 42's bills (`c3`, Oct 24 morning) billed a crew short of the quote
-as quoted; they are worked out again when they come in.
+plus the changes on site, and the hold to the not-to-exceed price. A bill from now on starts with `c5`
+and has who's on the crew in it, so a phone that gets a job whose crew another phone changed works the
+bill out again, and a phone on a version before leaves it alone. The bills of Builds 42 and 43 (`c3`,
+`c4`, Oct 24: a crew short of the quote billed as quoted, then the bill held to the not-to-exceed price)
+are worked out again when they come in.
 
 ## Movers joining or leaving on site
 
@@ -224,16 +226,12 @@ bill should show the quote, then it should show the 1.5 hours as 2 man and 1.25 
 > Billed by the clock: 2 movers, 1.5 hr at $140/hr = $210 (1h 31m). 3 movers, 1.5 hr at $195/hr =
 > $293 (1h 9m, and the 3-hour minimum). Then the quote's fees.
 
-The not-to-exceed price is for the quote's crew. When the bill for the quote's crew doing all the
-hours would be over it, **Held to the not-to-exceed price** takes off the difference, and the time
-with more movers is on top of that (the customer was quoted for the quote's crew; a mover more is
-extra, like stairs or parking). The time with fewer movers is at their rate, and the bill with it is
-still held to the price (until Oct 24 that time also came off the held price, which on a long day
-short-handed could bill less than the crew's own hours).
+Every hour is at the rate of the crew on it; the not-to-exceed price doesn't hold the bill (a bill
+from before Oct 24 was held to it as if the quote's crew did all the hours, with the time with more
+movers on top).
 
 > 2 movers quoted at $140/hr, not to exceed $595; 2 more join 2 hours in; the job takes 5 hours.
-> 2 movers, 2 hr at $140/hr = $280. 4 movers, 3 hr at $250/hr = $750. Fees $95. Held to the
-> not-to-exceed price, −$200 ($595 for 2 movers for the 5 hours). Bill $925.
+> 2 movers, 2 hr at $140/hr = $280. 4 movers, 3 hr at $250/hr = $750. Fees $95. Bill $1,125.
 
 A crew size's rate is the quote's rate plus the Rate card's difference between the two crew sizes (the
 Rate card at the first change is kept on the job, so changing the Rate card later doesn't move the

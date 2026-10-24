@@ -43,7 +43,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   ok($$('#mover [data-act="mv:ago"]').map((b) => b.textContent).join('|') === 'Now|15 min ago|30 min ago|45 min ago|60 min ago' && $('#mover [data-act="mv:save"]').disabled && $('#mover [data-act="mv:save"]').textContent === 'Pick who joined', L('when: Now, or up to an hour ago; nothing to save until someone’s picked'));
   await pick('Dee');
   ok($('#mover [data-act="mv:save"]').textContent === 'Add Dee to the job' && !$('#mover [data-act="mv:save"]').disabled, L('picked: “Add Dee to the job”'));
-  ok(/^From \d+:\d\d [AP]M: 3 movers on the bill at \$195\/hr \(the quote is \$140\/hr for 2\)\. The time with more movers is billed at their rate, even past the not-to-exceed price, so let Nadia Farouk know\.$/.test($('#mvWhat').textContent), L('what it does to the bill: ' + $('#mvWhat').textContent));
+  ok(/^From \d+:\d\d [AP]M: 3 movers on the bill at \$195\/hr \(the quote is \$140\/hr for 2\)\. The time with more movers is billed at their rate, so let Nadia Farouk know\.$/.test($('#mvWhat').textContent), L('what it does to the bill: ' + $('#mvWhat').textContent));
   await tap('#mover [data-act="mv:ago"][data-a="30"]');
   ok($('#mover [data-act="mv:ago"][data-a="30"]').classList.contains('on') && $('#mvWhat').textContent.startsWith('From ' + clock(Date.now() - 30 * 6e4)) && $('#mover [data-act="mv:save"]').textContent === 'Add Dee to the job', L('30 min ago: the time moves back, Dee stays picked'));
   await tap('#mover [data-act="mv:save"]', 10);
@@ -83,14 +83,13 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   T.applyClock(N);
   const cl = N.extras.find((e) => e.id === 'clock'), rw = (cl && cl.rows) || [];
   const rowTxt = (R) => R.map((r) => r.label + (r.sub ? ' [' + r.sub + ']' : '') + ' ' + money(r.amt)).join(' | ');
-  ok(!N.extras.some((e) => /^crew:/.test(e.id)) && !!cl && cl.amt === 410 && cl.label === 'By the clock: 5h 0m on the job, billed 5 h: 2 movers 2 h, then 4 movers 3 h (quoted 3 h for 2 movers), held to the not-to-exceed price', L('one line on the bill, +$410: ' + (cl && cl.label)));
-  ok(rw.length === 5 && rw[0].label === '2 movers, 2 hr at $140/hr' && rw[0].amt === 280 && rw[0].sub === clock(t0) + ' to ' + clock(t0 + 2 * H) + ' (2h 0m)' &&
+  ok(!N.extras.some((e) => /^crew:/.test(e.id)) && !!cl && cl.amt === 610 && cl.label === 'By the clock: 5h 0m on the job, billed 5 h: 2 movers 2 h, then 4 movers 3 h (quoted 3 h for 2 movers)', L('one line on the bill, +$610: ' + (cl && cl.label)));
+  ok(rw.length === 4 && rw[0].label === '2 movers, 2 hr at $140/hr' && rw[0].amt === 280 && rw[0].sub === clock(t0) + ' to ' + clock(t0 + 2 * H) + ' (2h 0m)' &&
     rw[1].label === '4 movers, 3 hr at $250/hr' && rw[1].amt === 750 && rw[1].sub === clock(t0 + 2 * H) + ' to ' + clock(now) + ' (3h 0m)' &&
-    rw[2].label === 'Truck and fuel' && rw[2].amt === 45 && rw[3].label === 'Stairs: 2 flights' && rw[3].amt === 50 &&
-    rw[4].label === 'Held to the not-to-exceed price' && rw[4].amt === -200 && rw[4].sub === '$595 for 2 movers, as quoted. The time with more movers is on top of it.', L('its rows: the hours of each crew at its rate, the fees, and the not-to-exceed price for the quote’s crew: ' + rowTxt(rw)));
+    rw[2].label === 'Truck and fuel' && rw[2].amt === 45 && rw[3].label === 'Stairs: 2 flights' && rw[3].amt === 50, L('its rows: the hours of each crew at its rate, and the fees: ' + rowTxt(rw)));
   const tot = N.quote.total + N.extras.reduce((a, e) => a + e.amt, 0);
-  ok(tot === 925 && rw.reduce((a, r) => a + r.amt, 0) === 925, L('the bill: $280 + $750 + $95 − $200 = ' + money(tot) + ' (2 movers held to $595, the 2 more on top)'));
-  ok(N.log.filter((l) => /^Billed by the clock/.test(l.ev)).slice(-1)[0].ev === 'Billed by the clock: 5 h (2 movers 2 h, then 4 movers 3 h), $925', L('the activity line has the hours of each crew'));
+  ok(tot === 1125 && rw.reduce((a, r) => a + r.amt, 0) === 1125, L('the bill: $280 + $750 + $95 = ' + money(tot) + ' (past the $595 not-to-exceed price, a guide)'));
+  ok(N.log.filter((l) => /^Billed by the clock/.test(l.ev)).slice(-1)[0].ev === 'Billed by the clock: 5 h (2 movers 2 h, then 4 movers 3 h), $1,125', L('the activity line has the hours of each crew'));
   // the lead's bill: the quote, then the hours by the movers on the bill
   await preview('lead', 'Marcus');
   if (card(N).tagName === 'DETAILS') { click(card(N).querySelector('summary b')); await sleep(10); }
@@ -98,9 +97,9 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   const bt = bill ? [...bill.querySelectorAll('table.lines tr')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()) : [];
   ok(bt[0] === 'Quote (3 hr, 2 movers)$515' && bt[1] === 'Billed by the clock' && bt[2] === '2 movers, 2 hr at $140/hr' + clock(t0) + ' to ' + clock(t0 + 2 * H) + ' (2h 0m)$280' &&
     bt[3] === '4 movers, 3 hr at $250/hr' + clock(t0 + 2 * H) + ' to ' + clock(now) + ' (3h 0m)$750' && bt[4] === 'Truck and fuel$45' && bt[5] === 'Stairs: 2 flights$50' &&
-    bt[6] === 'Held to the not-to-exceed price$595 for 2 movers, as quoted. The time with more movers is on top of it.−$200' && bt[7] === 'Bill$925' && bt[8] === 'Paid so far$0' && bt[9] === 'Balance$925', L('Marcus’s Bill: the quote, then the hours by the movers on the bill, the fees, and the bill: ' + bt.join(' / ')));
-  ok(!!bill.querySelector('tr.ref') && !!bill.querySelector('tr.hd') && /\$410 more than the quote\./.test(bill.textContent), L('the quote row is set apart, and it says how much more than the quote'));
-  ok(/billed 5 h \(2 movers 2 h, then 4 movers 3 h\)\. Bill \$925, held to the not-to-exceed price \(\+\$410 on the quote\)\. Each crew at its own rate: 2 movers \$140\/hr, 4 movers \$250\/hr\./.test(card(N).querySelector('.cc-quote').textContent), L('his Quote part explains it too'));
+    bt[6] === 'Bill$1,125' && bt[7] === 'Paid so far$0' && bt[8] === 'Balance$1,125', L('Marcus’s Bill: the quote, then the hours by the movers on the bill, the fees, and the bill: ' + bt.join(' / ')));
+  ok(!!bill.querySelector('tr.ref') && !!bill.querySelector('tr.hd') && /\$610 more than the quote\./.test(bill.textContent), L('the quote row is set apart, and it says how much more than the quote'));
+  ok(/billed 5 h \(2 movers 2 h, then 4 movers 3 h\)\. Bill \$1,125, past the \$595 not-to-exceed price \(\+\$610 on the quote\)\. Each crew at its own rate: 2 movers \$140\/hr, 4 movers \$250\/hr\./.test(card(N).querySelector('.cc-quote').textContent), L('his Quote part explains it too'));
   ok(card(N).querySelector('.cc-movers').textContent === 'Movers on the bill: 2 (as quoted) · 4 from ' + clock(t0 + 2 * H) + 'Change', L('finished: the line still shows, with Change to take one back'));
   await endPreview();
   // the pay line for Dee, who joined 2 hours in: her own 3 hours
@@ -112,19 +111,19 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   T.ui.jobId = N.id; T.render(); await sleep(10);
   const sh = $('#sheet .sheet-body').textContent, shq = $('#sheet details.acc[data-k="sh:Quote"]');
   const sr = shq ? [...shq.querySelector('table.lines').querySelectorAll('tr')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()) : [];
-  ok(sh.includes('Movers on the bill: 2 (as quoted) · 4 from ' + clock(t0 + 2 * H)) && sr.join(' / ') === '2 movers, 3 hr at $140/hr$420 / Truck and fuel$45 / Stairs: 2 flights$50 / Quote$515 / Billed by the clock / 2 movers, 2 hr at $140/hr' + clock(t0) + ' to ' + clock(t0 + 2 * H) + ' (2h 0m)$280 / 4 movers, 3 hr at $250/hr' + clock(t0 + 2 * H) + ' to ' + clock(now) + ' (3h 0m)$750 / Truck and fuel$45 / Stairs: 2 flights$50 / Held to the not-to-exceed price$595 for 2 movers, as quoted. The time with more movers is on top of it.−$200 / Bill$925', L('the office’s sheet: the quote’s lines, then the bill by the movers on it: ' + sr.join(' / ')));
+  ok(sh.includes('Movers on the bill: 2 (as quoted) · 4 from ' + clock(t0 + 2 * H)) && sr.join(' / ') === '2 movers, 3 hr at $140/hr$420 / Truck and fuel$45 / Stairs: 2 flights$50 / Quote$515 / Billed by the clock / 2 movers, 2 hr at $140/hr' + clock(t0) + ' to ' + clock(t0 + 2 * H) + ' (2h 0m)$280 / 4 movers, 3 hr at $250/hr' + clock(t0 + 2 * H) + ' to ' + clock(now) + ' (3h 0m)$750 / Truck and fuel$45 / Stairs: 2 flights$50 / Bill$1,125', L('the office’s sheet: the quote’s lines, then the bill by the movers on it: ' + sr.join(' / ')));
   await tap('#sheet .cc-movers [data-act="mv:open"]', 10);
   ok(!$('#mover [data-act="mv:save"]') && /The job is finished, so nobody more joins or leaves\./.test(panel()) && $$('#mover [data-act="mv:undo"]').length === 2, L('the job is finished: nothing more to put in, but each change can be taken back'));
   await tap($$('#mover [data-act="mv:undo"]')[1], 10);
   const cl2 = N.extras.find((e) => e.id === 'clock'), rw2 = (cl2 && cl2.rows) || [];
-  ok(cl2 && cl2.amt === 245 && rw2[1] && rw2[1].label === '3 movers, 3 hr at $195/hr' && rw2[1].amt === 585 && N.assign.crew.indexOf('Luis') < 0 && N.quote.total + cl2.amt === 760, L('the office takes Luis back: the bill is worked out again, 3 movers for the last 3 hours ($760)'));
+  ok(cl2 && cl2.amt === 445 && rw2[1] && rw2[1].label === '3 movers, 3 hr at $195/hr' && rw2[1].amt === 585 && N.assign.crew.indexOf('Luis') < 0 && N.quote.total + cl2.amt === 960, L('the office takes Luis back: the bill is worked out again, 3 movers for the last 3 hours ($960)'));
   await tap('#mover [data-act="mv:close"]');
   click('#sheet [data-act="sheet:close"].btn'); await sleep(10);
 
   // the rows show only when they add up to the bill (a phone on the version before writes the line without them)
   const cp = (f) => { const x = JSON.parse(JSON.stringify(N)); f(x); return x; }, ck = (x) => x.extras.find((e) => e.id === 'clock');
   ok(T.clockRows(N) === cl2.rows, L('the bill’s rows, as on its line'));
-  ok(T.clockRows(cp((x) => { delete ck(x).rows; })).length === 5, L('a line without rows: worked out here, since they add up to it'));
+  ok(T.clockRows(cp((x) => { delete ck(x).rows; })).length === 4, L('a line without rows: worked out here, since they add up to it'));
   ok(T.clockRows(cp((x) => { ck(x).amt += 50; })) === null, L('a line whose rows don’t add up to it (changed on a phone without rows): the bill shows the line instead'));
   ok(T.clockRows(cp((x) => { x.extras.push({ id: 'crew:0', label: '3 movers from 9:00 AM, 1h 0m at $195/hr instead of $140/hr', amt: 55, ts: 1 }); })) === null, L('a bill from the version before, with a crew line: shown as it is until it’s worked out again'));
 
@@ -141,7 +140,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   c = T.clockBill(job({ crewAdj: [{ id: 'x1', ts: s0 + 5 * M, d: 1, who: 'Dee' }] }));
   ok(hrs(c) === '3 movers, 3 hr at $195/hr $585 [' + clock(s0 + 5 * M) + ' to ' + clock(s0 + 160 * M) + ' (2h 35m) · the 3-hour minimum]', L('a mover 5 minutes in: the 5 minutes round away, 3 movers for the whole bill: ' + hrs(c)));
   c = T.clockBill(job({ crewAdj: [{ id: 'x1', ts: s0 + 90 * M, d: -1, who: 'Kim' }], phases: { loadStart: s0, unloadEnd: s0 + 300 * M }, finishedAt: s0 + 300 * M }));
-  ok(hrs(c) === '2 movers, 1.5 hr at $140/hr $210 [' + clock(s0) + ' to ' + clock(s0 + 90 * M) + ' (1h 30m)] | 1 mover, 3.5 hr at $85/hr $298 [' + clock(s0 + 90 * M) + ' to ' + clock(s0 + 300 * M) + ' (3h 30m)]' && c.capped && c.total === 595 && c.rows.find((r) => r.k === 'cap').sub === 'Not to exceed $595', L('a mover left: 1 mover at $85/hr for that time, and the bill ($603 by the rows) held to the not-to-exceed price: ' + hrs(c) + ' = ' + money(c.total)));
+  ok(hrs(c) === '2 movers, 1.5 hr at $140/hr $210 [' + clock(s0) + ' to ' + clock(s0 + 90 * M) + ' (1h 30m)] | 1 mover, 3.5 hr at $85/hr $298 [' + clock(s0 + 90 * M) + ' to ' + clock(s0 + 300 * M) + ' (3h 30m)]' && !c.capped && c.total === 603 && !c.rows.some((r) => r.k === 'cap'), L('a mover left: 1 mover at $85/hr for that time, $603 (the not-to-exceed price is a guide): ' + hrs(c) + ' = ' + money(c.total)));
   c = T.clockBill(job({ clockFix: { hours: 2.5 } }));
   ok(c.billed === 2.5 && hrs(c) === '2 movers, 1.5 hr at $140/hr $210 [' + clock(s0) + ' to ' + clock(s0 + 91 * M) + ' (1h 31m)] | 3 movers, 1 hr at $195/hr $195 [' + clock(s0 + 91 * M) + ' to ' + clock(s0 + 160 * M) + ' (1h 9m) · hours set by the office]', L('the office sets 2.5 h: the quarter hour comes off the end: ' + hrs(c)));
   c = T.clockBill(job({ clockFix: { hours: 4 } }));
@@ -197,7 +196,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   ok(doc.crewAdj && !Array.isArray(doc.crewAdj) && Object.keys(doc.crewAdj).length === 1 && doc.crewRates && doc.crewRates.r4 === 250, L('in the shared copy: the changes keyed by id (two phones can add one each), and the rates'));
   const back = T.docToJob(JSON.parse(JSON.stringify(doc)));
   ok(back.crewAdj.length === 1 && back.crewAdj[0].who === 'Dee' && back.crewRates.r3 === 195, L('and back again'));
-  ok(/^c4:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\[\d+,1,"Dee"\]\]\/140,195,250$/.test(N.clockSig), L('the bill’s signature has the quote’s crew, who’s on the crew and the changes (c4, so the versions before leave it alone): ' + N.clockSig.slice(-70)));
+  ok(/^c5:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\[\d+,1,"Dee"\]\]\/140,195,250$/.test(N.clockSig), L('the bill’s signature has the quote’s crew, who’s on the crew and the changes (c5, so the versions before leave it alone): ' + N.clockSig.slice(-70)));
 
   /* ---------------- a bill from the version before (the crew changes on lines of their own) ---------------- */
   // on this phone's own copy, it's worked out again by the movers on the bill when Tally opens

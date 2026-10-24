@@ -161,8 +161,8 @@ const PRICE_KEYS = ['rates', 'minHours', 'prod', 'mph', 'shopAddress', 'shopTrav
   /* ---------------- the customer signs ---------------- */
   await tap('#rq [data-act="rq:step"][data-s="sign"]', 10);
   ok(/^New estimate: /.test($('#rq h2').textContent) && $('#rq h2').textContent === 'New estimate: ' + money(exp1.q.total) && $('#sigName').value === 'Priya Nair', L('the customer sees the new estimate, with their name filled in'));
-  ok(/The quote was \$1,541\. The bill still follows the time the move takes and the miles driven, and it won’t go over /.test(body()), L('and how the bill works: by the time and miles, never over the not-to-exceed price'));
-  ok($('#sigAgree').parentNode.textContent.trim() === 'I agree to the new estimate of ' + money(exp1.q.total) + ', not to exceed ' + money(exp1.q.nte) + '.', L('what they agree to: ' + $('#sigAgree').parentNode.textContent.trim()));
+  ok(body().includes('The quote was $1,541. The bill still follows the time the move takes and the miles driven. The not-to-exceed price, ' + money(exp1.q.nte) + ', is a guide, not a limit.'), L('and how the bill works: by the time and miles; the not-to-exceed price is a guide'));
+  ok($('#sigAgree').parentNode.textContent.trim() === 'I agree to the new estimate of ' + money(exp1.q.total) + '.', L('what they agree to, with no limit promised: ' + $('#sigAgree').parentNode.textContent.trim()));
   $('#sigName').value = ''; await tap('#rq [data-act="rq:sign"]');
   ok($('#rqErr').textContent === 'Type the customer’s printed name.', L('no name: ' + $('#rqErr').textContent));
   $('#sigName').value = 'Priya Nair'; await tap('#rq [data-act="rq:sign"]');

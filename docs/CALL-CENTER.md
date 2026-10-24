@@ -43,7 +43,7 @@ with the service, then the companies in a list:
   red), the same ones as the Schedule's calendar.
 - Tapping a company (or its dot) opens its **rate card**: the hourly rate for 2, 3 and 4 movers,
   the minimum hours, the truck and fuel fee, stairs, packing, the local area and the rate per mile
-  past it, the deposit, sales tax, the price cap (not-to-exceed) and the specialty items' fees,
+  past it, the deposit, sales tax, the not-to-exceed price (a guide) and the specialty items' fees,
   whether the move is local for them, their shop and their trucks.
 - **Make a quote for <company>** opens that company's quote builder with the pickup and the date
   already filled in. **Their schedule** opens that company's calendar on the move date.

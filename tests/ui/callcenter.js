@@ -60,7 +60,7 @@ const L = (m) => label + ': ' + m;
   const lone = $$('#view details.deskcard').find((d) => /Lone Star Haulers/.test(d.textContent));
   lone.open = true;
   const rc = lone.querySelector('.ratecard').textContent.replace(/\s+/g, ' ');
-  ok(/2 movers\s*\$129\/hr/.test(rc) && /Minimum\s*2 hours/.test(rc) && /Truck and fuel\s*\$55 a truck/.test(rc) && /Local area\s*25 mi from the shop/.test(rc) && /Past that\s*\$1\.40 a mile/.test(rc) && /Deposit\s*20% to book/.test(rc) && !/Packing/.test(rc), L('its rate card: rates, minimum, truck fee, local area and mileage, deposit (no packing: it’s switched off there)'));
+  ok(/2 movers\s*\$129\/hr/.test(rc) && /Minimum\s*2 hours/.test(rc) && /Truck and fuel\s*\$55 a truck/.test(rc) && /Local area\s*25 mi from the shop/.test(rc) && /Past that\s*\$1\.40 a mile/.test(rc) && /Deposit\s*20% to book/.test(rc) && !/Packing/.test(rc) && /Not to exceed\s*The quote \+ \d+%, a guide/.test(rc), L('its rate card: rates, minimum, truck fee, local area and mileage, deposit, the not-to-exceed price as a guide (no packing: it’s switched off there)'));
   ok(/Inside their 25-mile local area/.test(lone.textContent) && /Shop: 2100 Sam Bass Rd, Round Rock, TX · 2 trucks/.test(lone.textContent), L('whether the move is local for them, their shop and trucks'));
   await tap('#view [data-act="desk:quote"][data-co="smp-lonestar"]');
   ok(T.ui.tab === 'desk' && /Lone Star Haulers is a sample/.test(toast()), L('Make a quote for a sample company: it says it’s a sample'));

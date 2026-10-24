@@ -1464,7 +1464,7 @@ var OPTS=[
   {g:'price',k:'mileage',t:'Mileage moves',h:'Moves past the local radius are charged by the mile, plus loading and unloading time. Off: every move is charged by the hour.',n:{p:'includedMiles',l:'Local radius (driving miles from the shop)'}},
   {g:'price',p:'shopTravel',t:'Count the drive from the shop',h:'The drive from the shop to the pickup and back from the delivery goes in the price: in the hours on local moves, in the miles on mileage moves.'},
   {g:'price',k:'byClock',t:'Final bill by the clock',h:'The bill follows the crew’s times and the miles driven. Off: new quotes are a flat price, and the bill is the quote.'},
-  {g:'price',p:'nteCap',t:'Not-to-exceed price',h:'Quotes show a not-to-exceed price, and the final bill never goes over it.',n:{p:'ntePct',l:'Not-to-exceed cushion (%)'}},
+  {g:'price',p:'nteCap',t:'Not-to-exceed price',h:'Quotes show a not-to-exceed price, as a guide: the final bill is the time the move takes, even past it.',n:{p:'ntePct',l:'Not-to-exceed cushion (%)'}},
   {g:'price',k:'deposit',t:'Deposit to book',h:'Quotes ask for a deposit when the job is booked.',n:{p:'depositPct',l:'Deposit (%)'}},
   {g:'price',k:'tax',t:'Sales tax',h:'Adds sales tax to quotes.',n:{p:'taxPct',l:'Tax (%)',step:'0.01'}},
   {g:'price',k:'truckFee',t:'Truck and fuel fee',h:'A fee for each truck on every quote.',n:{p:'truckFee',l:'Truck and fuel, per truck ($)'}},
@@ -1695,8 +1695,10 @@ function calc(d,S){
      Done unloading, plus the quoted drive back to the shop when it is;
    - mileage: loading plus unloading time, and the miles driven (the lead can enter them from the
      odometer; otherwise the quote's miles).
-   At least the minimum hours, in 15-minute steps, and never more than the quote's not-to-exceed
-   price. The difference from the quote is one line on the bill (extra 'clock'), worked out again
+   At least the minimum hours, in 15-minute steps. The quote's not-to-exceed price is a guide, not a cap
+   (Richie, Oct 24: "The not to exceed amount is a suggestion not a rule"): the bill is the time it took,
+   even past it, and the job sheet says when it went past. A bill made before Oct 24 (billOld) was held to
+   it, and still is. The difference from the quote is one line on the bill (extra 'clock'), worked out again
    when the office corrects the hours or miles (j.clockFix). Jobs quoted before move kinds keep
    their quoted price.
    The hours are billed by the movers on the bill (Richie, Oct 21: "the bill should show the quote,
@@ -1732,14 +1734,11 @@ function clockBill(j){
   segs.forEach(function(s){s.rate=s.n===qc?num(q.rate):mvRate(j,s.n);s.amt=Math.round(s.rate*s.h);hoursAmt+=s.amt});
   var milesAmt=mileage?Math.round(miles*num(q.mileRate)):0,tp=num(q.taxPct);
   var sub=hoursAmt+milesAmt+num(q.fixed),tax=Math.round(sub*tp/100),total=Math.max(0,sub+tax);
-  // the not-to-exceed price is for the quote's crew: the bill is held to it as if they did all the hours, and the
-  // time with more movers is on top of that. The time with fewer movers is at their rate under it (Oct 24: a crew
-  // that goes out short is billed for who went out, and still never past the price); a bill from before took that
-  // time off the held price too
-  var less=0;if(!billOld(j))segs.forEach(function(s){if(s.n<qc)less+=Math.round(num(q.rate)*s.h)-s.amt});
-  var bsub=Math.round(q.rate*billed)-less+milesAmt+num(q.fixed),btotal=Math.max(0,bsub+Math.round(bsub*tp/100)),capped=false,capAmt=0;
-  if(q.capNte!==false&&q.nte>0&&btotal>q.nte){capAmt=Math.min(total,btotal-q.nte);total=total-capAmt;capped=true}
-  var c={worked:h,parts:parts,billed:billed,miles:miles,total:total,capped:capped,capAmt:capAmt,adj:Math.round((total-q.total)*100)/100,setH:setH,setMi:setMi,driven:driven,segs:segs,qc:qc};
+  // the not-to-exceed price is a guide: the bill is the time it took (over: past it, for the job sheet). A bill from
+  // before Oct 24 was held to it, as if the quote's crew did all the hours, with the time with more movers on top
+  var nte=q.capNte!==false&&q.nte>0?num(q.nte):0,capped=false,capAmt=0;
+  if(nte&&billOld(j)){var bsub=Math.round(q.rate*billed)+milesAmt+num(q.fixed),btotal=Math.max(0,bsub+Math.round(bsub*tp/100));if(btotal>nte){capAmt=Math.min(total,btotal-nte);total=total-capAmt;capped=true}}
+  var c={worked:h,parts:parts,billed:billed,miles:miles,total:total,capped:capped,capAmt:capAmt,over:!capped&&nte>0&&total>nte+0.004,adj:Math.round((total-q.total)*100)/100,setH:setH,setMi:setMi,driven:driven,segs:segs,qc:qc};
   c.rows=billRows(j,c,milesAmt,tax,sub+tax<0?-(sub+tax):0);
   return c;
 }
@@ -1799,8 +1798,8 @@ function billRows(j,c,milesAmt,tax,floor){
   if(floor)rows.push({k:'floor',label:'A bill doesn’t go below $0',sub:'',amt:floor});
   if(c.capped){
     var more=c.segs.some(function(s){return s.n>base&&s.h>1e-9}),less=c.segs.some(function(s){return s.n<base&&s.h>1e-9});
-    // the time with fewer movers is under the price at their rate (a bill from before took it off the held price)
-    rows.push({k:'cap',label:'Held to the not-to-exceed price',sub:more?money(q.nte)+' for '+base+' movers, as quoted. The time with more movers is on top of it.':less&&billOld(j)?money(q.nte)+' for '+base+' movers, as quoted. Less for the time with fewer movers.':'Not to exceed '+money(q.nte),amt:-c.capAmt});
+    // (only a bill from before Oct 24 is held to it)
+    rows.push({k:'cap',label:'Held to the not-to-exceed price',sub:more||less?money(q.nte)+' for '+base+' movers, as quoted. '+(more?'The time with more movers is on top of it.':'Less for the time with fewer movers.'):'Not to exceed '+money(q.nte),amt:-c.capAmt});
   }
   return rows;
 }
@@ -1828,10 +1827,11 @@ var BACK_HOW={gps:'by GPS',quote:'from the quote',typed:'typed in'};
 // from the database can tell when two phones changed it at once, and work the line out again.
 // A job whose crew changed is signed c2: its hours are billed by the movers on the bill, so a phone with
 // the version before (which put crew changes on lines of their own, signed c1) leaves its bill alone.
-// A bill by the people put on the job (Oct 24) is signed c4, with who's on the crew in it; a bill signed c1 or c2
-// keeps the quote's crew (billOld), and a phone with a version before leaves a c4 bill alone. c3 was Build 42's: a
-// crew short of the quote was still billed as quoted then, so a c3 bill is worked out again.
-var CLOCK_V='c1',CLOCK_V2='c2',CLOCK_V4='c4';
+// A bill by the people put on the job, and not held to the not-to-exceed price (Oct 24), is signed c5, with who's on
+// the crew in it; a bill signed c1 or c2 keeps the quote's crew and the cap (billOld), and a phone with a version
+// before leaves a c5 bill alone. c3 (Build 42: a crew short of the quote billed as quoted) and c4 (Build 43: held to
+// the not-to-exceed price) bills are worked out again.
+var CLOCK_V='c1',CLOCK_V2='c2',CLOCK_V5='c5';
 function clockSig(j){
   var q=j.quote||{},p=j.phases||{},f=j.clockFix||{},v=function(x){return x==null?'':String(x)},A=crewAdjs(j),R=j.crewRates;
   var core=[q.kind,q.total,q.hours,q.cf,q.rate,q.miles,q.mileRate,q.fixed,q.taxPct,q.minHours,q.nte,q.capNte,q.shopTravel,q.backH,
@@ -1840,7 +1840,7 @@ function clockSig(j){
     (j.back?'|b:'+[j.back.mins,j.back.mi,j.back.soFar].map(v).join(','):'');
   var rates=R?'/'+[R.r2,R.r3,R.r4].map(v).join(','):'';
   // the quote's crew, who's on the job's crew, who joined or left and when, and the rates
-  if(!billOld(j))return CLOCK_V4+':'+core+'|n:'+v(q.crew)+'|c:'+JSON.stringify(crewOf(j).slice().sort())+'|m:'+JSON.stringify(A.map(function(e){return [e.ts,e.d,e.who||'']}))+rates;
+  if(!billOld(j))return CLOCK_V5+':'+core+'|n:'+v(q.crew)+'|c:'+JSON.stringify(crewOf(j).slice().sort())+'|m:'+JSON.stringify(A.map(function(e){return [e.ts,e.d,e.who||'']}))+rates;
   if(!A.length)return CLOCK_V+':'+core;
   // movers who joined or left, the quote's crew, and the rates
   return CLOCK_V2+':'+core+'|n:'+v(q.crew)+'|m:'+A.map(function(e){return e.ts+(e.d>0?'+':'-')}).join(',')+rates;
@@ -1848,7 +1848,7 @@ function clockSig(j){
 // a bill line from another phone that's out of date here: worked out from other numbers, or the crew
 // changes on lines of their own (the version before). A signature from another version of Tally is left.
 function clockStale(j){
-  var s=j&&j.clockAt&&j.clockSig;if(typeof s!=='string'||!/^c[1-4]:/.test(s))return false;
+  var s=j&&j.clockAt&&j.clockSig;if(typeof s!=='string'||!/^c[1-5]:/.test(s))return false;
   return s!==clockSig(j)||(j.extras||[]).some(isCrewLine);
 }
 // writes the bill line; returns what it worked out ({off:true} when the office bills at the quote),
@@ -1917,7 +1917,7 @@ function clockHtml(j,ro){
       :mileage?'Loading '+fmtDur(pt.load)+' and unloading '+fmtDur(pt.unload)+': '+fmtDur(c.worked*36e5)+', billed '+fmtHrs(c.billed)+sw+'.'
       :'On the clock '+fmtDur(pt.span)+(pt.backSet?(pt.back?', plus '+fmtDur(pt.back)+' back to the shop':', no drive back added')+' (from '+esc(j.back.by||'the crew')+' at bill-out)':pt.back?', plus about '+fmtDur(pt.back)+' back to the shop':'')+': billed '+fmtHrs(c.billed)+sw+'.';
     var diff=Math.abs(c.adj)>=0.01?' ('+(c.adj>0?'+':'\u2212')+money(Math.abs(c.adj))+' on the quote)':', the same as the quote';
-    var bill=money(c.total)+(c.capped?', held to the not-to-exceed price':'')+diff;
+    var bill=money(c.total)+(c.capped?', held to the not-to-exceed price':c.over?', past the '+money(q.nte)+' not-to-exceed price':'')+diff;
     body=how+(mileage?' '+fmtMi(c.miles)+' mi '+(c.setMi?'set by the office':c.driven?'driven, from the crew'+(backSplit(j,c)?' ('+(j.back.odoStart!=null&&j.back.odoEnd!=null?'odometer '+fmtMi(j.back.odoStart)+' to '+fmtMi(j.back.odoEnd)+', '+fmtMi(j.back.soFar)+' mi':fmtMi(j.back.soFar)+' mi so far')+', plus '+fmtMi(j.back.mi)+' mi back to the shop '+(BACK_HOW[j.back.src]||'typed in')+'; '+esc(j.back.by||'the crew')+' at bill-out)':''):'from the quote')+'.':'')+
       (off?' Billed at the quote, set by the office. By the clock it would be '+bill+'.'
        :applied?' Bill '+bill+'.'
@@ -3027,13 +3027,13 @@ function rqReviewHtml(j,o){
 function rqSignHtml(j,o){
   var rq=o.rq,q=rq?rq.quote:rqTotals(j,o).q,was=rq?num(rq.was):num(j.quote.total);
   var nte=q.capNte!==false&&!q.flat&&q.nte>0?q.nte:0;
-  var how=q.flat?'This is a flat price: the bill is this quote.':'The bill still follows the time the move takes'+(q.kind==='mileage'?' and the miles driven':'')+(nte?', and it won’t go over '+money(nte):'')+'.';
+  var how=q.flat?'This is a flat price: the bill is this quote.':'The bill still follows the time the move takes'+(q.kind==='mileage'?' and the miles driven':'')+'.'+(nte?' The not-to-exceed price, '+money(nte)+', is a guide, not a limit.':'');
   var ch=rq?(rq.changes||[]):rqChanges(j,o.dr).map(function(c){return c.t});
   return '<h2 style="margin:0">New estimate: '+money(q.total)+'</h2><p class="hint">The quote was '+money(was)+'. '+esc(how)+'</p>'+
     (ch.length?'<ul class="rqch">'+ch.map(function(c){return '<li>'+esc(c)+'</li>'}).join('')+'</ul>':'')+
     (rq&&rq.ok?'<p class="hint">Approved by '+esc(rq.ok.by||'the office')+'.</p>':'')+
     fld('Printed name','<input id="sigName" value="'+esc(j.d.name)+'" autocomplete="off">')+
-    '<label class="check"><input type="checkbox" id="sigAgree"> I agree to the new estimate of '+money(q.total)+(nte?', not to exceed '+money(nte):'')+'.</label>'+
+    '<label class="check"><input type="checkbox" id="sigAgree"> I agree to the new estimate of '+money(q.total)+'.</label>'+
     '<div class="f"><span>Sign here with your finger</span></div><canvas id="sigPad" class="sigpad" aria-label="Signature pad"></canvas>'+
     '<div class="row"><button class="btn" data-act="rq:clearsig">Clear</button><button class="btn primary grow" data-act="rq:sign"'+(o.busy?' disabled':'')+'>'+(o.busy?'Saving…':'Sign and save')+'</button></div><p class="hint" id="rqErr" role="alert"'+(o.err?' style="color:var(--bad)"':'')+'>'+esc(o.err||'')+'</p>'+
     (rq?'':'<button class="btn ghost" style="width:100%;margin-top:4px" data-act="rq:step" data-s="review">Back</button>');
@@ -3143,9 +3143,8 @@ function rqNotice(){
    crew, or taking them off it (the crew chips), is for the whole job, so a change on site put in for them goes
    (crewPut). The bill by the clock charges each stretch at that crew's rate, one row each (clockBill, billHours):
    "2 movers, 1.5 hr at $140/hr", then "3 movers, 1.5 hr at $195/hr" with the minimum filled in at the end. The
-   not-to-exceed price stays the quote's crew's: the time with more movers is on top of it (the customer was
-   quoted for the quote's crew, and a mover more is extra); the time with fewer movers is at their rate under it. A
-   crew size's rate is the quote's rate plus the
+   not-to-exceed price is a guide, not a cap (Oct 24); a bill from before was held to it for the quote's crew, with
+   the time with more movers on top of it. A crew size's rate is the quote's rate plus the
    Rate card's difference between the two crew sizes (kept on the job at the first change, j.crewRates, so the
    bill doesn't move when the Rate card does); past 4 movers each one adds what the 4th does. */
 function mvOn(){return opt('crewAdd')}
@@ -3266,7 +3265,7 @@ function renderMover(){
   var at=j.status==='active'?'From '+fmtClock(ts):'From the start';
   var what=!mvBills(j)?(q.flat?'Flat price: the bill stays at the quote.':'This job’s bill stays at its quote.')
     :at+': '+n1+' mover'+(n1===1?'':'s')+' on the bill at '+money(mvRate(j,n1))+'/hr'+(n1===num(q.crew)?', as quoted.':' (the quote is '+money(q.rate)+'/hr for '+num(q.crew)+').')+
-      (n1>num(q.crew)&&!(n0>num(q.crew))?' The time with more movers is billed at their rate, even past the not-to-exceed price, so let '+esc(j.d.name||'the customer')+' know.':'');
+      (n1>num(q.crew)&&!(n0>num(q.crew))?' The time with more movers is billed at their rate, so let '+esc(j.d.name||'the customer')+' know.':'');
   var list=A.length?'<div class="mv-list"><h4>Changes on this job</h4>'+A.map(function(e){
       return '<div class="who"><span>'+esc(e.who)+(e.d>0?' joined ':' left ')+esc(mvWhen(j,e))+'<br><small>Put in by '+esc(e.by||'the crew')+(mvBills(j)?' · '+billCrewAt(j,e.ts)+' on the bill after':'')+'</small></span>'+
         (mvCanUndo(j,m.who)?'<button class="btn sm ghost" data-act="mv:undo" data-e="'+e.id+'" aria-label="Take back '+esc(e.who)+(e.d>0?' joining':' leaving')+'">Take back</button>':'')+'</div>'}).join('')+'</div>':'';
@@ -3297,11 +3296,10 @@ function mvNote(j,c){
   var q=j.quote||{},base=num(q.crew)||2,segs=((c&&!c.missing&&c.segs)||[]).filter(function(s){return s.h>1e-9});
   var mv=function(n){return n+' mover'+(n===1?'':'s')};
   if(!segs.length){
-    // before the bill: more movers than quoted are on top of the not-to-exceed price, so the customer should know
-    var S=mvSteps(j),more=q.nte>0&&q.capNte!==false&&S.some(function(s){return s.n>base});
-    var heads=more?' The time with more movers than quoted is on top of the not-to-exceed price, so let '+esc((j.d&&j.d.name)||'the customer')+' know.':'';
-    if(S.length===1)return ' The bill is for '+mv(S[0].n)+' at '+money(mvRate(j,S[0].n))+'/hr, the people on the job; the quote is for '+base+' at '+money(q.rate)+'/hr.'+heads;
-    return ' Movers on the bill so far: '+esc(mvSummary(j))+'. Each crew is billed at its own rate.'+heads;
+    // before the bill: more movers than quoted cost more than the quote, so the customer should know
+    var S=mvSteps(j),tell=S.some(function(s){return s.n>base})?', so let '+esc((j.d&&j.d.name)||'the customer')+' know':'';
+    if(S.length===1)return ' The bill is for '+mv(S[0].n)+' at '+money(mvRate(j,S[0].n))+'/hr, the people on the job; the quote is for '+base+' at '+money(q.rate)+'/hr'+tell+'.';
+    return ' Movers on the bill so far: '+esc(mvSummary(j))+'. Each crew is billed at its own rate'+tell+'.';
   }
   if(segs.length===1)return segs[0].n===base?'':' Billed for '+mv(segs[0].n)+' at '+money(segs[0].rate)+'/hr; the quote is for '+base+' at '+money(q.rate)+'/hr.';
   var seen={};
@@ -3572,7 +3570,7 @@ function rateCardHtml(k){
   else out+=row('Distance','Every move by the hour');
   if(opt('deposit',k)&&num(k.depositPct)>0)out+=row('Deposit',num(k.depositPct)+'% to book');
   if(opt('tax',k))out+=row('Sales tax',num(k.taxPct)+'%');
-  if(k.nteCap!==false&&num(k.ntePct)>=0)out+=row('Price cap','The quote + '+num(k.ntePct)+'% at most');
+  if(k.nteCap!==false&&num(k.ntePct)>=0)out+=row('Not to exceed','The quote + '+num(k.ntePct)+'%, a guide');
   var fees=(k.catalog||[]).filter(function(it){return num(it.fee)>0}).map(function(it){return esc(it.name)+' '+money(it.fee)});
   if(fees.length)out+=row('Specialty items',fees.join(', '));
   return '<table class="lines ratecard">'+out+'</table>';
@@ -7099,7 +7097,7 @@ function backBill(j,fb){
   if(segWords(c))rows+=c.rows.filter(function(x){return x.k==='hours'}).map(billTr).join('');
   var diff=round2(r.total-totalOf(j));
   return '<table class="lines">'+rows+'<tr class="total"><td>Bill</td><td>'+money(r.total)+'</td></tr></table>'+
-    '<p class="hint">'+(c.capped?'Held to the not-to-exceed price of '+money(q.nte)+'. ':'')+'The quote was '+money(q.total)+'.'+(Math.abs(diff)>=0.01&&(j.clockAt||j.status==='done')?' This changes the bill by '+(diff>0?'+':'−')+money(Math.abs(diff))+'.':'')+'</p>';
+    '<p class="hint">'+(c.capped?'Held to the not-to-exceed price of '+money(q.nte)+'. ':c.over?'Past the '+money(q.nte)+' not-to-exceed price. ':'')+'The quote was '+money(q.total)+'.'+(Math.abs(diff)>=0.01&&(j.clockAt||j.status==='done')?' This changes the bill by '+(diff>0?'+':'−')+money(Math.abs(diff))+'.':'')+'</p>';
 }
 // where the miles back came from, and what the lookup is doing
 function backSrcLine(j,fb){
@@ -7880,7 +7878,7 @@ else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency te
 })();
 // a phone with no shared copy: a bill from the version before, with the crew changes on lines of their own, is
 // worked out again by the movers on the bill (a shared copy does it when the jobs come in)
-(function migrate11(){if(window.claude&&typeof window.claude.use==='function')return;var n=0;state.jobs.forEach(function(j){if((crewAdjs(j).length||/^c3:/.test(String(j.clockSig||'')))&&clockStale(j)){rebill(j,'worked out again');n++}});if(n)save()})();
+(function migrate11(){if(window.claude&&typeof window.claude.use==='function')return;var n=0;state.jobs.forEach(function(j){if((crewAdjs(j).length||/^c[34]:/.test(String(j.clockSig||'')))&&clockStale(j)){rebill(j,'worked out again');n++}});if(n)save()})();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
 if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,schedRecs:schedRecs,schedOf:schedOf,dayLoad:dayLoad,dirApply:dirApply,openJob:openJob,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock,mvSummary:mvSummary,billOld:billOld,mvUndo:mvUndo,backTry:backTry};

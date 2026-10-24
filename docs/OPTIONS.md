@@ -52,7 +52,7 @@ the old notes, tallies, photos and settings are still there.
 | Mileage moves (local radius) | Every move is local, charged by the hour. The quote says why. |
 | Count the drive from the shop | The drive to the pickup and back from the delivery isn't charged. |
 | Final bill by the clock | New quotes are a flat price: the bill is the quote, with no not-to-exceed price and no drive-back step. |
-| Not-to-exceed price (cushion %) | The final bill follows the clock even past the quote. |
+| Not-to-exceed price (cushion %) | Quotes show no not-to-exceed price. (With it on, it's a guide: the final bill follows the clock even past it.) |
 | Deposit to book (%) | Quotes don't ask for a deposit. |
 | Sales tax (%) | No tax line. Starts off with no tax % set. |
 | Truck and fuel fee ($ per truck) | No truck fee on quotes. |
