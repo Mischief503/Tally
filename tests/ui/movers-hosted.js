@@ -78,9 +78,20 @@ function seed(extra) {
   await sleep(800);
   const r4 = db4.docs.find((d) => d.path === 'jobs/n1').data, c4 = (r4.extras || {}).clock || {}, rw4 = c4.rows || [];
   ok(c4.amt === 355 && rw4.length === 4 && rw4[0].label === '3 movers, 5 hr at $195/hr' && rw4[0].amt === 975 && rw4[3].amt === -200, 'hosted: a bill another phone made before Dee was put on the crew is worked out again for the 3 on it (+$355)');
-  ok(/^c3:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\]\/140,195,250$/.test(r4.clockSig) && r4.crewRates && r4.crewRates.r3 === 195, 'and saved with its signature (the crew in it) and the Rate card it used');
+  ok(/^c4:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\]\/140,195,250$/.test(r4.clockSig) && r4.crewRates && r4.crewRates.r3 === 195, 'and saved with its signature (c4, the crew in it) and the Rate card it used');
   D.T.ui.jobId = 'n1'; D.T.render(); await sleep(15);
   ok(/Movers on the bill: 2 \(as quoted\) · 3 from the start/.test(D.$('#sheet .sheet-body').textContent) && /Bill\$870/.test(D.$('#sheet .sheet-body').textContent.replace(/\s+/g, '')), 'its sheet: 3 from the start, and the $870 bill');
   ok(D.errors.length === 0, 'and no errors (' + D.errors.slice(0, 3).join(' | ') + ')');
+
+  // a crew that went out short ("if it was booked and quoted as a three man, but only two guys go out ... the bill is only
+  // two"): a bill a phone on Build 42 made for the 3 quoted (signed c3) is worked out again for the 2 who went out
+  const q3 = Object.assign(clone(quote), { crew: 3, rate: 195, total: 680, nte: 840, lines: [{ label: '3 movers, 3 hr at $195/hr', amt: 585, k: 'hours' }, { label: 'Truck and fuel', amt: 45, k: 'fixed' }, { label: 'Stairs: 2 flights', amt: 50, k: 'fixed' }] });
+  const db5 = seed({ status: 'done', finishedAt: now, actualHours: 5, phases: { loadStart: t0, unloadEnd: now }, clockAt: now, clockSig: 'c3:billed-for-the-3-quoted', quote: q3,
+    extras: { clock: { id: 'clock', label: 'By the clock: 5h 0m on the job, billed 5 h (quoted 3 h), held to the not-to-exceed price', amt: 160, ts: now } }, assign: { truckId: 't16', crew: ['Marcus', 'Kim'] } });
+  const E = await load(FILE, { db: db5, org: ORG, me: { uid: 'u-owner', email: 'o@x' }, fnReply: () => ({ ok: true, sent: 0 }) });
+  await sleep(800);
+  const r5 = db5.docs.find((d) => d.path === 'jobs/n1').data, c5 = (r5.extras || {}).clock || {}, rw5 = c5.rows || [];
+  ok(rw5[0] && rw5[0].label === '2 movers, 5 hr at $140/hr' && rw5[0].amt === 700 && q3.total + c5.amt === 795 && /^c4:/.test(r5.clockSig), 'hosted: a Build 42 bill for the 3 quoted, when 2 went out, is worked out again: 2 movers at $140/hr, $795 (it was $840)');
+  ok(E.errors.length === 0, 'and no errors (' + E.errors.slice(0, 3).join(' | ') + ')');
   process.exit(summary('movers-hosted') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

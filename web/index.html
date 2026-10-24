@@ -1707,9 +1707,10 @@ function calc(d,S){
    rate, a change of crew counts from the nearest quarter hour and the end goes up to the next one,
    and the minimum (or the hours the office set) fills in, or comes off, at the end. The line keeps
    the bill's rows (rows), so every screen shows the quote and then what the bill is made of.
-   The movers on the bill are the people put on the job, when there are more than the quote's crew (Richie,
-   Oct 24: "When a job is booked as a 2 man move and the office decides to put 3 people on the job the bill should
-   reflect the people put on the job not the quoted amount of people"): see billCrewAt. */
+   The movers on the bill are the people put on the job, not the quote's crew (Richie, Oct 24: "When a job is
+   booked as a 2 man move and the office decides to put 3 people on the job the bill should reflect the people put
+   on the job not the quoted amount of people", and "If a crew goes out shorthanded, the bill should reflect what
+   went out"): see billCrewAt. */
 function clockBill(j){
   var q=j.quote||{};if(!(q.kind==='local'||q.kind==='mileage')||!(q.rate>0)||!q.cf||q.flat)return null;
   var p=j.phases||{},fix=j.clockFix||{},mileage=q.kind==='mileage',h=null,parts=null,wins=[],backMs=0;
@@ -1732,8 +1733,11 @@ function clockBill(j){
   var milesAmt=mileage?Math.round(miles*num(q.mileRate)):0,tp=num(q.taxPct);
   var sub=hoursAmt+milesAmt+num(q.fixed),tax=Math.round(sub*tp/100),total=Math.max(0,sub+tax);
   // the not-to-exceed price is for the quote's crew: the bill is held to it as if they did all the hours, and the
-  // time with more (or fewer) movers is on top of that
-  var bsub=Math.round(q.rate*billed)+milesAmt+num(q.fixed),btotal=Math.max(0,bsub+Math.round(bsub*tp/100)),capped=false,capAmt=0;
+  // time with more movers is on top of that. The time with fewer movers is at their rate under it (Oct 24: a crew
+  // that goes out short is billed for who went out, and still never past the price); a bill from before took that
+  // time off the held price too
+  var less=0;if(!billOld(j))segs.forEach(function(s){if(s.n<qc)less+=Math.round(num(q.rate)*s.h)-s.amt});
+  var bsub=Math.round(q.rate*billed)-less+milesAmt+num(q.fixed),btotal=Math.max(0,bsub+Math.round(bsub*tp/100)),capped=false,capAmt=0;
   if(q.capNte!==false&&q.nte>0&&btotal>q.nte){capAmt=Math.min(total,btotal-q.nte);total=total-capAmt;capped=true}
   var c={worked:h,parts:parts,billed:billed,miles:miles,total:total,capped:capped,capAmt:capAmt,adj:Math.round((total-q.total)*100)/100,setH:setH,setMi:setMi,driven:driven,segs:segs,qc:qc};
   c.rows=billRows(j,c,milesAmt,tax,sub+tax<0?-(sub+tax):0);
@@ -1795,7 +1799,8 @@ function billRows(j,c,milesAmt,tax,floor){
   if(floor)rows.push({k:'floor',label:'A bill doesn’t go below $0',sub:'',amt:floor});
   if(c.capped){
     var more=c.segs.some(function(s){return s.n>base&&s.h>1e-9}),less=c.segs.some(function(s){return s.n<base&&s.h>1e-9});
-    rows.push({k:'cap',label:'Held to the not-to-exceed price',sub:more||less?money(q.nte)+' for '+base+' movers, as quoted. '+(more?'The time with more movers is on top of it.':'Less for the time with fewer movers.'):'Not to exceed '+money(q.nte),amt:-c.capAmt});
+    // the time with fewer movers is under the price at their rate (a bill from before took it off the held price)
+    rows.push({k:'cap',label:'Held to the not-to-exceed price',sub:more?money(q.nte)+' for '+base+' movers, as quoted. The time with more movers is on top of it.':less&&billOld(j)?money(q.nte)+' for '+base+' movers, as quoted. Less for the time with fewer movers.':'Not to exceed '+money(q.nte),amt:-c.capAmt});
   }
   return rows;
 }
@@ -1823,9 +1828,10 @@ var BACK_HOW={gps:'by GPS',quote:'from the quote',typed:'typed in'};
 // from the database can tell when two phones changed it at once, and work the line out again.
 // A job whose crew changed is signed c2: its hours are billed by the movers on the bill, so a phone with
 // the version before (which put crew changes on lines of their own, signed c1) leaves its bill alone.
-// A bill by the people put on the job (Oct 24) is signed c3, with who's on the crew in it; a bill signed c1 or c2
-// keeps the quote's crew (billOld), and a phone with the version before leaves a c3 bill alone.
-var CLOCK_V='c1',CLOCK_V2='c2',CLOCK_V3='c3';
+// A bill by the people put on the job (Oct 24) is signed c4, with who's on the crew in it; a bill signed c1 or c2
+// keeps the quote's crew (billOld), and a phone with a version before leaves a c4 bill alone. c3 was Build 42's: a
+// crew short of the quote was still billed as quoted then, so a c3 bill is worked out again.
+var CLOCK_V='c1',CLOCK_V2='c2',CLOCK_V4='c4';
 function clockSig(j){
   var q=j.quote||{},p=j.phases||{},f=j.clockFix||{},v=function(x){return x==null?'':String(x)},A=crewAdjs(j),R=j.crewRates;
   var core=[q.kind,q.total,q.hours,q.cf,q.rate,q.miles,q.mileRate,q.fixed,q.taxPct,q.minHours,q.nte,q.capNte,q.shopTravel,q.backH,
@@ -1834,7 +1840,7 @@ function clockSig(j){
     (j.back?'|b:'+[j.back.mins,j.back.mi,j.back.soFar].map(v).join(','):'');
   var rates=R?'/'+[R.r2,R.r3,R.r4].map(v).join(','):'';
   // the quote's crew, who's on the job's crew, who joined or left and when, and the rates
-  if(!billOld(j))return CLOCK_V3+':'+core+'|n:'+v(q.crew)+'|c:'+JSON.stringify(crewOf(j).slice().sort())+'|m:'+JSON.stringify(A.map(function(e){return [e.ts,e.d,e.who||'']}))+rates;
+  if(!billOld(j))return CLOCK_V4+':'+core+'|n:'+v(q.crew)+'|c:'+JSON.stringify(crewOf(j).slice().sort())+'|m:'+JSON.stringify(A.map(function(e){return [e.ts,e.d,e.who||'']}))+rates;
   if(!A.length)return CLOCK_V+':'+core;
   // movers who joined or left, the quote's crew, and the rates
   return CLOCK_V2+':'+core+'|n:'+v(q.crew)+'|m:'+A.map(function(e){return e.ts+(e.d>0?'+':'-')}).join(',')+rates;
@@ -1842,7 +1848,7 @@ function clockSig(j){
 // a bill line from another phone that's out of date here: worked out from other numbers, or the crew
 // changes on lines of their own (the version before). A signature from another version of Tally is left.
 function clockStale(j){
-  var s=j&&j.clockAt&&j.clockSig;if(typeof s!=='string'||!/^c[123]:/.test(s))return false;
+  var s=j&&j.clockAt&&j.clockSig;if(typeof s!=='string'||!/^c[1-4]:/.test(s))return false;
   return s!==clockSig(j)||(j.extras||[]).some(isCrewLine);
 }
 // writes the bill line; returns what it worked out ({off:true} when the office bills at the quote),
@@ -3131,14 +3137,15 @@ function rqNotice(){
    A change on site, j.crewAdj ({id, ts: when it took effect, d: +1 joined or −1 left, who, by, at: when it was
    put in, added: put on the job's crew by it}). The movers on the bill (billCrewAt) are the people on the job's
    crew: each for the whole job, except that someone with a change on site counts from when they joined and until
-   they left. Never fewer than the quote's crew: a crew short of it (nobody yet, or only the lead in Tally) is billed
-   as quoted, and only someone marked as left takes a mover off; someone who joined is always one more. A bill made
-   before Oct 24 (billOld) keeps the quote's crew plus the changes. Putting someone on the crew, or taking them off
-   it (the crew chips), is for the whole job, so a change on site put in for them goes (crewPut). The bill by the
-   clock charges each stretch at that crew's rate, one row each (clockBill, billHours):
+   they left. So a crew that goes out short is billed for who went out ("if it was booked and quoted as a three man,
+   but only two guys go out because someone gets sick or calls in, then the bill is only two"). A job nobody was put
+   on yet, and a bill made before Oct 24 (billOld), keep the quote's crew plus the changes. Putting someone on the
+   crew, or taking them off it (the crew chips), is for the whole job, so a change on site put in for them goes
+   (crewPut). The bill by the clock charges each stretch at that crew's rate, one row each (clockBill, billHours):
    "2 movers, 1.5 hr at $140/hr", then "3 movers, 1.5 hr at $195/hr" with the minimum filled in at the end. The
    not-to-exceed price stays the quote's crew's: the time with more movers is on top of it (the customer was
-   quoted for the quote's crew, and a mover more is extra). A crew size's rate is the quote's rate plus the
+   quoted for the quote's crew, and a mover more is extra); the time with fewer movers is at their rate under it. A
+   crew size's rate is the quote's rate plus the
    Rate card's difference between the two crew sizes (kept on the job at the first change, j.crewRates, so the
    bill doesn't move when the Rate card does); past 4 movers each one adds what the 4th does. */
 function mvOn(){return opt('crewAdd')}
@@ -3155,20 +3162,22 @@ function crewAdjs(j){return (j.crewAdj||[]).filter(function(e){return e&&(e.d===
 function crewOf(j){var c=j&&j.assign&&j.assign.crew;return Array.isArray(c)?c.filter(function(n,i){return n&&c.indexOf(n)===i}):[]}
 // a bill made before Oct 24 (signed c1 or c2) keeps the movers it was made with: the quote's crew and the changes on site
 function billOld(j){var s=j&&j.clockAt&&j.clockSig;return typeof s==='string'&&(s.indexOf(CLOCK_V+':')===0||s.indexOf(CLOCK_V2+':')===0)}
-// the movers on the bill at a time: the people on the job's crew, each for the whole job, and each person with a change
-// on site (someone not on the list too) from when they joined until they left (before their first change, they're on
-// if it's a leave). Never fewer than the quote's crew, though: when fewer people were put on the job than quoted
-// (nobody yet, or only the lead in Tally, say), the rest of the quote's crew counts too, so someone who joined is one
-// more and someone who left one less, as the movers panel says. A bill from before: the quote's crew, plus who joined,
-// less who left, up to then.
+// the movers on the bill at a time: the people the office put on the job's crew, each for the whole job, and each
+// person with a change on site (someone not on the list too) from when they joined until they left (before their first
+// change, they're on if it's a leave). So a crew that goes out short is billed for who went out (Richie, Oct 24: "if it
+// was booked and quoted as a three man, but only two guys go out because someone gets sick or calls in, then the bill
+// is only two"). A job nobody was put on yet (only people who joined on site, or no one), and a bill from before: the
+// quote's crew, plus who joined, less who left, up to then.
 function billCrewAt(j,t){
   var A=crewAdjs(j),qc=num((j.quote||{}).crew)||2,crew=crewOf(j),by={},put=0,n=0;
-  if(billOld(j)){n=qc;A.forEach(function(e){if(e.ts<=t)n+=e.d});return Math.max(1,n)}
-  A.forEach(function(e){if(!e.who){if(e.ts<=t)n+=e.d;return}(by[e.who]=by[e.who]||[]).push(e)});
-  // the people put on the job: on its crew (not someone who joined on site), and anyone who left it
-  crew.forEach(function(p){var E=by[p];if(!E)n++;if(!E||E[0].d<0)put++});
-  Object.keys(by).forEach(function(p){var E=by[p],on=E[0].d<0;if(on&&crew.indexOf(p)<0)put++;E.forEach(function(e){if(e.ts<=t)on=e.d>0});if(on)n++});
-  return Math.max(1,n+Math.max(0,qc-put));
+  A.forEach(function(e){if(e.who)(by[e.who]=by[e.who]||[]).push(e)});
+  // put on the job by the office: on its crew, and not someone who joined on site
+  crew.forEach(function(p){var E=by[p];if(!E||E[0].d<0)put++});
+  if(billOld(j)||!put){n=qc;A.forEach(function(e){if(e.ts<=t)n+=e.d});return Math.max(1,n)}
+  A.forEach(function(e){if(!e.who&&e.ts<=t)n+=e.d});
+  crew.forEach(function(p){if(!by[p])n++});
+  Object.keys(by).forEach(function(p){var E=by[p],on=E[0].d<0;E.forEach(function(e){if(e.ts<=t)on=e.d>0});if(on)n++});
+  return Math.max(1,n);
 }
 // does this job's bill follow crew changes? (by the clock, not a flat price)
 function mvBills(j){var q=j.quote||{};return (q.kind==='local'||q.kind==='mileage')&&!q.flat&&num(q.rate)>0&&num(q.crew)>0}
@@ -7871,7 +7880,7 @@ else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency te
 })();
 // a phone with no shared copy: a bill from the version before, with the crew changes on lines of their own, is
 // worked out again by the movers on the bill (a shared copy does it when the jobs come in)
-(function migrate11(){if(window.claude&&typeof window.claude.use==='function')return;var n=0;state.jobs.forEach(function(j){if(crewAdjs(j).length&&clockStale(j)){rebill(j,'worked out again');n++}});if(n)save()})();
+(function migrate11(){if(window.claude&&typeof window.claude.use==='function')return;var n=0;state.jobs.forEach(function(j){if((crewAdjs(j).length||/^c3:/.test(String(j.clockSig||'')))&&clockStale(j)){rebill(j,'worked out again');n++}});if(n)save()})();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
 if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,schedRecs:schedRecs,schedOf:schedOf,dayLoad:dayLoad,dirApply:dirApply,openJob:openJob,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock,mvSummary:mvSummary,billOld:billOld,mvUndo:mvUndo,backTry:backTry};

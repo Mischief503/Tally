@@ -141,7 +141,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   c = T.clockBill(job({ crewAdj: [{ id: 'x1', ts: s0 + 5 * M, d: 1, who: 'Dee' }] }));
   ok(hrs(c) === '3 movers, 3 hr at $195/hr $585 [' + clock(s0 + 5 * M) + ' to ' + clock(s0 + 160 * M) + ' (2h 35m) · the 3-hour minimum]', L('a mover 5 minutes in: the 5 minutes round away, 3 movers for the whole bill: ' + hrs(c)));
   c = T.clockBill(job({ crewAdj: [{ id: 'x1', ts: s0 + 90 * M, d: -1, who: 'Kim' }], phases: { loadStart: s0, unloadEnd: s0 + 300 * M }, finishedAt: s0 + 300 * M }));
-  ok(hrs(c) === '2 movers, 1.5 hr at $140/hr $210 [' + clock(s0) + ' to ' + clock(s0 + 90 * M) + ' (1h 30m)] | 1 mover, 3.5 hr at $85/hr $298 [' + clock(s0 + 90 * M) + ' to ' + clock(s0 + 300 * M) + ' (3h 30m)]' && c.capped && c.total === 5 * 140 + 95 - 200 - (140 - 85) * 3.5 + 0.5 && c.rows.find((r) => r.k === 'cap').sub === '$595 for 2 movers, as quoted. Less for the time with fewer movers.', L('a mover left: 1 mover at $85/hr, and less than the not-to-exceed price for it: ' + hrs(c) + ' = ' + money(c.total)));
+  ok(hrs(c) === '2 movers, 1.5 hr at $140/hr $210 [' + clock(s0) + ' to ' + clock(s0 + 90 * M) + ' (1h 30m)] | 1 mover, 3.5 hr at $85/hr $298 [' + clock(s0 + 90 * M) + ' to ' + clock(s0 + 300 * M) + ' (3h 30m)]' && c.capped && c.total === 595 && c.rows.find((r) => r.k === 'cap').sub === 'Not to exceed $595', L('a mover left: 1 mover at $85/hr for that time, and the bill ($603 by the rows) held to the not-to-exceed price: ' + hrs(c) + ' = ' + money(c.total)));
   c = T.clockBill(job({ clockFix: { hours: 2.5 } }));
   ok(c.billed === 2.5 && hrs(c) === '2 movers, 1.5 hr at $140/hr $210 [' + clock(s0) + ' to ' + clock(s0 + 91 * M) + ' (1h 31m)] | 3 movers, 1 hr at $195/hr $195 [' + clock(s0 + 91 * M) + ' to ' + clock(s0 + 160 * M) + ' (1h 9m) · hours set by the office]', L('the office sets 2.5 h: the quarter hour comes off the end: ' + hrs(c)));
   c = T.clockBill(job({ clockFix: { hours: 4 } }));
@@ -197,7 +197,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   ok(doc.crewAdj && !Array.isArray(doc.crewAdj) && Object.keys(doc.crewAdj).length === 1 && doc.crewRates && doc.crewRates.r4 === 250, L('in the shared copy: the changes keyed by id (two phones can add one each), and the rates'));
   const back = T.docToJob(JSON.parse(JSON.stringify(doc)));
   ok(back.crewAdj.length === 1 && back.crewAdj[0].who === 'Dee' && back.crewRates.r3 === 195, L('and back again'));
-  ok(/^c3:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\[\d+,1,"Dee"\]\]\/140,195,250$/.test(N.clockSig), L('the bill’s signature has the quote’s crew, who’s on the crew and the changes (c3, so the versions before leave it alone): ' + N.clockSig.slice(-70)));
+  ok(/^c4:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\[\d+,1,"Dee"\]\]\/140,195,250$/.test(N.clockSig), L('the bill’s signature has the quote’s crew, who’s on the crew and the changes (c4, so the versions before leave it alone): ' + N.clockSig.slice(-70)));
 
   /* ---------------- a bill from the version before (the crew changes on lines of their own) ---------------- */
   // on this phone's own copy, it's worked out again by the movers on the bill when Tally opens

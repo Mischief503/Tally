@@ -160,32 +160,43 @@ quote, says so on the card (**Try again now**), and sends it as soon as it can.
 
 The movers on the bill are the people the office puts on the job's crew, not the quote's crew (Richie,
 Oct 24: "When a job is booked as a 2 man move and the office decides to put 3 people on the job the bill
-should reflect the people put on the job not the quoted amount of people").
+should reflect the people put on the job not the quoted amount of people", and "If a crew goes out
+shorthanded, the bill should reflect what went out").
 
 - Put 3 people on a job quoted for 2 movers, and the bill by the clock charges 3 movers at the 3-man
   rate for the whole job. Under the crew, the job sheet and the crew lead's card say **Movers on the
   bill: 2 (as quoted) · 3 from the start**. Before the job, the Local move (or Mileage move) part gives
   the rate and says to let the customer know, since the time with more movers is on top of the
   not-to-exceed price.
-- Never fewer than the quote's crew: a crew short of it (nobody yet, or only the lead in Tally) is
-  billed as quoted. Only someone marked as left (**A mover joined or left › Someone left**) takes a
-  mover off, and someone who joined is always one more.
+- A crew that goes out short is billed for who went out: quoted as a 3-man move, 2 on the crew, and the
+  bill is 2 movers at the 2-man rate ("if it was booked and quoted as a three man, but only two guys go
+  out because someone gets sick or calls in, then the bill is only two"). The line says **Movers on the
+  bill: 3 (as quoted) · 2 from the start**. So everyone who goes out has to be on the crew: with only
+  the lead on it, a 2-man move is billed as 1 mover.
+- A job nobody has been put on yet is billed for the quote's crew.
 - The crew chips are for the whole job, before, during and after it. Someone who joins or leaves part
   way goes in with **A mover joined or left**. Taking someone off the crew takes their change on site
   off too (they weren't on the job). Putting someone on after the job (a mover the office forgot)
   works the bill out again.
 - A driver picked who isn't on the crew goes on it, and on the bill.
 - The not-to-exceed price stays the quote's, for the quote's crew: the time with more movers is on top
-  of it, as with a mover who joins on site.
+  of it, as with a mover who joins on site. With fewer movers the bill is at their rate, and still never
+  past the price.
 
 > 2 movers quoted at $140/hr, not to exceed $595. The office puts 3 on it; the job takes 5 hours.
 > 3 movers, 5 hr at $195/hr = $975. Fees $95. Held to the not-to-exceed price, −$200 ($595 for
 > 2 movers for the 5 hours). Bill $870.
 
-A bill made before this (its record of the numbers starts with `c1` or `c2`) keeps the quote's crew,
-plus the changes on site. A bill from now on starts with `c3` and has who's on the crew in it, so a
-phone that gets a job whose crew another phone changed works the bill out again, and a phone still on
-the version before leaves it alone.
+> 3 movers quoted at $195/hr, not to exceed $840. Someone calls in sick and 2 go out; the job takes
+> 4 hours. 2 movers, 4 hr at $140/hr = $560. Truck and fuel $45. Bill $605 (the quote was $728).
+> Had it taken 10 hours: 2 movers, 10 hr at $140/hr = $1,400, plus $45, held to the not-to-exceed
+> price: $840.
+
+A bill made before Oct 24 (its record of the numbers starts with `c1` or `c2`) keeps the quote's crew,
+plus the changes on site. A bill from now on starts with `c4` and has who's on the crew in it, so a
+phone that gets a job whose crew another phone changed works the bill out again, and a phone on a
+version before leaves it alone. Build 42's bills (`c3`, Oct 24 morning) billed a crew short of the quote
+as quoted; they are worked out again when they come in.
 
 ## Movers joining or leaving on site
 
@@ -216,7 +227,9 @@ bill should show the quote, then it should show the 1.5 hours as 2 man and 1.25 
 The not-to-exceed price is for the quote's crew. When the bill for the quote's crew doing all the
 hours would be over it, **Held to the not-to-exceed price** takes off the difference, and the time
 with more movers is on top of that (the customer was quoted for the quote's crew; a mover more is
-extra, like stairs or parking). With fewer movers, the bill is that much less.
+extra, like stairs or parking). The time with fewer movers is at their rate, and the bill with it is
+still held to the price (until Oct 24 that time also came off the held price, which on a long day
+short-handed could bill less than the crew's own hours).
 
 > 2 movers quoted at $140/hr, not to exceed $595; 2 more join 2 hours in; the job takes 5 hours.
 > 2 movers, 2 hr at $140/hr = $280. 4 movers, 3 hr at $250/hr = $750. Fees $95. Held to the

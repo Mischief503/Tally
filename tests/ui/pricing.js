@@ -177,7 +177,8 @@ const H = 36e5;
   ok(LJ && LJ.quote.kind === 'local' && LJ.quote.hours === 3 && LJ.quote.total === 465 && !LJ.quote.shopTravel, L('local: 3 h (the minimum), $465'));
   // no shop address: the clock runs from Start loading to Done unloading; 3h 10m is billed 3.25 h
   const t1 = Date.now() - 5 * H;
-  const finish = (j, ph, started) => { Object.assign(j, { status: 'active', startedAt: started, phases: ph }); j.assign = { truckId: 't20', crew: ['Marcus'] }; j.signed.push({ id: 's-' + j.id, formId: 'f_deliv', title: 'Delivery receipt and release', name: j.d.name, sig: '', ts: Date.now(), by: 'Marcus' }); };
+  const crewFor = (j) => ['Marcus', 'Luis', 'Dee', 'Kim'].slice(0, +j.quote.crew || 2);   // the quote's crew goes out (the bill follows the people on the job)
+  const finish = (j, ph, started) => { Object.assign(j, { status: 'active', startedAt: started, phases: ph }); j.assign = { truckId: 't20', crew: crewFor(j) }; j.signed.push({ id: 's-' + j.id, formId: 'f_deliv', title: 'Delivery receipt and release', name: j.d.name, sig: '', ts: Date.now(), by: 'Marcus' }); };
   finish(LJ, { loadStart: t1 + 0.5 * H, loadEnd: t1 + 1.5 * H, unloadStart: t1 + 2 * H, unloadEnd: t1 + 0.5 * H + 190 * 60000 }, t1);
   await more('crew');
   click('[data-act="cr:finish"][data-id="' + LJ.id + '"]'); await sleep(20); click('#flow [data-act="flow:close"]'); await sleep(5);
@@ -215,7 +216,7 @@ const H = 36e5;
   st().settings.shopAddress = '';
   // the office finishes a job from the sheet, with no load and unload taps: Start job to Finish
   const OF = await mk('Office finish', { miles: '8', items: { boxm: 60 } });
-  Object.assign(OF, { status: 'active', startedAt: Date.now() - 4 * H }); OF.assign = { truckId: 't20', crew: ['Marcus'] };
+  Object.assign(OF, { status: 'active', startedAt: Date.now() - 4 * H }); OF.assign = { truckId: 't20', crew: crewFor(OF) };
   OF.signed.push({ id: 's-of', formId: 'f_deliv', title: 'Delivery receipt and release', name: OF.d.name, sig: '', ts: Date.now(), by: 'Office' });
   click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);
   click('[data-act="job:open"][data-id="' + OF.id + '"]'); await sleep(15);
@@ -276,7 +277,7 @@ const H = 36e5;
   // signatures pending: the bill line is on the bill, and the miles still change it
   const SP = await mk('Sig pending', { miles: '110', crew: '2', items: { boxm: 190 } });
   const t6 = Date.now() - 10 * H;
-  Object.assign(SP, { status: 'active', startedAt: t6, phases: { loadStart: t6 + 0.5 * H, loadEnd: t6 + 4.5 * H, unloadStart: t6 + 6.5 * H, unloadEnd: t6 + 9.5 * H } }); SP.assign = { truckId: 't20', crew: ['Marcus'] };
+  Object.assign(SP, { status: 'active', startedAt: t6, phases: { loadStart: t6 + 0.5 * H, loadEnd: t6 + 4.5 * H, unloadStart: t6 + 6.5 * H, unloadEnd: t6 + 9.5 * H } }); SP.assign = { truckId: 't20', crew: crewFor(SP) };
   await more('crew');
   click('[data-act="cr:finish"][data-id="' + SP.id + '"]'); await sleep(20);
   click('#flow [data-act="flow:close"]'); await sleep(10);
