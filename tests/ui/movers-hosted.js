@@ -68,5 +68,19 @@ function seed(extra) {
   const r3 = db3.docs.find((d) => d.path === 'jobs/n1').data, c3 = r3.extras.clock || {};
   ok(c3.amt === 80 && Array.isArray(c3.rows) && c3.rows.length === 4 && c3.rows[0].label === '2 movers, 5 hr at $140/hr' && c3.rows[3].amt === -200 && /^c1:/.test(r3.clockSig), 'the same $80 line, now with its rows (5 hr at $140/hr, the fees, held to $595), signed c1 as before');
   ok(C.errors.length === 0, 'and no errors (' + C.errors.slice(0, 3).join(' | ') + ')');
+
+  /* ---------------- the bill follows the people put on the job (Oct 24) ---------------- */
+  // a finished job billed for the 2 quoted, and another phone has since put Dee on its crew: the office's phone works the
+  // bill out again for the 3 on it
+  const db4 = seed({ status: 'done', finishedAt: now, actualHours: 5, phases: { loadStart: t0, unloadEnd: now }, clockAt: now, clockSig: 'c3:before-dee-was-put-on',
+    extras: { clock: { id: 'clock', label: 'By the clock: 5h 0m on the job, billed 5 h (quoted 3 h), held to the not-to-exceed price', amt: 80, ts: now } }, assign: { truckId: 't16', crew: ['Marcus', 'Kim', 'Dee'] } });
+  const D = await load(FILE, { db: db4, org: ORG, me: { uid: 'u-owner', email: 'o@x' }, fnReply: () => ({ ok: true, sent: 0 }) });
+  await sleep(800);
+  const r4 = db4.docs.find((d) => d.path === 'jobs/n1').data, c4 = (r4.extras || {}).clock || {}, rw4 = c4.rows || [];
+  ok(c4.amt === 355 && rw4.length === 4 && rw4[0].label === '3 movers, 5 hr at $195/hr' && rw4[0].amt === 975 && rw4[3].amt === -200, 'hosted: a bill another phone made before Dee was put on the crew is worked out again for the 3 on it (+$355)');
+  ok(/^c3:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\]\/140,195,250$/.test(r4.clockSig) && r4.crewRates && r4.crewRates.r3 === 195, 'and saved with its signature (the crew in it) and the Rate card it used');
+  D.T.ui.jobId = 'n1'; D.T.render(); await sleep(15);
+  ok(/Movers on the bill: 2 \(as quoted\) · 3 from the start/.test(D.$('#sheet .sheet-body').textContent) && /Bill\$870/.test(D.$('#sheet .sheet-body').textContent.replace(/\s+/g, '')), 'its sheet: 3 from the start, and the $870 bill');
+  ok(D.errors.length === 0, 'and no errors (' + D.errors.slice(0, 3).join(' | ') + ')');
   process.exit(summary('movers-hosted') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

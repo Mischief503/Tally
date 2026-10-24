@@ -233,7 +233,7 @@ const H = 36e5;
   /* ---------------- saved with the job; older jobs keep their bill signature ---------------- */
   const doc = T.jobDoc(HR);
   ok(doc.back && doc.back.mins === 25 && doc.back.by === 'Marcus' && doc.back.mi === null, L('the drive back is saved with the job, every key written'));
-  ok(!/\|b:/.test(T.clockSig(P)) && /\|b:25,,$/.test(T.clockSig(HR)), L('the bill signature only changes for jobs with a drive back: ' + T.clockSig(HR).slice(-12)));
+  ok(!/\|b:/.test(T.clockSig(P)) && /\|b:25,,(\||$)/.test(T.clockSig(HR)), L('the bill signature only changes for jobs with a drive back: ' + (T.clockSig(HR).match(/\|b:[^|]*/) || [''])[0]));
 
   ok(A.errors.length === 0, L('no errors (' + A.errors.slice(0, 3).join(' | ') + ')'));
 

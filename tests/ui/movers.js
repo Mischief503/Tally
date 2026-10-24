@@ -83,7 +83,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   T.applyClock(N);
   const cl = N.extras.find((e) => e.id === 'clock'), rw = (cl && cl.rows) || [];
   const rowTxt = (R) => R.map((r) => r.label + (r.sub ? ' [' + r.sub + ']' : '') + ' ' + money(r.amt)).join(' | ');
-  ok(!N.extras.some((e) => /^crew:/.test(e.id)) && !!cl && cl.amt === 410 && cl.label === 'By the clock: 5h 0m on the job, billed 5 h: 2 movers 2 h, then 4 movers 3 h (quoted 3 h), held to the not-to-exceed price', L('one line on the bill, +$410: ' + (cl && cl.label)));
+  ok(!N.extras.some((e) => /^crew:/.test(e.id)) && !!cl && cl.amt === 410 && cl.label === 'By the clock: 5h 0m on the job, billed 5 h: 2 movers 2 h, then 4 movers 3 h (quoted 3 h for 2 movers), held to the not-to-exceed price', L('one line on the bill, +$410: ' + (cl && cl.label)));
   ok(rw.length === 5 && rw[0].label === '2 movers, 2 hr at $140/hr' && rw[0].amt === 280 && rw[0].sub === clock(t0) + ' to ' + clock(t0 + 2 * H) + ' (2h 0m)' &&
     rw[1].label === '4 movers, 3 hr at $250/hr' && rw[1].amt === 750 && rw[1].sub === clock(t0 + 2 * H) + ' to ' + clock(now) + ' (3h 0m)' &&
     rw[2].label === 'Truck and fuel' && rw[2].amt === 45 && rw[3].label === 'Stairs: 2 flights' && rw[3].amt === 50 &&
@@ -197,7 +197,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   ok(doc.crewAdj && !Array.isArray(doc.crewAdj) && Object.keys(doc.crewAdj).length === 1 && doc.crewRates && doc.crewRates.r4 === 250, L('in the shared copy: the changes keyed by id (two phones can add one each), and the rates'));
   const back = T.docToJob(JSON.parse(JSON.stringify(doc)));
   ok(back.crewAdj.length === 1 && back.crewAdj[0].who === 'Dee' && back.crewRates.r3 === 195, L('and back again'));
-  ok(/^c2:.*\|n:2\|m:\d+\+\/140,195,250$/.test(N.clockSig), L('the bill’s signature has the changes and the quote’s crew (c2, so the version before leaves it alone)'));
+  ok(/^c3:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\[\d+,1,"Dee"\]\]\/140,195,250$/.test(N.clockSig), L('the bill’s signature has the quote’s crew, who’s on the crew and the changes (c3, so the versions before leave it alone): ' + N.clockSig.slice(-70)));
 
   /* ---------------- a bill from the version before (the crew changes on lines of their own) ---------------- */
   // on this phone's own copy, it's worked out again by the movers on the bill when Tally opens
