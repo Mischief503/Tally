@@ -80,7 +80,7 @@ function seed(extra) {
   ok(c4.amt === 555 && rw4.length === 3 && rw4[0].label === '3 movers, 5 hr at $195/hr' && rw4[0].amt === 975 && !rw4.some((r) => r.k === 'cap'), 'hosted: a Build 43 bill another phone made before Dee was put on the crew is worked out again for the 3 on it, every hour, past the not-to-exceed price (+$555)');
   ok(/^c5:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\]\/140,195,250$/.test(r4.clockSig) && r4.crewRates && r4.crewRates.r3 === 195, 'and saved with its signature (c5, the crew in it) and the Rate card it used');
   D.T.ui.jobId = 'n1'; D.T.render(); await sleep(15);
-  ok(/Movers on the bill: 2 \(as quoted\) · 3 from the start/.test(D.$('#sheet .sheet-body').textContent) && /Bill\$1,070/.test(D.$('#sheet .sheet-body').textContent.replace(/\s+/g, '')) && /past the \$595 not-to-exceed price/.test(D.$('#sheet .sheet-body').textContent), 'its sheet: 3 from the start, and the $1,070 bill, past the $595 not-to-exceed price');
+  ok(/Movers on the bill: 2 \(as quoted\) · 3 from the start/.test(D.$('#sheet .sheet-body').textContent) && /Bill\$1,070/.test(D.$('#sheet .sheet-body').textContent.replace(/\s+/g, '')) && /past the \$595 estimated top price/.test(D.$('#sheet .sheet-body').textContent), 'its sheet: 3 from the start, and the $1,070 bill, past the $595 not-to-exceed price');
   ok(D.errors.length === 0, 'and no errors (' + D.errors.slice(0, 3).join(' | ') + ')');
 
   // a crew that went out short ("if it was booked and quoted as a three man, but only two guys go out ... the bill is only

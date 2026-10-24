@@ -69,7 +69,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   ok(/^c5:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\]\/140,195,250$/.test(N.clockSig) && !T.clockStale(N), L('the bill’s signature has who’s on the crew (c5, so the versions before leave it alone): ' + N.clockSig.slice(-60)));
   const sr = [...$('#sheet details.acc[data-k="sh:Quote"] table.lines').querySelectorAll('tr')].map((r) => r.textContent.replace(/\s+/g, ' ').trim());
   ok(sr.join(' / ') === '2 movers, 3 hr at $140/hr$420 / Truck and fuel$45 / Stairs: 2 flights$50 / Quote$515 / Billed by the clock / 3 movers, 5 hr at $195/hr' + clock(t0) + ' to ' + clock(now) + ' (5h 0m)$975 / Truck and fuel$45 / Stairs: 2 flights$50 / Bill$1,070', L('the sheet: the quote, then the bill by the movers on it: ' + sr.join(' / ')));
-  ok(sheet().includes('On the clock 5h 0m: billed 5 h (3 movers 5 h). Bill $1,070, past the $595 not-to-exceed price (+$555 on the quote). Billed for 3 movers at $195/hr; the quote is for 2 at $140/hr.'), L('and explains it, saying it went past the not-to-exceed price'));
+  ok(sheet().includes('On the clock 5h 0m: billed 5 h (3 movers 5 h). Bill $1,070, past the $595 estimated top price (+$555 on the quote). Billed for 3 movers at $195/hr; the quote is for 2 at $140/hr.'), L('and explains it, saying it went past the not-to-exceed price'));
   ok(line() === 'Movers on the bill: 2 (as quoted) · 3 from the start', L('finished: the line stays, with nothing to change: ' + line()));
 
   /* ---------------- after the job: a mover the office forgot ---------------- */

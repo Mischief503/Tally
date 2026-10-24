@@ -2196,13 +2196,14 @@ export async function paySaved(org: string, me: J, jobId: string, b: J): Promise
     }
     if (me.role === "lead") {
       // charging a card with the customer not there: a crew lead stays within the quote's not-to-exceed
-      // amount, which only the office sets (things can be added to the bill on the job)
+      // amount (the app calls it the estimated top price), which only the office sets (things can be added to the
+      // bill on the job)
       const qt = job.quote || {}, nte = cents(Number(qt.nte) > 0 ? qt.nte : qt.total);
       const room = nte - (jobTotalCents(job) - ready.owed);
       if (amt > room) {
         return { ok: false, message: room >= MIN_CENTS
-          ? "A crew lead can put up to " + money(room) + " more on a card on file for this job (the quote's not-to-exceed amount). Send a pay link for the rest, or ask the office."
-          : "This bill is over the quote's not-to-exceed amount, so the office charges the card on file. Or send a pay link." };
+          ? "A crew lead can put up to " + money(room) + " more on a card on file for this job (the quote's estimated top price). Send a pay link for the rest, or ask the office."
+          : "This bill is over the quote's estimated top price, so the office charges the card on file. Or send a pay link." };
       }
     }
     // one charge however many times this is sent: the key names the job, the card, the amount, the bill so far

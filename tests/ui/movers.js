@@ -99,7 +99,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
     bt[3] === '4 movers, 3 hr at $250/hr' + clock(t0 + 2 * H) + ' to ' + clock(now) + ' (3h 0m)$750' && bt[4] === 'Truck and fuel$45' && bt[5] === 'Stairs: 2 flights$50' &&
     bt[6] === 'Bill$1,125' && bt[7] === 'Paid so far$0' && bt[8] === 'Balance$1,125', L('Marcus’s Bill: the quote, then the hours by the movers on the bill, the fees, and the bill: ' + bt.join(' / ')));
   ok(!!bill.querySelector('tr.ref') && !!bill.querySelector('tr.hd') && /\$610 more than the quote\./.test(bill.textContent), L('the quote row is set apart, and it says how much more than the quote'));
-  ok(/billed 5 h \(2 movers 2 h, then 4 movers 3 h\)\. Bill \$1,125, past the \$595 not-to-exceed price \(\+\$610 on the quote\)\. Each crew at its own rate: 2 movers \$140\/hr, 4 movers \$250\/hr\./.test(card(N).querySelector('.cc-quote').textContent), L('his Quote part explains it too'));
+  ok(/billed 5 h \(2 movers 2 h, then 4 movers 3 h\)\. Bill \$1,125, past the \$595 estimated top price \(\+\$610 on the quote\)\. Each crew at its own rate: 2 movers \$140\/hr, 4 movers \$250\/hr\./.test(card(N).querySelector('.cc-quote').textContent), L('his Quote part explains it too'));
   ok(card(N).querySelector('.cc-movers').textContent === 'Movers on the bill: 2 (as quoted) · 4 from ' + clock(t0 + 2 * H) + 'Change', L('finished: the line still shows, with Change to take one back'));
   await endPreview();
   // the pay line for Dee, who joined 2 hours in: her own 3 hours

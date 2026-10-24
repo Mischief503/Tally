@@ -27,7 +27,7 @@ const dur = (ms) => { const m = Math.max(0, Math.round(ms / 60000)), h = Math.fl
   ok(P.quote.lines.every((l) => q.textContent.includes(l.label) && q.textContent.includes(money(Math.abs(l.amt)))), L('every quote line with its amount: ' + P.quote.lines.map((l) => l.label).join(' / ')));
   const qsub = q.querySelector('tr.sub');
   ok(qsub && /^Quote/.test(qsub.textContent) && qsub.textContent.includes(money(P.quote.total)), L('the quote’s total: ' + (qsub && qsub.textContent)));
-  ok(q.textContent.includes('Not to exceed' + money(P.quote.nte)) && q.textContent.includes('Deposit at booking' + money(P.quote.deposit)), L('the not-to-exceed price and the deposit'));
+  ok(q.textContent.includes('Estimated top price' + money(P.quote.nte)) && q.textContent.includes('Deposit at booking' + money(P.quote.deposit)), L('the not-to-exceed price and the deposit'));
   ok(new RegExp(String(P.quote.crew) + ' movers · ' + P.quote.hours + ' h estimated').test(q.textContent) && P.items.every((i) => q.textContent.includes(i.name + ' × ' + i.qty)), L('what it was built from: the movers, the hours, the items'));
   ok(/Mileage move/.test(q.textContent) && /The final bill comes from the crew’s times and the miles driven\./.test(q.textContent) && !q.querySelector('input,[data-act="clk:set"]'), L('how this kind of move is billed, with none of the office’s controls'));
   ok(!full(P).querySelector('.cc-run .cc-sec h4') || ![...full(P).querySelectorAll('.cc-run .cc-sec h4')].some((h) => h.textContent === 'Bill'), L('no Bill yet on a booked job'));

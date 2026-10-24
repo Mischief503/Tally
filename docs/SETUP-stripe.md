@@ -82,7 +82,7 @@ whose deposit hasn't come in shows under **Needs you** on Today and as **No depo
 - Which card is which in Stripe stays on the server. The app's list shows the brand, last four,
   expiry and the name on the card, and which job it was kept on.
 - A **crew lead** can charge a card kept on file on the job they're working, up to the quote's
-  not-to-exceed amount (the customer isn't there to approve more). For anything past that, they send
+  estimated top price (the customer isn't there to approve more). For anything past that, they send
   a pay link or the office charges it. The **office** can also charge the customer's cards kept on
   their other jobs.
 - Customers are matched by phone number. A customer without a phone number has their cards on the

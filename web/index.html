@@ -1464,7 +1464,7 @@ var OPTS=[
   {g:'price',k:'mileage',t:'Mileage moves',h:'Moves past the local radius are charged by the mile, plus loading and unloading time. Off: every move is charged by the hour.',n:{p:'includedMiles',l:'Local radius (driving miles from the shop)'}},
   {g:'price',p:'shopTravel',t:'Count the drive from the shop',h:'The drive from the shop to the pickup and back from the delivery goes in the price: in the hours on local moves, in the miles on mileage moves.'},
   {g:'price',k:'byClock',t:'Final bill by the clock',h:'The bill follows the crew’s times and the miles driven. Off: new quotes are a flat price, and the bill is the quote.'},
-  {g:'price',p:'nteCap',t:'Not-to-exceed price',h:'Quotes show a not-to-exceed price, as a guide: the final bill is the time the move takes, even past it.',n:{p:'ntePct',l:'Not-to-exceed cushion (%)'}},
+  {g:'price',p:'nteCap',t:'Estimated top price',h:'Quotes show an estimated top price, as a guide: the final bill is the time the move takes, even past it.',n:{p:'ntePct',l:'Top price cushion (%)'}},
   {g:'price',k:'deposit',t:'Deposit to book',h:'Quotes ask for a deposit when the job is booked.',n:{p:'depositPct',l:'Deposit (%)'}},
   {g:'price',k:'tax',t:'Sales tax',h:'Adds sales tax to quotes.',n:{p:'taxPct',l:'Tax (%)',step:'0.01'}},
   {g:'price',k:'truckFee',t:'Truck and fuel fee',h:'A fee for each truck on every quote.',n:{p:'truckFee',l:'Truck and fuel, per truck ($)'}},
@@ -1799,7 +1799,7 @@ function billRows(j,c,milesAmt,tax,floor){
   if(c.capped){
     var more=c.segs.some(function(s){return s.n>base&&s.h>1e-9}),less=c.segs.some(function(s){return s.n<base&&s.h>1e-9});
     // (only a bill from before Oct 24 is held to it)
-    rows.push({k:'cap',label:'Held to the not-to-exceed price',sub:more||less?money(q.nte)+' for '+base+' movers, as quoted. '+(more?'The time with more movers is on top of it.':'Less for the time with fewer movers.'):'Not to exceed '+money(q.nte),amt:-c.capAmt});
+    rows.push({k:'cap',label:'Held to the estimated top price',sub:more||less?money(q.nte)+' for '+base+' movers, as quoted. '+(more?'The time with more movers is on top of it.':'Less for the time with fewer movers.'):'Estimated top price '+money(q.nte),amt:-c.capAmt});
   }
   return rows;
 }
@@ -1816,7 +1816,7 @@ function clockLabel(j,c){
     :!mileage&&pt.backSet?fmtDur(pt.span)+' on the job'+(pt.back>0?' + '+fmtDur(pt.back)+' back to the shop':'')+', billed '+fmtHrs(c.billed)
     :c.worked!=null?fmtDur(c.worked*36e5)+(mileage?' loading and unloading':' on the job')+', billed '+fmtHrs(c.billed):'billed '+fmtHrs(c.billed);
   if(segWords(c))hrs+=': '+segWords(c);   // the crew changed: the hours of each crew
-  return 'By the clock: '+hrs+(mileage?', '+fmtMi(c.miles)+' mi'+(c.setMi||c.driven?' driven':'')+(backMiles(j,c)>0?' incl. '+fmtMi(backMiles(j,c))+' mi back to the shop':''):'')+' (quoted '+fmtHrs(q.hours)+(segOther(c)?' for '+c.qc+' movers':'')+(mileage?', '+fmtMi(q.miles)+' mi':'')+')'+(c.capped?', held to the not-to-exceed price':'');
+  return 'By the clock: '+hrs+(mileage?', '+fmtMi(c.miles)+' mi'+(c.setMi||c.driven?' driven':'')+(backMiles(j,c)>0?' incl. '+fmtMi(backMiles(j,c))+' mi back to the shop':''):'')+' (quoted '+fmtHrs(q.hours)+(segOther(c)?' for '+c.qc+' movers':'')+(mileage?', '+fmtMi(q.miles)+' mi':'')+')'+(c.capped?', held to the estimated top price':'');
 }
 // a mileage move's miles back to the shop, from bill-out, while the miles driven are still the ones
 // worked out there (so far + back); 0 once someone types other miles
@@ -1917,7 +1917,7 @@ function clockHtml(j,ro){
       :mileage?'Loading '+fmtDur(pt.load)+' and unloading '+fmtDur(pt.unload)+': '+fmtDur(c.worked*36e5)+', billed '+fmtHrs(c.billed)+sw+'.'
       :'On the clock '+fmtDur(pt.span)+(pt.backSet?(pt.back?', plus '+fmtDur(pt.back)+' back to the shop':', no drive back added')+' (from '+esc(j.back.by||'the crew')+' at bill-out)':pt.back?', plus about '+fmtDur(pt.back)+' back to the shop':'')+': billed '+fmtHrs(c.billed)+sw+'.';
     var diff=Math.abs(c.adj)>=0.01?' ('+(c.adj>0?'+':'\u2212')+money(Math.abs(c.adj))+' on the quote)':', the same as the quote';
-    var bill=money(c.total)+(c.capped?', held to the not-to-exceed price':c.over?', past the '+money(q.nte)+' not-to-exceed price':'')+diff;
+    var bill=money(c.total)+(c.capped?', held to the estimated top price':c.over?', past the '+money(q.nte)+' estimated top price':'')+diff;
     body=how+(mileage?' '+fmtMi(c.miles)+' mi '+(c.setMi?'set by the office':c.driven?'driven, from the crew'+(backSplit(j,c)?' ('+(j.back.odoStart!=null&&j.back.odoEnd!=null?'odometer '+fmtMi(j.back.odoStart)+' to '+fmtMi(j.back.odoEnd)+', '+fmtMi(j.back.soFar)+' mi':fmtMi(j.back.soFar)+' mi so far')+', plus '+fmtMi(j.back.mi)+' mi back to the shop '+(BACK_HOW[j.back.src]||'typed in')+'; '+esc(j.back.by||'the crew')+' at bill-out)':''):'from the quote')+'.':'')+
       (off?' Billed at the quote, set by the office. By the clock it would be '+bill+'.'
        :applied?' Bill '+bill+'.'
@@ -2408,7 +2408,7 @@ function updateQuote(){
   $('#qStats').innerHTML=st(fmtInt(q.cf),'cu ft')+st(fmtInt(q.lbs),'est. lb')+st(q.cf?q.crew+' · '+q.hours+'h':'—','crew · hours')+st(Math.round(q.pct*100)+'%',q.cf?(q.nTrucks>1?q.nTrucks+' × ':'')+esc(q.truckName):'truck fill');
   $('#qHint').textContent=q.cf?'':(ui.qstep===2?'Add items below to fill the truck.':'');
   var lines=$('#qLines'),rows=q.lines.map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('');
-  if(q.cf)rows+='<tr class="total"><td>Total</td><td>'+money(q.total)+'</td></tr>'+(S.nteCap===false||q.flat?'':'<tr><td><small>Not-to-exceed (+'+S.ntePct+'%)</small></td><td><small>'+money(q.nte)+'</small></td></tr>')+(q.deposit>0?'<tr><td><small>Deposit at booking ('+S.depositPct+'%)</small></td><td><small>'+money(q.deposit)+'</small></td></tr>':'')+(q.flat?'<tr><td colspan="2"><small>Flat price: the bill is this quote.</small></td></tr>':'');
+  if(q.cf)rows+='<tr class="total"><td>Total</td><td>'+money(q.total)+'</td></tr>'+(S.nteCap===false||q.flat?'':'<tr><td><small>Estimated top price (+'+S.ntePct+'%)</small></td><td><small>'+money(q.nte)+'</small></td></tr>')+(q.deposit>0?'<tr><td><small>Deposit at booking ('+S.depositPct+'%)</small></td><td><small>'+money(q.deposit)+'</small></td></tr>':'')+(q.flat?'<tr><td colspan="2"><small>Flat price: the bill is this quote.</small></td></tr>':'');
   else rows='<tr><td><small>Prices appear once you add items.</small></td><td></td></tr>';
   if(lines)lines.innerHTML=rows;
   var kn=$('#kindNote');if(kn)kn.innerHTML=kindLine(d,S);
@@ -3003,7 +3003,7 @@ function rqFilter(txt){
 function rqLinesHtml(q,head){
   return '<table class="lines">'+(q.lines||[]).map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('')+
     '<tr class="sub"><td>'+esc(head||'New quote')+'</td><td>'+money(q.total)+'</td></tr>'+
-    (q.capNte!==false&&!q.flat&&q.nte>0?'<tr><td><small>Not to exceed</small></td><td><small>'+money(q.nte)+'</small></td></tr>':'')+
+    (q.capNte!==false&&!q.flat&&q.nte>0?'<tr><td><small>Estimated top price</small></td><td><small>'+money(q.nte)+'</small></td></tr>':'')+
     (q.deposit>0?'<tr><td><small>Deposit (as booked)</small></td><td><small>'+money(q.deposit)+'</small></td></tr>':'')+'</table>';
 }
 // room on the truck(s) on the job for the new load
@@ -3027,13 +3027,15 @@ function rqReviewHtml(j,o){
 function rqSignHtml(j,o){
   var rq=o.rq,q=rq?rq.quote:rqTotals(j,o).q,was=rq?num(rq.was):num(j.quote.total);
   var nte=q.capNte!==false&&!q.flat&&q.nte>0?q.nte:0;
-  var how=q.flat?'This is a flat price: the bill is this quote.':'The bill still follows the time the move takes'+(q.kind==='mileage'?' and the miles driven':'')+'.'+(nte?' The not-to-exceed price, '+money(nte)+', is a guide, not a limit.':'');
+  // what the customer signs: an estimate, not the bill; the bill comes at the end (Richie, Oct 24: "The customer signs
+  // knowledging that it is a estimate not a bill , the bill comes at the end.")
+  var how=q.flat?'This is a flat price: the bill is this quote.':'This is an estimate, not the bill. The bill comes at the end of the move, from the time it takes'+(q.kind==='mileage'?' and the miles driven':'')+'.'+(nte?' Estimated top price: '+money(nte)+'.':'');
   var ch=rq?(rq.changes||[]):rqChanges(j,o.dr).map(function(c){return c.t});
   return '<h2 style="margin:0">New estimate: '+money(q.total)+'</h2><p class="hint">The quote was '+money(was)+'. '+esc(how)+'</p>'+
     (ch.length?'<ul class="rqch">'+ch.map(function(c){return '<li>'+esc(c)+'</li>'}).join('')+'</ul>':'')+
     (rq&&rq.ok?'<p class="hint">Approved by '+esc(rq.ok.by||'the office')+'.</p>':'')+
     fld('Printed name','<input id="sigName" value="'+esc(j.d.name)+'" autocomplete="off">')+
-    '<label class="check"><input type="checkbox" id="sigAgree"> I agree to the new estimate of '+money(q.total)+'.</label>'+
+    '<label class="check"><input type="checkbox" id="sigAgree"> '+(q.flat?'I agree to the new price of '+money(q.total)+'.':'I understand that '+money(q.total)+' is an estimate, not the bill, and that the bill comes at the end of the move.')+'</label>'+
     '<div class="f"><span>Sign here with your finger</span></div><canvas id="sigPad" class="sigpad" aria-label="Signature pad"></canvas>'+
     '<div class="row"><button class="btn" data-act="rq:clearsig">Clear</button><button class="btn primary grow" data-act="rq:sign"'+(o.busy?' disabled':'')+'>'+(o.busy?'Saving…':'Sign and save')+'</button></div><p class="hint" id="rqErr" role="alert"'+(o.err?' style="color:var(--bad)"':'')+'>'+esc(o.err||'')+'</p>'+
     (rq?'':'<button class="btn ghost" style="width:100%;margin-top:4px" data-act="rq:step" data-s="review">Back</button>');
@@ -3570,7 +3572,7 @@ function rateCardHtml(k){
   else out+=row('Distance','Every move by the hour');
   if(opt('deposit',k)&&num(k.depositPct)>0)out+=row('Deposit',num(k.depositPct)+'% to book');
   if(opt('tax',k))out+=row('Sales tax',num(k.taxPct)+'%');
-  if(k.nteCap!==false&&num(k.ntePct)>=0)out+=row('Not to exceed','The quote + '+num(k.ntePct)+'%, a guide');
+  if(k.nteCap!==false&&num(k.ntePct)>=0)out+=row('Estimated top price','The quote + '+num(k.ntePct)+'%, a guide');
   var fees=(k.catalog||[]).filter(function(it){return num(it.fee)>0}).map(function(it){return esc(it.name)+' '+money(it.fee)});
   if(fees.length)out+=row('Specialty items',fees.join(', '));
   return '<table class="lines ratecard">'+out+'</table>';
@@ -3786,7 +3788,7 @@ function crewKit(me){
     var basis=[q.cf?fmtInt(q.cf)+' cu ft':'',q.crew?q.crew+' movers':'',q.hours?fmtHrs(q.hours)+' estimated':'',q.kind==='mileage'&&q.miles?fmtMi(q.miles)+' mi':''].filter(Boolean).join(' · ');
     var rows=(q.lines||[]).map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('')+
       '<tr class="sub"><td>Quote</td><td>'+money(q.total)+'</td></tr>'+
-      (q.capNte!==false&&!q.flat&&q.nte>0?'<tr><td><small>Not to exceed</small></td><td><small>'+money(q.nte)+'</small></td></tr>':'')+
+      (q.capNte!==false&&!q.flat&&q.nte>0?'<tr><td><small>Estimated top price</small></td><td><small>'+money(q.nte)+'</small></td></tr>':'')+
       (q.deposit>0?'<tr><td><small>Deposit at booking</small></td><td><small>'+money(q.deposit)+'</small></td></tr>':'');
     var items=(j.items||[]).map(function(i){return esc(i.name)+' × '+i.qty}).join(', ');
     return '<div class="cc-sec cc-quote"><h4>Quote</h4>'+(basis?'<p class="hint" style="margin:0 0 4px">'+esc(basis)+'</p>':'')+'<table class="lines">'+rows+'</table>'+
@@ -4153,7 +4155,7 @@ function setupSecs(){
     '<div style="margin-top:8px">'+fld('Shop address (where trucks start and end the day)','<input data-s="shopAddress" data-t="text" autocomplete="street-address" placeholder="1200 Industrial Blvd, Austin, TX" value="'+esc(S.shopAddress||'')+'">')+'</div>'+
     '<p class="hint">Quotes add the drive from here to the pickup and from the delivery back here.</p></section>','name shop address');
   add('member','co','Membership','Your Tally membership',memberCardHtml(),'billing plan trial subscription');
-  add('rates','price','Rate card',rateSum,rates,'prices hourly rate movers minimum radius mileage per mile deposit tax stairs packing truck fee not-to-exceed');
+  add('rates','price','Rate card',rateSum,rates,'prices hourly rate movers minimum radius mileage per mile deposit tax stairs packing truck fee estimated top price not-to-exceed');
   add('mats','price','Materials and job costs',(S.materials||[]).length+' materials · '+(S.costCats||[]).length+' kinds of cost',materialsCard(),'boxes tape supplies costs dump fee');
   add('catalog','price','Inventory catalog',S.catalog.length+' items',
     '<section class="card"><h2>Inventory catalog</h2><details class="acc"><summary><span>Show all '+S.catalog.length+' items</span></summary><p class="hint" style="margin:8px 0 4px">Change the cubic feet or the special fee right here. It saves as you type and counts on quotes made from now on.</p><table class="tbl cat"><tr><th>Item</th><th class="n">Cu ft</th><th class="n">Fee ($)</th><th></th></tr>'+cat+'</table></details><div class="grid2 stack" style="margin-top:10px"><input id="nItName" placeholder="Item name" aria-label="Item name" '+inp+'><input id="nItCf" type="number" placeholder="Cu ft" aria-label="Item cubic feet" '+inp+'><input id="nItCat" placeholder="Category" list="cats" aria-label="Item category" '+inp+'><datalist id="cats">'+CATS.map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist><input id="nItFee" type="number" placeholder="Special fee ($)" aria-label="Item fee" '+inp+'></div><button class="btn" style="margin-top:8px" data-act="st:additem">Add item</button></section>','furniture items cubic feet');
@@ -7097,7 +7099,7 @@ function backBill(j,fb){
   if(segWords(c))rows+=c.rows.filter(function(x){return x.k==='hours'}).map(billTr).join('');
   var diff=round2(r.total-totalOf(j));
   return '<table class="lines">'+rows+'<tr class="total"><td>Bill</td><td>'+money(r.total)+'</td></tr></table>'+
-    '<p class="hint">'+(c.capped?'Held to the not-to-exceed price of '+money(q.nte)+'. ':c.over?'Past the '+money(q.nte)+' not-to-exceed price. ':'')+'The quote was '+money(q.total)+'.'+(Math.abs(diff)>=0.01&&(j.clockAt||j.status==='done')?' This changes the bill by '+(diff>0?'+':'−')+money(Math.abs(diff))+'.':'')+'</p>';
+    '<p class="hint">'+(c.capped?'Held to the estimated top price of '+money(q.nte)+'. ':c.over?'Past the '+money(q.nte)+' estimated top price. ':'')+'The quote was '+money(q.total)+'.'+(Math.abs(diff)>=0.01&&(j.clockAt||j.status==='done')?' This changes the bill by '+(diff>0?'+':'−')+money(Math.abs(diff))+'.':'')+'</p>';
 }
 // where the miles back came from, and what the lookup is doing
 function backSrcLine(j,fb){
@@ -7612,7 +7614,7 @@ document.addEventListener('click',function(e){
     case 'rq:sign':{var rg=ui.rqo,rgj=rg&&byId(rg.jobId);if(!rgj||rg.busy)break;
       var rgn=String(($('#sigName')||{}).value||'').trim();
       if(!rgn){rqFail('Type the customer’s printed name.');break}
-      if(!($('#sigAgree')||{}).checked){rqFail('Tick the box to show the customer agrees to the new estimate.');break}
+      if(!($('#sigAgree')||{}).checked){var rgf=!!(rg.rq?rg.rq.quote:rqTotals(rgj,rg).q).flat;rqFail(rgf?'Tick the box to show the customer agrees to the new price.':'Tick the box to show the customer understands it’s an estimate, not the bill.');break}
       if(!sigDirty){rqFail('The customer needs to sign in the box.');break}
       var rgq;
       if(rg.rq){if(!rgj.rq||rgj.rq.id!==rg.rq.id||rgj.rq.state!=='approved'||rqStale(rgj)){rqFail('This new quote isn’t approved any more. Close this and check the job card.');break}rgq=clone(rgj.rq)}

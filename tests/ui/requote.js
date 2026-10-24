@@ -106,6 +106,21 @@ const PRICE_KEYS = ['rates', 'minHours', 'prod', 'mph', 'shopAddress', 'shopTrav
   ok(!card(P) && !!card(HR), L('Tanya, a lead on another job, doesn’t see Priya Nair’s job'));
   if (card(HR).tagName === 'DETAILS') { click(card(HR).querySelector('summary b')); await sleep(10); }
   ok(!!openBtn(HR) && openBtn(HR).textContent === 'Items different? Make a new quote', L('Tanya has the button on her own booked job, under its quote'));
+  // a flat price: the customer agrees to the new price itself (it is the bill)
+  const hrQ = HR.quote; HR.quote = Object.assign({}, hrQ, { flat: true }); T.render(); await sleep(10);
+  if (card(HR).tagName === 'DETAILS' && !card(HR).open) { click(card(HR).querySelector('summary b')); await sleep(10); }
+  await tap(openBtn(HR), 10);
+  await tap('#rq [data-act="rq:inc"][data-id="sofa3"]');
+  await tap('#rq [data-act="rq:step"][data-s="review"]', 10); await tap('#rq [data-act="rq:step"][data-s="sign"]', 10);
+  const flatNew = (/New estimate: (\$[\d,.]+)/.exec($('#rq h2').textContent) || [])[1];
+  ok(body().includes('This is a flat price: the bill is this quote.') && !!flatNew && $('#sigAgree').parentNode.textContent.trim() === 'I agree to the new price of ' + flatNew + '.', L('a flat price: “I agree to the new price of ' + flatNew + '.”'));
+  await tap('#rq [data-act="rq:sign"]');
+  ok($('#rqErr').textContent === 'Type the customer’s printed name.' || $('#rqErr').textContent === 'Tick the box to show the customer agrees to the new price.', L('and its unticked box asks for agreement: ' + $('#rqErr').textContent));
+  if ($('#rqErr').textContent === 'Type the customer’s printed name.') { $('#sigName').value = 'Hollis'; await tap('#rq [data-act="rq:sign"]'); }
+  ok($('#rqErr').textContent === 'Tick the box to show the customer agrees to the new price.', L('not ticked, on a flat price: ' + $('#rqErr').textContent));
+  await tap('#rq [data-act="rq:exit"]'); await tap('#rq [data-act="rq:leave"]', 10);
+  ok($('#rq').hidden && HR.quote.total === hrQ.total, L('left without saving: the job’s quote is as it was'));
+  HR.quote = hrQ; Object.keys(T.ui.open || {}).forEach((k) => { if (/^rq:/.test(k)) delete T.ui.open[k]; }); T.render(); await sleep(5);   // the rooms opened on that one are remembered
   await endPreview();
   await preview('lead', 'Marcus');
   ok(!!openBtn(P) && !!openBtn(P).closest('.cc-quote'), L('Marcus, the lead on Priya Nair’s job, has it in the Quote part of his card'));
@@ -153,7 +168,7 @@ const PRICE_KEYS = ['rates', 'minHours', 'prod', 'mph', 'shopAddress', 'shopTrav
   ok(kp.join('|') === money(P.quote.total) + 'Quote was|' + money(exp1.q.total) + 'New quote|+' + money(d1) + 'Difference', L('three tiles: ' + kp.join(' / ')));
   const ch = $$('#rq .rqch li').map((l) => l.textContent);
   ok(ch.join('|') === '+1 Sofa (3-seat) (1 → 2)|−2 Medium box (30 → 28)|+1 Upright piano', L('what’s different: ' + ch.join(', ')));
-  ok(exp1.q.lines.every((l) => body().includes(l.label)) && /New quote\$/.test(body()) && body().includes('Deposit (as booked)' + money(P.quote.deposit)) && body().includes('Not to exceed' + money(exp1.q.nte)), L('the new quote’s lines, not-to-exceed, and the deposit as booked'));
+  ok(exp1.q.lines.every((l) => body().includes(l.label)) && /New quote\$/.test(body()) && body().includes('Deposit (as booked)' + money(P.quote.deposit)) && body().includes('Estimated top price' + money(exp1.q.nte)), L('the new quote’s lines, not-to-exceed, and the deposit as booked'));
   ok(exp1.q.rate === P.quote.rate && exp1.q.crew === P.quote.crew && exp1.q.deposit === P.quote.deposit, L('the same crew, hourly rate and deposit as the job’s quote'));
   ok(!!$('#rq [data-act="rq:step"][data-s="sign"]') && !$('#rq [data-act="rq:send"]'), L('next: “The customer signs” (no office approval by default)'));
   $('#rqNote').value = 'Piano in the garage'; $('#rqNote').dispatchEvent(new w.Event('input', { bubbles: true }));
@@ -161,12 +176,12 @@ const PRICE_KEYS = ['rates', 'minHours', 'prod', 'mph', 'shopAddress', 'shopTrav
   /* ---------------- the customer signs ---------------- */
   await tap('#rq [data-act="rq:step"][data-s="sign"]', 10);
   ok(/^New estimate: /.test($('#rq h2').textContent) && $('#rq h2').textContent === 'New estimate: ' + money(exp1.q.total) && $('#sigName').value === 'Priya Nair', L('the customer sees the new estimate, with their name filled in'));
-  ok(body().includes('The quote was $1,541. The bill still follows the time the move takes and the miles driven. The not-to-exceed price, ' + money(exp1.q.nte) + ', is a guide, not a limit.'), L('and how the bill works: by the time and miles; the not-to-exceed price is a guide'));
-  ok($('#sigAgree').parentNode.textContent.trim() === 'I agree to the new estimate of ' + money(exp1.q.total) + '.', L('what they agree to, with no limit promised: ' + $('#sigAgree').parentNode.textContent.trim()));
+  ok(body().includes('The quote was $1,541. This is an estimate, not the bill. The bill comes at the end of the move, from the time it takes and the miles driven. Estimated top price: ' + money(exp1.q.nte) + '.'), L('and how the bill works: an estimate now, the bill at the end, and the estimated top price'));
+  ok($('#sigAgree').parentNode.textContent.trim() === 'I understand that ' + money(exp1.q.total) + ' is an estimate, not the bill, and that the bill comes at the end of the move.', L('what they sign for: ' + $('#sigAgree').parentNode.textContent.trim()));
   $('#sigName').value = ''; await tap('#rq [data-act="rq:sign"]');
   ok($('#rqErr').textContent === 'Type the customer’s printed name.', L('no name: ' + $('#rqErr').textContent));
   $('#sigName').value = 'Priya Nair'; await tap('#rq [data-act="rq:sign"]');
-  ok($('#rqErr').textContent === 'Tick the box to show the customer agrees to the new estimate.', L('not ticked: ' + $('#rqErr').textContent));
+  ok($('#rqErr').textContent === 'Tick the box to show the customer understands it’s an estimate, not the bill.', L('not ticked: ' + $('#rqErr').textContent));
   $('#sigAgree').checked = true; await tap('#rq [data-act="rq:sign"]');
   ok($('#rqErr').textContent === 'The customer needs to sign in the box.', L('not signed: ' + $('#rqErr').textContent));
   ok(st().jobs.find((j) => j.id === P.id).quote.total === before.quote.total, L('nothing changes on the job until they sign'));
