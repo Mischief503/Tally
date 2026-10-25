@@ -165,7 +165,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   await pick('Kim');
   ok(/^From the start: 4 movers on the bill at \$250\/hr \(the quote is \$195\/hr for 3\)\./.test($('#mvWhat').textContent), L('Priya Nair (3 movers quoted): ' + $('#mvWhat').textContent));
   await tap('#mover [data-act="mv:save"]', 10);
-  ok(P.crewAdj.length === 1 && P.assign.crew.indexOf('Kim') >= 0 && T.billCrewAt(P, Date.now() + H) === 4 && toast() === 'Kim is on the job. 4 movers on the bill from the start.', L('added: 4 movers on the bill from the start'));
+  ok(P.crewAdj.length === 1 && P.assign.crew.indexOf('Kim') >= 0 && T.billCrewAt(P, Date.now() + H) === 4 && toast() === 'Kim is on the job. 4 movers on the bill from the start. Priya Nair signs for the bigger crew at Start job.', L('added: 4 movers on the bill from the start, and Priya signs for the bigger crew at Start job: ' + toast()));
   ok(card(P).querySelector('.cc-movers').textContent === 'Movers on the bill: 3 (as quoted) · 4 from the startChange', L('the card: ' + card(P).querySelector('.cc-movers').textContent));
   await tap(card(P).querySelector('[data-act="mv:open"]'), 10);
   ok(/Kim joined from the startPut in by Marcus · 4 on the bill after/.test(panel()), L('and the panel lists it as from the start'));

@@ -29,7 +29,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   click('[data-act="tab"][data-tab="dispatch"]'); await sleep(20);
   const dq = (n) => $$('[data-act="dq:crew"]').find((x) => x.dataset.id === N.id && x.dataset.n === n);
   click(dq('Dee')); await sleep(10);
-  ok(N.assign.crew.join() === 'Marcus,Kim,Dee' && toast() === 'Dee added to the job. Movers on the bill: 2 (as quoted) · 3 from the start.', L('the Board: Dee put on Nadia’s job: ' + toast()));
+  ok(N.assign.crew.join() === 'Marcus,Kim,Dee' && toast() === 'Dee added to the job. Movers on the bill: 2 (as quoted) · 3 from the start. Nadia Farouk signs for the bigger crew at Start job.', L('the Board: Dee put on Nadia’s job, and Nadia signs for the bigger crew at Start job: ' + toast()));
   click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);
   await open(N);
   click(chip('Dee')); await sleep(10);
@@ -41,9 +41,9 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   await open(N);
   ok(line() === 'Movers on the bill: 2 (as quoted)A mover joined or left', L('her sheet, under the crew: ' + line()));
   click(chip('Dee')); await sleep(10);
-  ok(N.assign.crew.join() === 'Marcus,Kim,Dee' && !(N.crewAdj || []).length && toast() === 'Dee added to the job. Movers on the bill: 2 (as quoted) · 3 from the start.', L('the office puts Dee on it: ' + toast()));
+  ok(N.assign.crew.join() === 'Marcus,Kim,Dee' && !(N.crewAdj || []).length && toast() === 'Dee added to the job. Movers on the bill: 2 (as quoted) · 3 from the start. Nadia Farouk signs for the bigger crew at Start job.', L('the office puts Dee on it: ' + toast()));
   ok(line() === 'Movers on the bill: 2 (as quoted) · 3 from the startA mover joined or left', L('the sheet says so: ' + line()));
-  ok(sheet().includes('The final bill comes from the crew’s times. The bill is for 3 movers at $195/hr, the people on the job; the quote is for 2 at $140/hr, so let Nadia Farouk know.'), L('and the Local move part: 3 movers at the 3-man rate, and to tell the customer'));
+  ok(sheet().includes('The final bill comes from the crew’s times. The bill is for 3 movers at $195/hr, the people on the job; the quote is for 2 at $140/hr, so Nadia Farouk signs for the bigger crew at Start job.') && sheet().includes('3 movers on the job, quoted for 2: Nadia Farouk signs for the bigger crew at Start job.'), L('and the Local move part: 3 movers at the 3-man rate, and the customer signs for them'));
   ok(T.billCrewAt(N, Date.now()) === 3 && T.mvSummary(N) === '2 (as quoted) · 3 from the start', L('3 movers on the bill'));
 
   /* ---------------- the job: started by the office, 5 hours, finished ---------------- */
@@ -57,7 +57,9 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   await endPreview();
   const now = Date.now(), t0 = now - 5 * H;
   Object.assign(N, { startedAt: t0, phases: { loadStart: t0, loadEnd: t0 + 2 * H, unloadStart: t0 + 3 * H, unloadEnd: now } });
-  N.signed = (N.signed || []).concat(st().settings.forms.filter((f) => f.required).map((f) => ({ id: 'sg_' + f.id, formId: f.id, title: f.title, name: 'Nadia', sig: '', ts: now, by: 'Marcus' })));
+  ok(N.crewAsk === 1 && T.crewForm(N) && T.crewForm(N).id === 'crew:3' && T.formsPending(N)[0].id === 'crew:3', L('started: the job asks for the customer’s signature for 3 movers, first among its forms'));
+  N.signed = (N.signed || []).concat(st().settings.forms.filter((f) => f.required).map((f) => ({ id: 'sg_' + f.id, formId: f.id, title: f.title, name: 'Nadia', sig: '', ts: now, by: 'Marcus' })),
+    [{ id: 'sg_crew', formId: 'crew:3', title: 'Bigger crew: 3 movers', name: 'Nadia', sig: '', ts: now, by: 'Marcus', n: 3, rate: 195 }]);
   await open(N);
   const sel = $('#sheet select[data-jstatus]'); sel.value = 'done'; sel.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(15);
   const c1 = clk(N), r1 = (c1 && c1.rows) || [];
@@ -109,7 +111,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   click(chip('Dee')); await sleep(10);
   ok(T.mvSummary(HR) === '3 (as quoted)' && toast() === 'Dee added to the job. Movers on the bill: 3 (as quoted).', L('Dee makes the 3 quoted: ' + toast()));
   click(chip('Kim')); await sleep(10);
-  ok(T.mvSummary(HR) === '3 (as quoted) · 4 from the start' && toast() === 'Kim added to the job. Movers on the bill: 3 (as quoted) · 4 from the start.', L('and Kim a 4th: ' + toast()));
+  ok(T.mvSummary(HR) === '3 (as quoted) · 4 from the start' && toast() === 'Kim added to the job. Movers on the bill: 3 (as quoted) · 4 from the start. Hollis & Reed Law signs for the bigger crew at Start job.', L('and Kim a 4th, so the customer signs for 4: ' + toast()));
   click(chip('Kim')); await sleep(5); click(chip('Dee')); await sleep(10);
   ok(HR.assign.crew.join() === 'Tanya,Andre' && T.mvSummary(HR) === '3 (as quoted) · 2 from the start' && toast() === 'Dee removed from the job. Movers on the bill: 3 (as quoted) · 2 from the start.', L('both off again: 2'));
   // someone joining is one more, as the movers panel says
@@ -133,12 +135,25 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   T.mvAdd(HR, 'Luis', 1, Date.now() - H, 'Tanya'); const lts = HR.crewAdj[0].ts;
   ok(HR.assign.crew.join() === 'Tanya,Andre,Luis' && T.billCrewAt(HR, h0 + H) === 2 && T.billCrewAt(HR, Date.now()) === 3 && T.mvSummary(HR) === '3 (as quoted) · 2 from the start · 3 from ' + clock(lts), L('the 2 who went out, then Luis joins an hour ago: ' + T.mvSummary(HR)));
   await open(HR);
+  // Richie, Oct 25: "If someone is added to a job it only adds them for the amount of time there"
+  click(chip('Dee')); await sleep(10);
+  const de = HR.crewAdj.slice(-1)[0];
+  ok(HR.assign.crew.join() === 'Tanya,Andre,Luis,Dee' && de.who === 'Dee' && de.d === 1 && de.chip && de.added && T.billCrewAt(HR, de.ts - 1) === 3 && T.billCrewAt(HR, de.ts) === 4 && T.billCrewAt(HR, h0) === 2,
+    L('the office puts Dee on the running job: on the bill from now, not the whole job'));
+  ok(toast().indexOf('Dee added to the job at ' + clock(de.ts) + '. Movers on the bill: 3 (as quoted) · 2 from the start · 3 from ' + clock(lts) + ' · 4 from ' + clock(de.ts) + '.') === 0, L('the toast says from when: ' + toast()));
+  click(chip('Dee')); await sleep(10);
+  ok(HR.assign.crew.join() === 'Tanya,Andre,Luis' && !HR.crewAdj.some((e) => e.who === 'Dee') && T.billCrewAt(HR, Date.now()) === 3 && toast() === 'Dee removed from the job. Movers on the bill: 3 (as quoted) · 2 from the start · 3 from ' + clock(lts) + '.', L('taken off a moment later: a slip, as if she was never put on: ' + toast()));
   click(chip('Luis')); await sleep(10);
-  ok(HR.assign.crew.join() === 'Tanya,Andre' && !HR.crewAdj.length && T.mvSummary(HR) === '3 (as quoted) · 2 from the start' && toast() === 'Luis removed from the job. Movers on the bill: 3 (as quoted) · 2 from the start.', L('the office takes Luis off the crew: he isn’t on the job, so his joining goes too'));
-  click(chip('Dee')); await sleep(5); click(chip('Kim')); await sleep(10);
-  ok(T.billCrewAt(HR, h0) === 4 && T.mvSummary(HR) === '3 (as quoted) · 4 from the start' && !HR.crewAdj.length, L('people put on the crew while it runs are on the bill for the whole job (joined part way: A mover joined or left)'));
-  click(chip('Kim')); await sleep(5); click(chip('Dee')); await sleep(5);
+  const le = HR.crewAdj.slice(-1)[0];
+  ok(HR.assign.crew.join() === 'Tanya,Andre' && le.who === 'Luis' && le.d === -1 && T.billCrewAt(HR, le.ts - 1) === 3 && T.billCrewAt(HR, le.ts) === 2 && toast() === 'Luis left the job at ' + clock(le.ts) + '. Movers on the bill: 3 (as quoted) · 2 from the start · 3 from ' + clock(lts) + ' · 2 from ' + clock(le.ts) + '.',
+    L('the office takes Luis off the crew: he left now, so the hour he was there stays on the bill: ' + toast()));
+  click(chip('Kim')); await sleep(10);
+  const ke = HR.crewAdj.slice(-1)[0]; ke.ts -= 20 * M; ke.at -= 20 * M;   // Kim was put on 20 minutes ago
+  click(chip('Kim')); await sleep(10);
+  const kl = HR.crewAdj.slice(-1)[0];
+  ok(kl.who === 'Kim' && kl.d === -1 && HR.crewAdj.filter((e) => e.who === 'Kim').length === 2 && T.billCrewAt(HR, kl.ts - 10 * M) === 4 && T.billCrewAt(HR, kl.ts) === 2, L('someone put on 20 minutes ago and taken off: they leave now, the 20 minutes count (10 minutes ago: Tanya, Andre, Luis and Kim)'));
   await close();
+  HR.crewAdj = []; HR.assign.crew = ['Tanya', 'Andre'];
   Object.assign(HR, { status: 'booked', crewOn: undefined }); delete HR.startedAt; delete HR.phases;
 
   /* ---------------- the bill's rows with the office's crew and changes on site ---------------- */
@@ -184,7 +199,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   const dsel = $('#sheet select[data-drv="sh"]');
   ok(!!dsel && P.quote.crew === 3 && P.assign.crew.join() === 'Marcus,Dee,Luis', L('Priya Nair: 3 quoted, 3 on it'));
   dsel.value = 'Andre'; dsel.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(10);
-  ok(P.assign.crew.indexOf('Andre') >= 0 && /^Andre added to the crew, driving .*\. Movers on the bill: 3 \(as quoted\) · 4 from the start\.$/.test(toast()), L('Andre picked to drive: on the crew, and on the bill: ' + toast()));
+  ok(P.assign.crew.indexOf('Andre') >= 0 && /^Andre added to the crew, driving .*\. Movers on the bill: 3 \(as quoted\) · 4 from the start\. Priya Nair signs for the bigger crew at Start job\.$/.test(toast()), L('Andre picked to drive: on the crew, and on the bill: ' + toast()));
   await close();
 
   /* ---------------- saved like the rest of the job ---------------- */

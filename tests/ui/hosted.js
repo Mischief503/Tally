@@ -50,7 +50,7 @@ function seed(opts = {}) {
   const tg = $('[data-act="set:open"][data-sec="comms"]');
   ok(!!tg, 'Texts and calls sits in the Setup list like the other sections');
   click(tg); await sleep(20);
-  ok($$('input[data-s^="comms.alerts."]').length === 4 && $$('input[data-s^="comms.alerts."]').every((i) => i.checked), 'four alert switches, all on');
+  ok($$('input[data-s^="comms.alerts."]').length === 5 && $$('input[data-s^="comms.alerts."]').every((i) => i.checked), 'five alert switches, all on');
   ok(/No phone number for Luis/.test(text()), 'Setup warns who has no number');
   const ringChips = $$('[data-act="st:ring"]');
   ok(ringChips.length === 4 && ringChips.filter((c) => c.classList.contains('on')).map((c) => c.dataset.n).join() === 'Owner,Dispatch', 'office rings by default');

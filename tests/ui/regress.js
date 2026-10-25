@@ -65,7 +65,7 @@ const file = process.argv[2], label = process.argv[3] || file;
   // setup card on-device
   await A.go('settings', 'comms');
   ok(/Texts and calls/.test(text()) && /run on the hosted edition/.test(text()), label + ': Setup › Texts and calls explains texting runs on the hosted edition');
-  ok($$('input[data-s^="comms.alerts."]').length === 4, label + ': alert switches still editable');
+  ok($$('input[data-s^="comms.alerts."]').length === 5, label + ': alert switches still editable');
 
   // money colours fixed across every theme, and every theme applies cleanly
   const themes = (w.document.querySelector('#themeBtn') && (click('#themeBtn'), await sleep(10), $$('[data-act="theme:set"]'))) || [];

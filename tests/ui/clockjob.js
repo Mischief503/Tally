@@ -109,6 +109,9 @@ const H = 36e5, M = 6e4;
   Object.assign(P, { startedAt: Date.now() - 3 * H, phases: { loadStart: Date.now() - 2.9 * H, loadEnd: Date.now() - 2 * H, unloadStart: Date.now() - 1.5 * H, unloadEnd: Date.now() - 10 * M } });
   ['Marcus', 'Luis', 'Kim'].forEach((n) => { const sg = P.crewOn[n]; sg[sg.length - 1].in = Date.now() - 2 * H; });
   P.signed = (P.signed || []).concat(T.state().settings.forms.filter((f) => f.required).map((f) => ({ id: 'sg_' + f.id, formId: f.id, title: f.title, name: 'Priya', sig: '', ts: Date.now(), by: 'Marcus' })));
+  // 4 on a 3-man move now (Kim and Andre put on, Dee taken off): Priya signs for the bigger crew (Oct 25)
+  ok(T.crewForm(P) && T.crewForm(P).id === 'crew:4', L('with Kim and Andre on it, Priya signs for 4 movers before it’s finished'));
+  P.signed.push({ id: 'sg_crew4', formId: 'crew:4', title: 'Bigger crew: 4 movers', name: 'Priya', sig: '', ts: Date.now(), by: 'Marcus', n: 4, rate: 250 });
   T.render(); await sleep(10);
   const stSel = $('#sheet select[data-jstatus]'); stSel.value = 'done'; stSel.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(15);
   ok(P.status === 'done' && Object.keys(P.crewOn).every((n) => P.crewOn[n].every((x) => x.out > 0)), L('the job finishes: everyone is off it'));

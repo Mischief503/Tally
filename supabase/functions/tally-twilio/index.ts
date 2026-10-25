@@ -19,7 +19,7 @@
 // Stripe's.
 //
 // Routes:
-//   POST /app            the Tally app: {action:'job'|'forms'|'call'|'line'|'pay_…', org, jobId}
+//   POST /app            the Tally app: {action:'job'|'forms'|'short'|'call'|'line'|'pay_…', org, jobId}
 //                        and {action:'sos', org, msgId, kind:'start'|'end'} for emergency alerts
 //   POST /stripe         Stripe events (payments finishing or failing, pay links used, refunds, disputes,
 //                        memberships)
@@ -43,6 +43,7 @@
 const FN = "tally-twilio";
 const CALLS_PER_HOUR = 20;
 const FORMS_REPEAT_MS = 6 * 3600e3;
+const SHORT_REPEAT_MS = 6 * 3600e3;
 
 // deno-lint-ignore no-explicit-any
 type J = any;
@@ -445,6 +446,61 @@ export async function checkForms(org: string, jobId: string): Promise<J> {
     (lead ? " " + gsm(lead) + " ran it." : "");
   const to = officeNames(S).filter((n) => n !== lead);
   for (const n of to) out.push(await sendText({ org, line, jobId, purpose: "forms", staff: n, to: C[n], body }));
+  return { ok: true, sent: out.filter((r) => r.status !== "failed" && r.status !== "no-number").length };
+}
+
+// The movers on a job at a time, counted the way the app counts the bill's (web/index.html, billCrewAt): the people
+// the office put on the job's crew, each for the whole job, and each person with a change on site from when they
+// joined until they left (before their first change, they're on if it's a leave); a job nobody was put on (only
+// people who joined on site, or no one): the quote's crew, plus who joined, less who left, up to then.
+export function moversAt(job: J, t: number): number {
+  const qc = Number(job.quote && job.quote.crew) || 2;
+  const c0: unknown[] = job.assign && Array.isArray(job.assign.crew) ? job.assign.crew : [];
+  const crew = c0.filter((n, i) => typeof n === "string" && n && c0.indexOf(n) === i) as string[];
+  const A = vals(job.crewAdj).filter((e: J) => e && (e.d === 1 || e.d === -1) && Number(e.ts) > 0)
+    .sort((a: J, b: J) => a.ts - b.ts || (a.at || 0) - (b.at || 0));
+  const by: Record<string, J[]> = {};
+  A.forEach((e: J) => { if (e.who) (by[e.who] = by[e.who] || []).push(e); });
+  let put = 0, n = 0;
+  crew.forEach((p) => { const E = by[p]; if (!E || E[0].d < 0) put++; });
+  if (!put) {
+    n = qc;
+    A.forEach((e: J) => { if (e.ts <= t) n += e.d; });
+    return Math.max(1, n);
+  }
+  A.forEach((e: J) => { if (!e.who && e.ts <= t) n += e.d; });
+  crew.forEach((p) => { if (!by[p]) n++; });
+  Object.keys(by).forEach((p) => {
+    const E = by[p];
+    let on = E[0].d < 0;
+    E.forEach((e: J) => { if (e.ts <= t) on = e.d > 0; });
+    if (on) n++;
+  });
+  return Math.max(1, n);
+}
+
+// A short crew (Richie, Oct 25: "a short crew should alert the office"): a crew lead started the job with fewer
+// movers than the quote's crew, or put in someone leaving and it dropped below. The office gets a text (Options ›
+// Short crew alert), once for each crew size on a job in six hours (a second phone, a double tap). The crew is
+// counted here, from the job as saved, not from what the phone says.
+export async function checkShort(org: string, jobId: string): Promise<J> {
+  const line = await lineFor(org);
+  if (!line) return { ok: false, reason: "no-line" };
+  const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
+  if (!job) return { ok: false, reason: "no-job" };
+  if (job.test) return { ok: true, sent: 0, skipped: "test" };
+  if (!alertOn(S, "short")) return { ok: true, sent: 0, skipped: "off" };
+  if (job.status !== "active") return { ok: true, sent: 0, skipped: "not-running" };
+  const qc = Number(job.quote && job.quote.crew) || 0, n = moversAt(job, Date.now());
+  if (!(qc > 0) || n >= qc) return { ok: true, sent: 0, skipped: "not-short" };
+  const what = n + " mover" + (n === 1 ? "" : "s") + " on it, quoted for " + qc;
+  const since = new Date(Date.now() - SHORT_REPEAT_MS).toISOString();
+  const prev = (await rest("GET", "comm_log?select=body&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&purpose=eq.short&created_at=gte." + q(since) + "&limit=50")) || [];
+  if (prev.some((r: J) => String(r.body || "").indexOf(what) >= 0)) return { ok: true, sent: 0, skipped: "recent" };
+  const d = job.d || {}, lead = leadOf(S, job), C = contacts(S), out: J[] = [];
+  const body = company(S) + ": " + gsm(d.name || "A job") + " is short: " + what + "." + (lead ? " " + gsm(lead) + " is running it." : "");
+  const to = officeNames(S).filter((x) => x !== lead);
+  for (const x of to) out.push(await sendText({ org, line, jobId, purpose: "short", staff: x, to: C[x], body }));
   return { ok: true, sent: out.filter((r) => r.status !== "failed" && r.status !== "no-number").length };
 }
 
@@ -2738,6 +2794,7 @@ async function handleApp(req: Request): Promise<Response> {
       return json(await checkJob(org, jobId, req.headers.get("origin")));
     }
     if (b.action === "forms") return json(await checkForms(org, jobId));
+    if (b.action === "short") return json(await checkShort(org, jobId));
     if (b.action === "call") return json(await startCall(org, me, jobId));
     if (b.action === "eta") return json(await sendEta(org, me, jobId, b.minutes));
     if (b.action === "remind") {

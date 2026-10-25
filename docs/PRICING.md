@@ -181,18 +181,59 @@ shorthanded, the bill should reflect what went out").
 - Put 3 people on a job quoted for 2 movers, and the bill by the clock charges 3 movers at the 3-man
   rate for the whole job. Under the crew, the job sheet and the crew lead's card say **Movers on the
   bill: 2 (as quoted) · 3 from the start**. Before the job, the Local move (or Mileage move) part gives
-  the rate and says to let the customer know.
+  the rate and says the customer signs for the bigger crew (below).
 - A crew that goes out short is billed for who went out: quoted as a 3-man move, 2 on the crew, and the
   bill is 2 movers at the 2-man rate ("if it was booked and quoted as a three man, but only two guys go
   out because someone gets sick or calls in, then the bill is only two"). The line says **Movers on the
   bill: 3 (as quoted) · 2 from the start**. So everyone who goes out has to be on the crew: with only
   the lead on it, a 2-man move is billed as 1 mover.
 - A job nobody has been put on yet is billed for the quote's crew.
-- The crew chips are for the whole job, before, during and after it. Someone who joins or leaves part
-  way goes in with **A mover joined or left**. Taking someone off the crew takes their change on site
-  off too (they weren't on the job). Putting someone on after the job (a mover the office forgot)
-  works the bill out again.
-- A driver picked who isn't on the crew goes on it, and on the bill.
+- Before the job, the crew chips are for the whole job: taking someone off the crew takes their change
+  on site off too (they weren't on the job).
+- On a running job, the crew chips count for the time someone is there (Richie, Oct 25: "If someone is
+  added to a job it only adds them for the amount of time there"). Put on, they join now ("Dee added
+  to the job at 10:30 AM. Movers on the bill: 2 (as quoted) · 3 from 10:30 AM."), as **A mover joined
+  or left** does; taken off, they leave now, so the time they were there stays on the bill. Taken off
+  within 5 minutes of being put on by a chip, it's a slip: as if they were never put on.
+- After the job, putting someone on (a mover the office forgot) counts them for the whole job and works
+  the bill out again.
+- A driver picked who isn't on the crew goes on it, and on the bill, the same way.
+
+### A bigger crew: the customer signs for it
+
+When more movers are on the bill than the quote's crew, the customer signs for them and their rate
+(Richie, Oct 25: "A bigger crew should be signed by the customer"):
+
+- The office puts 3 on a 2-man move: the toast, the job sheet and the lead's card say "Nadia Farouk
+  signs for the bigger crew at Start job".
+- At **Start job**, before the start screen, the lead shows the customer **Bigger crew: 3 movers**:
+  "The quote is for 2 movers at $140/hr. 3 movers are on this move, billed at $195/hr for the time
+  they're on it." The customer ticks "I agree to 3 movers at $195/hr for the time they're on the job.",
+  signs, and **Sign and continue** opens the start screen. **Start now, the customer signs later**
+  starts the job without it. If the customer won't sign, the office can take someone off the job.
+- Someone joining on site who makes the crew bigger than the customer signed for (4 now) needs a new
+  signature: the lead's card says "4 movers on the bill, quoted for 2: Nadia Farouk signs for the bigger
+  crew." with **Customer signs**. One for 4 movers covers any crew up to 4.
+- While the job runs, the signature is one of its forms, first: the job can't be finished (or paid)
+  until it's signed, or the owner waives it on the job sheet. The office's Today has **Bigger crew, not
+  signed yet** until then. It's kept with the job's signed forms, with the crew size and the rate.
+- A finished job asks nothing more (a mover the office puts on after the job is the office's call), and
+  a job started on a version before Oct 25 asks nothing. A flat price never asks (the bill is the
+  quote). **Options › Customer signs for a bigger crew** off: no signature.
+
+### A short crew: the office is told
+
+Fewer movers on the job than quoted (Richie, Oct 25: "a short crew should alert the office"):
+
+- The office's Today, under Needs you: **Short crew** "Hollis & Reed Law · 2 on the job, quoted for 3 ·
+  today" for a booked job today or tomorrow with people put on it, and for a running job ("running
+  now"); Today's list marks the job **Short crew**. A job nobody is on yet needs scheduling instead.
+- The job sheet, the lead's card and the start screen say "Short crew: 2 on the job, quoted for 3. The
+  bill is for 2."
+- A crew lead who starts a job short, or puts in someone leaving and it drops below the quote's crew,
+  has the server text the office ("Ace Moving: Hollis & Reed Law is short: 2 movers on it, quoted for
+  3. Tanya is running it."), once for each crew size on a job in six hours. The server counts the crew
+  itself. The office's own changes text nobody. **Options › Short crew alert** off: no text.
 
 > 2 movers quoted at $140/hr, estimated top price $595. The office puts 3 on it; the job takes 5
 > hours. 3 movers, 5 hr at $195/hr = $975. Fees $95. Bill $1,070 (past the estimated top price, a

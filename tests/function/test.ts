@@ -845,5 +845,50 @@ nd = sent.length; await app("tok-dispatch", { action: "job", org: ORG, jobId: "j
 ok(/Truck Box 1 \(26 ft\)\./.test((sent.slice(nd)[0] || {}).Body || "") && !/You drive/.test((sent.slice(nd)[0] || {}).Body || ""), "with drivers switched off, the text just names the truck");
 putDoc(ORG, "org/settings", settings);
 
+/* ---------- a short crew (Richie, Oct 25: "a short crew should alert the office") ---------- */
+{
+  const tNow = Date.now(), tStart = tNow - 2 * 3600e3, HR1 = 3600e3;
+  const runJob = (id: string, over: any = {}) => job(id, { status: "active", startedAt: tStart, d: { ...job(id).d, name: "Hollis & Reed Law" }, quote: { crew: 3, rate: 195, kind: "local" }, ...over });
+  // the crew counted the way the app counts the bill's
+  ok(fn.moversAt(runJob("x"), tNow) === 2, "the movers on a job: the 2 put on it");
+  const left = runJob("x", { crewAdj: { a: { id: "a", ts: tStart + HR1, d: -1, who: "Dee" } } });
+  ok(fn.moversAt(left, tStart + 60e3) === 2 && fn.moversAt(left, tNow) === 1, "Dee left an hour in: 2, then 1");
+  const joined = runJob("x", { assign: { truckId: "t26", crew: ["Marcus", "Dee", "Kim"] }, crewAdj: [{ id: "b", ts: tStart + HR1, d: 1, who: "Kim", added: true }] });
+  ok(fn.moversAt(joined, tStart + 60e3) === 2 && fn.moversAt(joined, tNow) === 3, "Kim put on a running job an hour in: 2, then 3 (from when she was put on)");
+  const back = runJob("x", { crewAdj: { a: { id: "a", ts: tStart + HR1, d: -1, who: "Dee" }, b: { id: "b", ts: tStart + 1.5 * HR1, d: 1, who: "Dee" } } });
+  ok(fn.moversAt(back, tStart + 1.2 * HR1) === 1 && fn.moversAt(back, tNow) === 2, "Dee left and came back: 1 while she was gone, then 2");
+  ok(fn.moversAt(runJob("x", { assign: { truckId: "t26", crew: [] } }), tNow) === 3, "nobody put on it: the quote's crew");
+  ok(fn.moversAt(runJob("x", { assign: { truckId: "t26", crew: [] }, crewAdj: { a: { id: "a", ts: tStart, d: -1, who: "" } } }), tNow) === 2, "nobody put on it, one fewer: the quote's crew less one");
+  ok(fn.moversAt(runJob("x", { assign: { truckId: "t26", crew: ["Marcus", "Marcus"] } }), tNow) === 1, "a name twice on the crew counts once");
+  // the text
+  putDoc(ORG, "jobs/sc1", runJob("sc1"));
+  n0 = sent.length; r = await app("tok-marcus", { action: "short", org: ORG, jobId: "sc1" });
+  const sc = sent.slice(n0);
+  ok(r.body.ok && r.body.sent === 2 && sc.length === 2 && sc.every((s) => s.To === "+15125550100" || s.To === "+15125550199"), "a job started short: owner and dispatch get a text");
+  ok(/: Hollis & Reed Law is short: 2 movers on it, quoted for 3\. Marcus is running it\./.test(sc[0]?.Body || ""), "it says how many, against the quote, and who's running it: " + (sc[0] && sc[0].Body));
+  ok(DB.comm_log.filter((x) => x.job_id === "sc1" && x.purpose === "short").length === 2, "logged on the job as a short crew alert");
+  n0 = sent.length; r = await app("tok-marcus", { action: "short", org: ORG, jobId: "sc1" });
+  ok(sent.length === n0 && r.body.skipped === "recent", "asked again (another phone, a double tap): no second text");
+  putDoc(ORG, "jobs/sc1", runJob("sc1", { crewAdj: { a: { id: "a", ts: tNow - 60e3, d: -1, who: "Dee" } } }));
+  n0 = sent.length; r = await app("tok-marcus", { action: "short", org: ORG, jobId: "sc1" });
+  ok(r.body.sent === 2 && /is short: 1 mover on it, quoted for 3\./.test(sent.slice(n0)[0]?.Body || ""), "Dee leaves too: down to 1, so the office hears again: " + (sent.slice(n0)[0] && sent.slice(n0)[0].Body));
+  putDoc(ORG, "jobs/sc2", runJob("sc2", { assign: { truckId: "t26", crew: ["Marcus", "Dee", "Kim"] } }));
+  n0 = sent.length; r = await app("tok-marcus", { action: "short", org: ORG, jobId: "sc2" });
+  ok(sent.length === n0 && r.body.skipped === "not-short", "the crew quoted: no text (the server counts the crew, not the phone)");
+  putDoc(ORG, "jobs/sc3", runJob("sc3", { status: "booked" }));
+  n0 = sent.length; r = await app("tok-marcus", { action: "short", org: ORG, jobId: "sc3" });
+  ok(sent.length === n0 && r.body.skipped === "not-running", "a job not started: no text (the office sees it in Needs you)");
+  putDoc(ORG, "jobs/sc4", runJob("sc4", { test: true }));
+  n0 = sent.length; r = await app("tok-marcus", { action: "short", org: ORG, jobId: "sc4" });
+  ok(sent.length === n0 && r.body.skipped === "test", "a test job: no text");
+  putDoc(ORG, "org/settings", { ...settings, comms: { alerts: { ...settings.comms.alerts, short: false } } });
+  putDoc(ORG, "jobs/sc5", runJob("sc5"));
+  n0 = sent.length; r = await app("tok-marcus", { action: "short", org: ORG, jobId: "sc5" });
+  ok(sent.length === n0 && r.body.skipped === "off", "Options › Short crew alert off: no text");
+  putDoc(ORG, "org/settings", settings);
+  n0 = sent.length; r = await app("tok-stranger", { action: "short", org: ORG, jobId: "sc5" });
+  ok(sent.length === n0 && !r.body.sent, "someone from another company can't have it sent (" + r.status + ")");
+}
+
 console.log("\n" + passes + " passed, " + failures + " failed");
 if (failures) Deno.exit(1);

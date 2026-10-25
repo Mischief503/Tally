@@ -11,8 +11,8 @@ const file = process.argv[2], label = process.argv[3] || 'confirm';
   const endPreview = async () => { click('[data-act="pv:end"]'); await sleep(15); };
 
   // ---- office sees nobody has confirmed
+  if ($('[data-act="today:alerts"]')) { click('[data-act="today:alerts"]'); await sleep(5); }   // Needs you shows five rows until Show more (Hollis & Reed's short crew is one of them)
   ok(/Not confirmed yet/.test(text()) && /Marcus, Dee, Luis · Priya Nair today/.test(text()), label + ': Today lists who has not confirmed today’s job');
-  if ($('[data-act="today:alerts"]')) { click('[data-act="today:alerts"]'); await sleep(5); }   // Needs you shows five rows until Show more
   ok(/Tanya, Andre · Hollis & Reed Law tomorrow/.test(text()), label + ': and tomorrow’s');
   click('[data-act="job:open"][data-id="' + job.id + '"]'); await sleep(15);
   ok(/Waiting on: Marcus, Dee, Luis/.test($('#sheet').textContent) && !/✓/.test($('#sheet').textContent), label + ': job sheet shows who it is waiting on');
