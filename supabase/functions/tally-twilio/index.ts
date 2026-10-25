@@ -2194,18 +2194,12 @@ export async function paySaved(org: string, me: J, jobId: string, b: J): Promise
       const here = card.fingerprint ? await rest("GET", "pay_cards?select=id&org_id=eq." + q(org) + "&customer_id=eq." + q(card.customer_id) + "&fingerprint=eq." + q(card.fingerprint) + "&job_id=eq." + q(jobId) + "&limit=1") : [];
       if (!(here && here.length)) return { ok: false, message: "This card was kept on file on another job. The office can charge it, or send a pay link." };
     }
-    if (me.role === "lead") {
-      // charging a card with the customer not there: a crew lead stays within the quote's not-to-exceed
-      // amount (the app calls it the estimated top price), which only the office sets (things can be added to the
-      // bill on the job)
-      const qt = job.quote || {}, nte = cents(Number(qt.nte) > 0 ? qt.nte : qt.total);
-      const room = nte - (jobTotalCents(job) - ready.owed);
-      if (amt > room) {
-        return { ok: false, message: room >= MIN_CENTS
-          ? "A crew lead can put up to " + money(room) + " more on a card on file for this job (the quote's estimated top price). Send a pay link for the rest, or ask the office."
-          : "This bill is over the quote's estimated top price, so the office charges the card on file. Or send a pay link." };
-      }
-    }
+    // A crew lead charges a card on file for whatever the move came to, as the office does, up to what is
+    // still owed (readyToCharge), even past the quote's estimated top price, which is a guide (Oct 24).
+    // Richie, Oct 25: "Whatever price the move ends up is what the lead needs to charge the customer . If
+    // the customer forgets to mention the crazy entry to the house that addes 3 hours thats not my problem
+    // its the customers for not mentioning it when booking". (Until then a lead could charge one only up
+    // to the estimated top price.)
     // one charge however many times this is sent: the key names the job, the card, the amount, the bill so far
     const tries = (await rest("GET", "pay_log?select=pi&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&source=eq.saved")) || [];
     const idem = "tally-saved-" + await sha([org, jobId, card.pm_id, amt, jobTotalCents(job) - ready.owed, tries.length, live, acct].join("|"));

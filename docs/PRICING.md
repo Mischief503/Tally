@@ -56,9 +56,11 @@ estimated top price and no drive-back step):
   customer a break (set the billed hours, or add a credit). Switch off **Estimated top price** in
   Setup › Options (or the Rate card) and quotes stop showing one. A bill made before Oct 24 was held to
   the price, and keeps that when it's worked out again.
-- One place still uses it as a limit: a crew lead charging a card kept on file (the customer not there)
-  can charge up to the estimated top price. Past it the office charges the card, or the customer pays
-  with a pay link.
+- Nothing holds a payment to it either: a crew lead charging a card kept on file (the customer not
+  there) charges whatever the move came to, up to what's still owed (Richie, Oct 25: "Whatever price the
+  move ends up is what the lead needs to charge the customer . If the customer forgets to mention the
+  crazy entry to the house that addes 3 hours thats not my problem its the customers for not mentioning
+  it when booking"). Until Oct 25 a lead could charge a card on file only up to the estimated top price.
 - The bill shows the quote first, then what the bill is made of, under **Billed by the clock**: the
   hours at the hourly rate (with the times, and "the 3-hour minimum" when the minimum filled it in),
   the miles on a mileage move, the quote's fees (truck and fuel, stairs, packing, specialty items,

@@ -856,12 +856,17 @@ r = await app("tok-owner", { action: "pay_link", org: ORG, jobId: "j25", amount:
 await hook(piEvent(customerPays(sessionOf(r.body.url).id, "pm_v25")));   // a $300 deposit, card kept on file
 const card25 = await fn.cardId("pm_v25");
 const j25 = doc("jobs/j25"); j25.extras.e9 = { id: "e9", label: "Extra", amt: 3000, ts: 2 }; putDoc(ORG, "jobs/j25", j25);   // the bill grows to $4,263.50
+// Richie, Oct 25: "Whatever price the move ends up is what the lead needs to charge the customer"
+r = await app("tok-marcus", { action: "pay_saved", org: ORG, jobId: "j25", vaultId: card25, amount: 3963.51 });
+ok(!r.body.ok && /more than the \$3,963\.50 still owed/.test(r.body.message), "a crew lead can't charge a card on file for more than is owed: " + r.body.message);
 r = await app("tok-marcus", { action: "pay_saved", org: ORG, jobId: "j25", vaultId: card25, amount: 3963.5 });
-ok(!r.body.ok && /up to \$1,080\.00 more on a card on file/.test(r.body.message), "a crew lead charging a card on file stays within the quote's not-to-exceed amount: " + r.body.message);
-r = await app("tok-marcus", { action: "pay_saved", org: ORG, jobId: "j25", vaultId: card25, amount: 1080 });
-ok(r.body.ok, "up to that amount is fine");
-r = await app("tok-dispatch", { action: "pay_saved", org: ORG, jobId: "j25", vaultId: card25, amount: 2883.5 });
-ok(r.body.ok, "and the office can charge the rest");
+pc = lastCall("/v1/payment_intents");
+ok(r.body.ok && /^Charged \$3,963\.50 to /.test(r.body.message) && pc.p.amount === "396350" && pc.p.off_session === "true" && pc.p.payment_method === "pm_v25",
+  "a crew lead charges the card on file for the whole bill, $4,263.50, past the quote's $1,380 estimated top price: " + r.body.message);
+r = await app("tok-dispatch", { action: "pay_check", org: ORG, jobId: "j25" });
+ok(r.body.ok && r.body.owed === 0, "nothing is left to pay: " + r.body.owed);
+r = await app("tok-dispatch", { action: "pay_saved", org: ORG, jobId: "j25", vaultId: card25, amount: 10 });
+ok(!r.body.ok && /Nothing is owed/.test(r.body.message), "so the card can't be charged again: " + r.body.message);
 
 /* ---------- two owners without a staff name ---------- */
 putDoc(ORG, "jobs/j26", job("j26", { payments: {} }));
