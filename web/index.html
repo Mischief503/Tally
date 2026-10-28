@@ -552,6 +552,15 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .empst.warn{border-color:var(--warn)}
 .empst.off{border-color:var(--bad)}
 .empsec{margin:16px 0 6px;font-size:15px}
+.sides{display:flex;flex-direction:column;border:var(--bw) solid var(--line);border-radius:var(--r2);background:var(--card)}
+.sidesw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;min-height:52px;cursor:pointer}
+.sidesw+.sidesw{border-top:var(--bw) solid var(--line)}.sidesw>span:first-child{display:flex;flex-direction:column;min-width:0}
+.sidesw small{color:var(--muted);font-size:12.5px}.sw input:disabled{cursor:default}.sw input:disabled+span{opacity:.55}
+.seg{display:inline-flex;border:var(--bw) solid var(--line);border-radius:99px;overflow:hidden;flex:none}
+.seg label{position:relative;cursor:pointer}.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label span{display:block;padding:8px 13px;font-size:14px;min-width:44px;text-align:center}.seg label+label span{border-left:var(--bw) solid var(--line)}
+.seg input:checked+span{background:var(--focus);color:var(--card);font-weight:var(--w-mid)}.seg input:focus-visible+span{outline:2px solid var(--focus);outline-offset:-2px}
+.seg input:disabled+span{opacity:.55;cursor:default}.sidesnote{margin:6px 2px 0}
 .empro{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:14px;margin:6px 0 10px}
 .empro dt{color:var(--muted)}
 .empro dd{margin:0;overflow-wrap:anywhere}
@@ -960,13 +969,13 @@ function docRef(path){
     id:id,path:path,
     get:readOne,
     set:function(obj){
-      if(collection==='jobs'&&me.role==='callcenter')return ccSave(path,obj,null);
+      if(collection==='jobs'&&(me.role==='callcenter'||(window.tallyCcVia&&window.tallyCcVia(id,obj))))return ccSave(path,obj,null);
       if(collection==='users')return sb.from('members').upsert({org_id:ORG,user_id:id,email:obj.email||'',staff:obj.staff||'',role:obj.role||'crew',ts:obj.ts||Date.now()}).then(chk);
       if(collection==='requests')return sb.from('access_requests').upsert({org_id:ORG,user_id:id,email:obj.email||me.email,ts:obj.ts||Date.now()}).then(chk);
       return sb.from('docs').upsert({org_id:ORG,path:path,collection:collection,doc_id:id,data:obj,updated_at:new Date().toISOString()}).then(chk);
     },
     update:function(patch){
-      if(collection==='jobs'&&me.role==='callcenter')return ccSave(path,null,patch);
+      if(collection==='jobs'&&(me.role==='callcenter'||(window.tallyCcVia&&window.tallyCcVia(id,null))))return ccSave(path,null,patch);
       if(collection==='users')return sb.from('members').update(patch).eq('org_id',ORG).eq('user_id',id).then(chk);
       // merged on the server in one step, so two phones (or a payment the server records) can't undo
       // each other; a database without doc_patch yet falls back to read, merge, write
@@ -1405,7 +1414,7 @@ function defaultSettings(){return {
   rates:{r2:140,r3:195,r4:250},
   minHours:3,prod:45,mph:30,shopAddress:'',shopTravel:true,lateMins:30,activities:['Job day','Warehouse','Dump run','Truck and shop upkeep','Other'],truckFee:45,includedMiles:20,mileRate:1.5,stairFee:25,packPerBox:8,taxPct:0,depositPct:25,ntePct:15,crewCost:24,
   trucks:[{id:'t26',name:'Box 1 (26 ft)',cf:1700},{id:'t20',name:'Box 2 (20 ft)',cf:1000},{id:'t16',name:'Van (16 ft)',cf:800}],
-  crew:['Marcus','Dee','Luis','Tanya','Andre','Kim'],
+  crew:['Marcus','Dee','Luis','Tanya','Andre','Kim'],ccStaff:[],
   sources:['Google','Referral','Yelp','Facebook','Repeat customer','Other'],
   customFields:[{id:'cf1',label:'Elevator reserved',type:'yesno'},{id:'cf2',label:'Parking notes',type:'text'}],
   forms:[{id:'f_deliv',title:'Delivery receipt and release',kind:'text',required:true,pages:[],text:'I confirm that my belongings were delivered to the address on this job.\n\nI walked through and inspected the delivery. Any damage or missing items I noticed were pointed out to the crew before they left.\n\nBy signing, I accept delivery and agree to the final bill for this move.'}],perms:{},office:[{name:'Owner',kind:'owner'},{name:'Dispatch',kind:'dispatch'}],contacts:{Owner:'512-555-0100',Dispatch:'512-555-0199',Marcus:'512-555-0101',Dee:'512-555-0102',Luis:'512-555-0103',Tanya:'512-555-0104',Andre:'512-555-0105',Kim:'512-555-0106'},dirTs:0,leads:['Marcus','Tanya'],drivers:['Marcus','Tanya','Luis','Andre'],bidTol:10,materials:[
@@ -2116,12 +2125,14 @@ var ICON={
 };
 var TABS=[{id:'desk',label:'Companies'},{id:'sched',label:'Schedule'},{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'quotes',label:'Quotes'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
 var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['crew','chat'],crew:['crew','chat'],callcenter:['desk','sched','quotes']};
-function navTabs(){var ids=NAV[state.ui.role]||NAV.owner;return ids.map(function(id){return TABS.filter(function(t){return t.id===id})[0]})}
+function navTabs(){var r=state.ui.role,ids=ccToo()?['crew','sched','quotes','chat']:r==='callcenter'&&ccHouse()?['sched','quotes','chat']:(NAV[r]||NAV.owner);return ids.map(function(id){return TABS.filter(function(t){return t.id===id})[0]})}
 function allowedTabs(role){
-  var ids=role==='crew'||role==='lead'?['crew','chat']:role==='callcenter'?['desk','sched','quote','quotes']:role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
+  var ids=role==='crew'||role==='lead'?['crew','chat'].concat(ccToo()?['sched','quote','quotes']:[]):role==='callcenter'?(ccHouse()?['sched','quote','quotes','chat']:['desk','sched','quote','quotes']):role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
     ['today','quote','jobs','dispatch','crew','history','chat','reports','settings'];
   if(typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // Tally's own admins, in any company
-  return TABS.filter(function(t){return ids.indexOf(t.id)>=0});
+  var out=TABS.filter(function(t){return ids.indexOf(t.id)>=0});
+  if(ccToo())out.sort(function(a,b){return (b.id==='crew')-(a.id==='crew')});   // their jobs first, then the call center's
+  return out;
 }
 function fieldRoster(){
   var role=state.ui.role,S=state.settings,lk=lockedStaff();
@@ -2136,13 +2147,45 @@ function fieldMe(){
   var roster=fieldRoster();
   return roster.indexOf(state.ui.me)>=0?state.ui.me:(roster[0]||'');
 }
-function tabLabel(t){var r=state.ui.role;return t.id==='quote'&&r==='callcenter'?'New quote':t.id==='reports'&&r==='dispatch'?'Revenue':t.id==='crew'?(r==='owner'||r==='dispatch'?'Field view':'Jobs'):t.label}
+function tabLabel(t){var r=state.ui.role;return t.id==='quote'&&(r==='callcenter'||ccToo())?'New quote':t.id==='reports'&&r==='dispatch'?'Revenue':t.id==='crew'?(r==='owner'||r==='dispatch'?'Field view':'Jobs'):t.label}
 var isLead=function(n){return state.settings.leads.indexOf(n)>=0};
 var officeRec=function(n){return (state.settings.office||[]).filter(function(o){return o.name===n})[0]||null};
 var isOfficeName=function(n){return !!officeRec(n)};
 var canRun=function(n){return isLead(n)||isOfficeName(n)};          // leads, owner and dispatch can all run a job
 function assignable(){var S=state.settings,out=S.crew.slice();(S.office||[]).forEach(function(o){if(out.indexOf(o.name)<0)out.push(o.name)});return out}
 function whoTag(n){var o=officeRec(n);if(o)return o.kind==='owner'?' (owner)':' (dispatch)';return isLead(n)?' (lead)':''}
+/* ---------- the sides of the app a person sees (Richie, Oct 28: "In the employee profile it should have a set of
+   switches to give access to different sides of the app . Like field view for crew members and leads , so off , crew or
+   lead will be the 3 options for that switch . Then dispatch should be another switch . Then call center will be another
+   switch ."; "The switches will dictate what the employee sees when they log in"; someone with more than one side sees
+   them all together, in one app; the call center switch is "winging it" for now: a company's own call center person).
+   The owner sees everything. The settings' lists are what the app and the database go by: the crew (the field), the
+   leads, the office (owner and dispatch) and ccStaff (the company's own call center people: the database lets them read
+   the open quotes and the schedule's copy, and save quotes and bookings through cc_save). A profile keeps its switches
+   in info.access, so they come back when someone's access is turned back on. ---------- */
+function ccStaffHas(n){return !!n&&(state.settings.ccStaff||[]).indexOf(n)>=0}
+function sidesOf(n,rec){
+  var S=state.settings,a=rec&&rec.info&&rec.info.access,o=officeRec(n),role=rec?rec.role:'';
+  if(a&&typeof a==='object'){var ow=!!a.owner;return {owner:ow,field:!ow&&(a.field==='lead'||a.field==='crew')?a.field:'off',dispatch:!ow&&!!a.dispatch,cc:!ow&&!!a.cc}}
+  if((o&&o.kind==='owner')||(!o&&role==='owner'))return {owner:true,field:'off',dispatch:false,cc:false};
+  var inCrew=S.crew.indexOf(n)>=0,cc=ccStaffHas(n);
+  return {owner:false,field:inCrew?(isLead(n)?'lead':'crew'):(!o&&!cc&&(role==='lead'||role==='crew')?role:'off'),dispatch:(o&&o.kind==='dispatch')||(!o&&role==='dispatch'),cc:cc};
+}
+// the role the database goes by (members.role): the office's when they have it, else the field's
+function roleOfSides(a){return a.owner?'owner':a.dispatch?'dispatch':a.field==='lead'?'lead':'crew'}
+// the side a person's app opens on: the office's, else the field's, else the call center's
+function primaryRoleOf(n){var a=sidesOf(n,typeof empByName==='function'?empByName(n):null);return a.owner?'owner':a.dispatch?'dispatch':a.field!=='off'?a.field:a.cc?'callcenter':''}
+function sidesList(a){if(a.owner)return ['Owner'];var w=[];if(a.field!=='off')w.push(a.field==='lead'?'Crew lead':'Crew');if(a.dispatch)w.push('Dispatch');if(a.cc)w.push('Call center');return w}
+// whose view this is: the person previewed, the person signed in, or the one picked on this device
+function viewerName(){
+  if(previewing())return ui.preview.staff||'';
+  if(sync.mode==='shared'&&sync.identity.status==='ok')return sync.identity.staff||'';
+  var r=state.ui.role;return String((r==='crew'||r==='lead'?state.ui.me:state.ui.who)||'');
+}
+// a company's own call center person (not Tally's team; the office can quote anyway)
+function ccHouse(){var n=viewerName();return ccStaffHas(n)&&!isOfficeName(n)}
+// in the field and the call center both: their jobs, and the call center's Schedule, Quotes and New quote
+function ccToo(){var r=state.ui.role;return (r==='crew'||r==='lead')&&ccHouse()}
 /* ---------- trucks and drivers on a job ----------
    A job's trucks are assign.truckId (the first one, which older copies of the app read too) and
    assign.more (any others). assign.drivers says who drives each truck, by the truck's id. Who can
@@ -2366,7 +2409,7 @@ function renderMore(){
   var you=[office?'':look,canMyProfile()?row('me:open','',SICON.profile,'My profile','Your details and documents'):'',
     canPreview()?row('more:preview','',SICON.eye,'See it their way',previewing()?'Previewing '+(ui.preview.staff||KIND[ui.preview.role]||ui.preview.role):'Owner, dispatch, call center, lead or crew'):'',
     office?look:'',
-    window.tallySwitchCompany&&state.ui.role!=='callcenter'?row('more:company','',SICON.swap,'Switch company',(window.tallyOrg||{}).name||''):'',   // the call center switches from Companies
+    window.tallySwitchCompany&&!(state.ui.role==='callcenter'&&!ccHouse())?row('more:company','',SICON.swap,'Switch company',(window.tallyOrg||{}).name||''):'',   // the call center switches from Companies
     window.tallySignOut?row('more:signout','',SICON.signout,'Sign out',sync.meName||''):''];
   var sosRow=role!=='callcenter'&&(opt('truckDown')||sosActive().length)?'<div class="navlist" style="margin-top:16px">'+row('sos:open','',ICON.sos,'Truck down','Tell the office a truck broke down, and where','sosrow')+'</div>':'';
   el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="More"><div class="row between"><h2>More</h2><button class="btn sm" data-act="more:close">Done</button></div>'+
@@ -2476,7 +2519,7 @@ function saveQuote(kind){
     else if(X&&(cc||((X.slots.length||!(X.any&&X.any.ok))&&!armed('q:book')))){
       ui.qstep=3;if(ui.tab==='quote'&&!$('#dayPlan'))renderQuote();else renderDayPlan(q);
       var dp=$('#dayPlan');if(dp&&dp.scrollIntoView)try{dp.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){}
-      toast(cc?(X.slots.length?'It doesn’t fit in '+slotWords(S,X.slots)+' at '+fmtTime(d.time)+'. Move it to a slot with room'+(X.times.length?'':', pick another day'+(deskCos().length>1?' or another company':''))+'.':'Put the move in a slot first: drag it onto one under the price, or tap one.'):
+      toast(cc?(X.slots.length?'It doesn’t fit in '+slotWords(S,X.slots)+' at '+fmtTime(d.time)+'. Move it to a slot with room'+(X.times.length?'':', pick another day'+(!ccHouse()&&deskCos().length>1?' or another company':''))+'.':'Put the move in a slot first: drag it onto one under the price, or tap one.'):
         (X.slots.length?'It doesn’t fit in '+slotWords(S,X.slots)+' then. Tap Book anyway to book it.':'No slot is free for it then. Tap Book anyway to book it.'));
       return;
     }
@@ -3466,10 +3509,10 @@ function mvNote(j,c){
    those the rate card (a copy without the company's own business), the open quotes and a copy of the scheduled
    jobs without the money; they write only open quotes (booking one is their last change), and can't change a
    discount or a payment. The owner sees it all through See it their way › Call center. */
-function isCC(){return state.ui.role==='callcenter'}
-function canQuote(){var r=state.ui.role;return r==='owner'||r==='dispatch'||r==='callcenter'}
+function isCC(){return state.ui.role==='callcenter'||ccToo()}
+function canQuote(){var r=state.ui.role;return r==='owner'||r==='dispatch'||r==='callcenter'||ccToo()}
 // the call center person: signed in (the hosted app), or the one picked in See it their way
-function ccName(){return String((ccDb()?sync.identity.staff:(ui.preview&&ui.preview.role==='callcenter'?ui.preview.staff:''))||'')}
+function ccName(){return String((ccDb()?sync.identity.staff:(previewing()&&ui.preview.role==='callcenter'?ui.preview.staff:(ccHouse()?viewerName():'')))||'')}
 function ccWho(){var n=ccName();return n?n+' (call center)':'the call center'}
 function isOpenQuote(j){return !!j&&(j.status==='lead'||j.status==='quoted')}
 var SCHED_ST=['booked','active'];
@@ -3485,7 +3528,14 @@ function schedOf(j){
 // signed in as the call center (not the owner seeing it their way)
 function ccDb(){return sync.mode==='shared'&&sync.identity.status==='ok'&&sync.identity.role==='callcenter'}
 // the hosted call center reads the scheduled jobs from the database's copy; everyone else from the jobs
-function schedFromDb(){return !!window.TALLY_SCHED&&ccDb()&&!previewing()}
+function schedFromDb(){return !!window.TALLY_SCHED&&(ccDb()||(sync.mode==='shared'&&sync.identity.status==='ok'&&ccHouse()))&&!previewing()}
+// the hosted app asks before saving a job: a company's own call center person saves a quote, or a booking, through
+// cc_save; a job they're on goes the usual way
+window.tallyCcVia=function(id,obj){
+  if(!ccHouse()||!(sync.mode==='shared'&&sync.identity.status==='ok'))return false;
+  var j=obj&&obj.assign?obj:byId(id),me=viewerName();
+  return !(j&&j.assign&&(j.assign.crew||[]).indexOf(me)>=0);
+};
 function schedRec(v){   // a copy from the database, filled out so the screens can count on its shape
   if(!v||typeof v!=='object'||!v.id)return null;
   var d=v.d||{},q=v.quote||{},a=v.assign||{};
@@ -3710,7 +3760,7 @@ function renderDayPlan(q){
     if(!X.times.length&&P.trucks.length){
       var nx=nextRoom(d.moveDate,need,X.recs,S,d.editId,3);
       alts+=nx.length?'<div class="f"><span>Next days with room</span></div><div class="chips">'+nx.map(function(o){return '<button class="chip" data-act="dp:day" data-d="'+o.day+'" data-t="'+minHm(o.s)+'">'+esc(fmtDate(o.day)+' · '+fmtTime(minHm(o.s)))+'</button>'}).join('')+'</div>':'<p class="hint">No day in the next four weeks has room for it.</p>';
-      if(cc){
+      if(cc&&!ccHouse()){
         if(deskHosted()&&!desk.busy&&(!desk.at||Date.now()-desk.at>60000))deskLoadCos();   // the other companies and their bookings, at most a minute old (tried once a minute)
         var oc=deskRoom(d,q);
         if(oc.length)alts+='<div class="f"><span>Other companies with room that day</span></div><div class="chips">'+oc.map(function(o){return '<button class="chip" data-act="dp:co" data-co="'+esc(o.c.id)+'">'+esc(o.c.name+' · '+fmtTime(minHm(o.s)))+'</button>'}).join('')+'</div>';
@@ -3920,7 +3970,7 @@ var CARD_KEYS=['company','rates','minHours','prod','mph','shopAddress','shopTrav
 // and the movers: how many are on the crew list, and how many are off each day (never who)
 function rateCardOf(S){var o={};CARD_KEYS.forEach(function(k){if(S&&S[k]!==undefined)o[k]=clone(S[k])});if(S&&Array.isArray(S.crew)){var off={},D=S.daysOff||{};Object.keys(D).forEach(function(d){var n=(D[d]||[]).filter(function(x,i,a){return S.crew.indexOf(x)>=0&&a.indexOf(x)===i}).length;if(n)off[d]=n});o.movers={n:S.crew.length,off:off}}return o}
 // under a rate card in the call center's app, so none of the sample company's own people or numbers show through
-var CARD_BLANK={crew:[],leads:[],drivers:[],office:[],contacts:{},perms:{},materials:[],forms:[],costCats:[],crewCost:0,comms:{alerts:{},ring:[],appUrl:''}};
+var CARD_BLANK={crew:[],leads:[],drivers:[],office:[],ccStaff:[],contacts:{},perms:{},materials:[],forms:[],costCats:[],crewCost:0,comms:{alerts:{},ring:[],appUrl:''}};
 // Sample companies beside the sample one, so the map has something to show (the sample data only). busy: for each
 // weekday, Sunday first, how many of their trucks are booked all day (deskRecs makes up two moves on each)
 var DESK_SAMPLES=[
@@ -4612,12 +4662,12 @@ function setupSecs(){
   add('employees','people','Employees',nIn+' '+(nIn===1?'person':'people'),employeesCard(),'crew staff people hiring documents phone');
   add('access','people','App access',sync.mode==='shared'?'Who can sign in, and as what':'Sign-in for your team',accessCard(),'sign in login users approve revoke');
   add('roles','people','Roles','What crew, crew leads and dispatch can do, and the call center',
-    '<section class="card"><h2>Roles</h2><p class="sub">Four levels for your people. Use “See it their way” in More to try each one.</p>'+
+    '<section class="card"><h2>Roles</h2><p class="sub">Each person’s profile (Employees) has switches for the sides of the app they see when they sign in: Field view (off, crew or lead), Dispatch and Call center. Someone with more than one sees them all together. Use “See it their way” in More to try each person.</p>'+
     '<div class="who" style="display:block"><b>Crew</b><br><small>Sees the jobs they are on, adds photos, reads job notes, leaves crew notes'+(opt('tally')?', ticks off the load tally':'')+(opt('clock')?', and uses the time clock':'')+'.</small></div>'+
     '<div class="who" style="display:block"><b>Crew lead</b><br><small>Everything crew can do, plus the job timer, prices, and billing out'+(opt('leadCharges')?' with extra charges':'')+(opt('leadPay')?' and payments':' (the office collects the payment)')+'.</small></div>'+
     '<div class="who" style="display:block"><b>Dispatch</b><br><small>Books quotes and schedules crews and trucks'+(opt('dispatchMoney')?', and sees company revenue and revenue by crew':'')+'. Can also work in the field with lead-level access'+(opt('dispatchPay')?', including billing':'')+'.</small></div>'+
     '<div class="who" style="display:block"><b>Owner</b><br><small>Everything, plus employee hours, job hours, and bid accuracy for the company and each crew. Can also work in the field and waive a form for a job.</small></div>'+
-    '<div class="who" style="display:block"><b>Call center</b> <small>(a Tally service)</small><br><small>Tally’s call center team, when Tally switches the service on for your company. They see your rate card, your open quotes and your schedule without the money: how busy each day is, and each job’s customer, day, time, addresses, items and crew size. They make quotes and book them. No discounts, no payments, and nothing else in Tally.</small></div></section>'+
+    '<div class="who" style="display:block"><b>Call center</b><br><small>Your own call center people (the Call center switch): the schedule, your open quotes and New quote, with the day’s slots to line a move up in. They book it in a slot; dispatch picks the truck and crew. No money, no discounts, no payments. Tally’s call center team, when Tally switches the service on for your company, sees the same for you: your rate card, your open quotes and your schedule without the money.</small></div></section>'+
     optGroup('field','Crew and field')+optGroup('bill','Billing out')+optGroup('office','Office'),'permissions crew lead dispatch owner can');
   add('clock','people','Time clock',opt('clock')?'On · '+S.activities.length+' work types'+(opt('lateNote')?' · note after '+num(S.lateMins)+' min':''):'Off',
     '<section class="card"><h2>Time clock</h2><p class="sub">Separate from the job clock: job days, warehouse work, dump runs and the rest.</p><div class="f" style="margin-top:4px"><span>Work types</span></div>'+chips(S.activities,'st:rmact')+'<div class="row"><input id="nAct" placeholder="Work type" aria-label="New work type" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addact">Add</button></div></section>'+
@@ -4685,7 +4735,7 @@ function renderTabs(){
   var un=unreadTotal(),nav=navTabs(),wide=window.innerWidth>=900,office=canEditJobs();
   var list=wide?allowedTabs(state.ui.role):nav;
   // the round button: a new quote, for the office. (The crew clock in and out on the clock card on Today and the crew's Jobs screen.)
-  var hasFab=office||state.ui.role==='callcenter';
+  var hasFab=office||state.ui.role==='callcenter'||ccToo();
   var btn=function(t){return '<button data-act="tab" data-tab="'+t.id+'"'+(t.id===ui.tab?' aria-current="page"':'')+'>'+(t.id==='crew'&&!office?ICON.jobs:ICON[t.id])+'<span>'+tabLabel(t)+'</span>'+(t.id==='chat'&&un?'<i class="badge" aria-label="'+un+' unread">'+(un>9?'9+':un)+'</i>':'')+'</button>'};
   var moreBtn='<button data-act="more:open"'+((!wide&&!list.some(function(t){return t.id===ui.tab})&&!(hasFab&&ui.tab==='quote'))?' aria-current="page"':'')+'>'+ICON.more+'<span>More</span></button>';
   var html=wide||!hasFab?(list.map(btn).join('')+moreBtn)
@@ -4747,9 +4797,10 @@ $('#photoIn').addEventListener('change',function(e){takePhotos(e.target.files);e
 var KIND={owner:'Owner',dispatch:'Dispatch',lead:'Crew lead',crew:'Crew',callcenter:'Call center'};
 var UPDATES=['On my way','Arrived at pickup','Loading done','Arrived at delivery','Running late'];
 function directory(){
-  var S=state.settings,out=[];
-  (S.office||[]).forEach(function(o){out.push({name:o.name,kind:o.kind,phone:S.contacts[o.name]||''})});
-  S.crew.forEach(function(n){out.push({name:n,kind:isLead(n)?'lead':'crew',phone:S.contacts[n]||''})});
+  var S=state.settings,out=[],seen={},add=function(n,k){if(seen[n])return;seen[n]=1;out.push({name:n,kind:k,phone:S.contacts[n]||''})};
+  (S.office||[]).forEach(function(o){add(o.name,o.kind)});
+  S.crew.forEach(function(n){add(n,isLead(n)?'lead':'crew')});
+  (S.ccStaff||[]).forEach(function(n){add(n,'callcenter')});
   return out;
 }
 // the people in chat (the call center, Tally's own team, has no chat)
@@ -4760,7 +4811,7 @@ function chatRoster(){
   var role=state.ui.role,S=state.settings;
   if(role==='crew')return S.crew.filter(function(n){return !isLead(n)});
   if(role==='lead')return S.crew.filter(isLead);
-  if(role==='callcenter')return [];
+  if(role==='callcenter')return ccHouse()?[viewerName()]:[];
   return chatDir().map(function(x){return x.name});
 }
 function myName(){
@@ -5573,7 +5624,7 @@ function startData(){
   sync.unsubs.push(db.collection('jobs').onSnapshot(pullJobs,ef));
   sync.unsubs.push(db.collection('shifts').where('inAt','>',Date.now()-400*864e5).onSnapshot(pullShifts,ef));
   sync.unsubs.push(db.collection('vault').onSnapshot(pullVault,ef));
-  if(window.TALLY_SCHED&&sync.identity.role==='callcenter')sync.unsubs.push(db.collection('sched').onSnapshot(pullSched,ef));
+  if(window.TALLY_SCHED&&['callcenter','crew','lead'].indexOf(sync.identity.role)>=0)sync.unsubs.push(db.collection('sched').onSnapshot(pullSched,ef));   // the database gives the copies to the call center only
   chatStart(db);
   payLoad();
   if(sync.identity.role==='callcenter')deskBoot();
@@ -5593,7 +5644,9 @@ function applyIdentityUI(){
   if(rw)rw.style.display='none';
   if(wa)wa.textContent=pv?('Preview · '+(ui.preview.staff||KIND[ui.preview.role]||ui.preview.role)):(locked?(id.staff+' · '+(KIND[id.role]||id.role)):'');
   if(pv){state.ui.role=ui.preview.role;if(ui.preview.staff){if(ui.preview.role==='crew'||ui.preview.role==='lead')state.ui.me=ui.preview.staff;else state.ui.who=ui.preview.staff}return}
-  if(locked){state.ui.role=id.role;if(id.role==='crew'||id.role==='lead')state.ui.me=id.staff;else state.ui.who=id.staff}
+  if(locked){var lr=id.role;if((lr==='crew'||lr==='lead')&&ccStaffHas(id.staff)&&state.settings.crew.indexOf(id.staff)<0&&!isOfficeName(id.staff))lr='callcenter';
+    state.ui.role=lr;if(lr==='crew'||lr==='lead')state.ui.me=id.staff;else state.ui.who=id.staff;
+    if(lr==='callcenter'){var at=allowedTabs(lr);if(at.length&&!at.some(function(t){return t.id===ui.tab}))ui.tab=at[0].id}}   // a side that came with the settings: onto one of its tabs
 }
 function renderGate(){
   var g=$('#gate'),st=sync.gate;
@@ -5723,11 +5776,12 @@ function empStatus(e){
 }
 // The crew and office lists the rest of the app uses follow each profile's role and access.
 function dirApply(e){
-  var S=state.settings,n=e.name,ci=S.crew.indexOf(n),oi=(S.office||[]).findIndex(function(o){return o.name===n});
-  S.crew=S.crew.filter(function(x){return x!==n});S.leads=S.leads.filter(function(x){return x!==n});S.office=(S.office||[]).filter(function(o){return o.name!==n});
+  var S=state.settings,n=e.name,a=sidesOf(n,e),ci=S.crew.indexOf(n),oi=(S.office||[]).findIndex(function(o){return o.name===n});
+  S.crew=S.crew.filter(function(x){return x!==n});S.leads=S.leads.filter(function(x){return x!==n});S.office=(S.office||[]).filter(function(o){return o.name!==n});S.ccStaff=(S.ccStaff||[]).filter(function(x){return x!==n});
   if(e.active!==false){
-    if(e.role==='crew'||e.role==='lead'){if(ci>=0)S.crew.splice(ci,0,n);else S.crew.push(n);if(e.role==='lead')S.leads.push(n)}
-    else if(e.role==='owner'||e.role==='dispatch'){var ob={name:n,kind:e.role};if(oi>=0)S.office.splice(oi,0,ob);else S.office.push(ob)}
+    if(a.field!=='off'){if(ci>=0)S.crew.splice(ci,0,n);else S.crew.push(n);if(a.field==='lead')S.leads.push(n)}
+    if(a.owner||a.dispatch){var ob={name:n,kind:a.owner?'owner':'dispatch'};if(oi>=0)S.office.splice(oi,0,ob);else S.office.push(ob)}
+    if(a.cc&&!a.owner&&!a.dispatch)S.ccStaff.push(n);
   }
   var ph=String((e.info&&e.info.phone)||'').trim();if(ph)S.contacts[n]=ph;
   dirChanged();
@@ -5737,7 +5791,7 @@ function employeesCard(){
   var host=peopleHosted(),S=state.settings;
   if(!people.loaded&&!people.loading)loadPeople();
   var rows=empRoster().map(function(x){var st=empStatus(x.rec);
-    return '<button class="emprow'+(x.rec&&x.rec.active===false?' off':'')+'" data-act="emp:open" '+(x.rec?'data-id="'+esc(x.rec.id)+'"':'data-name="'+esc(x.name)+'"')+'><span><span class="nm">'+esc(x.name)+'</span> <span class="pill">'+esc(KIND[x.role]||x.role)+'</span>'+(driversOn()&&(S.drivers||[]).indexOf(x.name)>=0?' <span class="pill">Drives</span>':'')+'<small>'+esc(st.t)+'</small></span><span class="go" aria-hidden="true">›</span></button>'}).join('');
+    return '<button class="emprow'+(x.rec&&x.rec.active===false?' off':'')+'" data-act="emp:open" '+(x.rec?'data-id="'+esc(x.rec.id)+'"':'data-name="'+esc(x.name)+'"')+'><span><span class="nm">'+esc(x.name)+'</span> '+(x.rec?sidesList(sidesOf(x.name,x.rec)):[KIND[x.role]||x.role]).map(function(w){return '<span class="pill">'+esc(w)+'</span>'}).join(' ')+(driversOn()&&(S.drivers||[]).indexOf(x.name)>=0?' <span class="pill">Drives</span>':'')+'<small>'+esc(st.t)+'</small></span><span class="go" aria-hidden="true">›</span></button>'}).join('');
   return '<section class="card"><h2>Employees</h2><p class="sub">'+(host?'Everyone who works for you. Add the email each person signs in with: when they sign in, Tally connects them to their profile and role, with no code to share. Hiring details are visible only to you and that person.':'Everyone who works for you, with their hiring details. In this copy, profiles stay on this device. In the Tally app they are private to you and each employee, and signing in connects people to their profile.')+'</p>'+
     (people.err?'<div class="note">'+esc(people.err)+'</div>':'')+(host&&people.loading&&!people.list.length?'<p class="hint">Loading profiles…</p>':'')+
     '<button class="btn primary" data-act="emp:new" style="margin:2px 0 12px">Add employee</button>'+(rows||'<p class="hint">No one yet.</p>')+
@@ -5749,6 +5803,7 @@ function openEmp(o){
   var S=state.settings;
   var d=rec?{name:rec.name,role:rec.role,email:rec.email||'',active:rec.active!==false,info:clone(rec.info||{}),notes:rec.notes||''}
            :{name:o.name||'',role:o.name?dirRole(o.name):'crew',email:'',active:true,info:{phone:o.name?(S.contacts[o.name]||''):''},notes:''};
+  d.access=o.name||rec?sidesOf(d.name,rec):{owner:false,field:'crew',dispatch:false,cc:false};delete d.info.access;
   ui.emp={mode:'edit',id:rec?rec.id:'',fixedName:!!(rec||o.name),draft:d,err:'',busy:false,docType:'i9',armed:''};
   renderEmp();
   if(rec&&peopleHosted())loadDocs(rec.id);
@@ -5768,6 +5823,9 @@ function empCapture(){
     var k=i.dataset.ek||i.dataset.mk,v=i.type==='checkbox'?i.checked:(i.dataset.money!==undefined?(i.value.trim()?String(round2(moneyVal(i))):''):i.value);
     if(i.dataset.ek&&['name','role','email','active','notes'].indexOf(k)>=0)E.draft[k]=v;else{E.draft.info=E.draft.info||{};E.draft.info[k]=v}
   });
+  // the switches: what they see when they sign in
+  var A=E.draft.access;
+  if(A)$$('[data-ak]',el).forEach(function(i){var k=i.dataset.ak;if(k==='field'){if(i.checked)A.field=i.value}else A[k]=!!i.checked});
 }
 function empField(k,label,type,opts,val,attr){
   var v=val==null?'':String(val),a=attr+'="'+k+'"',ctl;
@@ -5788,15 +5846,21 @@ function inviteHtml(rec){
 function empEditBody(){
   var E=ui.emp,d=E.draft,rec=E.id?empById(E.id):null,host=peopleHosted(),i=d.info||{};
   var self=!!(rec&&rec.user_id&&host&&rec.user_id===window.tallyPeople.uid()),st=empStatus(rec);
-  var roleSel='<select data-ek="role"'+(self?' disabled':'')+'>'+EMP_ROLES.map(function(r){return '<option value="'+r[0]+'"'+(d.role===r[0]?' selected':'')+'>'+r[1]+'</option>'}).join('')+'</select>';
+  var A=d.access||{owner:false,field:'crew',dispatch:false,cc:false},dis=self?' disabled':'',fn=esc((d.name||'They').split(' ')[0]);
+  var sw=function(k,label,sub){return '<label class="sidesw"><span><b>'+label+'</b><small>'+sub+'</small></span><span class="sw"><input type="checkbox" role="switch" data-ak="'+k+'" aria-label="'+esc(label)+'"'+(A[k]?' checked':'')+dis+'><span aria-hidden="true"></span></span></label>'};
+  var sees=sidesList(A),tabsW=A.owner?['everything, Setup and the money included']:[A.field!=='off'?'the jobs they’re on'+(A.field==='lead'?' (running them and billing out)':'')+' and the time clock':'',A.dispatch?'Today, Jobs, the Board and quotes':'',A.cc&&!A.dispatch?'the schedule, Quotes and New quote, with no money or discounts':''].filter(Boolean);
+  var sides='<h3 class="empsec">What they see</h3><div class="sides">'+sw('owner','Owner','Everything, Setup included')+
+    (A.owner?'':'<div class="sidesw"><span><b>Field view</b><small>Their jobs in the field</small></span><span class="seg" role="radiogroup" aria-label="Field view">'+[['off','Off'],['crew','Crew'],['lead','Lead']].map(function(f){return '<label><input type="radio" name="empField" data-ak="field" value="'+f[0]+'"'+(A.field===f[0]?' checked':'')+dis+'><span>'+f[1]+'</span></label>'}).join('')+'</span></div>'+
+      sw('dispatch','Dispatch','Today, Jobs, the Board and quotes')+sw('cc','Call center','The schedule, quotes and booking, no money'))+'</div>'+
+    '<p class="hint sidesnote">'+(sees.length?esc(fn)+' sees: '+esc(tabsW.join('; '))+'.'+(tabsW.length>1?' All in one app.':''):'With every side off, '+esc(fn)+' sees nothing. Turn one on, or turn off “Can use Tally”.')+'</p>';
   var nameCtl='<input data-ek="name" autocomplete="off" value="'+esc(d.name)+'"'+(E.fixedName?' readonly aria-readonly="true"':' placeholder="The name the crew uses"')+'>';
-  var head='<div class="sheet-head"><div><h2>'+esc(E.fixedName?d.name:'New employee')+'</h2><small>'+esc(KIND[d.role]||'')+'</small></div><button class="btn sm" data-act="emp:close">Close</button></div>';
-  var access='<div class="grid2 stack">'+fld('Name in Tally',nameCtl)+fld('Role',roleSel)+
-      fld('Email they sign in with','<input data-ek="email" type="email" inputmode="email" autocapitalize="off" spellcheck="false" autocomplete="off" value="'+esc(d.email)+'" placeholder="name@example.com">','span2')+'</div>'+
+  var head='<div class="sheet-head"><div><h2>'+esc(E.fixedName?d.name:'New employee')+'</h2><small>'+esc(sidesList(A).join(' · ')||'No access')+'</small></div><button class="btn sm" data-act="emp:close">Close</button></div>';
+  var access='<div class="grid2 stack">'+fld('Name in Tally',nameCtl)+
+      fld('Email they sign in with','<input data-ek="email" type="email" inputmode="email" autocapitalize="off" spellcheck="false" autocomplete="off" value="'+esc(d.email)+'" placeholder="name@example.com">')+'</div>'+
     (E.fixedName?'<p class="hint">The name ties together their jobs, hours and chat, so it can\'t be changed here.</p>':'')+
     (rec?'<div class="empst '+st.k+'">'+esc(st.t)+'</div>':'')+
     '<label class="check"><input type="checkbox" data-ek="active"'+(d.active?' checked':'')+(self?' disabled':'')+'> Can use Tally'+(host?' (turn off when someone leaves: their access ends at once)':'')+'</label>'+
-    (self?'<p class="hint">This is you, so your role and access can\'t be changed here.</p>':'')+inviteHtml(rec);
+    (self?'<p class="hint">This is you, so your role and access can\'t be changed here.</p>':'')+inviteHtml(rec)+sides;
   var secs=EMP_SECS.map(function(sx){
     var key='emp:'+sx.t,filled=sx.f.some(function(f){return i[f[0]]}),open=ui.open[key];if(open===undefined)open=!!(sx.open||filled);
     var inner='<div class="grid2 stack">'+sx.f.map(function(f){return empField(f[0],f[1],f[2],f[3],i[f[0]],'data-ek')}).join('')+'</div>'+
@@ -5860,11 +5924,13 @@ function empSave(){
   if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return fail('That email address does not look right.');
   if(email&&people.list.some(function(x){return x.email===email&&(!rec||x.id!==rec.id)}))return fail('Another profile already uses that email.');
   if(i.ssnLast4&&!/^\d{4}$/.test(String(i.ssnLast4).trim()))return fail('Social Security: enter only the last 4 digits.');
-  var info={};Object.keys(i).forEach(function(k){var v=i[k];if(v!==''&&v!=null)info[k]=typeof v==='string'?v.trim():v});
-  var out={id:rec?rec.id:undefined,name:name,role:EMP_ROLES.some(function(r){return r[0]===d.role})?d.role:'crew',email:email,active:!!d.active,info:info,notes:String(d.notes||'').slice(0,5000)};
+  var A=d.access||{owner:false,field:'crew',dispatch:false,cc:false},A2={owner:!!A.owner,field:A.owner?'off':(A.field==='lead'||A.field==='crew'?A.field:'off'),dispatch:!A.owner&&!!A.dispatch,cc:!A.owner&&!!A.cc};
+  if(d.active&&!A2.owner&&A2.field==='off'&&!A2.dispatch&&!A2.cc)return fail('Turn on at least one side for them (Field view, Dispatch or Call center), or turn off “Can use Tally”.');
+  var info={};Object.keys(i).forEach(function(k){var v=i[k];if(v!==''&&v!=null)info[k]=typeof v==='string'?v.trim():v});info.access=A2;
+  var out={id:rec?rec.id:undefined,name:name,role:roleOfSides(A2),email:email,active:!!d.active,info:info,notes:String(d.notes||'').slice(0,5000)};
   var done=function(saved){
     upsertPerson(saved);
-    if(ui.emp===E){E.busy=false;E.err='';E.id=saved.id;E.fixedName=true;E.draft={name:saved.name,role:saved.role,email:saved.email||'',active:saved.active!==false,info:clone(saved.info||{}),notes:saved.notes||''}}
+    if(ui.emp===E){E.busy=false;E.err='';E.id=saved.id;E.fixedName=true;E.draft={name:saved.name,role:saved.role,email:saved.email||'',active:saved.active!==false,info:clone(saved.info||{}),notes:saved.notes||''};E.draft.access=sidesOf(saved.name,saved);delete E.draft.info.access}
     dirApply(saved);toast(rec?'Saved.':saved.name+' added.');
     if(ui.emp===E){renderEmp();if(!rec&&host)loadDocs(saved.id)}
     softSettings();
@@ -5880,7 +5946,7 @@ function empDelete(){
   E.armed='';
   var finish=function(){
     people.list=people.list.filter(function(x){return x.id!==rec.id});delete people.docs[rec.id];
-    var S=state.settings;S.crew=S.crew.filter(function(x){return x!==rec.name});S.leads=S.leads.filter(function(x){return x!==rec.name});if(S.drivers)S.drivers=S.drivers.filter(function(x){return x!==rec.name});S.office=(S.office||[]).filter(function(o){return o.name!==rec.name});delete S.contacts[rec.name];dirChanged();
+    var S=state.settings;S.crew=S.crew.filter(function(x){return x!==rec.name});S.leads=S.leads.filter(function(x){return x!==rec.name});S.ccStaff=(S.ccStaff||[]).filter(function(x){return x!==rec.name});if(S.drivers)S.drivers=S.drivers.filter(function(x){return x!==rec.name});S.office=(S.office||[]).filter(function(o){return o.name!==rec.name});delete S.contacts[rec.name];dirChanged();
     ui.emp=null;renderEmp();softSettings();toast(rec.name+' removed.');
   };
   if(!peopleHosted()){empLocalSave(empLocal().filter(function(x){return x.id!==rec.id}));finish();return}
@@ -6375,11 +6441,12 @@ function previewPeople(role){
   var S=state.settings;
   if(role==='crew')return S.crew.filter(function(n){return !isLead(n)});
   if(role==='lead')return S.crew.filter(isLead);
-  if(role==='callcenter')return [];   // Tally's call center team: anyone of them
+  if(role==='callcenter')return (S.ccStaff||[]).filter(function(n){return !isOfficeName(n)});   // the company's own (Tally's team: Anyone)
   return (S.office||[]).filter(function(o){return o.kind===role}).map(function(o){return o.name});
 }
 function startPreview(role,staff){
   if(!canPreview())return;
+  if(staff){var pr=primaryRoleOf(staff);if(pr)role=pr}   // a person: their own sides, whichever row they were picked from
   if(state.ui.realRole==null)state.ui.realRole=state.ui.role;
   ui.preview={role:role,staff:staff||''};
   state.ui.role=role;
@@ -6404,7 +6471,7 @@ function previewSheet(){
   var roles=[['owner','Owner'],['dispatch','Dispatch'],['callcenter','Call center'],['lead','Crew lead'],['crew','Crew']];
   var rows=roles.map(function(r){
     var people=previewPeople(r[0]);
-    var who=people.length?people.map(function(n){return '<button class="chip" data-act="pv:set" data-role="'+r[0]+'" data-staff="'+esc(n)+'">'+esc(n)+'</button>'}).join('')
+    var who=people.length?people.map(function(n){return '<button class="chip" data-act="pv:set" data-role="'+r[0]+'" data-staff="'+esc(n)+'">'+esc(n)+'</button>'}).join('')+(r[0]==='callcenter'?'<button class="chip" data-act="pv:set" data-role="callcenter" data-staff="">Tally’s team</button>':'')
       :'<button class="chip" data-act="pv:set" data-role="'+r[0]+'" data-staff="">Anyone</button>';
     return '<div class="pvrow"><span class="who-n"><b>'+r[1]+'</b></span></div><div class="scrollx">'+who+'</div>';
   }).join('');
@@ -8257,6 +8324,7 @@ document.addEventListener('input',function(e){
   else if(t.dataset.jcf){var j2=canEditJobs()?byId(ui.jobId):null;if(j2)jedSet(j2,'cf:'+t.dataset.jcf,t.value)}
 });
 document.addEventListener('change',function(e){
+  if(e.target&&e.target.dataset&&e.target.dataset.ak&&ui.emp){empCapture();renderEmp();return}   // a profile's switch: the summary and the head follow
   if(e.target&&e.target.id==='dkAddr'){deskUi().addr=e.target.value;deskFind();return}
   if(e.target&&e.target.id==='dkDate'){deskUi().date=e.target.value;renderDeskRes();return}
   if(e.target&&e.target.dataset&&e.target.dataset.s==='shopAddress')setTimeout(shopGeoCheck,50);
@@ -8326,7 +8394,7 @@ if(['auto','light','dark'].indexOf(state.ui.mode)<0)state.ui.mode='auto';
 state.ui.realRole=null;if(state.ui.role!=='owner')state.ui.role='owner';
 (function migrate(){var S=state.settings,D=defaultSettings();if(S.lateMins==null)S.lateMins=D.lateMins;if(!S.activities)S.activities=D.activities;if(!state.shifts){state.shifts=state.demo?demoShifts():[]}})();
 (function migrate4(){var S=state.settings,D=defaultSettings();if(!S.office)S.office=D.office;if(!S.contacts)S.contacts=D.contacts;if(S.dirTs==null)S.dirTs=0;if(!state.chatMsgs)state.chatMsgs=state.demo?demoChat():[];if(!state.locs)state.locs={};if(!state.ui.reads)state.ui.reads={};if(state.ui.who==null)state.ui.who=''})();
-(function migrate3(){var S=state.settings,D=defaultSettings();if(!S.forms)S.forms=D.forms;if(!S.truckDay||typeof S.truckDay!=='object')S.truckDay=D.truckDay;if(!S.daysOff||typeof S.daysOff!=='object')S.daysOff={};if(!state.vault)state.vault=state.demo?demoVault():[];state.jobs.forEach(function(j){if(!j.signed)j.signed=[]})})();
+(function migrate3(){var S=state.settings,D=defaultSettings();if(!S.forms)S.forms=D.forms;if(!S.truckDay||typeof S.truckDay!=='object')S.truckDay=D.truckDay;if(!S.daysOff||typeof S.daysOff!=='object')S.daysOff={};if(!Array.isArray(S.ccStaff))S.ccStaff=[];if(!state.vault)state.vault=state.demo?demoVault():[];state.jobs.forEach(function(j){if(!j.signed)j.signed=[]})})();
 (function migrate2(){
   var S=state.settings,D=defaultSettings();
   if(!S.leads)S.leads=D.leads;if(S.bidTol==null)S.bidTol=D.bidTol;

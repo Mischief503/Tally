@@ -33,7 +33,7 @@ insert into auth.users values
  ('cccccccc-0000-0000-0000-000000000001','own@x.com', now()),('cccccccc-0000-0000-0000-000000000002','dis@x.com', now()),
  ('cccccccc-0000-0000-0000-000000000003','jess@x.com', now()),('cccccccc-0000-0000-0000-000000000004','marcus@x.com', now()),
  ('cccccccc-0000-0000-0000-000000000005','other@x.com', now()),('cccccccc-0000-0000-0000-000000000006','zoe@x.com', now()),
- ('cccccccc-0000-0000-0000-000000000007','kim@x.com', null);
+ ('cccccccc-0000-0000-0000-000000000007','kim@x.com', null),('cccccccc-0000-0000-0000-000000000008','riley@x.com', now());
 SQL
 $P -d $1 -f supabase/sql/supabase-schema-v2.sql
 $P -d $1 -f supabase/sql/supabase-employees.sql
@@ -41,7 +41,7 @@ $P -d $1 -f supabase/sql/supabase-payments.sql
 }
 OWN=cccccccc-0000-0000-0000-000000000001; DIS=cccccccc-0000-0000-0000-000000000002; JESS=cccccccc-0000-0000-0000-000000000003
 MARCUS=cccccccc-0000-0000-0000-000000000004; OTHER=cccccccc-0000-0000-0000-000000000005; ZOE=cccccccc-0000-0000-0000-000000000006
-KIM=cccccccc-0000-0000-0000-000000000007
+KIM=cccccccc-0000-0000-0000-000000000007; RILEY=cccccccc-0000-0000-0000-000000000008
 DB=t
 as(){ $P -d $DB -tA -c "set role authenticated; set request.jwt.claim.sub='$1'; $2" 2>&1 | tail -1; }
 pg(){ $P -d $DB -tA -c "$1" 2>&1 | tail -1; }
@@ -54,7 +54,7 @@ defs(){ $P -d $1 -tA -c "select string_agg(x, E'\n' order by x) from (
   select 'policy '||polrelid::regclass||' '||polname||' '||coalesce(pg_get_expr(polqual, polrelid),'')||' / '||coalesce(pg_get_expr(polwithcheck, polrelid),'') x
     from pg_policy where polrelid in ('public.docs'::regclass,'public.orgs'::regclass)
   union all select 'fn '||p.proname||' '||md5(pg_get_functiondef(p.oid)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.proname in ('can_write_doc','cc_agent','cc_in','cc_open','cc_clean','cc_save','claim_cc_team','cc_me','my_orgs','sched_of','sched_sync','ratecard_of','ratecard_sync','jobs_guard')
+    where n.nspname='public' and p.proname in ('can_write_doc','cc_agent','cc_member','cc_in','cc_open','cc_clean','cc_save','claim_cc_team','cc_me','my_orgs','sched_of','sched_sync','ratecard_of','ratecard_sync','jobs_guard')
   union all select 'con '||conrelid::regclass||' '||conname||' '||pg_get_constraintdef(oid) from pg_constraint
     where conrelid in ('public.members'::regclass,'public.docs'::regclass,'public.employees'::regclass,'public.tally_cc_team'::regclass,'public.cc_orgs'::regclass)
   union all select 'col '||table_name||' '||column_name||' '||data_type||' '||is_nullable||' '||coalesce(column_default,'') from information_schema.columns
@@ -63,7 +63,7 @@ defs(){ $P -d $1 -tA -c "select string_agg(x, E'\n' order by x) from (
   union all select 'tbl '||relname||' rls='||relrowsecurity||' '||coalesce(relacl::text,'') from pg_class where oid in ('public.tally_cc_team'::regclass,'public.cc_orgs'::regclass)
   union all select 'trg '||tgname||' '||pg_get_triggerdef(oid) from pg_trigger where tgrelid='public.docs'::regclass and not tgisinternal
   union all select 'acl '||p.proname||' '||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.proname in ('cc_agent','cc_in','cc_open','cc_clean','cc_save','claim_cc_team','cc_me','my_orgs','sched_of','sched_sync','ratecard_of','ratecard_sync')) s"; }
+    where n.nspname='public' and p.proname in ('cc_agent','cc_member','cc_in','cc_open','cc_clean','cc_save','claim_cc_team','cc_me','my_orgs','sched_of','sched_sync','ratecard_of','ratecard_sync')) s"; }
 job(){ echo "insert into docs(org_id,path,collection,doc_id,data) values ('$O','jobs/$1','jobs','$1','$2') on conflict (org_id,path) do update set data=excluded.data returning 1"; }
 doc(){ echo "insert into docs(org_id,path,collection,doc_id,data) values ('$1','$2','${2%%/*}','${2#*/}','$3') on conflict (org_id,path) do update set data=excluded.data returning 1"; }
 SETTINGS='{"company":"Acme Moving","rates":{"r2":140,"r3":195,"r4":250},"minHours":3,"truckFee":45,"includedMiles":20,"mileRate":1.5,"shopAddress":"1200 Industrial Blvd, Austin, TX","shopGeo":{"lat":30.33,"lon":-97.7,"addr":"1200 Industrial Blvd, Austin, TX"},"trucks":[{"id":"t26","name":"Box 1 (26 ft)","cf":1700}],"opt":{"tax":false},"crew":["Marcus","Dee"],"contacts":{"Owner":"512-555-0100","Marcus":"512-555-0101"},"crewCost":24,"perms":{},"materials":[{"id":"m1","name":"Box","price":4,"cost":1.5}],"office":[{"name":"Owner","kind":"owner"}]}'
@@ -73,9 +73,9 @@ setup t
 $P -d t -f supabase/sql/supabase-callcenter.sql
 $P -d t -f supabase/sql/supabase-callcenter.sql && echo "PASS supabase-callcenter.sql runs again cleanly"
 O=$(as $OWN "select public.create_org('Acme Moving')"); O2=$(as $OTHER "select public.create_org('Other Co')")
-for p in "$DIS:Dispatch:dispatch" "$MARCUS:Marcus:crew"; do IFS=: read U N R <<<"$p"
+for p in "$DIS:Dispatch:dispatch" "$MARCUS:Marcus:crew" "$RILEY:Riley:crew"; do IFS=: read U N R <<<"$p"
   as $OWN "insert into members(org_id,user_id,email,staff,role,ts) values ('$O','$U','x','$N','$R',1)" >/dev/null; done
-says $OWN "insert into members(org_id,user_id,email,staff,role,ts) values ('$O','$JESS','x','Jess','callcenter',1) returning 1" "members_role_check" "a company can't make its own people the call center (it's Tally's service)"
+says $OWN "insert into members(org_id,user_id,email,staff,role,ts) values ('$O','$JESS','x','Jess','callcenter',1) returning 1" "members_role_check" "a member's role is never the call center (Tally's team is no member; a company's own call center people are crew or leads named in the settings' ccStaff)"
 says $OWN "insert into employees(org_id,name,role,email) values ('$O','Riley','callcenter','riley@x.com') returning 1" "employees_role_check" "nor an employee profile"
 # Tally admin (the Edge Function, as the service role) adds the team and switches the service on
 pg "insert into tally_cc_team(email,name,added_by) values ('jess@x.com','Jess','richie'),('zoe@x.com','Zoe','richie'),('kim@x.com','Kim','richie'),('marcus@x.com','Marcus','richie')" >/dev/null
@@ -122,6 +122,20 @@ check $ZOE "l1,q1" "select string_agg(doc_id, ',' order by doc_id) from docs whe
 check $JESS 0 "select count(*) from docs where org_id='$O2'" "a company without the service: nothing"
 check $KIM 0 "select count(*) from docs" "and someone not linked to the team reads nothing"
 check $OWN "1|1" "select (select count(*) from docs where path='ratecard/main')||'|'||(select count(*) from docs where collection='sched' and doc_id='b1')" "the office reads the copies too"
+
+# a company's own call center person (Oct 28: Setup › Employees › Call center puts their name in the settings' ccStaff)
+check $RILEY "|0|false" "select coalesce(string_agg(doc_id, ','),'')||'|'||(select count(*) from docs where collection='sched')||'|'||public.cc_member('$O')::text from docs where collection='jobs'" "Riley, crew on no job, reads no jobs and no schedule copies"
+as $OWN "update docs set data=jsonb_set(data,'{ccStaff}','[\"Riley\",\"Dispatch\"]') where path='org/settings'" >/dev/null
+check $RILEY "l1,q1|a1,b1|1|true" "select string_agg(doc_id, ',' order by doc_id)||'|'||(select string_agg(doc_id, ',' order by doc_id) from docs where collection='sched')||'|'||(select count(*) from docs where path='ratecard/main')||'|'||public.cc_member('$O')::text from docs where collection='jobs'" "the owner switches Riley to the call center: the open quotes, the schedule's copies and the rate card, and not the booked jobs themselves"
+check $DIS "false" "select public.cc_member('$O')::text" "dispatch named there too is still the office (it books anyway)"
+check $RILEY ok "select public.cc_save('$O','jobs/r1','{\"id\":\"r1\",\"status\":\"booked\",\"d\":{\"name\":\"In House\",\"moveDate\":\"2026-11-03\",\"time\":\"09:00\",\"slots\":[\"t26\"]},\"quote\":{\"total\":515,\"crew\":2,\"hours\":3},\"payments\":{}}',null)" "Riley books a move through cc_save"
+check $RILEY "1|t26" "select count(*)||'|'||(select data->'d'->'slots'->>0 from docs where path='sched/r1') from docs where path='sched/r1'" "and it's on the schedule's copy, in its slot"
+says $RILEY "select public.cc_save('$O','jobs/q1',null,'{\"d\":{\"discount\":\"0\"}}')" "Only the office gives a discount" "no discount of her own"
+denied $RILEY "update docs set data=jsonb_set(data,'{ccStaff}','[\"Riley\",\"Marcus\"]') where path='org/settings' returning 1" "and she can't add anyone (the settings are the owner's)"
+as $OWN "update docs set data=jsonb_set(data,'{ccStaff}','[]') where path='org/settings'" >/dev/null
+check $RILEY "|false" "select coalesce(string_agg(doc_id, ','),'')||'|'||public.cc_member('$O')::text from docs where collection='jobs'" "switched off: she reads no open quotes again"
+says $RILEY "select public.cc_save('$O','jobs/r2','{\"id\":\"r2\",\"status\":\"quoted\",\"d\":{\"name\":\"Late\"},\"payments\":{}}',null)" "Only the call center saves jobs this way" "and can't save one"
+as $DIS "delete from docs where path='jobs/r1'" >/dev/null
 
 # writing: only through cc_save, which checks what the call center saves
 cc(){ echo "select public.cc_save('$O','jobs/$1',$2,$3)"; }

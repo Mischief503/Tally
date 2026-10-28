@@ -642,6 +642,13 @@ export async function driveDistance(from: string | { lat: number; lng: number },
   return { ok: true, src: "google", miles: Math.round(rt.distanceMeters / 1609.344 * 10) / 10, minutes: Math.round(secs / 60) };
 }
 
+// one of the company's own people the owner switched to the call center (Oct 28: Setup › Employees › Call center puts
+// their name in the settings' ccStaff): a crew member or lead, never the office, who has more anyway
+async function ccHouse(org: string, me: J, S?: J | null): Promise<boolean> {
+  if (me.role !== "crew" && me.role !== "lead") return false;
+  const s = S === undefined ? await getDoc(org, "org/settings") : S;
+  return !!s && Array.isArray(s.ccStaff) && s.ccStaff.indexOf(me.staff) >= 0;
+}
 async function startCall(org: string, me: J, jobId: string): Promise<J> {
   const line = await lineFor(org);
   if (!line) return { ok: false, message: "The company line is not set up yet." };
@@ -650,8 +657,9 @@ async function startCall(org: string, me: J, jobId: string): Promise<J> {
   if (job.test) return { ok: false, message: "Test job: its phone numbers are made up, so nothing is sent." };
   const office = me.role === "owner" || me.role === "dispatch";
   const onJob = ((job.assign && job.assign.crew) || []).indexOf(me.staff) >= 0;
-  // the call center calls customers on open quotes and on the schedule (what it can see)
-  const cc = me.role === "callcenter" && ["lead", "quoted", "booked", "active"].indexOf(job.status) >= 0;
+  // the call center calls customers on open quotes and on the schedule (what it can see): Tally's team, or one of the
+  // company's own people the owner switched to the call center (Oct 28: their name in the settings' ccStaff)
+  const cc = (me.role === "callcenter" || await ccHouse(org, me, S)) && ["lead", "quoted", "booked", "active"].indexOf(job.status) >= 0;
   if (!office && !onJob && !cc) return { ok: false, message: "You can only call customers on your own jobs." };
   // the call center's own phone is on Tally's team list, not in the company's contacts
   const mine = e164(me.cc ? me.phone : contacts(S)[me.staff]);
@@ -2715,8 +2723,8 @@ async function handleApp(req: Request): Promise<Response> {
       return json({ ok: true, number: l ? l.phone_number : "", twilio: !!(env("TWILIO_ACCOUNT_SID") && env("TWILIO_AUTH_TOKEN")) });
     }
     if (b.action === "distance") {
-      // quotes: the office and the call center
-      if (!office && me.role !== "callcenter") return json({ ok: false, message: "Only the office and the call center build quotes." }, 403);
+      // quotes: the office and the call center (Tally's team, or the company's own)
+      if (!office && me.role !== "callcenter" && !(await ccHouse(org, me))) return json({ ok: false, message: "Only the office and the call center build quotes." }, 403);
       return json(await driveDistance(b.from, b.to));
     }
     if (b.action === "shop_distance") {

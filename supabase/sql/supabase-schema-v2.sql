@@ -118,18 +118,27 @@ alter table public.tally_cc_team enable row level security;
 alter table public.cc_orgs       enable row level security;
 revoke all on public.tally_cc_team, public.cc_orgs from anon, authenticated;
 grant all on public.tally_cc_team, public.cc_orgs to service_role;
--- Am I on the call center team? Am I the call center for this company (it has the service, and I'm not one
--- of its own people)? A job it may read and change is an open quote or lead; what it saves is a quote, a
--- booking or a lost quote, and a new one has no payment and no discount (the job guard keeps a discount the
--- office gave, and the payments, as they were).
+-- Am I on the call center team? Am I the call center for this company: Tally's team for a company with the
+-- service (not one of its own people), or one of its own people the owner switched to the call center (Oct 28,
+-- Setup › Employees › Call center: their name in the settings' ccStaff, which only the owner writes; a crew member
+-- or lead, or someone with no field side, never the office, who books anyway)? A job it may read and change is an
+-- open quote or lead; what it saves is a quote, a booking or a lost quote, and a new one has no payment and no
+-- discount (the job guard keeps a discount the office gave, and the payments, as they were).
 create or replace function public.cc_agent() returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.tally_cc_team where user_id = auth.uid())
 $$;
+create or replace function public.cc_member(o uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.members m join public.docs s on s.org_id = m.org_id and s.path = 'org/settings'
+                  where m.org_id = o and m.user_id = auth.uid() and m.role in ('lead','crew') and m.staff <> ''
+                    and jsonb_typeof(s.data->'ccStaff') = 'array' and (s.data->'ccStaff') ? m.staff)
+$$;
 create or replace function public.cc_in(o uuid) returns boolean
 language sql stable security definer set search_path = public as $$
-  select coalesce(public.cc_agent() and exists (select 1 from public.cc_orgs c where c.org_id = o)
-                  and not public.member_of(o), false)
+  select coalesce((public.cc_agent() and exists (select 1 from public.cc_orgs c where c.org_id = o)
+                   and not public.member_of(o))
+                  or public.cc_member(o), false)
 $$;
 create or replace function public.cc_open(d jsonb) returns boolean
 language sql immutable set search_path = public as $$
@@ -157,9 +166,9 @@ create or replace function public.cc_me() returns text
 language sql stable security definer set search_path = public as $$
   select coalesce(nullif(btrim(name), ''), split_part(email, '@', 1)) from public.tally_cc_team where user_id = auth.uid()
 $$;
-revoke all on function public.cc_agent(), public.cc_in(uuid), public.cc_open(jsonb), public.cc_clean(jsonb, boolean),
+revoke all on function public.cc_agent(), public.cc_member(uuid), public.cc_in(uuid), public.cc_open(jsonb), public.cc_clean(jsonb, boolean),
   public.claim_cc_team(), public.cc_me() from public, anon;
-grant execute on function public.cc_agent(), public.cc_in(uuid), public.cc_open(jsonb), public.cc_clean(jsonb, boolean),
+grant execute on function public.cc_agent(), public.cc_member(uuid), public.cc_in(uuid), public.cc_open(jsonb), public.cc_clean(jsonb, boolean),
   public.claim_cc_team(), public.cc_me() to authenticated;
 -- @cc end
 

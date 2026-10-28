@@ -191,7 +191,7 @@ const L = (m) => label + ': ' + m;
   ok(/Quote made by the call center/.test($('#sheet').textContent), L('the job sheet says the call center made the quote'));
   click('#sheet [data-act="sheet:close"].btn'); await sleep(5);
   T.ui.tab = 'settings'; T.ui.setSec = 'roles'; T.render(); await sleep(10);
-  ok(/Four levels for your people/.test(view()) && /Call center\s*\(a Tally service\)\s*Tally’s call center team, when Tally switches the service on for your company/.test(view()), L('Setup › Roles: four levels for the company’s people, and the call center as Tally’s service'));
+  ok(/switches for the sides of the app they see when they sign in: Field view \(off, crew or lead\), Dispatch and Call center/.test(view()) && /Call center\s*Your own call center people \(the Call center switch\)/.test(view()) && /Tally’s call center team, when Tally switches the service on for your company/.test(view()), L('Setup › Roles: each person’s switches, the company’s own call center people, and Tally’s team as a service'));
   T.ui.setSec = 'employees'; T.render(); await sleep(10);
   ok(!/Call center/.test(view()), L('Setup › Employees has no call center'));
   T.dirApply({ name: 'Riley', role: 'callcenter', active: true, info: {} });

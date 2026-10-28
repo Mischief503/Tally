@@ -108,8 +108,9 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
 
   // give Dee (no profile yet) a profile
   click($$('.emprow').find((r) => /Dee/.test(r.textContent))); await sleep(20);
-  ok($('[data-ek="name"]').value === 'Dee' && $('[data-ek="name"]').readOnly && $('[data-ek="phone"]').value === '512-555-0102' && $('[data-ek="role"]').value === 'crew', 'Dee opens prefilled from the crew list: name, role, phone');
-  set(A, '[data-ek="role"]', 'lead');
+  ok($('[data-ek="name"]').value === 'Dee' && $('[data-ek="name"]').readOnly && $('[data-ek="phone"]').value === '512-555-0102' && $('[data-ak="field"][value="crew"]').checked && !$('[data-ak="dispatch"]').checked && !$('[data-ak="cc"]').checked, 'Dee opens prefilled from the crew list: name, phone, and her switches (Field view: Crew)');
+  click($('[data-ak="field"][value="lead"]')); await sleep(10);
+  ok($('[data-ak="field"][value="lead"]').checked && /Dee sees: the jobs they’re on \(running them and billing out\) and the time clock\./.test(empText(A)) && /Crew lead/.test($('#emp .sheet-head small').textContent), 'Field view: Lead, and the profile says what she’ll see');
   click('[data-act="emp:save"]'); await sleep(40);
   ok(T.state().settings.leads.includes('Dee') && calls.writes.filter((x) => x.table === 'employees' && x.op === 'insert').some((x) => x.row.name === 'Dee' && x.row.role === 'lead'), 'saved as a crew lead, and the lead list follows');
   ok(/No sign-in email yet/.test(empText(A)), 'without an email she can\'t sign in yet, and it says so');
@@ -136,7 +137,7 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
   db.employees.push({ id: 'e-owner', org_id: ORG, name: 'Owner', role: 'owner', email: 'o@x.com', user_id: 'u-owner', active: true, info: {}, notes: '' });
   await T.loadPeople(true); await sleep(30);
   click($$('.emprow').find((r) => /^Owner/.test(r.textContent.trim()))); await sleep(30);
-  ok($('[data-ek="active"]').disabled && $('[data-ek="role"]').disabled && /This is you/.test(empText(A)) && !$('[data-act="emp:del"]'), 'your own profile: role and access are locked, no delete');
+  ok($('[data-ek="active"]').disabled && $('[data-ak="owner"]').disabled && $('[data-ak="owner"]').checked && !$('[data-ak="dispatch"]') && /This is you/.test(empText(A)) && !$('[data-act="emp:del"]'), 'your own profile: the owner, and the switches and access are locked, no delete');
   click('[data-act="emp:close"]'); await sleep(20);
 
   // App access: approve a join request as Luis (no profile) -> a linked profile is made
@@ -199,10 +200,11 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
   B.click('[data-act="emp:new"]'); await sleep(20);
   set(B, '[data-ek="name"]', 'Pat');
   set(B, '[data-ek="phone"]', '503-555-0111');
-  set(B, '[data-ek="role"]', 'dispatch');
+  B.click(B.$('[data-ak="field"][value="off"]')); await sleep(10);
+  B.click(B.$('[data-ak="dispatch"]')); await sleep(10);
   B.click('[data-act="emp:save"]'); await sleep(30);
   const saved = JSON.parse(B.w.localStorage.getItem('tally.employees.local') || '[]');
-  ok(saved.length === 1 && saved[0].name === 'Pat' && saved[0].role === 'dispatch' && saved[0].info.phone === '503-555-0111', 'saved on this device only');
+  ok(saved.length === 1 && saved[0].name === 'Pat' && saved[0].role === 'dispatch' && saved[0].info.phone === '503-555-0111' && JSON.stringify(saved[0].info.access) === JSON.stringify({ owner: false, field: 'off', dispatch: true, cc: false }), 'saved on this device only, with her switches');
   ok(B.T.state().settings.office.some((o) => o.name === 'Pat' && o.kind === 'dispatch'), 'Pat joins the office list as dispatch');
   ok(/Document uploads work in the Tally app/.test(empText(B)) && !B.$('#empDocFile'), 'no uploads in this copy, and it says why');
   ok(!/Text Pat the app/.test(empText(B)), 'no invite text without sign-in');

@@ -341,6 +341,20 @@ ok(r.status === 403, "the call center doesn't schedule crews");
 r = await app("tok-jess", { action: "eta", org: ORG, jobId: "j1", minutes: 20 });
 ok(r.body.ok === false, "or text a customer the crew's arrival");
 
+// a company's own call center person (Oct 28): Kim is crew, and the owner switched her to the call center
+putDoc(ORG, "jobs/j9", job("j9", { assign: { truckId: "t26", crew: ["Marcus"] } }));
+r = await app("tok-kim", { action: "call", org: ORG, jobId: "q1" });
+ok(r.body.ok === false && /your own jobs/.test(r.body.message), "crew can't call a customer on an open quote");
+putDoc(ORG, "org/settings", { ...settings, ccStaff: ["Kim"] });
+n0 = sent.length;
+r = await app("tok-kim", { action: "call", org: ORG, jobId: "q1" });
+ok(r.body.ok && sent.length === n0 + 1 && sent[sent.length - 1].To === "+15125550106", "switched to the call center, she calls a customer on an open quote through the company line (her phone from the contacts)");
+r = await app("tok-kim", { action: "call", org: ORG, jobId: "j9" });
+ok(r.body.ok, "and on a booked job she isn't on (the schedule she sees)");
+r = await app("tok-kim", { action: "call", org: ORG, jobId: "d1" });
+ok(r.body.ok === false && /your own jobs/.test(r.body.message), "but not on a finished one");
+putDoc(ORG, "org/settings", settings);
+
 twilioFail = "Unverified number";
 r = await app("tok-owner", { action: "call", org: ORG, jobId: "j1" });
 ok(r.body.ok === false && /Unverified number/.test(r.body.message) && DB.comm_log.some((x) => x.status === "failed" && x.error === "Unverified number"), "Twilio refusal reaches the user and the log");
@@ -521,6 +535,10 @@ ok(r.body.src === "google", "the answer says it came from Google, so the quote c
 ok(rc.h["X-Goog-FieldMask"] === "routes.distanceMeters,routes.duration" && rc.bd.travelMode === "DRIVE" && rc.bd.origin.address === "418 Oak St, Austin" && !rc.bd.routingPreference, "asks Google for driving distance only (the cheapest tier)");
 r = await app("tok-kim", { action: "distance", org: ORG, from: "a", to: "b" });
 ok(r.status === 403, "crew cannot use the lookup");
+putDoc(ORG, "org/settings", { ...settings, ccStaff: ["Kim"] });
+r = await app("tok-kim", { action: "distance", org: ORG, from: "418 Oak St, Austin", to: "77 Ridge Rd, Round Rock" });
+ok(r.body.ok && r.body.miles === 22.4, "crew the owner switched to the call center can (she builds quotes)");
+putDoc(ORG, "org/settings", settings);
 r = await app("tok-jess", { action: "distance", org: ORG, from: "418 Oak St, Austin", to: "77 Ridge Rd, Round Rock" });
 ok(r.body.ok && r.body.miles === 22.4, "the call center looks up a quote's miles too");
 DB.cc_orgs.length = 0;

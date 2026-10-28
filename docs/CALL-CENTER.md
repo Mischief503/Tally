@@ -5,8 +5,8 @@ their customers and books jobs onto their schedules. Richie's words (Oct 22, 202
 service that the moving companys will be able to purchase to help get bookings . So call center will
 only be able to see companys that pay for that service ."
 
-- The team is **Tally's own people**, not a company's employees. A company can't make one of its own
-  people the call center.
+- The team is **Tally's own people**, not a company's employees. A company can also have **its own call
+  center people** (since Oct 28): the Call center switch on an employee's profile (below).
 - **Tally admin switches the service on** for each company that buys it. Richie bills the companies
   himself; nothing in the app charges for it.
 - The team sees **only the companies switched on**, and of those only what quoting and booking need.
@@ -132,6 +132,43 @@ truck it takes up 2 slots for that amount of time".
   the trucks dispatch gave it, else in its slots, else in the first slot free then.
 - **The Schedule** shows the picked day's slots above its jobs, and each job says its movers and
   trucks ("5 movers · 1 truck").
+
+## A company's own call center people (Oct 28)
+
+Richie's words: "In the employee profile it should have a set of switches to give access to different
+sides of the app . Like field view for crew members and leads , so off , crew or lead will be the 3
+options for that switch . Then dispatch should be another switch . Then call center will be another
+switch ."; "The switches will dictate what the employee sees when they log in"; and on the call center
+switch: "Im thinking every company will have their own assigned call center person . Not to sure on this
+part so we are winging it and then when i present it to my company we will really dial this part in ."
+
+- **Setup › Employees › a person › What they see**: **Owner** (everything; the other switches go),
+  **Field view** (Off, Crew or Lead), **Dispatch** and **Call center**, with a line saying what they'll
+  see ("Tanya sees: the jobs they’re on (running them and billing out) and the time clock; the
+  schedule, Quotes and New quote, with no money or discounts. All in one app."). With every side off,
+  it won't save unless "Can use Tally" is off too.
+- **More than one side: one app, all their tabs together.** A crew lead with the call center sees Jobs
+  (theirs, first), Schedule, Quotes, Chat and the round + for a new quote. Dispatch takes in the field
+  (dispatch can already run a job), so dispatch with Field view is the office's tabs, with them on the
+  crew list. The call center alone: Schedule, Quotes, Chat and the + (no Companies: that's Tally's
+  team, for many companies).
+- **Their quotes are the call center's**: no discount, the move put in a slot before booking, no truck
+  put on ("Created as Booked by Tanya (call center)"); dispatch picks the truck and crew.
+- **Kept by the app**: the settings' lists (the crew, the leads, the office, and `ccStaff` for the
+  company's own call center people) follow each profile's switches, kept in the profile
+  (`info.access`) so they come back when someone's access is turned back on. The role the database goes
+  by stays one of owner, dispatch, lead or crew: the office's when they have it, else the field's, else
+  crew (someone with the call center side only is crew with no jobs).
+- **Kept by the database** (in supabase-callcenter.sql): `cc_member(company)`: a crew member or lead
+  whose name is in the settings' `ccStaff` (which only the owner writes). The call center rules
+  (`cc_in`) take them in with Tally's team: they read the open quotes, the schedule's copy and the rate
+  card, and save quotes and bookings only through `cc_save`, with no discount and no payment. The jobs
+  they're on, they change as crew or a lead as before. The office named there is still the office.
+- See it their way: each person, from any row, opens with their own sides; Call center lists the
+  company's own people and **Tally’s team**.
+- **The Edge Function** knows them too (a crew member or lead named in `ccStaff`): they call
+  customers on open quotes and scheduled jobs through the company's line (it rings their phone from
+  the company's contacts first), and they look up a quote's miles.
 
 ## What the database enforces
 
