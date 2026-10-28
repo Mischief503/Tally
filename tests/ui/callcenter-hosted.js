@@ -14,12 +14,12 @@ const quote = (total, crew) => ({ cf: 193, count: 18, crew: crew || 2, hours: 3,
 const GEO = { 'round rock': [30.5083, -97.6789], 'austin': [30.2672, -97.7431], 'georgetown': [30.6333, -97.6779] };
 function seed() {
   const docs = [], put = (org, path, data) => { const [c, id] = path.split('/'); docs.push({ org_id: org, path, collection: c, doc_id: id, data, updated_at: 'x' }); };
-  const settings = { company: 'Ace Moving', crew: ['Marcus', 'Kim'], leads: ['Marcus'], office: [{ name: 'Owner', kind: 'owner' }, { name: 'Dispatch', kind: 'dispatch' }],
+  const settings = { company: 'Ace Moving', crew: ['Marcus', 'Kim', 'Rosa', 'Lee'], leads: ['Marcus'], office: [{ name: 'Owner', kind: 'owner' }, { name: 'Dispatch', kind: 'dispatch' }],
     contacts: { Owner: '512-555-0100', Marcus: '512-555-0101' }, crewCost: 24, rates: { r2: 140, r3: 195, r4: 250 }, minHours: 3, includedMiles: 20, mileRate: 1.5,
     shopAddress: '1200 Industrial Blvd, Austin, TX', shopGeo: { lat: 30.33, lon: -97.7, addr: '1200 Industrial Blvd, Austin, TX' },
     trucks: [{ id: 't16', name: 'Van (16 ft)', cf: 800 }, { id: 't26', name: 'Box 1 (26 ft)', cf: 1700 }],
     forms: [{ id: 'f_bol', title: 'Bill of lading', kind: 'pages', required: false, pages: [], pageIds: ['fp1'] }], opt: {} };
-  const blue = { company: 'Bluebonnet Moving', crew: ['Ty'], contacts: { Ty: '512-555-0177' }, rates: { r2: 135, r3: 190, r4: 245 }, minHours: 2, includedMiles: 30, mileRate: 1.6,
+  const blue = { company: 'Bluebonnet Moving', crew: ['Ty', 'Ana', 'Bo'], contacts: { Ty: '512-555-0177' }, rates: { r2: 135, r3: 190, r4: 245 }, minHours: 2, includedMiles: 30, mileRate: 1.6,
     shopAddress: '500 Leander Rd, Georgetown, TX', trucks: [{ id: 'b1', name: 'Box (26 ft)', cf: 1700 }], opt: {} };
   put(ORG, 'meta/init', { ts: 1 }); put(ORG, 'org/settings', settings);
   put(ORG2, 'meta/init', { ts: 1 }); put(ORG2, 'org/settings', blue);
@@ -30,7 +30,7 @@ function seed() {
   put(ORG, 'jobs/l1', job('l1', 'lead', { d: { name: 'Sam Kowalski', phone: '512-555-0180', moveDate: '', time: '08:00', from: 'Austin', to: 'San Antonio', items: [], custom: {}, discount: '' }, quote: { cf: 0, total: 0, lines: [] }, items: [] }));
   put(ORG, 'jobs/b1', job('b1', 'booked', { d: { name: 'Priya Nair', phone: '512-555-0142', moveDate: today, time: '08:00', from: '418 Oak St', to: '77 Ridge Rd', notes: 'Gate 4411', items: [{ id: 'sofa3', q: 1 }], custom: {} },
     assign: { truckId: 't26', crew: ['Marcus', 'Kim'] }, payments: { p1: { id: 'p1', amt: 129, method: 'Card', ts: 1 } } }));
-  put(ORG2, 'jobs/z1', job('z1', 'booked', { d: { name: 'Bluebonnet customer', phone: '512-555-0199', moveDate: later, time: '10:00', from: '9 Oak', to: '8 Elm', items: [], custom: {} }, assign: { truckId: 'b1', crew: ['Ty'] } }));
+  put(ORG2, 'jobs/z1', job('z1', 'booked', { d: { name: 'Bluebonnet customer', phone: '512-555-0199', moveDate: later, time: '08:00', from: '9 Oak', to: '8 Elm', items: [], custom: {} }, quote: Object.assign(quote(515), { hours: 9 }), assign: { truckId: 'b1', crew: ['Ty'] } }));
   // the database's copies: the schedule without the money, and the rate cards (supabase-callcenter.sql)
   docs.filter((r) => r.collection === 'jobs' && ['booked', 'active'].indexOf(r.data.status) >= 0).forEach((r) => put(r.org_id, 'sched/' + r.doc_id, schedOf(r.data)));
   docs.filter((r) => r.path === 'org/settings').forEach((r) => put(r.org_id, 'ratecard/main', ratecardOf(r.data)));
@@ -88,7 +88,9 @@ const net = async (url) => {
   ok(A.calls.rpc.length >= 0 && asks.length && !A.calls.writes.some((x) => /^ratecard|^org\//.test(x.row && x.row.path || '')), 'and nothing is written');
   change('#dkDate', later); await sleep(20);
   const av = (n) => { const d = cards().find((x) => x.querySelector('.hsum b').textContent === n); return d.querySelector('.dkav').textContent; };
-  ok(av('Bluebonnet Moving') === 'Full' && av('Ace Moving') === 'Open', 'that day: Bluebonnet’s one truck is taken (from its schedule copy), Ace is open');
+  ok(av('Bluebonnet Moving') === 'Full' && av('Ace Moving') === 'Open', 'that day: Bluebonnet’s one truck is booked all day (from its schedule copy), Ace is open');
+  const rcA = row('ratecard/main'), rcB = row('ratecard/main', ORG2);
+  ok(rcA.movers.n === 4 && rcB.movers.n === 3 && !JSON.stringify([rcA, rcB]).match(/Marcus|Kim|Rosa|Lee|Ty|Ana|"Bo"/), 'the rate cards count the movers (4 and 3), never who');
   cards()[0].open = true;
   ok(/2 movers\s*\$135\/hr/.test(cards()[0].querySelector('.ratecard').textContent) && /Inside their 30-mile local area/.test(cards()[0].textContent), 'Bluebonnet’s rate card, and the move is local for them');
   click('#view [data-act="desk:quote"][data-co="' + ORG2 + '"]'); await sleep(20);
@@ -116,24 +118,39 @@ const net = async (url) => {
   ok(!A.calls.writes.some((x) => (x.op === 'patch' || (x.table === 'docs' && !x.op)) && /^jobs\//.test((x.row && x.row.path) || '')), 'nothing went to the jobs any other way');
   click('#view [data-act="cc:open"][data-id="q1"]'); await sleep(15);
   click('[data-act="q:step"][data-s="3"]'); await sleep(10);
+  const nq = ccWrites().length;
+  click('[data-act="q:book"]'); await sleep(300);
+  ok(ccWrites().length === nq && row('jobs/q1').status === 'quoted' && toast() === 'Put the move in a slot first: drag it onto one under the price, or tap one.', 'Book job before she’s put it in a slot: “' + toast() + '”');
+  click($$('#dayPlan [data-act="dp:time"]').find((b) => b.textContent === '9:00 AM · slot 1')); await sleep(15);
+  ok(/In slot 1 from 9:00 AM to 12:00 PM\. 3 of 4 movers busy then\. Dispatch picks the truck and crew\./.test($('#dayPlan').textContent.replace(/\s+/g, ' ')), 'a time with a slot free: 9:00 AM in slot 1');
   click('[data-act="q:book"]'); await sleep(900);
   ok(row('jobs/q1').status === 'booked' && !!row('sched/q1') && T.ui.tab === 'sched' && T.ui.schedDay === later, 'Book job: booked in the database, its copy is on the schedule, and she’s on its day');
   ok(Object.values(row('jobs/q1').log || {}).some((l) => l.ev === 'Booked by Jess (call center)'), 'the job’s activity: “Booked by Jess (call center)”');
+  ok(!row('jobs/q1').assign.truckId && !row('sched/q1').assign.truckId && row('jobs/q1').d.slots.join() === 't16' && row('sched/q1').d.slots.join() === 't16' && Object.values(row('jobs/q1').log || {}).some((l) => l.ev === 'Lined up in slot 1 at 9:00 AM'), 'lined up in slot 1, in the job and on the schedule’s copy, and no truck put on it (dispatch picks)');
   ok(!T.state().jobs.some((j) => j.id === 'q1') && (T.state().sched || []).some((r) => r.id === 'q1') && /Ortega family/.test(view()) && !/\$/.test(view()), 'the job itself leaves her phone; the schedule shows it from the copy, without the money');
 
   /* ---------- a new quote, booked straight away ---------- */
   click('#fab'); await sleep(15);
   const type = (sel, v) => { const e = $(sel); e.value = v; e.dispatchEvent(new w.Event('input', { bubbles: true })); };
   type('[data-d="name"]', 'Dana Whit'); type('[data-d="moveDate"]', later); await sleep(10);
-  ok(/: 1 job booked, 1 of 2 trucks taken\.$/.test($('#dayNote').textContent), 'the move date says how busy that day is already: ' + $('#dayNote').textContent);
+  ok(/: 1 job booked, room in 2 of 2 slots\.$/.test($('#dayNote').textContent), 'the move date says how busy that day is already: ' + $('#dayNote').textContent);
   click('[data-act="q:step"][data-s="2"]'); await sleep(10);
   click($$('[data-act="inc"]')[0]); await sleep(10);
   click('[data-act="q:step"][data-s="3"]'); await sleep(10);
+  const dpT = () => $('#dayPlan').textContent.replace(/\s+/g, ' ');
+  ok(/4 movers on/.test(dpT()) && /9–12 Ortega family/.test(dpT()) && /5 movers would be busy then, and 4 movers are on that day\./.test(dpT()) && !/Marcus|Kim|Rosa|Lee/.test(dpT()), 'at 8:00 the trucks have room but the movers don’t: Ortega family has 3 of the 4 from 9 (the counts from the rate card, never who)');
+  const n0b = ccWrites().length;
+  click('[data-act="q:book"]'); await sleep(300);
+  ok(ccWrites().length === n0b && toast() === 'Put the move in a slot first: drag it onto one under the price, or tap one.', 'Book job: it doesn’t book, and says to put it in a slot');
+  const t12 = $$('#dayPlan [data-act="dp:time"]').find((b) => b.textContent === '12:00 PM · slot 2');
+  ok(!!t12, 'the times with a slot free that day: ' + $$('#dayPlan [data-act="dp:time"]').map((b) => b.textContent).join(', '));
+  click(t12); await sleep(20);
+  ok(T.state().draft.time === '12:00' && T.state().draft.slots.join() === 't26' && /In slot 2 from 12:00 PM to 3:00 PM\. 2 of 4 movers busy then\./.test(dpT()), 'picked 12:00 PM: in slot 2 (slot 1 needs its hour after Ortega)');
   const n1 = ccWrites().length;
   click('[data-act="q:book"]'); await sleep(900);
   const nw = ccWrites().slice(n1), nid = nw[0] && nw[0].path.slice(5);
   ok(nw.length === 1 && nw[0].doc && nw[0].doc.status === 'booked' && nw[0].doc.createdBy === 'Jess' && nw[0].doc.createdCC === true && JSON.stringify(nw[0].doc.payments) === '{}', 'a new booking goes in whole through cc_save: booked, made by Jess of the call center, no payments');
-  ok(!!row('sched/' + nid) && (T.state().sched || []).some((r) => r.id === nid) && /Dana Whit/.test(view()), 'and it’s on her schedule');
+  ok(!!row('sched/' + nid) && (T.state().sched || []).some((r) => r.id === nid) && /Dana Whit/.test(view()) && !nw[0].doc.assign.truckId && nw[0].doc.d.slots.join() === 't26' && row('sched/' + nid).d.slots.join() === 't26' && nw[0].doc.d.time === '12:00', 'and it’s on her schedule, in slot 2 at 12:00, with no truck');
 
   /* ---------- the office books one while she's changing it ---------- */
   const l1 = db.docs.find((d) => d.path === 'jobs/l1'); l1.data = Object.assign({}, l1.data, { status: 'booked' });   // no word to her phone yet
@@ -148,6 +165,28 @@ const net = async (url) => {
   await sleep(400);
   ok(B.T.sync.identity.role === 'callcenter' && B.T.ui.tab === 'quote' && B.T.state().draft.from === '77 Ridge Rd, Round Rock' && B.T.state().draft.moveDate === later && B.T.state().settings.company === 'Bluebonnet Moving', 'in Bluebonnet: its quote builder, the pickup and the date filled in, its rate card behind it');
   ok(!B.w.sessionStorage.getItem('tally.deskOpen') && B.errors.length === 0, 'and the hand-off is used up (' + B.errors.slice(0, 2).join(' | ') + ')');
+
+  /* ---------- no room at Bluebonnet that day: the caller's move goes to Ace, which has room (Richie, Oct 25: "if it
+     can fit on a truck slot timeline for the day then it works if not than they should suggest another day or switch
+     companys") ---------- */
+  const Bt = (sel, v) => { const e = B.$(sel); e.value = v; e.dispatchEvent(new B.w.Event('input', { bubbles: true })); };
+  Bt('[data-d="name"]', 'Lee Park'); Bt('[data-d="phone"]', '512-555-0111');
+  B.click('[data-act="q:step"][data-s="2"]'); await sleep(10);
+  B.click(B.$$('[data-act="inc"]')[0]); await sleep(10);
+  B.click('[data-act="q:step"][data-s="3"]'); await sleep(500);   // the other companies, and their bookings, load
+  const bp = () => B.$('#dayPlan').textContent.replace(/\s+/g, ' ');
+  const aceChip = B.$('#dayPlan [data-act="dp:co"][data-co="' + ORG + '"]');
+  ok(/No time on .* fits a 2-hour move for 2 movers\./.test(bp()) && /Other companies with room that day/.test(bp()) && !!aceChip && aceChip.textContent === 'Ace Moving · 7:00 AM', 'Bluebonnet has no room that day (its one truck is booked all day); Ace has, at 7:00 AM on Box 1 (the Van and the movers are on Ortega from 9): ' + (aceChip && aceChip.textContent));
+  let breloads = 0; B.w.__tallyReload = () => { breloads++; };
+  B.click(aceChip); await sleep(20);
+  let pre2 = null; try { pre2 = JSON.parse(B.w.sessionStorage.getItem('tally.deskOpen')); } catch (e) {}
+  ok(breloads === 1 && B.w.localStorage.getItem('tally.org') === ORG && pre2 && pre2.tab === 'quote' && pre2.draft && pre2.draft.name === 'Lee Park' && pre2.draft.moveDate === later && Object.keys(pre2.draft.items).length === 1 && !('truckId' in pre2.draft) && !('discount' in pre2.draft), 'tap Ace: the app opens Ace, carrying the caller’s move (not Bluebonnet’s truck or discount)');
+  const C2 = await load(FILE, { db, org: ORG, me: { uid: 'u-jess', email: 'j@x' }, net, setup: (w2) => { w2.sessionStorage.setItem('tally.deskOpen', JSON.stringify(pre2)); } });
+  await sleep(500);
+  const cd = C2.T.state().draft, cp = () => (C2.$('#dayPlan') ? C2.$('#dayPlan').textContent.replace(/\s+/g, ' ') : '');
+  ok(C2.T.ui.tab === 'quote' && C2.T.ui.qstep === 3 && cd.name === 'Lee Park' && cd.phone === '512-555-0111' && cd.moveDate === later && Object.keys(cd.items).length === 1 && C2.T.state().settings.company === 'Ace Moving', 'in Ace: the quote with the caller’s move, on the price and the day');
+  ok(/The caller’s move is here\. Check the items and the price, then book it\./.test(C2.$('#toast').textContent) && /4 movers on/.test(cp()) && /9–12 Ortega family/.test(cp()), 'it says so, and shows Ace’s trucks that day: ' + cp().slice(0, 120));
+  ok(C2.errors.length === 0 && B.errors.length === 0, 'no errors (' + C2.errors.concat(B.errors).slice(0, 2).join(' | ') + ')');
 
   /* ---------- on the team, but no company switched on ---------- */
   const db3 = seed(); db3.__ccOrgs = [];

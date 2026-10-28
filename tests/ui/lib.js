@@ -11,15 +11,24 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function schedOf(j) {
   const d = j.d || {}, q = j.quote || {}, a = j.assign || {}, pick = (o, ks) => { const r = {}; ks.forEach((k) => { r[k] = o[k] === undefined ? null : o[k]; }); return r; };
   return { id: j.id === undefined ? null : j.id, status: j.status === undefined ? null : j.status, test: j.test === undefined ? false : j.test,
-    d: pick(d, ['name', 'phone', 'email', 'moveDate', 'time', 'from', 'to', 'notes', 'flights', 'custom']),
+    d: pick(d, ['name', 'phone', 'email', 'moveDate', 'time', 'from', 'to', 'notes', 'flights', 'custom', 'slots']),
     items: (Array.isArray(j.items) ? j.items : []).map((i) => pick(i, ['id', 'name', 'qty'])),
     quote: pick(q, ['crew', 'hours', 'kind', 'driveH', 'nTrucks', 'truckId', 'truckName']),
     assign: { truckId: a.truckId === undefined ? null : a.truckId, more: a.more || [], crewN: Array.isArray(a.crew) ? a.crew.length : 0 },
     startedAt: j.startedAt === undefined ? null : j.startedAt };
 }
 // the database's rate card copy (ratecard_of): the settings' prices and what makes them, kept like ratecard_sync
-const CARD_KEYS = ['company', 'rates', 'minHours', 'prod', 'mph', 'shopAddress', 'shopTravel', 'shopGeo', 'includedMiles', 'mileRate', 'truckFee', 'stairFee', 'packPerBox', 'taxPct', 'depositPct', 'ntePct', 'nteCap', 'trucks', 'catalog', 'sources', 'customFields', 'opt'];
-function ratecardOf(s) { const o = {}; CARD_KEYS.forEach((k) => { if (s && s[k] !== undefined) o[k] = clone(s[k]); }); return o; }
+// (and, since Oct 25, each truck's day and the movers' counts: how many, and how many off each day, never who)
+const CARD_KEYS = ['company', 'rates', 'minHours', 'prod', 'mph', 'shopAddress', 'shopTravel', 'shopGeo', 'includedMiles', 'mileRate', 'truckFee', 'stairFee', 'packPerBox', 'taxPct', 'depositPct', 'ntePct', 'nteCap', 'trucks', 'catalog', 'sources', 'customFields', 'opt', 'truckDay'];
+function ratecardOf(s) {
+  const o = {}; CARD_KEYS.forEach((k) => { if (s && s[k] !== undefined) o[k] = clone(s[k]); });
+  if (s && Array.isArray(s.crew)) {
+    const off = {}, D = s.daysOff && typeof s.daysOff === 'object' && !Array.isArray(s.daysOff) ? s.daysOff : {};
+    Object.keys(D).forEach((d) => { if (!Array.isArray(D[d])) return; const n = new Set(D[d].filter((x) => typeof x === 'string' && s.crew.indexOf(x) >= 0)).size; if (n) off[d] = n; });
+    o.movers = { n: s.crew.length, off };
+  }
+  return o;
+}
 function syncSched(db, row, fire) {
   if (db.__sched && row && row.path === 'org/settings') {
     const rows = db.docs, i = rows.findIndex((r) => r.org_id === row.org_id && r.path === 'ratecard/main');

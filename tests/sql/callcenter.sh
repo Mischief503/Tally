@@ -126,8 +126,8 @@ check $OWN "1|1" "select (select count(*) from docs where path='ratecard/main')|
 # writing: only through cc_save, which checks what the call center saves
 cc(){ echo "select public.cc_save('$O','jobs/$1',$2,$3)"; }
 check $JESS ok "$(cc n1 "'{\"id\":\"n1\",\"status\":\"quoted\",\"d\":{\"name\":\"New One\",\"discount\":\"\"},\"quote\":{\"total\":420},\"payments\":{},\"createdBy\":\"Jess\",\"createdCC\":true}'" null)" "the call center makes a quote"
-check $JESS ok "$(cc n2 "'{\"id\":\"n2\",\"status\":\"booked\",\"d\":{\"name\":\"Booked Now\",\"moveDate\":\"2026-11-02\",\"time\":\"09:00\"},\"quote\":{\"total\":515,\"crew\":2,\"hours\":3},\"payments\":{}}'" null)" "and books one straight away"
-check $JESS "0|1" "select (select count(*) from docs where path='jobs/n2')||'|'||(select count(*) from docs where path='sched/n2')" "the booking is on its schedule at once (the copy), and the job itself isn't the call center's to read"
+check $JESS ok "$(cc n2 "'{\"id\":\"n2\",\"status\":\"booked\",\"d\":{\"name\":\"Booked Now\",\"moveDate\":\"2026-11-02\",\"time\":\"09:00\",\"slots\":[\"t26\"]},\"quote\":{\"total\":515,\"crew\":2,\"hours\":3},\"payments\":{}}'" null)" "and books one straight away, lined up in a slot (Oct 25: the call center puts the move in a slot; dispatch picks the truck)"
+check $JESS "0|1|t26|" "select (select count(*) from docs where path='jobs/n2')||'|'||(select count(*) from docs where path='sched/n2')||'|'||(select data->'d'->'slots'->>0 from docs where path='sched/n2')||'|'||coalesce((select data->'assign'->>'truckId' from docs where path='sched/n2'),'')" "the booking is on its schedule at once (the copy, with its slot and no truck), and the job itself isn't the call center's to read"
 says $JESS "$(cc n3 "'{\"id\":\"n3\",\"status\":\"done\",\"d\":{\"name\":\"Done\"}}'" null)" "is a quote or a booking" "it can't make a job that's finished"
 says $JESS "$(cc n4 "'{\"id\":\"n4\",\"status\":\"active\",\"d\":{\"name\":\"Running\"}}'" null)" "is a quote or a booking" "or one that's running"
 says $JESS "$(cc n5 "'{\"id\":\"n5\",\"status\":\"quoted\",\"d\":{\"name\":\"Cheap\",\"discount\":\"100\"},\"payments\":{}}'" null)" "no payment and no discount" "or give a discount on a new quote"
@@ -177,6 +177,13 @@ as $OWN "update docs set data=jsonb_set(data,'{rates,r2}','150') where path='org
 check $JESS "150" "select data->'rates'->>'r2' from docs where path='ratecard/main'" "the owner changes a rate: the rate card has it"
 as $OWN "update docs set data=jsonb_set(data,'{contacts,Kim}','\"512-555-0106\"') where path='org/settings'" >/dev/null
 check $JESS "false" "select (data ? 'contacts')::text from docs where path='ratecard/main'" "a new phone number never reaches it"
+# the day plan (Oct 25): each truck's day, and how many movers there are and how many are off each day, never who
+check $JESS "2|{}|false" "select concat_ws('|', data->'movers'->>'n', data->'movers'->>'off', (data ? 'truckDay')::text) from docs where path='ratecard/main'" "the rate card counts the movers (2) and nobody off"
+as $OWN "update docs set data=data||'{\"truckDay\":{\"start\":\"06:30\",\"hours\":11,\"jobs\":3,\"gap\":45},\"daysOff\":{\"2026-10-30\":[\"Dee\",\"Dee\",\"Zed\"],\"2026-10-31\":[\"Marcus\",\"Dee\"],\"2026-11-01\":[\"Zed\"],\"bad\":\"Dee\"}}'::jsonb where path='org/settings'" >/dev/null
+check $JESS "06:30|11|3|45|2|1|2|false|false" "select concat_ws('|', data->'truckDay'->>'start', data->'truckDay'->>'hours', data->'truckDay'->>'jobs', data->'truckDay'->>'gap', data->'movers'->>'n', data->'movers'->'off'->>'2026-10-30', data->'movers'->'off'->>'2026-10-31', (data->'movers'->'off' ? '2026-11-01')::text, (data->'movers'->'off' ? 'bad')::text) from docs where path='ratecard/main'" "the owner sets the trucks' day and marks days off: the copy has the day and the counts (a name twice counts once, someone not on the crew not at all)"
+check $JESS "false|false|false" "select (data ? 'daysOff')::text||'|'||(data::text like '%Dee%')::text||'|'||(data::text like '%Marcus%')::text from docs where path='ratecard/main'" "and never who: no names in it"
+as $OWN "update docs set data=data-'crew' where path='org/settings'" >/dev/null
+check $JESS "false" "select (data ? 'movers')::text from docs where path='ratecard/main'" "no crew list: no counts (the trucks alone decide)"
 
 # the service switched off, and a team member removed
 pg "delete from cc_orgs where org_id='$O'" >/dev/null

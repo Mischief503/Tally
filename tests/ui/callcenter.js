@@ -54,7 +54,8 @@ const L = (m) => label + ': ' + m;
   change('#dkDate', sat); await sleep(10);
   const pill = (n) => { const d = $$('#view details.deskcard').find((x) => x.querySelector('.hsum b').textContent.indexOf(n) === 0); return d && d.querySelector('.dkav') ? d.querySelector('.dkav').textContent : ''; };
   const own = T.dayLoad(sat);
-  ok(pill('Lone Star Haulers') === 'Full' && pill('Bluebonnet Moving') === 'Open' && pill('Your Moving Co.') === (own.jobs ? (own.trucks >= own.fleet ? 'Full' : own.trucks + ' of ' + own.fleet + ' trucks') : 'Open'), L('a move date: how busy each one is that day (' + fmtDate(sat) + ': ' + ['Lone Star Haulers', 'Bluebonnet Moving', 'Your Moving Co.'].map(pill).join(', ') + ')'));
+  const ownWord = own.fleet && !own.open ? (own.jobs ? 'Full' : own.few ? 'No movers on' : 'No room') : !own.jobs ? 'Open' : own.open + ' of ' + own.fleet + ' open';
+  ok(pill('Lone Star Haulers') === 'Full' && pill('Bluebonnet Moving') === 'Open' && pill('Your Moving Co.') === ownWord, L('a move date: how busy each one is that day (' + fmtDate(sat) + ': ' + ['Lone Star Haulers', 'Bluebonnet Moving', 'Your Moving Co.'].map(pill).join(', ') + ')'));
   ok($$('#dkMap .dkdot.lvl3').length >= 1, L('and the map’s dots in the same colours'));
   // a rate card
   const lone = $$('#view details.deskcard').find((d) => /Lone Star Haulers/.test(d.textContent));
@@ -159,8 +160,14 @@ const L = (m) => label + ': ' + m;
   const dn = $('#dayNote').textContent, BL = T.dayLoad(bd, null, Q.id);
   ok(dn.indexOf(fmtDate(bd) + ': ') === 0 && (BL.jobs ? /job/.test(dn) : /nothing booked yet\./.test(dn)), L('the date says how busy it is: ' + dn));
   await tap('[data-act="q:step"][data-s="3"]'); await tap('[data-act="q:book"]', 15);
-  ok(Q.status === 'booked' && Q.log.slice(-1)[0].ev === 'Booked by the call center' && T.ui.tab === 'sched' && T.ui.schedDay === bd, L('booked: by the call center, which lands on its day on the schedule'));
-  ok(toast() === 'Booked for ' + fmtDate(bd) + ' at ' + (() => { const p = Q.d.time.split(':').map(Number); return ((p[0] + 11) % 12 + 1) + ':' + String(p[1]).padStart(2, '0') + (p[0] >= 12 ? ' PM' : ' AM'); })() + '. Dispatch adds the crew and trucks.', L('“' + toast() + '”'));
+  ok(Q.status === 'quoted' && toast() === 'Put the move in a slot first: drag it onto one under the price, or tap one.', L('Book job before it’s in a slot: “' + toast() + '”'));
+  const chip0 = $('#dayPlan [data-act="dp:time"]'), chipW = chip0 ? chip0.textContent : '';
+  click(chip0); await sleep(10);
+  ok(Q.status === 'quoted' && /^\d{1,2}:\d{2} [AP]M · slot \d$/.test(chipW) && /^In slot \d from /.test($('#dayPlan .dp-msg.ok').textContent), L('a time with a slot free (' + chipW + '): it’s in that slot'));
+  await tap('[data-act="q:book"]', 15);
+  const bk = Q.log.map((l) => l.ev), bi = bk.lastIndexOf('Booked by the call center'), sw = chipW.split(' · ')[1], hm = (() => { const p = Q.d.time.split(':').map(Number); return ((p[0] + 11) % 12 + 1) + ':' + String(p[1]).padStart(2, '0') + (p[0] >= 12 ? ' PM' : ' AM'); })();
+  ok(Q.status === 'booked' && bi >= 0 && bk[bi + 1] === 'Lined up in ' + sw + ' at ' + hm && !Q.assign.truckId && Q.d.slots.length === 1 && T.ui.tab === 'sched' && T.ui.schedDay === bd, L('booked: by the call center, lined up in ' + sw + ' (no truck: dispatch picks it), and it lands on its day on the schedule'));
+  ok(toast() === 'Booked for ' + fmtDate(bd) + ' at ' + hm + ' in ' + sw + '. Dispatch adds the truck and crew.', L('“' + toast() + '”'));
   ok(!!$('#view details.schedcard[data-job="' + Q.id + '"]') && !/\$/.test(view()), L('there it is, without its price'));
 
   /* ---------------- a new quote ---------------- */

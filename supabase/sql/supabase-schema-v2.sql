@@ -370,7 +370,7 @@ language sql immutable set search_path = public as $$
     'id', j->'id', 'status', j->'status', 'test', coalesce(j->'test', 'false'::jsonb),
     'd', jsonb_build_object('name', j->'d'->'name', 'phone', j->'d'->'phone', 'email', j->'d'->'email',
            'moveDate', j->'d'->'moveDate', 'time', j->'d'->'time', 'from', j->'d'->'from', 'to', j->'d'->'to',
-           'notes', j->'d'->'notes', 'flights', j->'d'->'flights', 'custom', j->'d'->'custom'),
+           'notes', j->'d'->'notes', 'flights', j->'d'->'flights', 'custom', j->'d'->'custom', 'slots', j->'d'->'slots'),
     'items', coalesce((select jsonb_agg(jsonb_build_object('id', i->'id', 'name', i->'name', 'qty', i->'qty'))
                          from jsonb_array_elements(case when jsonb_typeof(j->'items') = 'array' then j->'items' else '[]'::jsonb end) i),
                       '[]'::jsonb),
@@ -418,14 +418,26 @@ delete from public.docs s where s.collection = 'sched' and not exists (
 -- @cc ratecard
 -- The rate card, for the call center: the company's prices and what makes them (rates, minimum, speeds,
 -- the local radius and mileage, fees, deposit, tax, the price cap, trucks, the item list, lead sources,
--- custom fields, the switches, the shop and its spot on the map), copied to ratecard/main on every save
--- of the settings; never the crew, pay, costs, phones or anything else of the company's own.
+-- custom fields, the switches, the shop and its spot on the map), each truck's day (truckDay: its start,
+-- hours, most moves and the time between them), and how many movers there are and how many are off each
+-- day (movers: {n, off: {day: count}}, counts only), so the call center books a move where it fits on the
+-- day's trucks and movers; copied to ratecard/main on every save of the settings; never the crew's names,
+-- pay, costs, phones or anything else of the company's own.
 create or replace function public.ratecard_of(s jsonb) returns jsonb
 language sql immutable set search_path = public as $$
   select coalesce(jsonb_object_agg(k, s->k), '{}'::jsonb)
+         || case when jsonb_typeof(s->'crew') = 'array' then jsonb_build_object('movers', jsonb_build_object(
+              'n', jsonb_array_length(s->'crew'),
+              'off', (select coalesce(jsonb_object_agg(o.day, o.n), '{}'::jsonb) from (
+                        select d.key as day, count(distinct x.name) as n
+                          from jsonb_each(case when jsonb_typeof(s->'daysOff') = 'object' then s->'daysOff' else '{}'::jsonb end) d
+                          cross join lateral jsonb_array_elements_text(case when jsonb_typeof(d.value) = 'array' then d.value else '[]'::jsonb end) x(name)
+                         where s->'crew' ? x.name
+                         group by d.key) o)))
+            else '{}'::jsonb end
     from unnest(array['company','rates','minHours','prod','mph','shopAddress','shopTravel','shopGeo','includedMiles',
                       'mileRate','truckFee','stairFee','packPerBox','taxPct','depositPct','ntePct','nteCap','trucks',
-                      'catalog','sources','customFields','opt']) as k
+                      'catalog','sources','customFields','opt','truckDay']) as k
    where s ? k
 $$;
 create or replace function public.ratecard_sync() returns trigger

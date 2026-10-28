@@ -282,6 +282,28 @@ details.hcard.deskcard>summary>.hpill.dkkeep{display:inline-block}
 html[data-theme=dark] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88)}
 .qcard .route{margin-top:2px}
 .daynote.full{color:var(--text);font-weight:var(--w-mid)}
+.tl{display:flex;flex-direction:column;gap:6px;margin:4px 0 8px}
+.tl-row{display:grid;grid-template-columns:118px minmax(0,1fr);gap:8px;align-items:center}
+.tl-name{min-width:0}.tl-name b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-name small{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-name small.bad{color:var(--bad);font-weight:var(--w-mid)}
+@media (max-width:600px){.tl-row{grid-template-columns:minmax(0,1fr);gap:3px}.tl-axr>span:first-child{display:none}.tl-name{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:6px}.tl-name b,.tl-name small{display:inline}.tl-name small+small::before{content:"· "}.tl-row+.tl-row{margin-top:4px}}
+.tl-track{position:relative;height:46px;border:1px solid var(--line);border-radius:var(--r2);background:var(--bg)}
+.tl-track.loose{border-style:dashed}.tl-track.tall{height:78px}
+.tl-job{position:absolute;top:4px;bottom:4px;min-width:6px;border:1px solid var(--line);border-left:3px solid var(--tape);border-radius:7px;background:var(--card);padding:2px 5px;overflow:hidden;box-sizing:border-box}
+.tl-job b,.tl-job small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;line-height:1.35}.tl-job b{font-weight:var(--w-mid)}.tl-job small{color:var(--muted)}
+.tl-job.run{border-left-color:var(--ok)}.tl-job.clash{border-left-color:var(--bad)}
+.tl-job.tl-new{border:1.5px dashed var(--focus);background:color-mix(in srgb, var(--focus) 12%, var(--card))}
+.tl-job.tl-new.bad{border-color:var(--bad);background:color-mix(in srgb, var(--bad) 12%, var(--card))}
+.tl-drag{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}.tl-lift{opacity:.35}
+.tl-ghost{box-shadow:var(--shadow-lg);opacity:.95;cursor:grabbing}
+.tl-track[data-lane]{cursor:copy}.tl-tray .tl-track{border-style:dashed;background:transparent}
+.tl-prev{position:absolute;top:4px;bottom:4px;border:2px dashed var(--ok);border-radius:7px;background:color-mix(in srgb, var(--ok) 14%, transparent);font-size:11px;font-weight:var(--w-mid);padding:2px 5px;pointer-events:none;white-space:nowrap;overflow:hidden;box-sizing:border-box}
+.tl-prev.bad{border-color:var(--bad);background:color-mix(in srgb, var(--bad) 14%, transparent)}
+.dp-msg .linkbtn{background:none;border:0;padding:0 2px;margin-left:4px;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}
+.tl-axr{align-items:end}.tl-ax{position:relative;height:16px}.tl-ax span{position:absolute;bottom:0;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap}
+.tl-ax span:first-child{transform:none}.tl-ax span:last-child{transform:translateX(-100%)}
+.tl-cells{display:grid;gap:2px}.tl-cells span{font-size:11px;text-align:center;padding:3px 0;border-radius:5px;background:var(--bg);color:var(--muted);font-variant-numeric:tabular-nums}
+.tl-cells span.n{background:color-mix(in srgb, var(--focus) 14%, var(--card));color:var(--text)}.tl-cells span.over{background:color-mix(in srgb, var(--bad) 22%, var(--card));color:var(--text);font-weight:var(--w-strong)}
+.dp-msg{margin:6px 0;padding:8px 10px;border-radius:var(--r2);font-size:14px}.dp-msg.ok{background:color-mix(in srgb, var(--ok) 14%, var(--card))}.dp-msg.no{background:color-mix(in srgb, var(--bad) 13%, var(--card))}
 .saved{font-weight:var(--w-mid)}
 .qbar{position:sticky;bottom:calc(58px + env(safe-area-inset-bottom));z-index:10;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);padding:8px 10px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-lg)}
 .qbar .tot{font:700 22px/1 var(--display)}
@@ -1393,7 +1415,7 @@ function defaultSettings(){return {
     {id:'m_tape',name:'Packing tape',unit:'roll',price:5,cost:1.5},{id:'m_paper',name:'Packing paper',unit:'lb',price:3,cost:1},
     {id:'m_wrap',name:'Bubble wrap',unit:'10 ft',price:4,cost:1.5},{id:'m_stretch',name:'Stretch wrap',unit:'roll',price:16,cost:7},
     {id:'m_mbag',name:'Mattress bag',unit:'each',price:14,cost:4}
-  ],costCats:['Dump fee','Fuel','Tolls','Parking','Supplies bought','Other'],comms:{alerts:{assigned:true,moved:true,forms:true,tomorrow:true,short:true},ring:[],appUrl:''},opt:{},
+  ],costCats:['Dump fee','Fuel','Tolls','Parking','Supplies bought','Other'],comms:{alerts:{assigned:true,moved:true,forms:true,tomorrow:true,short:true},ring:[],appUrl:''},opt:{},truckDay:{start:'07:00',hours:12,jobs:4,gap:60},daysOff:{},
   catalog:[
     {id:'sofa3',name:'Sofa (3-seat)',cf:55,cat:'Living room'},{id:'loveseat',name:'Loveseat',cf:38,cat:'Living room'},
     {id:'chair',name:'Armchair',cf:22,cat:'Living room'},{id:'recliner',name:'Recliner',cf:30,cat:'Living room'},
@@ -1991,7 +2013,7 @@ function expOk(v){var d=String(v).replace(/\D/g,'');if(d.length!==4)return null;
 
 /* ---------- scheduling ---------- */
 function startMin(j){var t=j.d.time||'08:00';var p=t.split(':').map(Number);return p[0]*60+p[1]}
-function durMin(j){return Math.round((dayHours(j)+1)*60)}
+function durMin(j){return Math.round(dayHours(j)*60+dayCfg(state.settings).gap)}
 function dayHours(j){var q=j.quote||{};return (q.hours||3)+(q.kind==='mileage'?num(q.driveH):0)}
 // how long a booked job should take, for the crew: "Est. 4.5 h" (the job day, to the half hour)
 function estLine(j){var h=Math.round(dayHours(j)*2)/2;return h>0?'Est. '+h+' h':''}
@@ -2217,6 +2239,8 @@ function isHistory(j,t){return j.status==='lost'||(settled(j)&&jobDay(j)<(t||tod
 function datePassed(j,t){return ['lead','quoted','booked'].indexOf(j.status)>=0&&!!j.d.moveDate&&j.d.moveDate<(t||todayISO())}
 function namesLine(list){var n=list.map(function(j){return j.d.name||'Unnamed'});return n.length>3?n.slice(0,3).join(', ')+' and '+(n.length-3)+' more':n.join(', ')}
 var canEditJobs=function(){return state.ui.role==='owner'||state.ui.role==='dispatch'};
+// who's off is kept with the settings, which only the owner saves in the phone app (the database's rule)
+function canSetOff(){return canEditJobs()&&(sync.mode!=='shared'||sync.isAdmin)}
 var canTakePay=function(){return state.ui.role==='owner'||state.ui.role==='dispatch'};
 
 /* ---------- shared UI bits ---------- */
@@ -2400,7 +2424,8 @@ function renderQuote(){
      fld('Hours (leave blank for auto)','<input data-d="hoursOverride" type="number" inputmode="decimal" step="0.5" value="'+dv('hoursOverride')+'">')+
      (isCC()?'':fld('Discount ($)','<input data-d="discount" type="number" inputmode="decimal" value="'+dv('discount')+'">'))+
    '</div></div></details><table class="lines" id="qLines" style="margin-top:6px"></table><p class="hint" id="kindNote" aria-live="polite" style="margin:8px 0 12px"></p>'+
-   fld('Job notes','<textarea data-d="notes" placeholder="Elevator reserved, drop-off at 2 PM">'+dv('notes')+'</textarea>')+'<p class="hint">'+(isCC()?'The crew reads these on the job. Once it’s booked, only dispatch and the owner change them.':'Crew and leads can read job notes but cannot change them. Only dispatch and the owner can.')+'</p></section>':'')+
+   fld('Job notes','<textarea data-d="notes" placeholder="Elevator reserved, drop-off at 2 PM">'+dv('notes')+'</textarea>')+'<p class="hint">'+(isCC()?'The crew reads these on the job. Once it’s booked, only dispatch and the owner change them.':'Crew and leads can read job notes but cannot change them. Only dispatch and the owner can.')+'</p></section>'+
+   '<section class="card dp-card" id="dayPlan" aria-live="polite"></section>':'')+
    '<div class="qbar"><div class="grow"><div class="tot" id="qTot">$0</div><small id="qSub"></small></div>'+
      (step<3?'<button class="btn primary" data-act="q:step" data-s="'+(step+1)+'">'+(step===1?'Add items':'See the price')+'</button>':
       '<button class="btn" data-act="q:save" id="qSave">Save quote</button><button class="btn primary" data-act="q:book">Book job</button>')+
@@ -2423,6 +2448,7 @@ function updateQuote(){
   $('#qTot').textContent=money(q.total);
   $('#qSub').textContent=fmtInt(q.cf)+' cu ft · '+Math.round(q.pct*100)+'% of truck';
   var sv=$('#qSave');if(sv)sv.textContent=state.draft.editId?'Save changes':(q.cf?'Save quote':'Save lead');
+  if(ui.qstep===3)renderDayPlan(q);
 }
 function filterItems(txt){
   txt=txt.trim().toLowerCase();
@@ -2443,28 +2469,41 @@ function saveQuote(kind){
   }
   var q=calc(d,S);
   if(kind==='book'&&!q.cf){toast('Add at least one item before booking.');return}
+  var fit=null;
+  if(kind==='book'&&d.moveDate&&(S.trucks||[]).length){
+    var X=dayPlanOf(d,q,S);
+    if(X&&X.ok)fit=X.f;
+    else if(X&&(cc||((X.slots.length||!(X.any&&X.any.ok))&&!armed('q:book')))){
+      ui.qstep=3;if(ui.tab==='quote'&&!$('#dayPlan'))renderQuote();else renderDayPlan(q);
+      var dp=$('#dayPlan');if(dp&&dp.scrollIntoView)try{dp.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){}
+      toast(cc?(X.slots.length?'It doesn’t fit in '+slotWords(S,X.slots)+' at '+fmtTime(d.time)+'. Move it to a slot with room'+(X.times.length?'':', pick another day'+(deskCos().length>1?' or another company':''))+'.':'Put the move in a slot first: drag it onto one under the price, or tap one.'):
+        (X.slots.length?'It doesn’t fit in '+slotWords(S,X.slots)+' then. Tap Book anyway to book it.':'No slot is free for it then. Tap Book anyway to book it.'));
+      return;
+    }
+  }
   var j=d.editId?byId(d.editId):null;
   if(j){
     var oldNotes=String(j.d.notes||'');
     var hadOk=!!(j.quote&&j.quote.rqOk);j.d=clone(d);delete j.d.editId;j.quote=q;if(hadOk)q.rqOk=null;j.items=itemsOf(d,S);logEv(j,'Quote updated');
     if(String(j.d.notes||'')!==oldNotes){j.d.notesBy=myName()||'Office';j.d.notesAt=Date.now();logEv(j,'Job notes updated by '+j.d.notesBy)}
-    if(kind==='book'&&(j.status==='lead'||j.status==='quoted')){setStatus(j,'booked');if(cc)logEv(j,'Booked by '+ccWho())}
+    if(kind==='book'&&(j.status==='lead'||j.status==='quoted')){setStatus(j,'booked');if(cc)logEv(j,'Booked by '+ccWho());daySlot(j,fit)}
     else if(j.status==='lead'&&q.cf)setStatus(j,'quoted');
     // a finished job billed by the clock is worked out again against the new quote
     if(j.clockAt)rebill(j,'quote changed');
   }else{
     var s=kind==='book'?'booked':(q.cf?'quoted':'lead');
-    j=newJob(d,S,s);if(who)j.createdBy=who;if(cc)j.createdCC=true;logEv(j,'Created as '+LABEL[s]+(cc?' by '+ccWho():who?' by '+who:''));state.jobs.push(j);
+    j=newJob(d,S,s);if(who)j.createdBy=who;if(cc)j.createdCC=true;logEv(j,'Created as '+LABEL[s]+(cc?' by '+ccWho():who?' by '+who:''));if(s==='booked')daySlot(j,fit);state.jobs.push(j);
     if(String(j.d.notes||'').trim()){j.d.notesBy=myName()||'Office';j.d.notesAt=Date.now()}
   }
   if(cc){
     state.draft=blankDraft();ui.qstep=1;save();
-    if(j.status==='booked'){ui.schedDay=j.d.moveDate;ui.schedMon=j.d.moveDate.slice(0,7);ui.tab='sched';render();window.scrollTo(0,0);toast('Booked for '+fmtDate(j.d.moveDate)+' at '+fmtTime(j.d.time)+'. Dispatch adds the crew and trucks.')}
+    if(j.status==='booked'){ui.schedDay=j.d.moveDate;ui.schedMon=j.d.moveDate.slice(0,7);ui.tab='sched';render();window.scrollTo(0,0);toast('Booked for '+fmtDate(j.d.moveDate)+' at '+fmtTime(j.d.time)+(fit?' in '+slotWords(S,fit.trucks):'')+'. Dispatch adds the '+(num(q.nTrucks)>1?'trucks':'truck')+' and crew.')}
     else{ui.tab='quotes';render();window.scrollTo(0,0);toast('Saved. It’s in Quotes.')}
     return;
   }
   state.draft=blankDraft();ui.qstep=1;save();ui.tab='jobs';ui.filter='all';render();openJob(j.id);
-  toast(kind==='book'?'Job booked. Add a date, truck and crew.':'Saved.');
+  var tw=num(q.nTrucks)>1?'trucks':'truck';
+  toast(kind==='book'?(fit?'Job booked in '+slotWords(S,fit.trucks)+' at '+fmtTime(j.d.time)+'. Add the '+tw+' and crew.':'Job booked. Add '+(j.d.moveDate?'the '+tw+' and crew':'a date, truck and crew')+'.'):'Saved.');
 }
 
 /* ---------- JOBS ---------- */
@@ -2765,14 +2804,16 @@ function renderDispatch(){
     var miss=[];if(!j.d.moveDate)miss.push('date');if(!j.assign.truckId)miss.push('truck');if(!j.assign.crew.length)miss.push('crew');else if(!j.assign.crew.some(canRun))miss.push('someone to run it');
     trucksNoDriver(j).forEach(function(id){miss.push('a driver for '+truckName(id))});
     var chips=assignable().map(function(n){var on=j.assign.crew.indexOf(n)>=0;return '<button class="chip'+(on?' on':'')+'" data-act="dq:crew" data-id="'+j.id+'" data-n="'+esc(n)+'" aria-pressed="'+on+'">'+esc(n)+whoTag(n)+'</button>'}).join('');
+    var sl=jobTrucks(j).length?[]:slotIds(j).filter(function(id){return S.trucks.some(function(x){return x.id===id})});
     return '<div class="who" style="display:block;padding:10px 0"><div class="row between"><b>'+esc(j.d.name)+'</b><button class="btn sm ghost" data-act="job:open" data-id="'+j.id+'">Details</button></div><small>Missing '+miss.join(', ')+'</small>'+
+      (sl.length?'<div class="row" style="gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap"><small>Lined up in '+esc(slotWords(S,sl))+'</small><button class="btn sm" data-act="dq:slot" data-id="'+j.id+'">Use '+esc(andList(sl.map(truckName)))+'</button></div>':'')+
       '<div class="grid2" style="margin-top:6px"><input type="date" class="inline-sel" aria-label="Date for '+esc(j.d.name)+'" data-dq="moveDate" data-id="'+j.id+'" value="'+esc(j.d.moveDate)+'"><input type="time" class="inline-sel" aria-label="Start time for '+esc(j.d.name)+'" data-dq="time" data-id="'+j.id+'" value="'+esc(j.d.time)+'"></div>'+
       truckDriverRows(j,'dq')+
       '<div class="scrollx" style="margin-top:6px">'+chips+'</div></div>'}).join('')+'</div></details>':'';
   var jobs=onDay(ui.day).sort(function(a,b){return startMin(a)-startMin(b)});
   var block=function(j,tid){
     var cf=conflictsFor(j).length,dr=tid&&driversOn()?driverOf(j,tid):'',drv=tid&&driversOn()?(dr?'<small class="drv">Driver: '+esc(dr)+'</small>':'<small class="drv no">No driver</small>'):'';
-    return '<button class="block'+(j.status==='quoted'?' tent':'')+(cf?' clash':'')+'" data-act="job:open" data-id="'+j.id+'"><span class="tm">'+fmtTime(j.d.time)+' · '+esc(j.d.name)+(j.test?' · test':'')+'</span><small>'+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</small><small>'+(j.assign.crew.length?esc(j.assign.crew.join(', ')):'No crew')+' · '+(j.quote.hours||3)+' h'+(needsConfirm(j)&&j.assign.crew.length?' · '+j.assign.crew.filter(function(c){return isConfirmed(j,c)}).length+'/'+j.assign.crew.length+' confirmed':'')+'</small>'+drv+'<span>'+pill(j.status)+(cf?' <span class="pill bad">Double-booked</span>':'')+'</span></button>'};
+    return '<button class="block'+(j.status==='quoted'?' tent':'')+(cf?' clash':'')+'" data-act="job:open" data-id="'+j.id+'"><span class="tm">'+fmtTime(j.d.time)+' · '+esc(j.d.name)+(j.test?' · test':'')+'</span><small>'+esc((j.d.from||'?')+' → '+(j.d.to||'?'))+'</small>'+(!tid&&slotIds(j).length?'<small>Lined up in '+esc(slotWords(S,slotIds(j)))+'</small>':'')+'<small>'+(j.assign.crew.length?esc(j.assign.crew.join(', ')):'No crew')+' · '+(j.quote.hours||3)+' h'+(needsConfirm(j)&&j.assign.crew.length?' · '+j.assign.crew.filter(function(c){return isConfirmed(j,c)}).length+'/'+j.assign.crew.length+' confirmed':'')+'</small>'+drv+'<span>'+pill(j.status)+(cf?' <span class="pill bad">Double-booked</span>':'')+'</span></button>'};
   var used={},crewUsed={};
   jobs.forEach(function(j){jobTrucks(j).forEach(function(x){used[x]=1});j.assign.crew.forEach(function(c){crewUsed[c]=1})});
   var down=sosActive();
@@ -2794,7 +2835,11 @@ function renderDispatch(){
   var goneHtml=gone&&jobs.length?'<div class="secline"><small>'+gone+' finished job'+(gone===1?'':'s')+' from this day</small><button data-act="hist:go" data-q="'+esc(ui.day)+'">Job history ›</button></div>':'';
   var emptyHtml=gone?'<div class="card empty"><h3>Nothing open this day</h3><p>'+gone+' finished job'+(gone===1?' is':'s are')+' in Job history.</p><button class="btn" data-act="hist:go" data-q="'+esc(ui.day)+'">Open Job history</button></div>':
     '<div class="card empty"><h3>Nothing scheduled</h3><p>Pick another day, or book a job from a quote.</p></div>';
-  v.innerHTML=strip+head+cap+needHtml+locCard()+goneHtml+(jobs.length?looseHtml+lanes:emptyHtml+looseHtml+lanes);
+  // who's off this day: the call center books by the movers left (Richie, Oct 25: the office marks days off)
+  var offs=((S.daysOff||{})[ui.day]||[]).filter(function(n,i,a){return S.crew.indexOf(n)>=0&&a.indexOf(n)===i}),offHtml=canEditJobs()?'<details class="acc card" data-k="d:off"'+(ui.open['d:off']?' open':'')+'><summary><span>Who’s off</span><small>'+(offs.length?esc(offs.join(', ')):'Nobody')+'</small></summary><div class="acc-body">'+
+    '<p class="hint" style="margin:0 0 8px">'+(canSetOff()?'Tap who’s off '+esc(fmtDate(ui.day))+'. ':esc(fmtDate(ui.day))+': ')+esc(moversWords(moversOn(ui.day,S),false))+'; bookings count the movers on.</p><div class="chips">'+
+    S.crew.map(function(n){var on=offs.indexOf(n)>=0;return '<button class="chip'+(on?' on':'')+'" data-act="off:tog" data-n="'+esc(n)+'" aria-pressed="'+on+'"'+(canSetOff()?'':' disabled')+'>'+esc(n)+(on?' · off':'')+'</button>'}).join('')+'</div>'+(canSetOff()?'':'<p class="hint" style="margin:8px 0 0">The owner marks who’s off.</p>')+'</div></details>':'';
+  v.innerHTML=strip+head+cap+offHtml+needHtml+locCard()+goneHtml+(jobs.length?looseHtml+lanes:emptyHtml+looseHtml+lanes);
   var on=$('.dpill.on',v);if(on&&on.scrollIntoView)try{on.scrollIntoView({block:'nearest',inline:'center'})}catch(e){}
 }
 
@@ -3432,7 +3477,7 @@ var SCHED_ST=['booked','active'];
 function schedOf(j){
   var q=j.quote||{},a=j.assign||{},d=j.d||{};
   return {id:j.id,status:j.status,test:!!j.test,
-    d:{name:d.name||'',phone:d.phone||'',email:d.email||'',moveDate:d.moveDate||'',time:d.time||'',from:d.from||'',to:d.to||'',notes:d.notes||'',flights:d.flights||'',custom:d.custom||{}},
+    d:{name:d.name||'',phone:d.phone||'',email:d.email||'',moveDate:d.moveDate||'',time:d.time||'',from:d.from||'',to:d.to||'',notes:d.notes||'',flights:d.flights||'',custom:d.custom||{},slots:Array.isArray(d.slots)?d.slots.slice():[]},
     items:(j.items||[]).map(function(i){return {id:i.id,name:i.name,qty:i.qty}}),
     quote:{crew:q.crew,hours:q.hours,kind:q.kind,driveH:q.driveH,nTrucks:q.nTrucks,truckId:q.truckId,truckName:q.truckName},
     assign:{truckId:a.truckId||'',more:(a.more||[]).slice(),crewN:(a.crew||[]).length},startedAt:j.startedAt||0};
@@ -3444,7 +3489,7 @@ function schedFromDb(){return !!window.TALLY_SCHED&&ccDb()&&!previewing()}
 function schedRec(v){   // a copy from the database, filled out so the screens can count on its shape
   if(!v||typeof v!=='object'||!v.id)return null;
   var d=v.d||{},q=v.quote||{},a=v.assign||{};
-  return {id:String(v.id),status:v.status,test:!!v.test,d:{name:d.name||'',phone:d.phone||'',email:d.email||'',moveDate:d.moveDate||'',time:d.time||'',from:d.from||'',to:d.to||'',notes:d.notes||'',flights:d.flights||'',custom:(d.custom&&typeof d.custom==='object')?d.custom:{}},
+  return {id:String(v.id),status:v.status,test:!!v.test,d:{name:d.name||'',phone:d.phone||'',email:d.email||'',moveDate:d.moveDate||'',time:d.time||'',from:d.from||'',to:d.to||'',notes:d.notes||'',flights:d.flights||'',custom:(d.custom&&typeof d.custom==='object')?d.custom:{},slots:Array.isArray(d.slots)?d.slots.filter(function(x){return typeof x==='string'}):[]},
     items:(Array.isArray(v.items)?v.items:[]).filter(function(i){return i&&i.name}),quote:q,assign:{truckId:a.truckId||'',more:Array.isArray(a.more)?a.more:[],crewN:num(a.crewN)},startedAt:num(v.startedAt)};
 }
 function schedRecs(){
@@ -3458,28 +3503,312 @@ function pullSched(snap){
   state.sched=snap.docs.map(function(d){return schedRec(d.data())}).filter(Boolean);
   if(ui.tab==='sched'||ui.tab==='quote')softRefresh();
 }
-// how busy a day is: its jobs, and the trucks on them out of the fleet (a job with no truck picked yet counts the
-// trucks its quote needs). lvl: 0 nothing booked, 1 some, 2 half the fleet or more, 3 every truck
-function dayLoad(day,recs,skip){return dayLoadIn(day,recs||schedRecs(),(state.settings.trucks||[]).length,skip)}
-function dayLoadIn(day,recs,fleet,skip){
-  var list=recs.filter(function(r){return r.d.moveDate===day&&r.id!==skip}),used={},need=0;
-  list.forEach(function(r){var ids=jobTrucks(r);if(ids.length)ids.forEach(function(id){used[id]=1});else need+=Math.max(1,num((r.quote||{}).nTrucks)||1)});
-  var trucks=Object.keys(used).length+need;
-  return {jobs:list.length,trucks:trucks,fleet:fleet,list:list,lvl:!list.length?0:fleet&&trucks>=fleet?3:fleet&&trucks*2>=fleet?2:1};
+// how busy a day is, by the trucks' timelines (planDay): its jobs, and how many trucks still have room for a move
+// of the minimum hours. lvl: 0 nothing booked, 1 some, 2 room on half the trucks or fewer, 3 no room
+function dayLoad(day,recs,skip){return dayLoadIn(day,recs||schedRecs(),state.settings,skip)}
+function dayLoadIn(day,recs,card,skip){
+  var P=planDay(day,recs,card,skip),fleet=P.trucks.length,need={hours:Math.max(2,num((card||{}).minHours)||2),crew:2,trucks:1,cf:0};
+  var open=P.trucks.filter(function(t){for(var s0=P.cfg.start;s0+need.hours*60<=P.cfg.start+P.cfg.hours*60;s0+=30){if(laneFree(P.lanes[t.id],s0,s0+need.hours*60,P.cfg)&&(!P.movers||moversBusy(P.blocks,s0,s0+need.hours*60)+need.crew<=P.movers.n))return true}return false}).length;
+  var list=P.blocks.map(function(b){return b.r}),few=!!(P.movers&&P.movers.n<need.crew);
+  return {jobs:list.length,fleet:fleet,open:open,list:list,plan:P,few:few,lvl:fleet&&!open?3:!list.length?0:fleet&&open*2<=fleet?2:1};
 }
 function loadWords(L){
-  if(!L.jobs)return 'nothing booked yet';
-  return L.jobs+' job'+(L.jobs===1?'':'s')+' booked'+(L.fleet?', '+(L.trucks>=L.fleet?'all '+L.fleet+' truck'+(L.fleet===1?'':'s')+' taken':L.trucks+' of '+L.fleet+' truck'+(L.fleet===1?'':'s')+' taken'):'');
+  var M=L.plan&&L.plan.movers;
+  if(!L.jobs)return L.fleet&&!L.open?(L.few?(M&&M.n?'nothing booked, but only '+M.n+' mover'+(M.n===1?'':'s')+' on':'nothing booked, but no movers on'):'nothing booked, but no room'):'nothing booked yet';
+  return L.jobs+' job'+(L.jobs===1?'':'s')+' booked'+(L.fleet?', '+(L.open?'room in '+L.open+' of '+L.fleet+' slot'+(L.fleet===1?'':'s'):'no room left'):'');
 }
+/* ---------- the day plan: each truck's timeline ----------
+   Richie, Oct 25: "each truck represents a crew slot and they can book to that but then top number of movers needs to
+   be in there per truck and available for dispatch"; a truck takes "as many as they can complete in like 12 hrs but
+   maybe 4 tops per truck if all addresses are close and they can get them done . I feel like booking should see a
+   timeline for each truck slot"; "if it can fit on a truck slot timeline for the day then it works if not than they
+   should suggest another day or switch companys"; "if the job calls for 5 movers 1 truck then it should say that in
+   scheduling"; the office marks days off.
+   Then: "Call center doent actually assign the truck . They line up the day depending on length and distance . But the
+   call center is a real person so it should be something they look and drag and drop to a slot . Dispatch selects the
+   truck and crew members." and "If its a 2 truck it takes up 2 slots for that amount of time".
+   Each truck is a slot (smallest first). A slot's day starts at Setup › Fleet's start (7:00 AM) and lasts its hours
+   (12), with up to its moves (4) and the time between moves (60 minutes, the same as the double-booked check) around
+   each. A move's block is its start time for its estimated hours (a mileage move's drive in). The person booking drags
+   the move onto a slot (or taps one) and it is kept with the move (d.slots: the slots' truck ids, a move of two trucks
+   in two); booking never puts a truck on the job: dispatch does, on the Board. On the plan a job sits on the trucks
+   dispatch gave it, else in its slots, else in the first slots big enough and free then. The movers on a day are the
+   crew list less who the office marked off (the Board's Who's off). A move fits in a slot at a time when the slot is
+   big enough for its load and free then (under its moves, with the time between), and the movers busy then, with it,
+   are no more than the movers on the day. `card` is a company's settings: this company's own, or another's rate card
+   copy on the call center's desk (counts of movers, never names; none in an older copy: the slots alone decide). */
+var TDAY={start:'07:00',hours:12,jobs:4,gap:60};
+function hrsN(h){return String(Math.round(num(h)*100)/100)}
+function hmMin(t){var m=/^(\d{1,2}):(\d{2})/.exec(String(t||''));return m?(+m[1])*60+(+m[2]):null}
+function minHm(m){m=Math.max(0,Math.round(m));return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
+function dayCfg(card){
+  var c=(card&&card.truckDay)||{},s0=hmMin(c.start);
+  return {start:s0==null?hmMin(TDAY.start):s0,hours:num(c.hours)>0?Math.min(24,num(c.hours)):TDAY.hours,jobs:num(c.jobs)>0?Math.round(num(c.jobs)):TDAY.jobs,
+    gap:c.gap!=null&&String(c.gap)!==''&&num(c.gap)>=0?num(c.gap):TDAY.gap};
+}
+// the movers on a day: {n, all, off, who} (who: the names, for the office), or null when the card doesn't say. A rate
+// card copy has the counts (movers); the company's own settings the crew list, less who's off that day. The hosted call
+// center's settings are the copy over an empty crew, so the counts come first.
+function moversOn(day,card){
+  var m=card&&card.movers;if(m&&typeof m==='object'&&num(m.n)>0){var o=Math.min(num(m.n),num((m.off||{})[day]));return {n:num(m.n)-o,all:num(m.n),off:o,who:[]}}
+  if(card&&Array.isArray(card.crew)&&card.crew.length){var crew=card.crew,off=((card.daysOff||{})[day]||[]).filter(function(n,i,a){return crew.indexOf(n)>=0&&a.indexOf(n)===i});return {n:crew.length-off.length,all:crew.length,off:off.length,who:off}}
+  return null;
+}
+function truckCf(card,id){var t=((card&&card.trucks)||[]).filter(function(x){return x.id===id})[0];return t?num(t.cf):0}
+// what a move needs: its hours, movers, trucks, and how big each truck must be (the quoted truck's size)
+function needOf(q,card){
+  q=q||{};var n=Math.max(1,num(q.nTrucks)||1);
+  return {hours:Math.max(0.5,num(q.hours)||3)+(q.kind==='mileage'?num(q.driveH):0),crew:Math.max(1,num(q.crew)||2),trucks:n,cf:truckCf(card,q.truckId)||Math.ceil(num(q.cf)/n)};
+}
+// a scheduled job as a block on its day: start and end (minutes), movers, its trucks, what it needs
+function blockOf(r,card){
+  var q=r.quote||{},s0=startMin(r),a=r.assign||{},need=needOf(q,card);
+  return {r:r,s:s0,e:s0+Math.round(dayHours(r)*60),movers:Math.max(need.crew,num(a.crewN)||(Array.isArray(a.crew)?a.crew.length:0)),trucks:jobTrucks(r),need:need};
+}
+function laneFree(L,a,b,C){return (L||[]).length<C.jobs&&(L||[]).every(function(x){return b+C.gap<=x.s||x.e+C.gap<=a})}
+// the most movers busy at once between a and b (minutes)
+function moversBusy(blocks,a,b){
+  var pts=[a];blocks.forEach(function(x){if(x.s>a&&x.s<b)pts.push(x.s)});
+  return pts.reduce(function(m,t){return Math.max(m,blocks.reduce(function(n,x){return n+(x.s<=t&&t<x.e?x.movers:0)},0))},0);
+}
+// the day's slots: one per truck, smallest first (Richie: "each truck represents a crew slot")
+function slotsOf(card){return ((card&&card.trucks)||[]).slice().sort(function(a,b){return num(a.cf)-num(b.cf)})}
+function slotNo(card,id){return slotsOf(card).map(function(t){return t.id}).indexOf(id)+1}
+function slotWords(card,ids){var n=(ids||[]).map(function(id){return slotNo(card,id)}).filter(Boolean).sort(function(a,b){return a-b});return n.length>1?'slots '+andList(n.map(String)):n.length?'slot '+n[0]:''}
+function slotIds(r){var x=r&&r.d&&r.d.slots;return Array.isArray(x)?x.filter(function(id){return typeof id==='string'&&id}):[]}
+// the day's slots, each with its jobs in order: a job on the trucks dispatch gave it, else in the slots it was lined up
+// in, else in the first slots big enough that are free then (`loose` when none is)
+function planDay(day,recs,card,skip){
+  var C=dayCfg(card),trucks=slotsOf(card),lanes={},loose=[];
+  trucks.forEach(function(t){lanes[t.id]=[]});
+  var blocks=(recs||[]).filter(function(r){return r&&r.d&&r.d.moveDate===day&&r.id!==skip&&SCHED_ST.indexOf(r.status)>=0}).map(function(r){return blockOf(r,card)}).sort(function(a,b){return a.s-b.s});
+  blocks.filter(function(b){return b.trucks.some(function(id){return lanes[id]})}).forEach(function(b){b.lanes=b.trucks.filter(function(id){return lanes[id]});b.lanes.forEach(function(id){lanes[id].push(b)})});
+  blocks.filter(function(b){return !b.lanes&&slotIds(b.r).some(function(id){return lanes[id]})}).forEach(function(b){b.lanes=slotIds(b.r).filter(function(id,i,a){return lanes[id]&&a.indexOf(id)===i});b.slotted=true;b.lanes.forEach(function(id){lanes[id].push(b)})});
+  blocks.filter(function(b){return !b.lanes}).forEach(function(b){
+    var ids=trucks.filter(function(t){return num(t.cf)>=b.need.cf&&laneFree(lanes[t.id],b.s,b.e,{jobs:C.jobs,gap:0})}).slice(0,b.need.trucks).map(function(t){return t.id});
+    if(ids.length<b.need.trucks){loose.push(b);return}
+    b.lanes=ids;b.placed=true;ids.forEach(function(id){lanes[id].push(b)});
+  });
+  Object.keys(lanes).forEach(function(id){lanes[id].sort(function(a,b){return a.s-b.s})});
+  return {day:day,cfg:C,trucks:trucks,lanes:lanes,loose:loose,blocks:blocks,movers:moversOn(day,card)};
+}
+// can a move start at s (minutes)? {ok, trucks, busy} or {ok:false, why}
+function fitAt(P,need,s0){
+  var C=P.cfg,e=s0+Math.round(need.hours*60);
+  if(!P.trucks.length)return {ok:false,why:'notrucks'};
+  var big=P.trucks.filter(function(t){return num(t.cf)>=need.cf});
+  if(big.length<need.trucks)return {ok:false,why:'size'};
+  if(s0<C.start)return {ok:false,why:'early'};
+  if(e>C.start+C.hours*60)return {ok:false,why:'late'};
+  var free=big.filter(function(t){return laneFree(P.lanes[t.id],s0,e,C)});
+  if(free.length<need.trucks)return {ok:false,why:'busy'};
+  var busy=moversBusy(P.blocks,s0,e);
+  if(P.movers&&busy+need.crew>P.movers.n)return {ok:false,why:'movers',busy:busy};
+  return {ok:true,s:s0,trucks:free.slice(0,need.trucks).map(function(t){return t.id}),busy:busy};
+}
+// a move put in a slot at s: does it fit there? {ok, s, trucks (its slots), busy} or {ok:false, why, lane}. A move of two
+// trucks takes two slots for its time (Richie: "If its a 2 truck it takes up 2 slots for that amount of time"): the one
+// it was put in and the nearest other slots big enough and free then
+function fitIn(P,need,s0,ids){
+  var C=P.cfg,e=s0+Math.round(need.hours*60),order=P.trucks.map(function(t){return t.id});
+  var cfOf=function(id){return num((P.trucks.filter(function(t){return t.id===id})[0]||{}).cf)};
+  ids=(ids||[]).filter(function(id,i,a){return P.lanes[id]&&a.indexOf(id)===i}).slice(0,need.trucks);
+  if(!ids.length)return {ok:false,why:'noslot'};
+  if(s0<C.start)return {ok:false,why:'early'};
+  if(e>C.start+C.hours*60)return {ok:false,why:'late'};
+  for(var i=0;i<ids.length;i++){
+    if(cfOf(ids[i])<need.cf)return {ok:false,why:'small',lane:ids[i]};
+    if(!laneFree(P.lanes[ids[i]],s0,e,C))return {ok:false,why:P.lanes[ids[i]].length>=C.jobs?'full':'taken',lane:ids[i]};
+  }
+  if(ids.length<need.trucks){
+    var at=order.indexOf(ids[0]),near=order.slice().sort(function(a,b){return Math.abs(order.indexOf(a)-at)-Math.abs(order.indexOf(b)-at)||order.indexOf(b)-order.indexOf(a)});
+    near.forEach(function(id){if(ids.length<need.trucks&&ids.indexOf(id)<0&&cfOf(id)>=need.cf&&laneFree(P.lanes[id],s0,e,C))ids.push(id)});
+    if(ids.length<need.trucks)return {ok:false,why:'slots',lane:ids[0]};
+  }
+  var busy=moversBusy(P.blocks,s0,e);
+  if(P.movers&&busy+need.crew>P.movers.n)return {ok:false,why:'movers',busy:busy};
+  return {ok:true,s:s0,trucks:ids,busy:busy};
+}
+// every start time a move fits that day, each half hour from the day's start
+function fitTimes(P,need){var out=[],C=P.cfg;for(var s0=C.start;s0+need.hours*60<=C.start+C.hours*60;s0+=30){var f=fitAt(P,need,s0);if(f.ok)out.push(f)}return out}
+// the next days after `day` a move fits, the first time each: [{day, s, trucks}]
+function nextRoom(day,need,recs,card,skip,n){
+  var out=[];for(var i=1;i<=28&&out.length<(n||3);i++){var d0=addDays(day,i),f=fitTimes(planDay(d0,recs,card,skip),need)[0];if(f)out.push({day:d0,s:f.s,trucks:f.trucks})}
+  return out;
+}
+// why it doesn't fit, in words
+function fitWhy(f,P,need,s0){
+  var C=P.cfg,mv=function(n){return n+' mover'+(n===1?'':'s')},end=minHm(C.start+C.hours*60),e=s0+Math.round(need.hours*60);
+  var no=f.lane?P.trucks.map(function(t){return t.id}).indexOf(f.lane)+1:0,ln=(P.trucks.filter(function(t){return t.id===f.lane})[0]||{});
+  var hit=f.lane?(P.lanes[f.lane]||[]).filter(function(x){return !(e+C.gap<=x.s||x.e+C.gap<=s0)})[0]:null;
+  return {notrucks:'There are no trucks in Setup › Fleet yet.',size:need.trucks>1?'It needs '+need.trucks+' slots of '+fmtInt(need.cf)+' cu ft at once, and there aren’t that many.':'No slot is big enough for this load (it needs a truck of '+fmtInt(need.cf)+' cu ft).',
+    early:'That’s before the day starts, at '+fmtTime(minHm(C.start))+'.',late:'A '+hrsN(need.hours)+'-hour move starting '+fmtTime(minHm(s0))+' would end after the day, at '+fmtTime(end)+'.',
+    busy:'Every slot big enough has a move then'+(need.trucks>1?' (it needs '+need.trucks+' at once)':'')+', or its '+C.jobs+' moves that day.',
+    noslot:'Not in a slot yet.',
+    small:'Slot '+no+' is for loads up to '+fmtInt(ln.cf)+' cu ft, and this one needs a truck of '+fmtInt(need.cf)+' cu ft. Try a bigger slot.',
+    taken:'Slot '+no+' has '+(hit?(hit.r.d.name||'a move')+' from '+fmtTime(minHm(hit.s))+' to '+fmtTime(minHm(hit.e)):'a move')+(C.gap?', and '+C.gap+' minutes between moves':'')+'.',
+    full:'Slot '+no+' already has its '+C.jobs+' moves that day.',
+    slots:'It takes '+need.trucks+' slots for its time, and no other slot big enough is free then.',
+    movers:mv(f.busy+need.crew)+' would be busy then, and '+mv(P.movers?P.movers.n:0)+' are on that day.'}[f.why]||'It doesn’t fit then.';
+}
+// the timeline: a lane per slot from the day's start to its end, each job a block (its time, the customer, the movers),
+// the move being booked (`put`: {s, e, trucks, label, movers, ok, tray}) dashed in its slots, or above them (`tray`)
+// until it's put in one, then the movers busy each hour. o.drag: the quote's, where the move is dragged or a slot tapped
+function tlHtml(P,put,o){
+  o=o||{};
+  var C=P.cfg,span=C.hours*60,pc=function(m){return Math.max(0,Math.min(100,(m-C.start)/span*100)).toFixed(2)+'%'};
+  var wd=function(a,b){return Math.max(0,Math.min(100,(b-a)/span*100)).toFixed(2)+'%'};
+  var tm=function(m){var t=minHm(m),p=t.split(':').map(Number);return ((p[0]+11)%12+1)+(p[1]?':'+String(p[1]).padStart(2,'0'):'')};
+  var mv=function(n){return n+' mover'+(n===1?'':'s')};
+  // two moves at once on a truck (double-booked): one above the other, marked
+  var rowsOf=function(L){var ends=[],at={};L.forEach(function(b){var r=0;while(r<ends.length&&ends[r]>b.s)r++;ends[r]=b.e;at[b.r.id]=r});return {n:Math.max(1,ends.length),at:at}};
+  var blk=function(b,R){var tr=b.need.trucks>1?' · '+b.need.trucks+' trucks':'',r=R?R.at[b.r.id]||0:0,n=R?R.n:1,pos=n>1?';top:calc('+(r*100/n).toFixed(2)+'% + 2px);bottom:auto;height:calc('+(100/n).toFixed(2)+'% - 4px)':'';return '<div class="tl-job'+(b.r.status==='active'?' run':'')+(n>1?' clash':'')+'"'+(o.drag?' data-act="dp:job"':'')+' style="left:'+pc(b.s)+';width:'+wd(b.s,b.e)+pos+'" title="'+esc(fmtTime(minHm(b.s))+'–'+fmtTime(minHm(b.e))+' · '+(b.r.d.name||'Customer')+' · '+mv(b.movers)+tr)+'"><b>'+esc(tm(b.s)+'–'+tm(b.e)+' '+(b.r.d.name||'Customer'))+'</b><small>'+esc(mv(b.movers)+tr)+'</small></div>'};
+  var nb=function(){return '<div class="tl-job tl-new'+(put.ok?'':' bad')+(o.drag?' tl-drag" data-act="dp:grab':'')+'" style="left:'+pc(put.s)+';width:'+wd(put.s,put.e)+'"><b>'+esc(tm(put.s)+'–'+tm(put.e)+' '+put.label)+'</b><small>'+esc(mv(put.movers)+(put.n>1?' · '+put.n+' trucks':''))+'</small></div>'};
+  var newB=function(id){return put&&!put.tray&&put.trucks.indexOf(id)>=0?nb():''};
+  var ax='',step=C.hours>8?120:60,pm=C.start>=720;for(var m=C.start;m<=C.start+span;m+=step){var sx=m===C.start?(m%1440<720?' AM':' PM'):(!pm&&m>=720?' PM':'');if(m>=720)pm=true;ax+='<span style="left:'+pc(m)+'">'+esc(tm(m)+sx)+'</span>'}
+  var rows=P.trucks.map(function(t,i){var L=P.lanes[t.id],R=rowsOf(L);return '<div class="tl-row"><div class="tl-name" title="'+esc(t.name)+'"><b>Slot '+(i+1)+'</b><small>up to '+fmtInt(t.cf)+' cu ft</small><small>'+L.length+' of '+C.jobs+' moves</small>'+(R.n>1?'<small class="bad">Double-booked</small>':'')+'</div><div class="tl-track'+(R.n>1?' tall':'')+'"'+(o.drag?' data-act="dp:lane" data-lane="'+esc(t.id)+'"':'')+' aria-label="Slot '+(i+1)+'">'+L.map(function(b){return blk(b,R)}).join('')+newB(t.id)+'</div></div>'}).join('');
+  if(put&&put.tray)rows='<div class="tl-row tl-tray"><div class="tl-name"><b>This move</b><small>'+esc(hrsN((put.e-put.s)/60)+' h · '+mv(put.movers))+'</small>'+(put.n>1?'<small>'+put.n+' slots</small>':'')+'</div><div class="tl-track tray">'+nb()+'</div></div>'+rows;
+  if(P.loose.length){var RL=rowsOf(P.loose);rows+='<div class="tl-row"><div class="tl-name"><b>No truck yet</b><small>'+P.loose.length+' move'+(P.loose.length===1?'':'s')+'</small><small>no slot free</small></div><div class="tl-track loose'+(RL.n>1?' tall':'')+'">'+P.loose.map(function(b){return blk(b,RL)}).join('')+'</div></div>'}
+  var strip='';
+  if(P.movers){
+    var allB=put&&!put.tray?P.blocks.concat([{s:put.s,e:put.e,movers:put.movers}]):P.blocks;
+    var cells='';for(var h=C.start;h<C.start+span;h+=60){var n=moversBusy(allB,h,h+60),mine=put&&!put.tray&&put.s<h+60&&put.e>h;cells+='<span class="'+(mine?'n':'')+(n>P.movers.n?' over':'')+'" title="'+esc(fmtTime(minHm(h))+': '+n+' of '+P.movers.n)+'">'+n+'</span>'}
+    strip='<div class="tl-row tl-mv"><div class="tl-name"><b>Movers busy</b><small>of '+P.movers.n+' on</small></div><div class="tl-cells" style="grid-template-columns:repeat('+Math.round(C.hours)+',minmax(0,1fr))">'+cells+'</div></div>';
+  }
+  return '<div class="tl" data-start="'+C.start+'" data-span="'+span+'" data-dur="'+(put?put.e-put.s:0)+'"><div class="tl-row tl-axr"><span></span><div class="tl-ax">'+ax+'</div></div>'+(rows||'<p class="hint">No trucks in Setup › Fleet yet.</p>')+strip+'</div>';
+}
+// the movers on the day, in words: "12 movers on, 2 off (Kim, Luis)"
+function moversWords(M,names){if(!M)return '';return M.n+' mover'+(M.n===1?'':'s')+' on'+(M.off?', '+M.off+' off'+(names&&M.who.length?' ('+M.who.join(', ')+')':''):'')}
+/* the quote's day, under the price: where the move fits on that day's trucks, or why not, with the times it fits, the
+   next days it fits, and (the call center) the other companies with room that day */
+function dayPlanOf(d,q,S){
+  if(!q.cf||!d.moveDate)return null;
+  var need=needOf(q,S),recs=schedRecs(),P=planDay(d.moveDate,recs,S,d.editId),s0=hmMin(d.time),times=fitTimes(P,need);
+  var slots=(Array.isArray(d.slots)?d.slots:[]).filter(function(id){return P.lanes[id]});
+  var f=slots.length&&s0!=null?fitIn(P,need,s0,slots):null;   // where it was put
+  var any=!slots.length&&s0!=null?fitAt(P,need,s0):null;      // not in a slot: is one free at that time?
+  return {need:need,P:P,s:s0,slots:slots,f:f,any:any,ok:!!(f&&f.ok),times:times,recs:recs};
+}
+function renderDayPlan(q){
+  var el=$('#dayPlan');if(!el)return;
+  var d=state.draft,S=state.settings,cc=isCC();
+  if(!q.cf||!d.moveDate){el.innerHTML='<h2>The day</h2><p class="hint">'+(!d.moveDate?'Pick the move date (Who and where) to see where it fits on the trucks.':'Add what’s moving to see where it fits on the trucks.')+'</p>';dayBookBtn(true);return}
+  var X=dayPlanOf(d,q,S),P=X.P,need=X.need,C=P.cfg,dur=Math.round(need.hours*60),mv=function(n){return n+' mover'+(n===1?'':'s')};
+  var lbl=d.name||'This move',put;
+  if(X.slots.length&&X.s!=null)put={s:X.s,e:X.s+dur,trucks:X.ok?X.f.trucks:X.slots,label:lbl,movers:need.crew,ok:X.ok,n:need.trucks};
+  else{var st=Math.max(C.start,Math.min(C.start+C.hours*60-dur,X.s!=null?X.s:C.start));put={s:st,e:st+dur,trucks:[],label:lbl,movers:need.crew,ok:true,tray:true,n:need.trucks}}
+  var msg;
+  if(X.ok)msg='<p class="dp-msg ok">In '+esc(slotWords(S,X.f.trucks))+' from '+esc(fmtTime(minHm(X.f.s)))+' to '+esc(fmtTime(minHm(X.f.s+dur)))+'.'+(P.movers?' '+(X.f.busy+need.crew)+' of '+P.movers.n+' movers busy then.':'')+(cc?' Dispatch picks the truck and crew.':'')+' <button class="linkbtn" data-act="dp:unslot">Take it out</button></p>';
+  else if(X.f)msg='<p class="dp-msg no">'+esc(fitWhy(X.f,P,need,X.s))+' <button class="linkbtn" data-act="dp:unslot">Take it out</button></p>';
+  else msg='<p class="dp-msg">'+(P.trucks.length?'Drag the move onto a slot, or tap a slot where it should start.':'Add your trucks in Setup › Fleet: each truck is a slot.')+'</p>'+(X.any&&!X.any.ok?'<p class="dp-msg no">At '+esc(fmtTime(d.time))+': '+esc(fitWhy(X.any,P,need,X.s))+'</p>':'');
+  var kept=[];X.times.forEach(function(t){if(X.ok&&t.s===X.f.s)return;if(!kept.length||t.s-kept[kept.length-1].s>=60)kept.push(t)});   // an hour apart
+  var chips=kept.slice(0,6).map(function(t){return '<button class="chip" data-act="dp:time" data-t="'+minHm(t.s)+'">'+esc(fmtTime(minHm(t.s))+' · '+slotWords(S,t.trucks))+'</button>'}).join('');
+  var alts='';
+  if(!X.ok){
+    if(chips)alts+='<div class="f"><span>Times with a slot free</span></div><div class="chips">'+chips+'</div>';
+    else alts+='<p class="hint">No time on '+esc(fmtDate(d.moveDate))+' fits a '+hrsN(need.hours)+'-hour move for '+mv(need.crew)+'.</p>';
+    if(!X.times.length&&P.trucks.length){
+      var nx=nextRoom(d.moveDate,need,X.recs,S,d.editId,3);
+      alts+=nx.length?'<div class="f"><span>Next days with room</span></div><div class="chips">'+nx.map(function(o){return '<button class="chip" data-act="dp:day" data-d="'+o.day+'" data-t="'+minHm(o.s)+'">'+esc(fmtDate(o.day)+' · '+fmtTime(minHm(o.s)))+'</button>'}).join('')+'</div>':'<p class="hint">No day in the next four weeks has room for it.</p>';
+      if(cc){
+        if(deskHosted()&&!desk.busy&&(!desk.at||Date.now()-desk.at>60000))deskLoadCos();   // the other companies and their bookings, at most a minute old (tried once a minute)
+        var oc=deskRoom(d,q);
+        if(oc.length)alts+='<div class="f"><span>Other companies with room that day</span></div><div class="chips">'+oc.map(function(o){return '<button class="chip" data-act="dp:co" data-co="'+esc(o.c.id)+'">'+esc(o.c.name+' · '+fmtTime(minHm(o.s)))+'</button>'}).join('')+'</div>';
+        else if(desk.busy&&deskHosted())alts+='<p class="hint">Looking at the other companies…</p>';
+        else if(desk.err&&deskHosted())alts+='<p class="hint">'+esc(desk.err)+'</p>';
+        else if(deskCos().length>1)alts+='<p class="hint">No other company has room for it that day either.</p>';
+      }
+    }
+  }else if(chips)alts='<details class="acc" data-k="dp:more"'+(ui.open['dp:more']?' open':'')+'><summary><span>Other times with a slot free</span></summary><div class="acc-body"><div class="chips">'+chips+'</div></div></details>';
+  el.innerHTML='<div class="row between" style="align-items:baseline;gap:8px;flex-wrap:wrap"><h2 style="margin:0">'+esc(fmtDate(d.moveDate))+'</h2><small>'+esc((P.trucks.length+' slot'+(P.trucks.length===1?'':'s'))+(P.movers?' · '+moversWords(P.movers,!cc):''))+'</small></div>'+
+    '<p class="hint" style="margin:2px 0 8px">This move: '+esc(fmtHrs(need.hours))+' · '+esc(mv(need.crew))+' · '+(need.trucks>1?need.trucks+' slots, each for ':'a slot for ')+esc(fmtInt(need.cf))+' cu ft or more.</p>'+
+    tlHtml(P,put,{drag:true})+msg+alts;
+  dayBookBtn(X.ok||(!cc&&!X.slots.length&&!!(X.any&&X.any.ok)));
+}
+// the move put in a slot at a time (dragged there, or the slot tapped), to the quarter hour, inside the day
+function dpPlace(lane,s0){
+  var d=state.draft,S=state.settings,X=dayPlanOf(d,calc(d,S),S);if(!X||!X.P.lanes[lane])return;
+  var C=X.P.cfg,dur=Math.round(X.need.hours*60);
+  s0=Math.max(C.start,Math.min(C.start+C.hours*60-dur,Math.round(s0/15)*15));
+  var f=fitIn(X.P,X.need,s0,[lane]);
+  d.time=minHm(s0);d.slots=f.ok?f.trucks:[lane];ui.armed='';save();updateQuote();
+}
+function dpTimeAt(tr,x){var root=tr.closest('.tl'),r=tr.getBoundingClientRect();if(!root||!r.width)return null;return +root.dataset.start+(x-r.left)/r.width*(+root.dataset.span)}
+// dragging the move: it follows the finger or the mouse, the slot under it shows where it would start (green: it fits
+// there; red: it doesn't), and letting go puts it there
+var dpDrag=null,dpDragAt=0;
+document.addEventListener('pointerdown',function(e){
+  var b=e.target&&e.target.closest&&e.target.closest('#dayPlan .tl-drag');if(!b||(e.button!=null&&e.button>0))return;
+  var r=b.getBoundingClientRect();
+  dpDrag={id:e.pointerId,b:b,gx:e.clientX-r.left,gy:e.clientY-r.top,x0:e.clientX,y0:e.clientY,moved:false,g:null,hit:null,X:null};
+  try{b.setPointerCapture(e.pointerId)}catch(x){}
+});
+document.addEventListener('pointermove',function(e){
+  var D=dpDrag;if(!D||e.pointerId!==D.id)return;
+  if(!D.moved){
+    if(Math.abs(e.clientX-D.x0)+Math.abs(e.clientY-D.y0)<6)return;
+    var r=D.b.getBoundingClientRect();D.moved=true;D.g=D.b.cloneNode(true);D.g.removeAttribute('data-act');D.g.classList.add('tl-ghost');
+    D.g.style.cssText='position:fixed;left:0;top:0;bottom:auto;width:'+r.width+'px;height:'+r.height+'px;pointer-events:none;z-index:80';
+    document.body.appendChild(D.g);D.b.classList.add('tl-lift');
+  }
+  if(e.cancelable)e.preventDefault();
+  D.g.style.transform='translate('+(e.clientX-D.gx)+'px,'+(e.clientY-D.gy)+'px)';
+  var el=document.elementFromPoint(e.clientX,e.clientY),tr=el&&el.closest?el.closest('#dayPlan .tl-track[data-lane]'):null,pv=$('#dayPlan .tl-prev');
+  if(!tr){if(pv)pv.remove();D.hit=null;return}
+  var root=tr.closest('.tl'),st=+root.dataset.start,span=+root.dataset.span,dur=+root.dataset.dur,s0=dpTimeAt(tr,e.clientX-D.gx);
+  if(s0==null)return;
+  s0=Math.max(st,Math.min(st+span-dur,Math.round(s0/15)*15));
+  var X=D.X||(D.X=dayPlanOf(state.draft,calc(state.draft,state.settings),state.settings));if(!X)return;
+  var f=fitIn(X.P,X.need,s0,[tr.dataset.lane]);
+  if(!pv||pv.parentNode!==tr){if(pv)pv.remove();pv=document.createElement('div');tr.appendChild(pv)}
+  pv.className='tl-prev'+(f.ok?' ok':' bad');pv.style.left=((s0-st)/span*100).toFixed(2)+'%';pv.style.width=(dur/span*100).toFixed(2)+'%';pv.textContent=fmtTime(minHm(s0))+(f.ok?'':' · no room');
+  D.hit={lane:tr.dataset.lane,s:s0};
+},{passive:false});
+function dpEnd(e,go){
+  var D=dpDrag;if(!D||(e&&e.pointerId!==D.id))return;
+  dpDrag=null;if(D.g)D.g.remove();var pv=$('#dayPlan .tl-prev');if(pv)pv.remove();D.b.classList.remove('tl-lift');
+  if(D.moved){dpDragAt=Date.now();if(go&&D.hit)dpPlace(D.hit.lane,D.hit.s)}
+}
+document.addEventListener('pointerup',function(e){dpEnd(e,true)});
+document.addEventListener('pointercancel',function(e){dpEnd(e,false)});
+// the Book job button says Book anyway once the office has been told it isn't in a slot it fits
+function dayBookBtn(fits){var b=$('[data-act="q:book"]');if(b)b.textContent=!fits&&ui.armed==='q:book'?'Book anyway':'Book job'}
+// the other companies on the call center's desk with room for this move on its day, the first time each
+function deskRoom(d,q){
+  var out=[],need0=needOf(q,state.settings);
+  deskCos().forEach(function(c){
+    if(c.here)return;
+    var need={hours:need0.hours,crew:need0.crew,trucks:need0.trucks,cf:Math.ceil(num(q.cf)/need0.trucks)};
+    var f=fitTimes(planDay(d.moveDate,deskRecs(c,d.moveDate),c.card||{},''),need)[0];
+    if(f)out.push({c:c,s:f.s});
+  });
+  return out.sort(function(a,b){return a.s-b.s}).slice(0,4);
+}
+// a company's scheduled jobs on a day, for the desk: this company's own, a sample's made-up week, or the database's copies
+function deskRecs(c,day){
+  if(c.sample){
+    var n=c.sample.busy[parseISO(day).getDay()]||0,tr=((c.card||{}).trucks||[]),out=[];
+    for(var i=0;i<Math.min(n,tr.length);i++)[['07:30',4.5,3],['13:00',5,2]].forEach(function(m,k){out.push({id:c.id+':'+day+':'+i+':'+k,status:'booked',d:{name:'Booked move',moveDate:day,time:m[0]},quote:{hours:m[1],crew:m[2],nTrucks:1,truckId:tr[i].id,kind:'local'},assign:{truckId:tr[i].id,more:[],crewN:0}})});
+    return out;
+  }
+  if(c.here&&!deskHosted())return schedRecs();
+  return ((desk.sched||{})[c.id]||[]).map(schedRec).filter(Boolean);
+}
+
 // under the quote's move date: how busy that day already is (everyone sees it; the call center books by it)
 function renderDayNote(){
   var el=$('#dayNote');if(!el)return;
   var d=state.draft;if(!d.moveDate){el.textContent='';return}
   var L=dayLoad(d.moveDate,null,d.editId);
-  el.textContent=fmtDate(d.moveDate)+': '+loadWords(L)+(L.lvl===3?'. Check with dispatch before booking it.':'.');
+  el.textContent=fmtDate(d.moveDate)+': '+loadWords(L)+(L.lvl===3?'. Pick another day, or see the slots under the price.':'.');
   el.className='span2 hint'+(L.lvl===3?' daynote full':'');
 }
 
+// a booking keeps the slots it was lined up in (or none); the trucks are dispatch's to pick
+function daySlot(j,fit){
+  j.d.slots=fit&&fit.trucks?fit.trucks.slice():[];
+  if(fit)logEv(j,'Lined up in '+slotWords(state.settings,fit.trucks)+' at '+fmtTime(j.d.time));
+}
 /* the Schedule screen: a month of days, each showing how busy it is, then the jobs on the day picked */
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function renderSched(){
@@ -3496,9 +3825,10 @@ function renderSched(){
   v.innerHTML='<div class="hero-day" style="padding-bottom:4px"><h1>Schedule</h1><p class="sub" style="margin:2px 0 0">How busy each day is, and what’s booked. Tap a day.</p></div>'+
     '<section class="card cal"><div class="cal-nav"><button class="btn sm" data-act="cal:mon" data-dir="-1" aria-label="Month before">‹</button><h2>'+MONTHS[m-1]+' '+y+'</h2><button class="btn sm" data-act="cal:mon" data-dir="1" aria-label="Month after">›</button></div>'+
       '<div class="cal-g">'+['Mo','Tu','We','Th','Fr','Sa','Su'].map(function(w){return '<span class="cal-wd" aria-hidden="true">'+w+'</span>'}).join('')+cells+'</div>'+
-      '<div class="cal-key" aria-hidden="true"><span><i class="lvl1"></i>Some trucks taken</span><span><i class="lvl2"></i>Half or more</span><span><i class="lvl3"></i>Every truck</span></div>'+
+      '<div class="cal-key" aria-hidden="true"><span><i class="lvl1"></i>Room in most slots</span><span><i class="lvl2"></i>Room in half or fewer</span><span><i class="lvl3"></i>No room</span></div>'+
       (day!==t||mon!==t.slice(0,7)?'<button class="btn sm ghost" style="margin-top:8px" data-act="cal:today">Back to today</button>':'')+'</section>'+
     '<div class="secline" id="calDay"><h2>'+esc(fmtDate(day))+'</h2><small>'+esc(loadWords(L1))+'</small></div>'+
+    (state.settings.trucks.length?'<section class="card dp-card">'+(L1.plan.movers?'<p class="hint" style="margin:0 0 6px">'+esc(moversWords(L1.plan.movers,!isCC()))+'</p>':'')+tlHtml(L1.plan,null)+'</section>':'')+
     (list.length?list.map(schedCard).join(''):'<div class="card empty"><h3>Nothing booked this day</h3><p>'+(state.settings.trucks.length?'Every truck is open.':'No jobs yet.')+'</p></div>')+
     (nodate.length?'<div class="secline"><h2>Booked, no date yet</h2><small>'+nodate.length+'</small></div>'+nodate.map(schedCard).join(''):'');
 }
@@ -3507,7 +3837,7 @@ function schedCard(r){
   var q=r.quote||{},ids=jobTrucks(r),items=(r.items||[]).map(function(i){return esc(i.name)+' × '+num(i.qty)}).join(', ');
   var trucks=ids.length?ids.map(function(id){return esc(truckName(id))}).join(', '):'Not picked yet'+(q.truckName?' (quoted: '+esc(num(q.nTrucks)>1?num(q.nTrucks)+' × '+q.truckName:q.truckName)+')':'');
   var cfs=(state.settings.customFields||[]).filter(function(f){var x=(r.d.custom||{})[f.id];return x!=null&&x!==''}).map(function(f){return '<div><small>'+esc(f.label)+':</small> '+esc(r.d.custom[f.id])+'</div>'}).join('');
-  var est=estLine(r),k='sc:'+r.id,sub=[q.crew?num(q.crew)+' movers':'',est,r.status==='active'?'In progress now':''].filter(Boolean).join(' · ');
+  var est=estLine(r),k='sc:'+r.id,nt=Math.max(1,num(q.nTrucks)||ids.length||1),sub=[(q.crew?num(q.crew)+' movers · ':'')+nt+' truck'+(nt===1?'':'s'),est,r.status==='active'?'In progress now':''].filter(Boolean).join(' · ');
   return '<details class="acc card hcard schedcard" data-job="'+esc(r.id)+'" data-k="'+esc(k)+'"'+(ui.open[k]?' open':'')+'><summary><span class="hsum"><b>'+esc((r.d.moveDate?fmtTime(r.d.time):'No date')+' · '+(r.d.name||'Customer'))+'</b>'+
       '<small>'+esc((r.d.from||'?')+' → '+(r.d.to||'?'))+'</small>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span><span class="hmore">Details</span><span class="hpill">'+pill(r.status)+'</span></summary>'+
     '<div class="hbody"><div class="row between" style="align-items:center;gap:8px"><span>'+(r.d.phone?esc(r.d.phone):'<small>No phone yet</small>')+'</span>'+(r.d.phone?'<button class="btn sm" data-act="cc:call" data-id="'+esc(r.id)+'">Call</button>':'')+'</div>'+
@@ -3586,21 +3916,23 @@ function ccCall(id){
    companies beside it. */
 // What a rate card holds: the prices and what makes them. The database keeps the same keys in its copy
 // (supabase-callcenter.sql, ratecard_of), so the call center never reads a company's crew, pay, costs or phones.
-var CARD_KEYS=['company','rates','minHours','prod','mph','shopAddress','shopTravel','shopGeo','includedMiles','mileRate','truckFee','stairFee','packPerBox','taxPct','depositPct','ntePct','nteCap','trucks','catalog','sources','customFields','opt'];
-function rateCardOf(S){var o={};CARD_KEYS.forEach(function(k){if(S&&S[k]!==undefined)o[k]=clone(S[k])});return o}
+var CARD_KEYS=['company','rates','minHours','prod','mph','shopAddress','shopTravel','shopGeo','includedMiles','mileRate','truckFee','stairFee','packPerBox','taxPct','depositPct','ntePct','nteCap','trucks','catalog','sources','customFields','opt','truckDay'];
+// and the movers: how many are on the crew list, and how many are off each day (never who)
+function rateCardOf(S){var o={};CARD_KEYS.forEach(function(k){if(S&&S[k]!==undefined)o[k]=clone(S[k])});if(S&&Array.isArray(S.crew)){var off={},D=S.daysOff||{};Object.keys(D).forEach(function(d){var n=(D[d]||[]).filter(function(x,i,a){return S.crew.indexOf(x)>=0&&a.indexOf(x)===i}).length;if(n)off[d]=n});o.movers={n:S.crew.length,off:off}}return o}
 // under a rate card in the call center's app, so none of the sample company's own people or numbers show through
 var CARD_BLANK={crew:[],leads:[],drivers:[],office:[],contacts:{},perms:{},materials:[],forms:[],costCats:[],crewCost:0,comms:{alerts:{},ring:[],appUrl:''}};
-// Sample companies beside the sample one, so the map has something to show (the sample data only)
+// Sample companies beside the sample one, so the map has something to show (the sample data only). busy: for each
+// weekday, Sunday first, how many of their trucks are booked all day (deskRecs makes up two moves on each)
 var DESK_SAMPLES=[
   {id:'smp-lonestar',name:'Lone Star Haulers',town:'round rock',addr:'2100 Sam Bass Rd, Round Rock, TX',busy:[2,0,1,2,1,0,2],
    card:{rates:{r2:129,r3:179,r4:229},minHours:2,includedMiles:25,mileRate:1.4,truckFee:55,stairFee:20,packPerBox:7,depositPct:20,ntePct:10,taxPct:0,
-     trucks:[{id:'a',name:'Box (26 ft)',cf:1700},{id:'b',name:'Box (20 ft)',cf:1000}],opt:{packing:false}}},
+     trucks:[{id:'a',name:'Box (26 ft)',cf:1700},{id:'b',name:'Box (20 ft)',cf:1000}],movers:{n:7,off:{}},opt:{packing:false}}},
   {id:'smp-bluebonnet',name:'Bluebonnet Moving',town:'georgetown',addr:'500 Leander Rd, Georgetown, TX',busy:[1,1,0,2,4,3,0],
    card:{rates:{r2:135,r3:190,r4:245},minHours:3,includedMiles:30,mileRate:1.6,truckFee:40,stairFee:30,packPerBox:9,depositPct:25,ntePct:15,taxPct:8.25,
-     trucks:[{id:'a',name:'Box (26 ft)',cf:1700},{id:'b',name:'Box (26 ft)',cf:1700},{id:'c',name:'Van (16 ft)',cf:800},{id:'d',name:'Van (16 ft)',cf:800}],opt:{}}},
+     trucks:[{id:'a',name:'Box (26 ft)',cf:1700},{id:'b',name:'Box (26 ft)',cf:1700},{id:'c',name:'Van (16 ft)',cf:800},{id:'d',name:'Van (16 ft)',cf:800}],movers:{n:12,off:{}},opt:{}}},
   {id:'smp-hillcountry',name:'Hill Country Movers',town:'san marcos',addr:'1400 Hwy 123, San Marcos, TX',busy:[0,1,1,1,0,1,0],
    card:{rates:{r2:119,r3:169,r4:219},minHours:2,includedMiles:20,mileRate:1.25,truckFee:65,stairFee:25,packPerBox:8,depositPct:0,ntePct:15,taxPct:0,
-     trucks:[{id:'a',name:'Box (24 ft)',cf:1400}],opt:{deposit:false}}}
+     trucks:[{id:'a',name:'Box (24 ft)',cf:1400}],movers:{n:4,off:{}},opt:{deposit:false}}}
 ];
 // Town centres, for a copy that can't look addresses up (the claude.ai one): an address with one of these towns in it
 // is put at the town's middle
@@ -3648,15 +3980,13 @@ function deskGeo(c){
 }
 // how busy a company is on a day: this company's own schedule, a sample's made-up week, or the database's copies
 function deskLoad(c,day){
-  var fleet=((c.card||{}).trucks||[]).length;
-  if(c.sample){var n=c.sample.busy[parseISO(day).getDay()]||0,t=Math.min(n,fleet);return {jobs:n,trucks:t,fleet:fleet,lvl:!n?0:t>=fleet?3:t*2>=fleet?2:1}}
   if(c.here&&!deskHosted())return dayLoad(day,schedRecs());
-  return dayLoadIn(day,((desk.sched||{})[c.id]||[]).map(schedRec),fleet);
+  return dayLoadIn(day,deskRecs(c,day),c.card||{});
 }
 function availWords(L){
+  if(L.fleet&&!L.open)return L.jobs?'Full':L.few?'No movers on':'No room';
   if(!L.jobs)return 'Open';
-  if(L.fleet&&L.trucks>=L.fleet)return 'Full';
-  return L.fleet?L.trucks+' of '+L.fleet+' trucks':L.jobs+' job'+(L.jobs===1?'':'s');
+  return L.fleet?L.open+' of '+L.fleet+' open':L.jobs+' job'+(L.jobs===1?'':'s');
 }
 // the rate card, as a table: what the call center quotes from
 function rateCardHtml(k){
@@ -3749,14 +4079,14 @@ function deskLoadCos(){
   window.tallyDesk.companies().then(function(list){
     desk.cos=list||[];
     return window.tallyDesk.sched(desk.cos.map(function(c){return c.id})).then(function(s){desk.sched=s||{}},function(){desk.sched={}});
-  },function(){desk.cos=null;desk.err='The companies didn’t load. Check the connection, then open Companies again.'}).then(function(){desk.busy=false;deskShops();if(ui.tab==='desk')renderDeskRes()});
+  },function(){desk.cos=null;desk.err='The companies didn’t load. Check the connection, then open Companies again.'}).then(function(){desk.busy=false;deskShops();if(ui.tab==='desk')renderDeskRes();else if(ui.tab==='quote'&&ui.qstep===3)updateQuote()});
 }
 function deskCo(id){return deskCos().filter(function(c){return c.id===id})[0]||null}
 // Make a quote (or Their schedule): this company's own screens, or another company's in the hosted app
-function deskGo(id,tab){
+function deskGo(id,tab,more){
   var c=deskCo(id),D=deskUi();if(!c)return;
-  if(c.sample){toast(c.name+' is a sample. For a company with the service, this opens its '+(tab==='quote'?'quote builder with the address and date filled in':'schedule')+'.');return}
-  var pre={tab:tab,from:String(D.addr||'').trim(),moveDate:D.date||'',day:D.date||''};
+  if(c.sample){toast(c.name+' is a sample. For a company with the service, this opens its '+(tab==='quote'?'quote builder with '+(more&&more.draft?'this move':'the address and date')+' filled in':'schedule')+'.');return}
+  var pre=Object.assign({tab:tab,from:String(D.addr||'').trim(),moveDate:D.date||'',day:D.date||''},more||{});
   if(deskHosted()&&!c.here){window.tallyDesk.open(c.id,pre);return}
   deskApply(pre);
 }
@@ -3765,8 +4095,18 @@ function deskBoot(){
   var pre=null;try{pre=JSON.parse(sessionStorage.getItem('tally.deskOpen')||'null');sessionStorage.removeItem('tally.deskOpen')}catch(e){}
   if(pre&&pre.tab)setTimeout(function(){deskApply(pre)},0);
 }
+// the caller's move, carried to another company from the day plan; that company's own trucks, crew and prices work out
+// the rest (its truck, crew, hours, the miles from its shop, its discount: none)
+var CARRY=['name','phone','email','source','moveDate','time','from','to','miles','flights','pack','notes','items'];
+function carryDraft(d){var o={};CARRY.forEach(function(k){if(d[k]!==undefined)o[k]=clone(d[k])});return o}
 function deskApply(pre){
   if(pre.tab==='sched'){ui.schedDay=pre.day||todayISO();ui.schedMon=ui.schedDay.slice(0,7);ui.tab='sched';render();window.scrollTo(0,0);return}
+  if(pre.draft&&typeof pre.draft==='object'){
+    var nd=blankDraft();CARRY.forEach(function(k){if(pre.draft[k]!==undefined&&pre.draft[k]!==null)nd[k]=pre.draft[k]});
+    if(!nd.items||typeof nd.items!=='object'||Array.isArray(nd.items))nd.items={};
+    state.draft=nd;ui.qstep=3;save();ui.tab='quote';render();window.scrollTo(0,0);
+    toast('The caller’s move is here. Check the items and the price, then book it.');return;
+  }
   var d=state.draft;
   if(d.editId||String(d.name||'').trim()||String(d.from||'').trim())d=state.draft=blankDraft();   // a quote half made for someone else starts over
   if(pre.from)d.from=pre.from;if(pre.moveDate)d.moveDate=pre.moveDate;
@@ -4262,7 +4602,13 @@ function setupSecs(){
     assignable().map(function(n){var on=drvNames.indexOf(n)>=0;return '<button class="chip'+(on?' on':'')+'" data-act="st:driver" data-n="'+esc(n)+'" aria-pressed="'+on+'">'+esc(n)+(on?' ✓':'')+'</button>'}).join('')+'</div>'+
     '<p class="hint" style="margin:0">License class and expiry go in each person’s profile under Employees › Driving.</p></section>':'';
   add('fleet','price','Fleet and drivers',S.trucks.length+' truck'+(S.trucks.length===1?'':'s')+(S.trucks.length?': '+S.trucks.map(function(t){return t.name}).join(', '):'')+(driversOn()?' · '+(drvNames.length?drvNames.length+' driver'+(drvNames.length===1?'':'s'):'drivers not picked yet'):''),
-    '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="'+tcols+';margin-top:4px"><input id="nTruckName" placeholder="New truck" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" inputmode="numeric" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div></section>'+drvCard,'trucks drivers driver drives driving license');
+    '<section class="card"><h2>Fleet</h2><p class="sub">Capacity drives the truck fill and the recommended truck.</p>'+trucks+'<div class="grid3" style="'+tcols+';margin-top:4px"><input id="nTruckName" placeholder="New truck" aria-label="New truck name" '+inp+'><input id="nTruckCf" type="number" inputmode="numeric" placeholder="Cu ft" aria-label="New truck cubic feet" '+inp+'><button class="btn sm" data-act="st:addtruck">Add</button></div>'+
+    '<h3 style="margin:16px 0 4px">Each truck’s day</h3><p class="sub" style="margin:0 0 8px">Bookings go on a truck’s timeline: from the start, for the hours, up to the moves, with the time between moves for the drive.</p><div class="grid2 stack">'+
+      fld('Day starts','<input type="time" data-s="truckDay.start" value="'+esc((S.truckDay||{}).start||TDAY.start)+'" '+inp+'>')+
+      fld('Hours in the day','<input type="number" inputmode="decimal" min="1" data-min="1" step="0.5" data-s="truckDay.hours" data-t="num" value="'+esc(String(dayCfg(S).hours))+'" '+inp+'>')+
+      fld('Moves per truck, at most','<input type="number" inputmode="numeric" min="1" data-min="1" step="1" data-s="truckDay.jobs" data-t="num" value="'+esc(String(dayCfg(S).jobs))+'" '+inp+'>')+
+      fld('Minutes between moves','<input type="number" inputmode="numeric" min="0" data-min="0" step="5" data-s="truckDay.gap" data-t="num" value="'+esc(String(dayCfg(S).gap))+'" '+inp+'>')+
+    '</div></section>'+drvCard,'trucks drivers driver drives driving license');
   add('employees','people','Employees',nIn+' '+(nIn===1?'person':'people'),employeesCard(),'crew staff people hiring documents phone');
   add('access','people','App access',sync.mode==='shared'?'Who can sign in, and as what':'Sign-in for your team',accessCard(),'sign in login users approve revoke');
   add('roles','people','Roles','What crew, crew leads and dispatch can do, and the call center',
@@ -7484,7 +7830,7 @@ function accordify(root,itemSel,titleTag,prefix,defOpen){
 document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.tagName==='DETAILS'&&d.dataset&&d.dataset.k)ui.open[d.dataset.k]=d.open},true);
 
 /* ---------- events ---------- */
-function armed(a){if(ui.armed===a){ui.armed='';return true}ui.armed=a;renderTab();setTimeout(function(){if(ui.armed===a){ui.armed='';if(ui.tab==='settings'||ui.tab==='quotes'||ui.tab==='admin')renderTab()}},4000);return false}
+function armed(a){if(ui.armed===a){ui.armed='';return true}ui.armed=a;if(ui.tab==='quote')updateQuote();else renderTab();setTimeout(function(){if(ui.armed===a){ui.armed='';if(ui.tab==='settings'||ui.tab==='quotes'||ui.tab==='admin')renderTab();else if(ui.tab==='quote')updateQuote()}},4000);return false}
 document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
   var a=t.dataset.act,S=state.settings,d=state.draft,j;
@@ -7505,6 +7851,14 @@ document.addEventListener('click',function(e){
     case 'q:step':ui.qstep=Math.max(1,Math.min(3,+t.dataset.s));renderQuote();window.scrollTo(0,0);break;
     case 'q:save':saveQuote('save');break;
     case 'q:book':saveQuote('book');break;
+    case 'dp:time':{var dpT=state.draft;dpT.time=t.dataset.t||'';var dpXt=dayPlanOf(dpT,calc(dpT,S),S),dpFt=dpXt?fitAt(dpXt.P,dpXt.need,hmMin(dpT.time)):null;dpT.slots=dpFt&&dpFt.ok?dpFt.trucks:[];ui.armed='';save();updateQuote();break}
+    case 'dp:day':{var dpD=state.draft;dpD.moveDate=t.dataset.d||dpD.moveDate;dpD.time=t.dataset.t||'';var dpXd=dayPlanOf(dpD,calc(dpD,S),S),dpFd=dpXd?fitAt(dpXd.P,dpXd.need,hmMin(dpD.time)):null;dpD.slots=dpFd&&dpFd.ok?dpFd.trucks:[];ui.armed='';save();updateQuote();toast('Moved to '+fmtDate(dpD.moveDate)+' at '+fmtTime(dpD.time)+(dpD.slots.length?' in '+slotWords(S,dpD.slots):'')+'.');break}
+    case 'dp:lane':{if(Date.now()-dpDragAt<250)break;var dpS=dpTimeAt(t,e.clientX);if(dpS!=null)dpPlace(t.dataset.lane,dpS);break}
+    case 'dp:grab':if(Date.now()-dpDragAt<250)break;toast('Drag it onto a slot, or tap a slot where it should start.');break;
+    case 'dp:job':if(Date.now()-dpDragAt<250)break;toast(t.getAttribute('title')||'');break;
+    case 'dp:unslot':state.draft.slots=[];ui.armed='';save();updateQuote();break;
+    case 'dp:co':{var dd2=state.draft,DU=deskUi();DU.addr=String(dd2.from||'').trim();DU.date=dd2.moveDate||'';deskGo(t.dataset.co,'quote',{draft:carryDraft(dd2)});break}
+    case 'off:tog':{if(!canSetOff())break;var oS=state.settings,on2=t.dataset.n,dy=ui.day;oS.daysOff=oS.daysOff||{};var ol=(oS.daysOff[dy]||[]).filter(function(n,i,a){return oS.crew.indexOf(n)>=0&&a.indexOf(n)===i}),oi=ol.indexOf(on2);if(oi>=0)ol.splice(oi,1);else ol.push(on2);if(ol.length)oS.daysOff[dy]=ol;else delete oS.daysOff[dy];var oOld=addDays(todayISO(),-60);Object.keys(oS.daysOff).forEach(function(k){if(k<oOld)delete oS.daysOff[k]});ui.open['d:off']=true;save();renderDispatch();toast(on2+(oi>=0?' is on ':' is off ')+fmtDate(dy)+'.');break}
     case 'q:clear':state.draft=blankDraft();ui.qstep=1;save();renderQuote();break;
     case 'q:cancel':state.draft=blankDraft();ui.qstep=1;save();if(isCC()){ui.tab='quotes';render();window.scrollTo(0,0)}else renderQuote();break;
     case 'filter':ui.filter=t.dataset.f;renderJobs();break;
@@ -7617,6 +7971,7 @@ document.addEventListener('click',function(e){
       if(!pickT){toast('All your trucks are on this job.');break}
       setTruckAt(j,have.length,pickT.id);logEv(j,pickT.name+' put on the job');save();trkRedraw(t.dataset.ctx);
       toast(pickT.name+' added'+(busyT[pickT.id]?'. It’s on another job that day too.':'.')+(driverOf(j,pickT.id)?' '+driverOf(j,pickT.id)+' driving.':driversOn()?' Pick who drives it.':''));break}
+    case 'dq:slot':{j=byId(t.dataset.id);if(!j||!canEditJobs())break;var dqs=slotIds(j).filter(function(id){return S.trucks.some(function(x){return x.id===id})});if(!dqs.length||jobTrucks(j).length)break;dqs.forEach(function(id,i){setTruckAt(j,i,id)});logEv(j,andList(dqs.map(truckName))+' put on the job, from its slot'+(dqs.length>1?'s':''));save();renderDispatch();toast(andList(dqs.map(truckName))+(dqs.length>1?' are':' is')+' on the job.'+(driversOn()?' Pick who drives.':''));break}
     case 'dq:crew':{j=byId(t.dataset.id);if(!j){toast('This job is not available any more. Reload the page.');break}if(!canEditJobs()){toast('Only the owner and dispatch can schedule crews.');break}var dn=t.dataset.n,dix=j.assign.crew.indexOf(dn);if(!dn||assignable().indexOf(dn)<0){toast('That person is not on the list any more. Check Setup.');break}var dOff=false,dOn='';if(dix>=0){j.assign.crew.splice(dix,1);dropConfirm(j,dn);dOff=dropDriver(j,dn)}else{j.assign.crew.push(dn);dOn=autoDrivers(j)===dn}crewAssigned(j,dn,dix<0);var dcp=crewPut(j,dn);save();renderDispatch();toast(crewWords(dn,dix>=0,dcp.at)+(dOff?'. Pick someone else to drive.':dOn?', driving '+jobTrucks(j).filter(function(id){return driverOf(j,id)===dn}).map(truckName)[0]+'.':'.')+mvToast(j)+(dcp.note?' '+dcp.note:''));break}
     case 'call:cust':{var cj=byId(t.dataset.id);if(cj)askCall(cj.d.name,cj.d.phone,custKey(cj),cj.id);break}
     case 'q:dist':{var qd=state.draft;if(!(qd.from||'').trim()||!(qd.to||'').trim()){toast('Enter the pickup and delivery addresses first.');break}
@@ -7971,7 +8326,7 @@ if(['auto','light','dark'].indexOf(state.ui.mode)<0)state.ui.mode='auto';
 state.ui.realRole=null;if(state.ui.role!=='owner')state.ui.role='owner';
 (function migrate(){var S=state.settings,D=defaultSettings();if(S.lateMins==null)S.lateMins=D.lateMins;if(!S.activities)S.activities=D.activities;if(!state.shifts){state.shifts=state.demo?demoShifts():[]}})();
 (function migrate4(){var S=state.settings,D=defaultSettings();if(!S.office)S.office=D.office;if(!S.contacts)S.contacts=D.contacts;if(S.dirTs==null)S.dirTs=0;if(!state.chatMsgs)state.chatMsgs=state.demo?demoChat():[];if(!state.locs)state.locs={};if(!state.ui.reads)state.ui.reads={};if(state.ui.who==null)state.ui.who=''})();
-(function migrate3(){var S=state.settings,D=defaultSettings();if(!S.forms)S.forms=D.forms;if(!state.vault)state.vault=state.demo?demoVault():[];state.jobs.forEach(function(j){if(!j.signed)j.signed=[]})})();
+(function migrate3(){var S=state.settings,D=defaultSettings();if(!S.forms)S.forms=D.forms;if(!S.truckDay||typeof S.truckDay!=='object')S.truckDay=D.truckDay;if(!S.daysOff||typeof S.daysOff!=='object')S.daysOff={};if(!state.vault)state.vault=state.demo?demoVault():[];state.jobs.forEach(function(j){if(!j.signed)j.signed=[]})})();
 (function migrate2(){
   var S=state.settings,D=defaultSettings();
   if(!S.leads)S.leads=D.leads;if(S.bidTol==null)S.bidTol=D.bidTol;
@@ -8005,7 +8360,7 @@ else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency te
 (function migrate11(){if(window.claude&&typeof window.claude.use==='function')return;var n=0;state.jobs.forEach(function(j){if((crewAdjs(j).length||/^c[34]:/.test(String(j.clockSig||'')))&&clockStale(j)){rebill(j,'worked out again');n++}});if(n)save()})();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,schedRecs:schedRecs,schedOf:schedOf,dayLoad:dayLoad,dirApply:dirApply,openJob:openJob,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock,mvSummary:mvSummary,billOld:billOld,mvUndo:mvUndo,backTry:backTry,crewForm:crewForm,crewReq:crewReq,crewShort:crewShort,crewShortN:crewShortN,crewPut:crewPut,formsPending:formsPending};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,schedRecs:schedRecs,schedOf:schedOf,dayLoad:dayLoad,dirApply:dirApply,openJob:openJob,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock,mvSummary:mvSummary,billOld:billOld,mvUndo:mvUndo,backTry:backTry,crewForm:crewForm,crewReq:crewReq,crewShort:crewShort,crewShortN:crewShortN,crewPut:crewPut,formsPending:formsPending,planDay:planDay,fitAt:fitAt,fitTimes:fitTimes,needOf:needOf,nextRoom:nextRoom,deskLoad:deskLoad,deskRecs:deskRecs,deskCos:deskCos,dayPlanOf:dayPlanOf,moversOn:moversOn,rateCardOf:rateCardOf,hmMin:hmMin,minHm:minHm,dayLoadIn:dayLoadIn,loadWords:loadWords,availWords:availWords,carryDraft:carryDraft,fitIn:fitIn,slotWords:slotWords,slotNo:slotNo,fitWhy:fitWhy};
 })();
 </script>
 </body>
