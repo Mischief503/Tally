@@ -95,10 +95,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk MoveCrew.apk
-          cp MoveCrew.apk MoveCrew.apk   # the name before Oct 29, for download links sent before
+          cp MoveCrew.apk Tally.apk   # the name before Oct 29, for download links sent before
           gh release delete latest --yes --cleanup-tag || true
           cp smoke/screenshot.png emulator-screenshot.png 2>/dev/null || true
-          gh release create latest MoveCrew.apk MoveCrew.apk $( [ -s emulator-screenshot.png ] && echo emulator-screenshot.png ) \
+          gh release create latest MoveCrew.apk Tally.apk $( [ -s emulator-screenshot.png ] && echo emulator-screenshot.png ) \
             --title "MoveCrew (latest build)" \
             --notes "Build ${{ github.run_number }}. On your phone, tap MoveCrew.apk below to install or update. It passed the emulator check before it was published." \
             --latest
