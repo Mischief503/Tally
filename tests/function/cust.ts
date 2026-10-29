@@ -463,5 +463,51 @@ ok(!r.body.ok && /Put the customer's email on the job first/.test(r.body.message
 /* ---------- where Stripe sends her back ---------- */
 ok(fn.custBack("https://mischief503.github.io/Tally/#x", "d1") === "https://mischief503.github.io/Tally/?paid=d1" && /\/pay\/done$/.test(fn.custBack("https://appassets.androidplatform.net/assets/index.html", "d1")) && /\/pay\/done$/.test(fn.custBack("javascript:alert(1)", "d1")), "back to the web page she paid from; never the Android app's own page, nor anything that isn't https");
 
+/* ---------- a bigger crew: signed in the customer app until loading starts (Richie, Oct 29) ---------- */
+settings.rates = { r2: 140, r3: 195, r4: 250 };
+putDoc(ORG, "org/settings", settings);
+const bq = { ...job("x").quote, kind: "local", rate: 195, crew: 3 };
+putDoc(ORG, "jobs/bc1", job("bc1", { status: "booked", d: { ...job("x").d, email: "priyanair@gmail.com", time: "07:00" }, quote: bq, assign: { truckId: "t26", crew: ["Marcus", "Kim", "Dee", "Luis"] } }));
+ok(fn.crewMostOf(doc("jobs/bc1")) === 4 && fn.crewRateOf(settings, doc("jobs/bc1"), 4) === 250 && fn.crewRateOf(settings, doc("jobs/bc1"), 3) === 195, "4 movers on a 3-man move: $250/hr for 4 (the quote's rate plus the rate card's difference)");
+r = await app("tok-priya", { action: "cust_list" });
+let bc = (r.body.moves || []).find((m: any) => m.id === "bc1"), cf = bc && bc.forms[0];
+ok(cf && cf.id === "crew:4" && cf.kind === "crew" && cf.n === 4 && cf.rate === 250 && cf.qc === 3 && cf.qrate === 195 && cf.ahead === true && cf.signed === null && !/Kim|Dee|Luis/.test(JSON.stringify(bc)), "her copy: the bigger crew first among the forms to sign, with the movers and the rate, and none of their names");
+r = await app("tok-priya", { action: "cust_sign", org: ORG, jobId: "bc1", formId: "crew:3", name: "Priya Nair", sig: SIG });
+ok(!r.body.ok && r.body.message === "Your crew changed. Check it and sign again.", "a signature for a crew it isn't now is refused: " + r.body.message);
+r = await app("tok-priya", { action: "cust_sign", org: ORG, jobId: "bc1", formId: "crew:4", name: "Priya Nair", sig: "data:image/png;base64,xx" });
+ok(!r.body.ok && /didn't come through/.test(r.body.message), "no signature, nothing kept");
+r = await app("tok-priya", { action: "cust_sign", org: ORG, jobId: "bc1", formId: "crew:4", name: "  Priya   Nair ", sig: SIG });
+const csg: any = Object.values(doc("jobs/bc1").signed || {}).find((x: any) => x.formId === "crew:4") || {};
+ok(r.body.ok && csg.n === 4 && csg.rate === 250 && csg.ahead === true && csg.by === "customer" && csg.name === "Priya Nair" && csg.title === "Bigger crew: 4 movers" && csg.sig === SIG && logs("bc1").indexOf("Signed ahead in the customer app: Bigger crew: 4 movers at $250/hr (Priya Nair)") >= 0, "signed: kept with the job's forms, as the crew lead's phone keeps it, and the activity says so");
+r = await app("tok-priya", { action: "cust_sign", org: ORG, jobId: "bc1", formId: "crew:4", name: "Priya Nair", sig: SIG });
+ok(r.body.ok && Object.values(doc("jobs/bc1").signed || {}).filter((x: any) => x.formId === "crew:4").length === 1, "signing again changes nothing");
+r = await app("tok-priya", { action: "cust_list" });
+bc = r.body.moves.find((m: any) => m.id === "bc1"); cf = bc.forms[0];
+ok(cf.id === "crew:4" && cf.signed && cf.signed.name === "Priya Nair" && cf.signed.ahead === true, "her copy: signed");
+// moving today, the crew on the way: still hers until loading starts; then the crew lead's
+putDoc(ORG, "jobs/bc2", job("bc2", { status: "active", crewAsk: 1, startedAt: Date.now() - 20 * 60e3, phases: {}, d: { ...job("x").d, email: "priyanair@gmail.com", moveDate: new Date().toISOString().slice(0, 10) }, quote: bq, assign: { truckId: "t26", crew: ["Marcus", "Kim", "Dee", "Luis"] } }));
+r = await app("tok-priya", { action: "cust_list" });
+ok((r.body.moves.find((m: any) => m.id === "bc2").forms[0] || {}).id === "crew:4", "on the way: hers to sign");
+const bc2 = doc("jobs/bc2"); bc2.phases = { loadStart: Date.now() }; putDoc(ORG, "jobs/bc2", bc2);
+r = await app("tok-priya", { action: "cust_list" });
+ok(!(r.body.moves.find((m: any) => m.id === "bc2").forms || []).some((f: any) => f.kind === "crew"), "loading started: not in her copy");
+r = await app("tok-priya", { action: "cust_sign", org: ORG, jobId: "bc2", formId: "crew:4", name: "Priya Nair", sig: SIG });
+ok(!r.body.ok && r.body.message === "Your crew lead has you sign for it on their phone.", "and not signed here: " + r.body.message);
+bc2.phases = {}; putDoc(ORG, "jobs/bc2", bc2);
+settings.opt = { ...(settings.opt || {}), forms: false }; putDoc(ORG, "org/settings", settings);
+r = await app("tok-priya", { action: "cust_sign", org: ORG, jobId: "bc2", formId: "crew:4", name: "Priya Nair", sig: SIG });
+ok(r.body.ok && Object.values(doc("jobs/bc2").signed || {}).some((x: any) => x.formId === "crew:4"), "before loading it's hers, and the forms switch doesn't change that (it's the bigger crew's own switch)");
+settings.opt = { ...settings.opt, forms: true, crewSign: false }; putDoc(ORG, "org/settings", settings);
+putDoc(ORG, "jobs/bc3", job("bc3", { status: "booked", d: { ...job("x").d, email: "priyanair@gmail.com", time: "07:00" }, quote: bq, assign: { truckId: "t26", crew: ["Marcus", "Kim", "Dee", "Luis"] } }));
+r = await app("tok-priya", { action: "cust_list" });
+ok(!(r.body.moves.find((m: any) => m.id === "bc3").forms || []).some((f: any) => f.kind === "crew"), "Options › Customer signs for a bigger crew off: nothing to sign");
+r = await app("tok-priya", { action: "cust_sign", org: ORG, jobId: "bc3", formId: "crew:4", name: "Priya Nair", sig: SIG });
+ok(!r.body.ok && r.body.message === "There's no bigger crew to sign for now.", "and nothing taken: " + r.body.message);
+delete settings.opt.crewSign; putDoc(ORG, "org/settings", settings);
+putDoc(ORG, "jobs/bc4", job("bc4", { status: "booked", d: { ...job("x").d, email: "priyanair@gmail.com", time: "07:00" }, quote: { ...bq, flat: true }, assign: { truckId: "t26", crew: ["Marcus", "Kim", "Dee", "Luis"] } }));
+putDoc(ORG, "jobs/bc5", job("bc5", { status: "booked", d: { ...job("x").d, email: "priyanair@gmail.com", time: "07:00" }, quote: bq, assign: { truckId: "t26", crew: ["Marcus", "Kim", "Dee"] } }));
+r = await app("tok-priya", { action: "cust_list" });
+ok(!(r.body.moves.find((m: any) => m.id === "bc4").forms || []).some((f: any) => f.kind === "crew") && !(r.body.moves.find((m: any) => m.id === "bc5").forms || []).some((f: any) => f.kind === "crew"), "a flat price, or the crew as quoted: nothing to sign");
+
 console.log(`\ncust: ${passes} passed, ${failures} failed`);
 if (failures) Deno.exit(1);

@@ -151,6 +151,43 @@ const L = (m) => label + ': ' + m;
   ok(/Signed by Ana Ortega, ahead in the customer app/.test($('#sheet').textContent.replace(/\s+/g, ' ')), L('and a form signed ahead says so'));
   click('#sheet .sheet-head [data-act="sheet:close"]'); await sleep(10);
 
+  /* ---------- Nadia Farouk: a bigger crew, signed in the customer app before the crew leaves (Richie, Oct 29) ---------- */
+  const nf = job('Nadia Farouk');
+  nf.assign.crew = nf.assign.crew.concat('Dee'); T.save();
+  const ncf = T.custCrewForm(nf);
+  ok(ncf && ncf.id === 'crew:3' && ncf.n === 3 && ncf.rate === 195 && ncf.qc === 2 && ncf.qrate === 140 && ncf.kind === 'crew' && !ncf.signed, L('3 movers on her 2-man move: hers to sign in the app'));
+  await preview('Nadia Farouk');
+  ok(/Sign 2 forms before move day/.test(view()) && /Bigger crew: 3 movers, Moving agreement/.test(view()) && !!$('#view [data-act="cs:sign"]'), L('what’s next: the bigger crew first, with the moving agreement'));
+  click('#view [data-act="cs:sign"]'); await sleep(15);
+  ok(/Form 1 of 2/.test(sheet()) && /Bigger crew: 3 movers/.test(sheet()) && /Your quote is for 2 movers at \$140\/hr\. 3 movers are on your move, billed at \$195\/hr for the time they’re on it\./.test(sheet()) && /I agree to 3 movers at \$195\/hr for the time they’re on the job\./.test(sheet()), L('the bigger crew in the words the crew lead shows them'));
+  $('#csSigName').value = 'Nadia Farouk'; click('[data-act="cs:signgo"]'); await sleep(5);
+  ok(err() === 'Tick the box to show you agree to the bigger crew.', L('the box first: ' + err()));
+  $('#csSigAgree').checked = true; $('#sigPad').dispatchEvent(new w.MouseEvent('pointerdown', { bubbles: true })); click('[data-act="cs:signgo"]'); await sleep(15);
+  const ns = nf.signed.find((x) => x.formId === 'crew:3');
+  ok(ns && ns.ahead && ns.by === 'customer' && ns.name === 'Nadia Farouk' && ns.n === 3 && ns.rate === 195 && logs('Nadia Farouk').indexOf('Signed ahead in the customer app: Bigger crew: 3 movers at $195/hr (Nadia Farouk)') >= 0, L('signed for 3 movers at $195/hr, kept like the crew’s signatures'));
+  ok(/Form 2 of 2/.test(sheet()) && /Moving agreement/.test(sheet()), L('then the moving agreement'));
+  click('#cust .sheet-head [data-act="cs:close"]'); await sleep(10);
+  ok(/Sign a form before move day/.test(view()) && !/Bigger crew/.test(view()), L('what’s next: only the agreement left'));
+  await end();
+  ok(!T.crewForm(nf) && T.custCrewForm(nf) && T.custCrewForm(nf).signed && T.custCrewForm(nf).signed.ahead, L('nothing owed for the crew: the lead isn’t asked at Start loading'));
+  T.openJob(nf.id); await sleep(20);
+  ok(/Signed by Nadia Farouk, ahead in the customer app/.test($('#sheet').textContent.replace(/\s+/g, ' ')) && !/signs for the bigger crew/.test($('#sheet').textContent), L('the office’s job: signed ahead, nothing waiting'));
+  click('#sheet .sheet-head [data-act="sheet:close"]'); await sleep(10);
+  // moving today, the crew on the way: still theirs to sign until loading starts (only the bigger crew: the crew does the rest)
+  const tday = (() => { const d = new w.Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+  const om = mk({ status: 'active', crewAsk: 1, startedAt: Date.now() - 20 * 60e3, phases: {}, eta: { mins: 25, at: Date.now() + 5 * 60e3, ts: Date.now() - 20 * 60e3 }, assign: { truckId: S().trucks[0].id, crew: ['Marcus', 'Dee', 'Luis', 'Kim'] }, d: Object.assign({}, job('Ortega family').d, { name: 'Omar Haddad', email: 'omar@example.com', moveDate: tday }) });
+  await preview('Omar Haddad');
+  ok(/Sign for your bigger crew/.test(view()) && /4 movers at \$250\/hr\. Sign here, or with your crew before they load\./.test(view()) && !!$('#view [data-act="cs:sign"]'), L('move day, before loading: sign for the bigger crew here'));
+  click('#view [data-act="cs:sign"]'); await sleep(15);
+  ok(/Sign before loading/.test(sheet()) && /Bigger crew: 4 movers/.test(sheet()) && !/Moving agreement|Form 1 of/.test(sheet()), L('only the bigger crew (the crew goes over the forms with them)'));
+  click('#cust .sheet-head [data-act="cs:close"]'); await sleep(10);
+  await end();
+  om.phases = { loadStart: Date.now() }; T.save();
+  await preview('Omar Haddad');
+  ok(!/Sign for your bigger crew/.test(view()) && !$('#view [data-act="cs:sign"]') && !T.custCrewForm(om) && T.crewForm(om) && T.crewForm(om).id === 'crew:4', L('loading started: the crew lead has them sign on their phone'));
+  await end();
+  st().jobs = st().jobs.filter((j) => j.id !== om.id); T.save();
+
   /* ---------- Lena Wu: already paid; opening the app takes her to the review page, once ---------- */
   await preview('Lena Wu');
   await sleep(500);

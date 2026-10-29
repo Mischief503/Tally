@@ -99,6 +99,23 @@ const db0 = () => ({ docs: [], access_requests: [], comm_log: [], comm_lines: []
   ok(went[0] === 'https://g.page/r/ace/review' && S.calls.some((c) => c.action === 'cust_reviewed' && c.jobId === 'd1'), 'then the company’s review page: ' + went[0]);
   ok(B.errors.length === 0, 'no errors (' + B.errors.slice(0, 2).join(' | ') + ')');
 
+  /* ---------- a bigger crew: she signs for it here, through the server (Oct 29) ---------- */
+  const crewF = { id: 'crew:4', title: 'Bigger crew: 4 movers', kind: 'crew', n: 4, rate: 250, qc: 3, qrate: 195, text: '', pages: [], ahead: true, signed: null };
+  const bm = [move('b2', { status: 'booked', bookedBy: 'customer', bill: { total: 1000, paid: 250, due: 750, deposit: 0 }, crew: { lead: 'Marcus', n: 4 },
+    forms: [crewF, { id: 'f_agree', title: 'Moving agreement', kind: 'text', text: 'I agree to the quote.', pages: [], ahead: true, signed: { name: 'Priya Nair', ts: 1, ahead: true } }] })];
+  const SB = server(bm);
+  const E = await load(FILE, { db: db0(), me: { uid: 'u-priya', email: 'priya.nair@gmail.com' }, fnReply: SB.reply });
+  await sleep(300);
+  const ev = () => E.$('#view').textContent.replace(/\s+/g, ' '), es = () => (E.$('#cust') && !E.$('#cust').hidden ? E.$('#cust').textContent.replace(/\s+/g, ' ') : '');
+  ok(/Sign for your bigger crew/.test(ev()) && /4 movers at \$250\/hr, before your crew loads/.test(ev()) && !!E.$('#view [data-act="cs:sign"]'), 'a bigger crew on her move: what’s next says to sign for it, with the movers and the rate');
+  E.click('#view [data-act="cs:sign"]'); await sleep(15);
+  ok(/Your quote is for 3 movers at \$195\/hr\. 4 movers are on your move, billed at \$250\/hr for the time they’re on it\./.test(es()) && /I agree to 4 movers at \$250\/hr/.test(es()), 'the bigger crew, in the crew lead’s words');
+  E.$('#csSigName').value = 'Priya Nair'; E.$('#csSigAgree').checked = true; E.$('#sigPad').dispatchEvent(new E.w.MouseEvent('pointerdown', { bubbles: true }));
+  E.click('[data-act="cs:signgo"]'); await sleep(150);
+  const csc = SB.calls.find((c) => c.action === 'cust_sign');
+  ok(csc && csc.formId === 'crew:4' && csc.jobId === 'b2' && csc.name === 'Priya Nair' && typeof csc.sig === 'string' && /All signed/.test(es()), 'signed: through the server, which checks it’s the crew the move has now');
+  ok(E.errors.length === 0, 'no errors (' + E.errors.slice(0, 2).join(' | ') + ')');
+
   /* ---------- someone at work with a move of their own: More › My moves ---------- */
   const db = db0(); db.members.push({ org_id: ORG, user_id: 'u-marcus', email: 'marcus@x', staff: 'Marcus', role: 'lead', ts: 1 });
   db.docs.push({ org_id: ORG, path: 'meta/init', collection: 'meta', doc_id: 'init', data: { ts: 1 }, updated_at: 'x' }, { org_id: ORG, path: 'org/settings', collection: 'org', doc_id: 'settings', data: { company: 'Ace Moving', crew: ['Marcus'], leads: ['Marcus'], office: [] }, updated_at: 'x' });

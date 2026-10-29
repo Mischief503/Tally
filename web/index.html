@@ -1595,7 +1595,7 @@ var OPTS=[
   {g:'bill',k:'leadPay',t:'Crew leads collect payment',h:'Leads take the payment at the end of the job. Off: leads get the signatures, and the office collects.'},
   {g:'bill',k:'leadCharges',t:'Crew leads add charges and credits',h:'Stairs, parking or a damage credit, added to the bill on the job.'},
   {g:'bill',k:'crewAdd',t:'Crew leads add movers on site',h:'When a mover joins or leaves during the job, the lead puts it in, and the bill charges that time at the rate for that crew.'},
-  {g:'bill',k:'crewSign',t:'Customer signs for a bigger crew',h:'When more movers are on a job than quoted, the customer signs for them and their rate: at Start job, or when someone joins. The job can’t be finished until they do, or the owner waives it.'},
+  {g:'bill',k:'crewSign',t:'Customer signs for a bigger crew',h:'When more movers are on a job than quoted, the customer signs for them and their rate: in the customer app, or on the lead’s phone before loading, and again when someone joins. The job can’t be finished until they do, or the owner waives it.'},
   {g:'bill',k:'gpsMiles',t:'Miles back to the shop by GPS',h:'On mileage moves, the phone looks up the miles from the truck to the shop at bill-out. Off: the quote’s miles, which the lead can change.'},
   {g:'clock',k:'clock',t:'Time clock',h:'Crew clock in and out for job days, warehouse work and dump runs.'},
   {g:'clock',k:'lateNote',t:'Note for late clock-outs',h:'Clocking out long after the day’s last job needs a note.',n:{p:'lateMins',l:'After this many minutes',step:'5'}},
@@ -2346,7 +2346,7 @@ function custMoveOf(j,S){
     items:(j.items||[]).map(function(it){return {name:String(it.name||''),qty:num(it.qty)}}),
     bill:{total:totalOf(j),paid:paidOf(j),due:balOf(j),deposit:depositDue(j)},
     pays:(j.payments||[]).filter(function(p){return payCounts(p)||num(p.tip)>0}).map(function(p){return {amt:payCounts(p)?num(p.amt):0,tip:num(p.tip),method:String(p.method||''),date:p.date||'',ts:p.ts||0}}),
-    forms:(opt('forms',S)?(S.forms||[]).filter(function(f){return f.required}):[]).map(function(f){return {id:f.id,title:String(f.title||''),kind:f.kind==='text'?'text':'pages',text:f.kind==='text'?String(f.text||''):'',pages:f.kind==='text'?[]:(f.pages||[]).slice(),ahead:!!f.ahead,signed:signed(f.id)}}),
+    forms:(custCrewForm(j)?[custCrewForm(j)]:[]).concat((opt('forms',S)?(S.forms||[]).filter(function(f){return f.required}):[]).map(function(f){return {id:f.id,title:String(f.title||''),kind:f.kind==='text'?'text':'pages',text:f.kind==='text'?String(f.text||''):'',pages:f.kind==='text'?[]:(f.pages||[]).slice(),ahead:!!f.ahead,signed:signed(f.id)}})),
     day:{startedAt:j.startedAt||0,eta:j.eta&&j.eta.at?j.eta.at:0,phases:Object.assign({},j.phases||{}),finishedAt:j.finishedAt||0},
     crew:{lead:String(ld).split(' ')[0],n:crew.length},
     tips:opt('custTips',S),book:opt('custBook',S),review:custReviewUrl(S),reviewed:!!c.reviewAt,bookedBy:c.bookedAt?'customer':''};
@@ -2381,7 +2381,7 @@ function custIn(day){if(!day)return '';var n=Math.round((parseISO(day)-parseISO(
 function custDueNow(m){var s=custStage(m);return s==='booked'&&m.bill.deposit>0?{amt:m.bill.deposit,kind:'deposit'}:s==='due'?{amt:m.bill.due,kind:'bill'}:{amt:0,kind:''}}
 function custTipOk(m){return !!m.tips&&(m.status==='done'||m.status==='paid')&&m.crew.n>0}
 function custTipped(m){return (m.pays||[]).some(function(p){return p.tip>0})}
-function custAhead(m){return (m.forms||[]).filter(function(f){return f.ahead&&!f.signed})}
+function custAhead(m){return (m.forms||[]).filter(function(f){return f.ahead&&!f.signed&&(m.status!=='active'||f.kind==='crew')})}
 function custTipWho(m){var n=m.crew.n;return n>1?'It goes to the '+n+' movers on your move'+(m.crew.lead?' ('+m.crew.lead+'’s crew)':'')+', split evenly.':m.crew.lead?'It goes to '+m.crew.lead+', who moved you.':'It goes to your crew.'}
 function custSizeWords(m){var q=m.quote,w=[];if(q.crew)w.push(q.crew+' movers');if(q.trucks)w.push(q.trucks+' truck'+(q.trucks===1?'':'s'));if(q.hours)w.push('about '+q.hours+' hours');return w.join(' · ')}
 function custRouteHtml(m){return '<div class="cm-route"><div><small>From</small><b>'+esc(m.d.from||'Not set yet')+'</b></div><div><small>To</small><b>'+esc(m.d.to||'Not set yet')+'</b></div></div>'}
@@ -2407,7 +2407,9 @@ function custNextHtml(m){
   var past=!!m.d.moveDate&&m.d.moveDate<todayISO(),aheadAll=(m.forms||[]).filter(function(f){return f.ahead});
   if(s==='quote')add('now','Book your move',!m.d.moveDate?'Call or text us to pick a day first.':past?'That day has passed. Call or text us to pick a new one.':m.book?'Check the details and book it here.':'Call or text us to book it.',m.book&&m.d.moveDate&&!past?custBtn(m,'cs:book','Book my move',1):'');
   else add('done','Booked',m.bookedBy==='customer'?'You booked it here.':'');
-  if(aheadAll.length&&(s==='quote'||s==='booked'))add(A.length?(s==='booked'?'now':'later'):'done',A.length?(A.length===1?'Sign a form before move day':'Sign '+A.length+' forms before move day'):'Forms signed',A.length?esc(A.map(function(f){return f.title}).join(', ')):'',A.length&&s==='booked'?custBtn(m,'cs:sign','Sign now',!due.amt):'');
+  var crewOnly=A.length===1&&A[0].kind==='crew';
+  if(aheadAll.length&&(s==='quote'||s==='booked'))add(A.length?(s==='booked'?'now':'later'):'done',A.length?(crewOnly?'Sign for your bigger crew':A.length===1?'Sign a form before move day':'Sign '+A.length+' forms before move day'):'Forms signed',A.length?esc(crewOnly?A[0].n+' movers at '+money(A[0].rate)+'/hr, before your crew loads':A.map(function(f){return f.title}).join(', ')):'',A.length&&s==='booked'?custBtn(m,'cs:sign','Sign now',!due.amt):'');
+  if(s==='today'&&A.length)add('now','Sign for your bigger crew',esc(A[0].n+' movers at '+money(A[0].rate)+'/hr. Sign here, or with your crew before they load.'),custBtn(m,'cs:sign','Sign now',1));
   if(m.quote.deposit>0&&(s==='quote'||s==='booked'))add(s==='booked'?(due.amt>0?'now':'done'):'later',s==='booked'?(due.amt>0?'Pay your deposit: '+money(due.amt):'Deposit paid'):'Deposit to book: '+money(m.quote.deposit),s==='booked'&&due.amt>0?'It holds your date.':'',s==='booked'&&due.amt>0?custBtn(m,'cs:pay','Pay '+money(due.amt),1):'');
   if(s==='quote'||s==='booked')add('later','Move day','We’ll show you here when your crew is on the way, and how the move is going.');
   else if(s==='today')add('now','Move day','Happening now.');
@@ -2490,7 +2492,7 @@ function csOpen(kind,m,extra){clearInterval(csTimer);csTimer=null;ui.cs=Object.a
 function csClose(){clearInterval(csTimer);csTimer=null;ui.cs=null;renderCs()}
 function csFail(t){var e=$('#csErr');if(e){e.textContent=t;e.style.color='var(--bad)'}}
 function csTipAmt(m,c){if(!custTipOk(m)||!c)return 0;if(c.tip==='other')return Math.max(0,round2(num(String(c.other||'').replace(/[^0-9.]/g,''))));var p=num(c.tip);return p>0?Math.round(m.bill.total*p)/100:0}
-function csTitle(m,c){var due=custDueNow(m);return {book:'Book your move',sign:'Sign before move day',pay:due.amt>0?(due.kind==='deposit'?'Pay your deposit':'Pay your bill'):'Tip your crew',thanks:'Your move is done'}[c.kind]||''}
+function csTitle(m,c){var due=custDueNow(m);return {book:'Book your move',sign:m.status==='active'||m.d.moveDate===todayISO()?'Sign before loading':'Sign before move day',pay:due.amt>0?(due.kind==='deposit'?'Pay your deposit':'Pay your bill'):'Tip your crew',thanks:'Your move is done'}[c.kind]||''}
 function renderCs(){
   var el=$('#cust');if(!el)return;
   var c=ui.cs,m=c&&isCust()?custFind(c.key):null;
@@ -2513,10 +2515,13 @@ function csBookHtml(m){
 function csSignHtml(m){
   var A=custAhead(m),all=(m.forms||[]).filter(function(f){return f.ahead}),f=A[0];
   if(!f)return '<div class="cm-thanks"><p class="big">All signed</p><p class="hint">Thank you. Your crew has '+(all.length===1?'it':'them')+'.</p><button class="btn primary bigbtn" data-act="cs:close">Done</button></div>';
-  var content=f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+esc(pg)+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join('');
+  var crew=f.kind==='crew';
+  // the bigger crew: the same words the crew lead shows them (crewStep)
+  var content=crew?'<div class="formtext">Your quote is for '+f.qc+' movers at '+money(f.qrate)+'/hr. '+f.n+' movers are on your move, billed at '+money(f.rate)+'/hr for the time they’re on it.</div>'
+    :f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+esc(pg)+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join('');
   return (all.length>1?'<p class="hint" style="margin:0 0 4px">Form '+(all.length-A.length+1)+' of '+all.length+'</p>':'')+'<h3>'+esc(f.title)+'</h3><div class="formbox">'+content+'</div>'+
     fld('Your name','<input id="csSigName" autocomplete="name" value="'+esc(m.d.name)+'">')+
-    '<label class="check"><input type="checkbox" id="csSigAgree"> I have read this form and I agree.</label>'+
+    '<label class="check"><input type="checkbox" id="csSigAgree"> '+(crew?'I agree to '+f.n+' movers at '+money(f.rate)+'/hr for the time they’re on the job.':'I have read this form and I agree.')+'</label>'+
     '<div class="f"><span>Sign here with your finger</span></div><canvas id="sigPad" class="sigpad" aria-label="Signature pad"></canvas>'+
     '<div class="row"><button class="btn" data-act="cs:clearsig">Clear</button><button class="btn primary grow" data-act="cs:signgo" data-k="'+esc(custKeyOf(m))+'" data-fid="'+esc(f.id)+'">Sign</button></div><p class="hint" id="csErr" role="alert"></p>';
 }
@@ -2600,7 +2605,7 @@ function csSignGo(m,fid){
   var f=custAhead(m).filter(function(x){return x.id===fid})[0];if(!f){renderCs();return}
   var nm=String(($('#csSigName')||{}).value||'').trim();
   if(!nm)return csFail('Type your name.');
-  if(!$('#csSigAgree')||!$('#csSigAgree').checked)return csFail('Tick the box to show you have read it and agree.');
+  if(!$('#csSigAgree')||!$('#csSigAgree').checked)return csFail(f.kind==='crew'?'Tick the box to show you agree to the bigger crew.':'Tick the box to show you have read it and agree.');
   if(!sigDirty)return csFail('Sign in the box with your finger.');
   var sig=exportSig(),key=custKeyOf(m);
   if(custLive()){
@@ -2609,8 +2614,10 @@ function csSignGo(m,fid){
     return;
   }
   var j=byId(m.id);if(!j)return;
-  j.signed=j.signed||[];j.signed.push({id:uid(),formId:f.id,title:f.title,name:nm,sig:sig,ts:Date.now(),by:'customer',ahead:true});
-  logEv(j,'Signed ahead in the customer app: '+f.title+' ('+nm+')');save();sigDirty=false;
+  var cf=f.kind==='crew'?custCrewForm(j):null;
+  if(f.kind==='crew'&&(!cf||cf.signed||cf.id!==f.id)){render();renderCs();return csFail(cf&&!cf.signed?'Your crew changed. Check it and sign again.':'Your crew signs this with you before loading.')}
+  j.signed=j.signed||[];j.signed.push(Object.assign({id:uid(),formId:f.id,title:f.title,name:nm,sig:sig,ts:Date.now(),by:'customer',ahead:true},cf?{n:cf.n,rate:cf.rate}:{}));
+  logEv(j,'Signed ahead in the customer app: '+f.title+(cf?' at '+money(cf.rate)+'/hr':'')+' ('+nm+')');save();sigDirty=false;
   toast('Signed: '+f.title+'.');render();renderCs();
 }
 // a payment the customer made here: the bill's part, and the tip apart from it (it's the crew's, not the company's)
@@ -2896,9 +2903,9 @@ function renderToday(){
       A.push(alertRow('bad','Double-booked: '+esc(listWords(w)),esc(j.d.name)+' and '+esc(o.d.name)+' · '+esc(fmtDate(j.d.moveDate)),'job:open',j.id));
     });
   });
-  // a short crew (crewShort), and a running job's bigger crew the customer hasn't signed for yet (crewForm)
+  // a short crew (crewShort), and a running job's bigger crew the customer hasn't signed for yet (crewForm), once loading started
   state.jobs.forEach(function(j){var sh=crewShort(j,t);if(sh)A.push(alertRow('warn','Short crew',esc(j.d.name)+' · '+sh.n+' on the job, quoted for '+sh.qc+' · '+(j.status==='active'?'running now':esc(relDay(j.d.moveDate))),'job:open',j.id))});
-  state.jobs.filter(function(j){return j.status==='active'&&!(j.phases&&j.phases.unloadEnd)&&crewForm(j)}).forEach(function(j){var cf=crewForm(j);A.push(alertRow('warn','Bigger crew, not signed yet',esc(j.d.name)+' · '+cf.n+' movers, quoted for '+(num(j.quote.crew)||2),'job:open',j.id))});
+  state.jobs.filter(function(j){return j.status==='active'&&crewLoaded(j)&&!(j.phases&&j.phases.unloadEnd)&&crewForm(j)}).forEach(function(j){var cf=crewForm(j);A.push(alertRow('warn','Bigger crew, not signed yet',esc(j.d.name)+' · '+cf.n+' movers, quoted for '+(num(j.quote.crew)||2),'job:open',j.id))});
   state.jobs.filter(function(j){return j.status==='active'&&j.phases&&j.phases.unloadEnd&&formsPending(j).length}).forEach(function(j){
     A.push(alertRow('warn','Unloaded, waiting on a signature',esc(j.d.name)+' cannot close until the customer signs','job:open',j.id));
   });
@@ -3866,9 +3873,12 @@ function crewPut(j,n){
 // the toast after a crew chip: "Dee added to the job at 10:30 AM" on a running job
 function crewWords(n,off,at){return n+(off?(at?' left the job at '+fmtClock(at):' removed from the job'):(at?' added to the job at '+fmtClock(at):' added to the job'))}
 /* A bigger crew (Richie, Oct 25: "A bigger crew should be signed by the customer"). When more movers are on the bill
-   than the quote's crew, the customer signs for them and their rate: the crew lead gets it at Start job (or starts and
-   gets it later), and again when someone joins on site and makes it bigger than what was signed. While the job runs
-   it's one of its forms (j.signed, formId 'crew:<n>'; one for n movers covers any crew up to n), so the job can't be
+   than the quote's crew, the customer signs for them and their rate. Not at Start job (Richie, Oct 29: "either the
+   customer can sign from their side before we leave or they can sign before the crew starts loading . Having them sign
+   on the crews side of the app before we start doesnt make sense we are not with the customer yet"): in the customer
+   app until loading starts (custCrewForm), else on the crew lead's phone at Start loading (the lead can load and get
+   it later), and again when someone joins on site and makes it bigger than what was signed. While the job runs it's
+   one of its forms (j.signed, formId 'crew:<n>'; one for n movers covers any crew up to n), so the job can't be
    finished, or paid, until it's signed or the owner waives it. Only a job started on this version asks for it
    (j.crewAsk), so a phone from before is never held up. A finished job asks nothing more. Options › Customer signs for
    a bigger crew. */
@@ -3891,15 +3901,32 @@ function crewReq(j){
 }
 // when a crew of n starts: the time on a running job, 0 from the start
 function crewFrom(j,n){var s=mvSteps(j).filter(function(x){return x.n>=n})[0];return s?s.ts:0}
+// when the customer signs for it: in the customer app (when the move has their email) or before loading, until loading starts
+function crewLoaded(j){return !!(j&&j.phases&&j.phases.loadStart)}
+function crewWhen(j){
+  if(!(j.status==='booked'||(j.status==='active'&&!crewLoaded(j))))return '';
+  return (/\S+@\S+\.\S+/.test(String((j.d&&j.d.email)||''))?' in the customer app, or':'')+' before loading';
+}
 // for the office and the lead before the bill: the customer signs for a bigger crew, or should know about it
 function crewTell(j){
   var who=esc((j.d&&j.d.name)||'the customer');
   if(!crewSignOn(j)||(j.status==='active'&&!j.crewAsk)||['booked','active'].indexOf(j.status)<0)return ', so let '+who+' know';
   var n=crewMost(j);
-  return crewSigned(j)>=n?', and '+who+' signed for '+n+' movers':', so '+who+' signs for the bigger crew'+(j.status==='booked'?' at Start job':'');
+  return crewSigned(j)>=n?', and '+who+' signed for '+n+' movers':', so '+who+' signs for the bigger crew'+crewWhen(j);
 }
-// after a crew change: who signs next (" Nadia Farouk signs for the bigger crew at Start job."), or nothing
-function crewNext(j){var f=crewForm(j);return f?' '+(j.d.name||'The customer')+' signs for the bigger crew'+(j.status==='booked'?' at Start job':'')+'.':''}
+// after a crew change: who signs next (" Nadia Farouk signs for the bigger crew in the customer app, or before loading."), or nothing
+function crewNext(j){var f=crewForm(j);return f?' '+(j.d.name||'The customer')+' signs for the bigger crew'+crewWhen(j)+'.':''}
+// the bigger crew in the customer's copy of a move (custMoveOf): theirs to sign until loading starts, then the crew lead's.
+// Owed, it's to sign; signed (ahead, or on the lead's phone), it's done; nothing, when the crew isn't bigger.
+function custCrewForm(j){
+  if(!(j.status==='booked'||(j.status==='active'&&!crewLoaded(j))))return null;
+  var q=j.quote||{},qc=num(q.crew)||2,f=crewForm(j),base={kind:'crew',qc:qc,qrate:num(q.rate),text:'',pages:[],ahead:true};
+  if(f)return Object.assign(base,{id:f.id,title:f.title,n:f.n,rate:f.rate,signed:null});
+  if(!crewSignOn(j)||(j.status==='active'&&!j.crewAsk))return null;
+  var n=crewMost(j);if(n<=qc)return null;
+  var x=(j.signed||[]).filter(function(s){var m=/^crew:(\d+)$/.exec(String((s&&s.formId)||''));return m&&+m[1]>=n&&!s.waived}).pop();
+  return x?Object.assign(base,{id:String(x.formId),title:String(x.title||''),n:n,rate:mvRate(j,n),signed:{name:String(x.name||''),ts:x.ts||0,ahead:!!x.ahead}}):null;
+}
 /* A short crew (Richie, Oct 25: "a short crew should alert the office"): fewer movers on the job than quoted, with people
    put on it. The office sees it in Needs you (a booked job today or tomorrow, or a running job); a crew lead who starts
    a job short, or puts in someone leaving, has the office texted (Options › Short crew alert). */
@@ -3912,12 +3939,12 @@ function crewShort(j,t){if(j.status==='booked'){t=t||todayISO();if(!j.d.moveDate
 // under the crew on the job sheet and the lead's card: the bigger crew's signature, and a short crew
 function crewLines(j,me,office){
   var out='',f=crewForm(j),who=esc(j.d.name||'The customer'),sh=crewShortN(j),qc=num((j.quote||{}).crew)||2;
-  if(f&&j.status==='booked')out+='<p class="hint cc-crewok">'+f.n+' movers on the job, quoted for '+qc+': '+who+' signs for the bigger crew at Start job.</p>';
-  else if(f)out+='<div class="cc-sub cc-crewok"><span>'+f.n+' movers on the bill, quoted for '+qc+': '+who+' signs for the bigger crew.</span>'+(office?'':'<button class="btn sm primary" data-act="cs:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Customer signs</button>')+'</div>';
+  if(f&&j.status==='booked')out+='<p class="hint cc-crewok">'+f.n+' movers on the job, quoted for '+qc+': '+who+' signs for the bigger crew'+crewWhen(j)+'.</p>';
+  else if(f)out+='<div class="cc-sub cc-crewok"><span>'+f.n+' movers on the bill, quoted for '+qc+': '+who+' signs for the bigger crew'+crewWhen(j)+'.</span>'+(office?'':'<button class="btn sm primary" data-act="cs:open" data-id="'+j.id+'" data-who="'+esc(me)+'">Customer signs</button>')+'</div>';
   if(sh)out+='<p class="hint cc-short">Short crew: '+sh.n+' on the job, quoted for '+sh.qc+'.'+(mvBills(j)?' The bill is for '+sh.n+'.':'')+'</p>';
   return out;
 }
-// the customer signs for a bigger crew (crewForm), at Start job, on the job, or with the forms at the end
+// the customer signs for a bigger crew (crewForm) on the lead's phone: at Start loading, on the job, or with the forms at the end
 function crewStep(j,form){
   var q=j.quote||{},qc=num(q.crew)||2,from=crewFrom(j,form.n),f=ui.flow||{};
   return '<h2>'+esc(form.title)+'</h2><p class="hint">Show '+esc(j.d.name||'the customer')+' the bigger crew and its rate, then have them sign below.</p>'+
@@ -3926,8 +3953,13 @@ function crewStep(j,form){
     '<label class="check"><input type="checkbox" id="sigAgree"> I agree to '+form.n+' movers at '+money(form.rate)+'/hr for the time they’re on the job.</label>'+
     '<div class="f"><span>Sign here with your finger</span></div><canvas id="sigPad" class="sigpad" aria-label="Signature pad"></canvas>'+
     '<div class="row"><button class="btn" data-act="flow:clearsig">Clear</button><button class="btn primary grow" data-act="flow:sign" data-fid="'+form.id+'">Sign and continue</button></div>'+
-    (f.thenStart?'<button class="btn ghost" style="width:100%;margin-top:6px" data-act="cs:later">Start now, the customer signs later</button>':'')+
+    (f.thenLoad?'<button class="btn ghost" style="width:100%;margin-top:6px" data-act="cs:later">Start loading, the customer signs later</button>':'')+
     '<p class="hint">If the customer won’t sign, call the office: they can take someone off the job.</p><p class="hint" id="flowErr" role="alert"></p>';
+}
+// the Start job screen on a bigger crew not signed for yet: it's signed in the customer app or before loading, not now
+function startCrewHint(j){
+  var f=crewForm(j);if(!f)return '';
+  return '<p class="hint cc-crewok">'+esc(j.d.name||'The customer')+' hasn’t signed for the bigger crew ('+f.n+' movers) yet: '+(/\S+@\S+\.\S+/.test(String(j.d.email||''))?'they can in the customer app, or ':'')+'you get it before loading.</p>';
 }
 // the Start job screen on a short crew
 function startShortHint(j,office){
@@ -7439,6 +7471,11 @@ function jobMsgNotice(){
 /* ---------- starting a job, the four load and unload steps, and crew timing ---------- */
 var PHASES=[['loadStart','Start loading','Loading started'],['loadEnd','Done loading','Loading done'],['unloadStart','Start unloading','Unloading started'],['unloadEnd','Done unloading','Unloading done']];
 function phaseNext(j){var p=j.phases||{};for(var i=0;i<4;i++)if(!p[PHASES[i][0]])return i;return 4}
+// the lead taps the next step (Start loading, Done loading, …): its time on the job, and the bill from the clock again
+function phaseTap(j,pk,who,pre,post){
+  j.phases=Object.assign({},j.phases||{});j.phases[PHASES[pk][0]]=Date.now();logEv(j,PHASES[pk][2]+' · '+(who||''));if(j.clockAt)rebill(j,'times changed');save();renderCrew();
+  toast((pre||'')+PHASES[pk][2]+' at '+fmtClock(Date.now())+'.'+(pk===3?' Finish the job when the customer is ready to sign.':'')+(post||''));
+}
 function phaseNow(j){return ['On the way','Loading','Driving to delivery','Unloading','Unloaded, needs sign-off'][phaseNext(j)]}
 function phaseSince(j){var i=phaseNext(j);return i===0?(j.startedAt||Date.now()):j.phases[PHASES[i-1][0]]}
 function phaseRows(j){
@@ -7581,7 +7618,7 @@ function renderStart(){
   var go=on&&!co&&!j.test?'<a class="btn primary bigbtn" data-act="go:start" href="'+esc(smsHref(j.d.phone,msg))+'">'+label+'</a>':'<button class="btn primary bigbtn" data-act="go:start">'+label+'</button>';
   el.innerHTML='<div class="scrim" data-act="go:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Start the job">'+
     '<div class="row between"><h2>Start '+esc(j.d.name)+'</h2><button class="btn sm" data-act="go:close">Cancel</button></div>'+
-    '<p class="hint" style="margin:2px 0 6px">Pickup: '+esc(j.d.from||'not set')+'</p>'+startShortHint(j,s.office)+
+    '<p class="hint" style="margin:2px 0 6px">Pickup: '+esc(j.d.from||'not set')+'</p>'+startShortHint(j,s.office)+startCrewHint(j)+
     (j.quote&&j.quote.kind==='mileage'&&j.quote.shopTravel&&!j.quote.flat?fld('Odometer leaving the shop','<input id="odoStartIn" type="number" inputmode="decimal" min="0" step="0.1" placeholder="The reading on the truck" value="'+esc(s.odo!=null?String(s.odo):(j.odo&&j.odo.start!=null?String(j.odo.start):''))+'">')+
       '<p class="hint" style="margin:4px 0 8px">Mileage move: every mile from the shop and back is billed. You put in the odometer again at bill-out.</p>':'')+
     (has?'<label class="check"><input type="checkbox" id="etaOn"'+(on?' checked':'')+'> Text '+esc(j.d.name)+' how long until you arrive</label>':etaOk?'<p class="hint">No phone number on this job, so no arrival text.</p>':'')+
@@ -8108,7 +8145,7 @@ document.addEventListener('click',function(){setTimeout(navSync,0)});
 // opts.noBack: straight to signing and payment (the job was just finished, with its drive back if it needed one)
 function startFlow(id,who,finishing,opts){
   opts=opts||{};var j=byId(id);
-  ui.flow={jobId:id,who:who||'',method:'',finishing:!!finishing,crewOnly:!!opts.crewOnly,thenStart:!!opts.thenStart};
+  ui.flow={jobId:id,who:who||'',method:'',finishing:!!finishing,crewOnly:!!opts.crewOnly,thenLoad:!!opts.thenLoad};
   if(j&&(opts.back?backApplies(j):!opts.noBack&&who!=='Office'&&needsBack(j))){backInit(j);ui.flow.finishAfter=!!opts.finishAfter}
   renderFlow();
   if(j&&ui.flow&&ui.flow.step==='back'&&j.quote.kind==='mileage'&&!j.back)backGps(false);   // the miles back, from where the truck is
@@ -8369,10 +8406,10 @@ function renderFlow(){
   // the forms are signed at the end of the move: a deposit on a job that hasn't started goes straight to payment
   var req=formsRequired(j),pend=['active','done','paid'].indexOf(j.status)>=0?formsPending(j):[],bal=balOf(j),body,label;
   if(f.crewOnly){
-    // just the bigger crew's signature: signed (or not needed any more), it closes, and at Start job the start screen opens
+    // just the bigger crew's signature: signed (or not needed any more), it closes, and at Start loading the loading starts
     var cf=crewForm(j);
-    if(!cf){ui.flow=null;el.hidden=true;el.innerHTML='';syncLock();if(f.thenStart&&j.status==='booked')openStart(j.id,f.who);else{renderTab();if(ui.jobId)renderSheet()}return}
-    pend=[cf];body=crewStep(j,cf);label=(f.thenStart?'Before you start':'On the job')+' · Bigger crew';
+    if(!cf){ui.flow=null;el.hidden=true;el.innerHTML='';syncLock();if(f.thenLoad&&j.status==='active'&&phaseNext(j)===0)phaseTap(j,0,f.who,f.signed?'Signed: '+f.signed+'. ':'');else{renderTab();if(ui.jobId)renderSheet()}return}
+    pend=[cf];body=crewStep(j,cf);label=(f.thenLoad?'Before loading':'On the job')+' · Bigger crew';
   }
   else if(f.step==='back'){body=backStep(j,f);label='Before you bill out'}
   else if(pend.length){body=formStep(j,pend[0]);label=(f.finishing?'Sign to close the job · ':'')+'Form '+(req.length-pend.length+1)+' of '+req.length}
@@ -8511,13 +8548,12 @@ document.addEventListener('click',function(e){
     case 'tally':j=byId(t.dataset.id);var rec=j.tally[t.dataset.item]||(j.tally[t.dataset.item]={});rec[t.dataset.k]=rec[t.dataset.k]?0:1;save();renderCrew();break;
     case 'cr:start':{j=byId(t.dataset.id);if(!j)break;var cw2=clockWait(j);
       if(cw2.length){toast('Waiting on '+waitWords(cw2,t.dataset.who)+' to clock in. Everyone on the job clocks in before it starts.');break}
-      if(crewForm(j)){startFlow(j.id,t.dataset.who,false,{crewOnly:true,thenStart:true,noBack:true});break}   // the customer signs for a bigger crew first
-      openStart(j.id,t.dataset.who);break}
-    case 'cs:later':{var cl=ui.flow,clj=cl&&byId(cl.jobId);if(!cl)break;ui.flow=null;renderFlow();if(clj&&clj.status==='booked')openStart(clj.id,cl.who);break}
+      openStart(j.id,t.dataset.who);break}   // a bigger crew is signed for in the customer app, or before loading (crewForm)
+    case 'cs:later':{var cl=ui.flow,clj=cl&&byId(cl.jobId);if(!cl)break;ui.flow=null;renderFlow();if(clj&&clj.status==='active'&&cl.thenLoad&&phaseNext(clj)===0)phaseTap(clj,0,cl.who,'',' '+(clj.d.name||'The customer')+' signs for the bigger crew before you finish.');break}
     case 'cs:open':{var co=byId(t.dataset.id);if(!co)break;if(!crewForm(co)){renderTab();if(ui.jobId)renderSheet();break}startFlow(co.id,t.dataset.who,false,{crewOnly:true,noBack:true});break}
     case 'cr:phase':{j=byId(t.dataset.id);if(!j||j.status!=='active')break;var pk=phaseNext(j);if(pk>3||PHASES[pk][0]!==t.dataset.k){renderCrew();break}
-      j.phases=Object.assign({},j.phases||{});j.phases[PHASES[pk][0]]=Date.now();logEv(j,PHASES[pk][2]+' · '+t.dataset.who);if(j.clockAt)rebill(j,'times changed');save();renderCrew();
-      toast(PHASES[pk][2]+' at '+fmtClock(Date.now())+'.'+(pk===3?' Finish the job when the customer is ready to sign.':''));break}
+      if(pk===0&&crewForm(j)){startFlow(j.id,t.dataset.who,false,{crewOnly:true,thenLoad:true,noBack:true});break}   // the customer signs for a bigger crew before loading
+      phaseTap(j,pk,t.dataset.who);break}
     case 'cr:phaseundo':{j=byId(t.dataset.id);if(!j||j.status!=='active')break;var pu=phaseNext(j)-1;if(pu<0)break;j.phases=Object.assign({},j.phases);j.phases[PHASES[pu][0]]=null;logEv(j,'Undid: '+PHASES[pu][2]);if(j.clockAt)rebill(j,'times changed');save();renderCrew();toast('Undone.');break}
     case 'cr:finish':j=byId(t.dataset.id);if(!j)break;if(phaseNext(j)<4){toast('Tap '+PHASES[phaseNext(j)][1]+' first.');break}
       if(photosMissing(j)){toast(photosMissing(j));var pse=$('.crewcard[data-job="'+j.id+'"] .cc-photos');if(pse&&pse.scrollIntoView)try{pse.scrollIntoView({block:'center'})}catch(e){}break}
@@ -8773,7 +8809,8 @@ document.addEventListener('click',function(e){
       if(!sigDirty){flowFail('The customer needs to sign in the box.');break}
       fj.signed=fj.signed||[];fj.signed.push(Object.assign({id:uid(),formId:fm.id,title:fm.title,name:sn,sig:exportSig(),ts:Date.now(),by:ui.flow.who||''},fc?{n:fm.n,rate:fm.rate}:{}));
       logEv(fj,'Signed: '+fm.title+(fc?' at '+money(fm.rate)+'/hr, by '+sn:''));save();sigDirty=false;
-      if(fc)toast('Signed: '+sn+' agrees to '+fm.n+' movers at '+money(fm.rate)+'/hr.');
+      if(fc&&ui.flow.thenLoad)ui.flow.signed=sn+' agrees to '+fm.n+' movers at '+money(fm.rate)+'/hr';   // said with Loading started
+      else if(fc)toast('Signed: '+sn+' agrees to '+fm.n+' movers at '+money(fm.rate)+'/hr.');
       renderFlow();break}
     case 'flow:pay':{var pj=byId(ui.flow.jobId);if(!pj)break;
       if(payOn()){var spm=flowMethodStripe(pj);if(spm==='card'){if(!pay.busy)payByCard(pj);break}if(spm==='vault'){if(!pay.busy)payBySaved(pj);break}}
@@ -8988,7 +9025,7 @@ else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency te
 (function migrate11(){if(window.claude&&typeof window.claude.use==='function')return;var n=0;state.jobs.forEach(function(j){if((crewAdjs(j).length||/^c[34]:/.test(String(j.clockSig||'')))&&clockStale(j)){rebill(j,'worked out again');n++}});if(n)save()})();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,schedRecs:schedRecs,schedOf:schedOf,dayLoad:dayLoad,dirApply:dirApply,openJob:openJob,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock,mvSummary:mvSummary,billOld:billOld,mvUndo:mvUndo,backTry:backTry,crewForm:crewForm,crewReq:crewReq,crewShort:crewShort,crewShortN:crewShortN,crewPut:crewPut,formsPending:formsPending,planDay:planDay,fitAt:fitAt,fitTimes:fitTimes,needOf:needOf,nextRoom:nextRoom,deskLoad:deskLoad,deskRecs:deskRecs,deskCos:deskCos,dayPlanOf:dayPlanOf,moversOn:moversOn,rateCardOf:rateCardOf,hmMin:hmMin,minHm:minHm,dayLoadIn:dayLoadIn,loadWords:loadWords,availWords:availWords,carryDraft:carryDraft,fitIn:fitIn,slotWords:slotWords,slotNo:slotNo,fitWhy:fitWhy,custMoveOf:custMoveOf,emailKey:emailKey,custMoves:custMoves,custPeople:custPeople,custStage:custStage,custDueNow:custDueNow,csTipAmt:csTipAmt,tipsOf:tipsOf,custBookWhy:custBookWhy,custCur:custCur};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,schedRecs:schedRecs,schedOf:schedOf,dayLoad:dayLoad,dirApply:dirApply,openJob:openJob,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock,mvSummary:mvSummary,billOld:billOld,mvUndo:mvUndo,backTry:backTry,crewForm:crewForm,crewReq:crewReq,crewShort:crewShort,crewShortN:crewShortN,crewPut:crewPut,formsPending:formsPending,planDay:planDay,fitAt:fitAt,fitTimes:fitTimes,needOf:needOf,nextRoom:nextRoom,deskLoad:deskLoad,deskRecs:deskRecs,deskCos:deskCos,dayPlanOf:dayPlanOf,moversOn:moversOn,rateCardOf:rateCardOf,hmMin:hmMin,minHm:minHm,dayLoadIn:dayLoadIn,loadWords:loadWords,availWords:availWords,carryDraft:carryDraft,fitIn:fitIn,slotWords:slotWords,slotNo:slotNo,fitWhy:fitWhy,custMoveOf:custMoveOf,emailKey:emailKey,custMoves:custMoves,custPeople:custPeople,custStage:custStage,custDueNow:custDueNow,csTipAmt:csTipAmt,tipsOf:tipsOf,custBookWhy:custBookWhy,custCur:custCur,custCrewForm:custCrewForm,crewWhen:crewWhen};
 })();
 </script>
 </body>

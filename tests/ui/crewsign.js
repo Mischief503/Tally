@@ -1,6 +1,8 @@
 // A bigger crew is signed for by the customer, and a short crew alerts the office (Richie, Oct 25: "If someone is added to
 // a job it only adds them for the amount of time there . A bigger crew should be signed by the customer . And a short
-// crew should alert the office"). Someone put on a running job by the crew chips is in crewbill.js.
+// crew should alert the office"). Not at Start job (Oct 29: "either the customer can sign from their side before we
+// leave or they can sign before the crew starts loading"): before loading, on the lead's phone, here; in the customer
+// app, cust.js. Someone put on a running job by the crew chips is in crewbill.js.
 // Run against either edition: node tests/ui/crewsign.js <file> <label>
 const { load, ok, sleep, summary } = require('./lib');
 const file = process.argv[2] || __dirname + '/../../build/tally-artifact.html', label = process.argv[3] || 'crewsign';
@@ -47,26 +49,37 @@ const L = (m) => label + ': ' + m;
   click(chip('Dee')); await sleep(10);
   const f3 = T.crewForm(N);
   ok(f3 && f3.id === 'crew:3' && f3.n === 3 && f3.rate === 195 && f3.title === 'Bigger crew: 3 movers', L('Dee put on it: the customer signs for 3 movers at $195/hr'));
-  ok(/Nadia Farouk signs for the bigger crew at Start job\.$/.test(toast()) && sheet().includes('3 movers on the job, quoted for 2: Nadia Farouk signs for the bigger crew at Start job.'), L('the toast and the sheet say so: ' + toast()));
+  ok(/Nadia Farouk signs for the bigger crew in the customer app, or before loading\.$/.test(toast()) && sheet().includes('3 movers on the job, quoted for 2: Nadia Farouk signs for the bigger crew in the customer app, or before loading.'), L('the toast and the sheet say so: ' + toast()));
+  N.d.email = ''; T.render(); await sleep(10);
+  ok(sheet().includes('3 movers on the job, quoted for 2: Nadia Farouk signs for the bigger crew before loading.'), L('no email on the move (no customer app for her): before loading'));
+  N.d.email = 'nadia.farouk@example.com';
   await close();
 
-  /* ---------------- Marcus starts it: Nadia signs first ---------------- */
+  /* ---------------- Marcus starts it: nothing to sign yet (he isn't with her), she signs before loading ---------------- */
   clockIn('Marcus', 'Kim', 'Dee');
   await preview('lead', 'Marcus'); await openCard(N.id);
-  ok(cardTxt(N).includes('3 movers on the job, quoted for 2: Nadia Farouk signs for the bigger crew at Start job.'), L('Marcus’s card tells him before he starts'));
+  ok(cardTxt(N).includes('3 movers on the job, quoted for 2: Nadia Farouk signs for the bigger crew in the customer app, or before loading.'), L('Marcus’s card tells him before he starts'));
   click(inCard(N, '[data-act="cr:start"]')); await sleep(20);
-  ok(flowOn() && !startOn() && flow().includes('Before you start · Bigger crew') && flow().includes('Bigger crew: 3 movers') && flow().includes('The quote is for 2 movers at $140/hr. 3 movers are on this move, billed at $195/hr for the time they’re on it.'), L('Start job: the customer signs for the bigger crew first: ' + flow().slice(0, 240)));
-  ok(flow().includes('I agree to 3 movers at $195/hr for the time they’re on the job.') && !!$('#flow [data-act="cs:later"]') && flow().includes('If the customer won’t sign, call the office: they can take someone off the job.'), L('what Nadia agrees to, a way to start and sign later, and what to do if she won’t'));
+  const startTxt = () => $('#start').textContent.replace(/\s+/g, ' ');
+  ok(!flowOn() && startOn() && startTxt().includes('Nadia Farouk hasn’t signed for the bigger crew (3 movers) yet: they can in the customer app, or you get it before loading.'), L('Start job asks nothing (the crew isn’t with her yet); the start screen says when she signs: ' + startTxt().slice(0, 160)));
+  click('#start [data-act="go:start"]'); await sleep(20);
+  await openCard(N.id);
+  ok(N.status === 'active' && N.crewAsk === 1 && T.crewForm(N) && T.crewForm(N).id === 'crew:3' && cardTxt(N).includes('3 movers on the bill, quoted for 2: Nadia Farouk signs for the bigger crew in the customer app, or before loading.'), L('started: the signature for 3 is still owed, before loading'));
+  await endPreview();
+  ok(!needs().some((a) => /Bigger crew/.test(a)), L('the office’s Needs you: nothing yet (she signs before loading)'));
+  await preview('lead', 'Marcus'); await openCard(N.id);
+  click(inCard(N, '[data-act="cr:phase"][data-k="loadStart"]')); await sleep(20);
+  ok(flowOn() && flow().includes('Before loading · Bigger crew') && flow().includes('Bigger crew: 3 movers') && flow().includes('The quote is for 2 movers at $140/hr. 3 movers are on this move, billed at $195/hr for the time they’re on it.') && !(N.phases && N.phases.loadStart), L('Start loading: the customer signs for the bigger crew first: ' + flow().slice(0, 240)));
+  ok(flow().includes('I agree to 3 movers at $195/hr for the time they’re on the job.') && !!$('#flow [data-act="cs:later"]') && flow().includes('Start loading, the customer signs later') && flow().includes('If the customer won’t sign, call the office: they can take someone off the job.'), L('what Nadia agrees to, a way to load and sign later, and what to do if she won’t'));
   await sign('Nadia Farouk', { agree: false, draw: false });
   ok(flowOn() && err() === 'Tick the box to show the customer agrees to the bigger crew.', L('not ticked: ' + err()));
   await sign(null, { draw: false });
   ok(flowOn() && err() === 'The customer needs to sign in the box.', L('not signed: ' + err()));
   await sign('Nadia Farouk');
   const s3 = crewSigs(N)[0] || {};
-  ok(!flowOn() && startOn() && toast() === 'Signed: Nadia Farouk agrees to 3 movers at $195/hr.', L('signed: the start screen opens: ' + toast()));
-  ok(s3.formId === 'crew:3' && s3.n === 3 && s3.rate === 195 && s3.name === 'Nadia Farouk' && s3.by === 'Marcus' && /^data:/.test(s3.sig) && N.log.slice(-1)[0].ev === 'Signed: Bigger crew: 3 movers at $195/hr, by Nadia Farouk', L('kept on the job with the forms: ' + N.log.slice(-1)[0].ev));
-  click('#start [data-act="go:start"]'); await sleep(20);
-  ok(N.status === 'active' && N.crewAsk === 1 && !T.crewForm(N) && !T.formsPending(N).some((f) => /^crew:/.test(f.id)) && T.formsPending(N).length === st().settings.forms.filter((f) => f.required).length, L('started: nothing more to sign for the crew, only the forms at the end'));
+  ok(!flowOn() && N.phases && N.phases.loadStart > 0 && /^Signed: Nadia Farouk agrees to 3 movers at \$195\/hr\. Loading started at \d{1,2}:\d{2} [AP]M\.$/.test(toast()), L('signed: loading starts: ' + toast()));
+  ok(s3.formId === 'crew:3' && s3.n === 3 && s3.rate === 195 && s3.name === 'Nadia Farouk' && s3.by === 'Marcus' && /^data:/.test(s3.sig) && N.log.some((l) => l.ev === 'Signed: Bigger crew: 3 movers at $195/hr, by Nadia Farouk') && N.log.slice(-1)[0].ev === 'Loading started · Marcus', L('kept on the job with the forms, then loading: ' + N.log.slice(-2).map((l) => l.ev).join(' / ')));
+  ok(!T.crewForm(N) && !T.formsPending(N).some((f) => /^crew:/.test(f.id)) && T.formsPending(N).length === st().settings.forms.filter((f) => f.required).length, L('loading: nothing more to sign for the crew, only the forms at the end'));
 
   /* ---------------- Luis joins on site: 4 movers, Nadia signs again ---------------- */
   await openCard(N.id);
@@ -99,11 +112,17 @@ const L = (m) => label + ': ' + m;
   clockIn('Marcus', 'Dee', 'Luis', 'Andre');
   await preview('lead', 'Marcus'); await openCard(P.id);
   click(inCard(P, '[data-act="cr:start"]')); await sleep(20);
-  click('#flow [data-act="cs:later"]'); await sleep(20);
-  ok(!flowOn() && startOn(), L('Start now, the customer signs later: the start screen'));
+  ok(!flowOn() && startOn(), L('Start job: straight to the start screen'));
   click('#start [data-act="go:start"]'); await sleep(20);
-  ok(P.status === 'active' && P.crewAsk === 1 && T.crewForm(P) && T.formsPending(P)[0].id === 'crew:4' && !!inCard(P, '[data-act="cs:open"]'), L('started: the signature for 4 is still owed, on the card'));
+  await openCard(P.id);
+  click(inCard(P, '[data-act="cr:phase"][data-k="loadStart"]')); await sleep(20);
+  ok(flowOn() && flow().includes('Bigger crew: 4 movers'), L('Start loading: Priya signs for 4 first'));
+  click('#flow [data-act="cs:later"]'); await sleep(20);
+  ok(!flowOn() && P.phases && P.phases.loadStart > 0 && /^Loading started at .*\. Priya Nair signs for the bigger crew before you finish\.$/.test(toast()), L('Start loading, the customer signs later: loading starts: ' + toast()));
+  await openCard(P.id);
+  ok(P.status === 'active' && P.crewAsk === 1 && T.crewForm(P) && T.formsPending(P)[0].id === 'crew:4' && !!inCard(P, '[data-act="cs:open"]') && cardTxt(P).includes('4 movers on the bill, quoted for 3: Priya Nair signs for the bigger crew.'), L('loading: the signature for 4 is still owed, on the card'));
   await endPreview();
+  ok(needs().some((a) => a === '!Bigger crew, not signed yetPriya Nair · 4 movers, quoted for 3›'), L('loading without it: in the office’s Needs you'));
   preSign(P);
   await open(P);
   const sel = $('#sheet select[data-jstatus]'); sel.value = 'done'; sel.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(15);
@@ -132,7 +151,7 @@ const L = (m) => label + ': ' + m;
   clockIn('Tanya', 'Andre', 'Dee', 'Kim');
   await preview('lead', 'Tanya'); await openCard(HR.id);
   click(inCard(HR, '[data-act="cr:start"]')); await sleep(20);
-  ok(!flowOn() && startOn(), L('and Start job goes straight to the start screen'));
+  ok(!flowOn() && startOn() && !/bigger crew/i.test($('#start').textContent), L('and the start screen says nothing about it'));
   click('#start [data-act="go:cancel"],#start [data-act="go:close"]'); await sleep(10);
   await endPreview();
   delete st().settings.opt.crewSign;

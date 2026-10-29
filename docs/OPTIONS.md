@@ -33,7 +33,7 @@ the old notes, tallies, photos and settings are still there.
 | Crew leads collect payment | Leads get the signatures (**Get signatures**) and the job says *The office collects the payment*. The server refuses a lead's card payment or pay link too. |
 | Crew leads add charges and credits | No charge or credit box on the lead's bill. |
 | Crew leads add movers on site | The lead can't put in a mover joining or leaving; the office still can (the job sheet's Movers on the bill). See [PRICING.md](PRICING.md#movers-joining-or-leaving-on-site). |
-| Customer signs for a bigger crew | More movers than quoted are billed without the customer's signature. On: the customer signs for them and their rate at Start job, or when someone joins, and the job can't be finished until they do (or the owner waives it). See [PRICING.md](PRICING.md#a-bigger-crew-the-customer-signs-for-it). |
+| Customer signs for a bigger crew | More movers than quoted are billed without the customer's signature. On: the customer signs for them and their rate in the customer app, or on the lead's phone before loading (not at Start job), and again when someone joins; the job can't be finished until they do (or the owner waives it). See [PRICING.md](PRICING.md#a-bigger-crew-the-customer-signs-for-it). |
 | Miles back to the shop by GPS | On a mileage move, the miles back come from the quote; the lead can still change them. |
 
 ## Time clock

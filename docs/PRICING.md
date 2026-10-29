@@ -202,21 +202,33 @@ shorthanded, the bill should reflect what went out").
 ### A bigger crew: the customer signs for it
 
 When more movers are on the bill than the quote's crew, the customer signs for them and their rate
-(Richie, Oct 25: "A bigger crew should be signed by the customer"):
+(Richie, Oct 25: "A bigger crew should be signed by the customer"). Not at Start job: the crew isn't with
+the customer yet (Richie, Oct 29: "either the customer can sign from their side before we leave or they
+can sign before the crew starts loading . Having them sign on the crews side of the app before we start
+doesnt make sense we are not with the customer yet"):
 
 - The office puts 3 on a 2-man move: the toast, the job sheet and the lead's card say "Nadia Farouk
-  signs for the bigger crew at Start job".
-- At **Start job**, before the start screen, the lead shows the customer **Bigger crew: 3 movers**:
-  "The quote is for 2 movers at $140/hr. 3 movers are on this move, billed at $195/hr for the time
-  they're on it." The customer ticks "I agree to 3 movers at $195/hr for the time they're on the job.",
-  signs, and **Sign and continue** opens the start screen. **Start now, the customer signs later**
-  starts the job without it. If the customer won't sign, the office can take someone off the job.
+  signs for the bigger crew in the customer app, or before loading" ("before loading" alone when the
+  move has no email for the customer app).
+- **In the customer app** (CUSTOMERS.md), until loading starts: What's next has **Sign for your bigger
+  crew** ("3 movers at $195/hr, before your crew loads") with **Sign now**: "Your quote is for 2 movers at
+  $140/hr. 3 movers are on your move, billed at $195/hr for the time they're on it." They tick "I agree to 3
+  movers at $195/hr for the time they're on the job." and sign. On move day it's still there until the
+  crew starts loading ("Sign here, or with your crew before they load.").
+- **Start job** doesn't ask; its screen says "Nadia Farouk hasn't signed for the bigger crew (3 movers)
+  yet: they can in the customer app, or you get it before loading."
+- At **Start loading**, if it isn't signed, the lead shows the customer **Bigger crew: 3 movers** (the same
+  words) and they sign on the lead's phone; signed, loading starts ("Signed: Nadia Farouk agrees to 3
+  movers at $195/hr. Loading started at 9:05 AM."). **Start loading, the customer signs later** loads
+  without it (the job still can't be finished until it's signed). If the customer won't sign, the office
+  can take someone off the job.
 - Someone joining on site who makes the crew bigger than the customer signed for (4 now) needs a new
   signature: the lead's card says "4 movers on the bill, quoted for 2: Nadia Farouk signs for the bigger
   crew." with **Customer signs**. One for 4 movers covers any crew up to 4.
 - While the job runs, the signature is one of its forms, first: the job can't be finished (or paid)
   until it's signed, or the owner waives it on the job sheet. The office's Today has **Bigger crew, not
-  signed yet** until then. It's kept with the job's signed forms, with the crew size and the rate.
+  signed yet** once loading started without it. It's kept with the job's signed forms, with the crew size
+  and the rate (signed in the customer app: "Signed by Nadia Farouk, ahead in the customer app").
 - A finished job asks nothing more (a mover the office puts on after the job is the office's call), and
   a job started on a version before Oct 25 asks nothing. A flat price never asks (the bill is the
   quote). **Options › Customer signs for a bigger crew** off: no signature.

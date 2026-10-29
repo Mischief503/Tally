@@ -29,7 +29,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   click('[data-act="tab"][data-tab="dispatch"]'); await sleep(20);
   const dq = (n) => $$('[data-act="dq:crew"]').find((x) => x.dataset.id === N.id && x.dataset.n === n);
   click(dq('Dee')); await sleep(10);
-  ok(N.assign.crew.join() === 'Marcus,Kim,Dee' && toast() === 'Dee added to the job. Movers on the bill: 2 (as quoted) · 3 from the start. Nadia Farouk signs for the bigger crew at Start job.', L('the Board: Dee put on Nadia’s job, and Nadia signs for the bigger crew at Start job: ' + toast()));
+  ok(N.assign.crew.join() === 'Marcus,Kim,Dee' && toast() === 'Dee added to the job. Movers on the bill: 2 (as quoted) · 3 from the start. Nadia Farouk signs for the bigger crew in the customer app, or before loading.', L('the Board: Dee put on Nadia’s job, and Nadia signs for the bigger crew in the customer app or before loading: ' + toast()));
   click('[data-act="tab"][data-tab="jobs"]'); await sleep(10);
   await open(N);
   click(chip('Dee')); await sleep(10);
@@ -41,9 +41,9 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   await open(N);
   ok(line() === 'Movers on the bill: 2 (as quoted)A mover joined or left', L('her sheet, under the crew: ' + line()));
   click(chip('Dee')); await sleep(10);
-  ok(N.assign.crew.join() === 'Marcus,Kim,Dee' && !(N.crewAdj || []).length && toast() === 'Dee added to the job. Movers on the bill: 2 (as quoted) · 3 from the start. Nadia Farouk signs for the bigger crew at Start job.', L('the office puts Dee on it: ' + toast()));
+  ok(N.assign.crew.join() === 'Marcus,Kim,Dee' && !(N.crewAdj || []).length && toast() === 'Dee added to the job. Movers on the bill: 2 (as quoted) · 3 from the start. Nadia Farouk signs for the bigger crew in the customer app, or before loading.', L('the office puts Dee on it: ' + toast()));
   ok(line() === 'Movers on the bill: 2 (as quoted) · 3 from the startA mover joined or left', L('the sheet says so: ' + line()));
-  ok(sheet().includes('The final bill comes from the crew’s times. The bill is for 3 movers at $195/hr, the people on the job; the quote is for 2 at $140/hr, so Nadia Farouk signs for the bigger crew at Start job.') && sheet().includes('3 movers on the job, quoted for 2: Nadia Farouk signs for the bigger crew at Start job.'), L('and the Local move part: 3 movers at the 3-man rate, and the customer signs for them'));
+  ok(sheet().includes('The final bill comes from the crew’s times. The bill is for 3 movers at $195/hr, the people on the job; the quote is for 2 at $140/hr, so Nadia Farouk signs for the bigger crew in the customer app, or before loading.') && sheet().includes('3 movers on the job, quoted for 2: Nadia Farouk signs for the bigger crew in the customer app, or before loading.'), L('and the Local move part: 3 movers at the 3-man rate, and the customer signs for them'));
   ok(T.billCrewAt(N, Date.now()) === 3 && T.mvSummary(N) === '2 (as quoted) · 3 from the start', L('3 movers on the bill'));
 
   /* ---------------- the job: started by the office, 5 hours, finished ---------------- */
@@ -111,7 +111,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   click(chip('Dee')); await sleep(10);
   ok(T.mvSummary(HR) === '3 (as quoted)' && toast() === 'Dee added to the job. Movers on the bill: 3 (as quoted).', L('Dee makes the 3 quoted: ' + toast()));
   click(chip('Kim')); await sleep(10);
-  ok(T.mvSummary(HR) === '3 (as quoted) · 4 from the start' && toast() === 'Kim added to the job. Movers on the bill: 3 (as quoted) · 4 from the start. Hollis & Reed Law signs for the bigger crew at Start job.', L('and Kim a 4th, so the customer signs for 4: ' + toast()));
+  ok(T.mvSummary(HR) === '3 (as quoted) · 4 from the start' && toast() === 'Kim added to the job. Movers on the bill: 3 (as quoted) · 4 from the start. Hollis & Reed Law signs for the bigger crew in the customer app, or before loading.', L('and Kim a 4th, so the customer signs for 4: ' + toast()));
   click(chip('Kim')); await sleep(5); click(chip('Dee')); await sleep(10);
   ok(HR.assign.crew.join() === 'Tanya,Andre' && T.mvSummary(HR) === '3 (as quoted) · 2 from the start' && toast() === 'Dee removed from the job. Movers on the bill: 3 (as quoted) · 2 from the start.', L('both off again: 2'));
   // someone joining is one more, as the movers panel says
@@ -199,7 +199,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   const dsel = $('#sheet select[data-drv="sh"]');
   ok(!!dsel && P.quote.crew === 3 && P.assign.crew.join() === 'Marcus,Dee,Luis', L('Priya Nair: 3 quoted, 3 on it'));
   dsel.value = 'Andre'; dsel.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(10);
-  ok(P.assign.crew.indexOf('Andre') >= 0 && /^Andre added to the crew, driving .*\. Movers on the bill: 3 \(as quoted\) · 4 from the start\. Priya Nair signs for the bigger crew at Start job\.$/.test(toast()), L('Andre picked to drive: on the crew, and on the bill: ' + toast()));
+  ok(P.assign.crew.indexOf('Andre') >= 0 && /^Andre added to the crew, driving .*\. Movers on the bill: 3 \(as quoted\) · 4 from the start\. Priya Nair signs for the bigger crew in the customer app, or before loading\.$/.test(toast()), L('Andre picked to drive: on the crew, and on the bill: ' + toast()));
   await close();
 
   /* ---------------- saved like the rest of the job ---------------- */

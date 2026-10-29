@@ -35,6 +35,10 @@ most first, and a list of the rest.
 - **Forms to sign ahead**: the required forms marked **Customer signs ahead** in Setup › Forms to sign (a sample
   moving agreement is one tap away there). Signed ahead, the crew isn't asked for them at the end. The delivery receipt
   stays with the crew.
+- **A bigger crew** (more movers on the move than quoted, Oct 29): **Sign for your bigger crew**, with the movers and
+  their rate, until the crew starts loading (on move day too); otherwise the lead gets it on their phone at Start
+  loading, never at Start job (Richie: "Having them sign on the crews side of the app before we start doesnt make sense
+  we are not with the customer yet"). See PRICING.md, A bigger crew.
 - **Move day**: the crew on the way (about when, from the arrival time at Start job), loading, on the road, unloading,
   finishing up, as the lead taps them.
 - **The bill**, once the move is done, with a **tip for the crew** (no tip, 10, 15, 20% or their own amount;

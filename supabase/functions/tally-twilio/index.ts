@@ -480,6 +480,44 @@ export function moversAt(job: J, t: number): number {
   return Math.max(1, n);
 }
 
+// A bigger crew (the app's crewForm and custCrewForm, web/index.html): more movers on the bill than the quote's crew,
+// which the customer signs for, with their rate. Not at Start job (Richie, Oct 29: "either the customer can sign from
+// their side before we leave or they can sign before the crew starts loading"): in the customer app until loading
+// starts, else on the crew lead's phone. A signature for n movers covers any crew up to n; Options › Customer signs for
+// a bigger crew. Counted the app's way: the most movers on the bill through the job (mvSteps), at the quote's rate plus
+// the rate card's difference between the two crews (mvRate).
+const crewBillsOf = (job: J): boolean => { const qt = job.quote || {}; return (qt.kind === "local" || qt.kind === "mileage") && !qt.flat && Number(qt.rate) > 0 && Number(qt.crew) > 0; };
+const crewBillOld = (job: J): boolean => { const sg = job.clockAt && job.clockSig; return typeof sg === "string" && (sg.indexOf("c1:") === 0 || sg.indexOf("c2:") === 0); };
+function crewCardOf(S: J, job: J, n: number): number {
+  const R = job.crewRates || (S && S.rates) || {}, a2 = Number(R.r2) || 0, a3 = Number(R.r3) || 0, a4 = Number(R.r4) || 0;
+  if (n >= 2 && n <= 4) return [a2, a3, a4][n - 2];
+  if (n > 4) return a4 + (n - 4) * (a4 - a3);
+  return Math.max(0, a2 - (2 - n) * (a3 - a2));
+}
+export function crewRateOf(S: J, job: J, n: number): number {
+  const qt = job.quote || {};
+  return Math.max(0, r2(Number(qt.rate) + crewCardOf(S, job, n) - crewCardOf(S, job, Number(qt.crew))));
+}
+export function crewMostOf(job: J): number {
+  const st = Number(job.startedAt) || 0;
+  let most = moversAt(job, st || Infinity);
+  vals(job.crewAdj).forEach((e: J) => { if (e && (e.d === 1 || e.d === -1) && Number(e.ts) > 0 && st && e.ts > st) most = Math.max(most, moversAt(job, e.ts)); });
+  return most;
+}
+const crewSignedOf = (job: J): number => vals(job.signed).reduce((a: number, x: J) => { const m = /^crew:(\d+)$/.exec(String((x && x.formId) || "")); return m ? Math.max(a, +m[1]) : a; }, 0);
+const crewLoadedOf = (job: J): boolean => !!(job.phases && job.phases.loadStart);
+// the bigger crew in the customer's copy: owed (signed: null) or signed; null when there's none, or once loading started
+export function custCrewOf(S: J, job: J): J | null {
+  if (!(job.status === "booked" || (job.status === "active" && !crewLoadedOf(job)))) return null;
+  if (optOff(S, "crewSign") || !crewBillsOf(job) || crewBillOld(job) || (job.status === "active" && !job.crewAsk)) return null;
+  const qt = job.quote || {}, qc = Number(qt.crew) || 2, n = crewMostOf(job);
+  if (n <= qc) return null;
+  const base = { kind: "crew", n, rate: crewRateOf(S, job, n), qc, qrate: r2(qt.rate), text: "", pages: [], ahead: true };
+  if (n > crewSignedOf(job)) return { ...base, id: "crew:" + n, title: "Bigger crew: " + n + " movers", signed: null };
+  const sg = vals(job.signed).filter((x: J) => { const m = /^crew:(\d+)$/.exec(String((x && x.formId) || "")); return m && +m[1] >= n && !x.waived; }).pop();
+  return sg ? { ...base, id: String(sg.formId), title: String(sg.title || ""), signed: { name: String(sg.name || ""), ts: Number(sg.ts) || 0, ahead: !!sg.ahead } } : null;
+}
+
 // A short crew (Richie, Oct 25: "a short crew should alert the office"): a crew lead started the job with fewer
 // movers than the quote's crew, or put in someone leaving and it dropped below. The office gets a text (Options ›
 // Short crew alert), once for each crew size on a job in six hours (a second phone, a double tap). The crew is
@@ -2904,13 +2942,13 @@ export function custCopy(org: string, S: J, job: J, o: { company: string; phone:
   const d = job.d || {}, qt = job.quote || {}, c = job.cust || {}, crew: string[] = (job.assign && job.assign.crew) || [];
   const totalC = jobTotalCents(job), dueC = Math.max(0, totalC - o.paidC);
   const depC = job.status === "booked" && !(d.moveDate && String(d.moveDate) < today()) ? Math.max(0, cents(qt.deposit) - o.paidC) : 0;
-  const signed = vals(job.signed).filter((x: J) => x && !x.waived);
-  const forms = optOff(S, "forms") ? [] : ((S && S.forms) || []).filter((f: J) => f && f.required).map((f: J) => {
+  const signed = vals(job.signed).filter((x: J) => x && !x.waived), crewF = custCrewOf(S, job);
+  const forms = (crewF ? [crewF] : []).concat(optOff(S, "forms") ? [] : ((S && S.forms) || []).filter((f: J) => f && f.required).map((f: J) => {
     const sg = signed.find((x: J) => x.formId === f.id), text = f.kind === "text";
     return { id: String(f.id), title: String(f.title || ""), kind: text ? "text" : "pages", text: text ? String(f.text || "") : "",
       pages: text ? [] : (f.pageIds || []).map((id: string) => (o.pages && o.pages[id]) || ""), ahead: !!f.ahead,
       signed: sg ? { name: String(sg.name || ""), ts: Number(sg.ts) || 0, ahead: !!sg.ahead } : null };
-  });
+  }));
   const pays = vals(job.payments).filter((p: J) => p && (p.stripe ? counts(p.live) : cents(p.amt) > 0 || Number(p.tip) > 0))
     .map((p: J) => ({ amt: r2(p.amt), tip: r2(p.tip), method: String(p.method || ""), date: String(p.date || ""), ts: Number(p.ts) || 0 }));
   return {
@@ -3035,6 +3073,7 @@ async function custBook(user: J, org: string, jobId: string): Promise<J> {
 async function custSign(user: J, org: string, jobId: string, b: J): Promise<J> {
   const c = await custJob(user, org, jobId);
   if (c.err) return { ok: false, message: c.err, status: c.status };
+  if (/^crew:\d+$/.test(String(b.formId || ""))) return custSignCrew(user, org, jobId, c.S, b);
   if (optOff(c.S, "forms")) return { ok: false, message: "There are no forms to sign." };
   const f = (c.S.forms || []).find((x: J) => x && x.id === b.formId && x.required && x.ahead);
   if (!f) return { ok: false, message: "That form isn't one to sign ahead." };
@@ -3049,6 +3088,26 @@ async function custSign(user: J, org: string, jobId: string, b: J): Promise<J> {
     signed[id] = { id, formId: f.id, title: String(f.title || ""), name, sig, ts, by: "customer", ahead: true };
     job.signed = signed;
     addLog(job, ts, ev);
+    return job;
+  });
+  return w.ok ? { ok: true } : w;
+}
+// the bigger crew, signed in the customer app: the one the job owes now, until loading starts (custCrewOf)
+async function custSignCrew(user: J, org: string, jobId: string, S: J, b: J): Promise<J> {
+  const name = String(b.name || "").trim().replace(/\s+/g, " ").slice(0, 120), sig = String(b.sig || "");
+  if (!name) return { ok: false, message: "Type your name." };
+  if (!/^data:image\/png;base64,[A-Za-z0-9+/=]{40,}$/.test(sig) || sig.length > 400000) return { ok: false, message: "The signature didn't come through. Sign again." };
+  const ts = Date.now(), id = "c" + randToken();
+  const w = await custWrite(user, org, jobId, (job) => {
+    if (job.status === "active" && crewLoadedOf(job)) return "Your crew lead has you sign for it on their phone.";
+    const f = custCrewOf(S, job);
+    if (!f) return "There's no bigger crew to sign for now.";
+    if (f.signed) return job;   // signed already
+    if (f.id !== b.formId) return "Your crew changed. Check it and sign again.";
+    const signed = mapOf(job.signed);
+    signed[id] = { id, formId: f.id, title: f.title, name, sig, ts, by: "customer", ahead: true, n: f.n, rate: f.rate };
+    job.signed = signed;
+    addLog(job, ts, "Signed ahead in the customer app: " + f.title + " at " + usd(f.rate) + "/hr (" + name + ")");
     return job;
   });
   return w.ok ? { ok: true } : w;

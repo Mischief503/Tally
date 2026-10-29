@@ -53,16 +53,20 @@ function seed() {
   ok(shorts().length === 1, 'Kim put in as leaving: the office is texted again (the server decides if it’s news)');
 
   /* ---------------- not short: nothing asked ---------------- */
-  // Nadia Farouk: 2 quoted, 3 on it, so Marcus gets her signature for the bigger crew first
+  // Nadia Farouk: 2 quoted, 3 on it, so Marcus gets her signature for the bigger crew before loading (not at Start job)
   await openCard('b1');
   click(card('b1').querySelector('[data-act="cr:start"]')); await sleep(20);
-  ok(!$('#flow').hidden && /Bigger crew: 3 movers/.test($('#flow').textContent), 'Nadia Farouk, 3 on a 2-man move: she signs first');
-  $('#sigName').value = 'Nadia Farouk'; $('#sigAgree').checked = true; $('#sigPad').dispatchEvent(new w.MouseEvent('pointerdown', { bubbles: true }));
-  click('#flow [data-act="flow:sign"]'); await sleep(20);
+  ok($('#flow').hidden && !$('#start').hidden, 'Nadia Farouk, 3 on a 2-man move: Start job asks nothing (the crew isn’t with her yet)');
   A.calls.fn.length = 0;
   click('#start [data-act="go:start"]'); await sleep(1200);
+  ok(row('b1').status === 'active' && row('b1').crewAsk === 1 && !Object.values(row('b1').signed || {}).some((x) => x.formId === 'crew:3'), 'started, in the shared copy: asking for her signature, not signed yet');
+  await openCard('b1');
+  click(card('b1').querySelector('[data-act="cr:phase"][data-k="loadStart"]')); await sleep(20);
+  ok(!$('#flow').hidden && /Bigger crew: 3 movers/.test($('#flow').textContent), 'Start loading: she signs first');
+  $('#sigName').value = 'Nadia Farouk'; $('#sigAgree').checked = true; $('#sigPad').dispatchEvent(new w.MouseEvent('pointerdown', { bubbles: true }));
+  click('#flow [data-act="flow:sign"]'); await sleep(1200);
   const sg = Object.values(row('b1').signed || {}).find((x) => x.formId === 'crew:3') || {};
-  ok(row('b1').status === 'active' && row('b1').crewAsk === 1 && sg.n === 3 && sg.rate === 195 && sg.name === 'Nadia Farouk' && sg.by === 'Marcus', 'her signature for 3 movers at $195/hr is in the shared copy, with the job’s forms');
+  ok(row('b1').phases && row('b1').phases.loadStart > 0 && sg.n === 3 && sg.rate === 195 && sg.name === 'Nadia Farouk' && sg.by === 'Marcus', 'her signature for 3 movers at $195/hr is in the shared copy, with the job’s forms, and loading started');
   ok(shorts().length === 0, 'a crew bigger than quoted texts nobody');
   ok(A.errors.length === 0, 'hosted lead: no errors (' + A.errors.slice(0, 3).join(' | ') + ')');
 
