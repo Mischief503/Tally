@@ -330,7 +330,7 @@ const sentBefore = sent.length;
 r = await app("tok-priya", { action: "cust_book", org: ORG, jobId: "q1" });
 const q1d = doc("jobs/q1");
 ok(r.body.ok && q1d.status === "booked" && q1d.cust.bookedAt > 0 && logs("q1").indexOf("Booked by the customer in the customer app") >= 0 && logs("q1").indexOf("Status: Booked") >= 0, "she books it: booked, and the activity says it was the customer");
-ok(sent.length - sentBefore === 2 && sent.slice(sentBefore).every((t) => /Priya Nair booked their move for .* in the customer app\. Add the truck and crew in Tally\./.test(t.Body)), "the office is texted: the owner and dispatch (" + (sent.length - sentBefore) + ")");
+ok(sent.length - sentBefore === 2 && sent.slice(sentBefore).every((t) => /Priya Nair booked their move for .* in the customer app\. Add the truck and crew in MoveCrew\./.test(t.Body)), "the office is texted: the owner and dispatch (" + (sent.length - sentBefore) + ")");
 r = await app("tok-priya", { action: "cust_book", org: ORG, jobId: "q1" });
 ok(r.body.ok && logs("q1").filter((x) => /Booked by the customer/.test(x)).length === 1 && sent.length - sentBefore === 2, "a second tap books nothing twice");
 putDoc(ORG, "jobs/q2", job("q2", { d: { ...job("x").d, moveDate: past } }));
@@ -368,7 +368,7 @@ ok(!Object.keys(cs.params).some((k) => /payment_method_types/.test(k)), "the pag
 const link1 = DB.pay_links.find((l) => l.session_id === cs.id);
 ok(link1 && link1.created_by === fn.CUST_BY && link1.amount_cents === 25000 && link1.status === "open", "the page is kept like a pay link, so a payment elsewhere closes it");
 let g = await getUrl("/p/" + link1.token);
-ok(g.status === 410 && /Open the Tally app to pay/.test(g.text), "its code isn't a pay link anyone can open");
+ok(g.status === 410 && /Open the MoveCrew app to pay/.test(g.text), "its code isn't a pay link anyone can open");
 // she pays with Google Pay
 let pi = customerPays(cs.id);
 let h = await hook(sessionDone(cs.id, pi.id));
@@ -453,7 +453,7 @@ r = await app("tok-owner", { action: "invite_app", org: ORG, jobId: "b1", url: "
 ok(!r.body.ok && sent.length === before2, "never the Android app's own page");
 r = await app("tok-owner", { action: "invite_app", org: ORG, jobId: "b1", url: "https://mischief503.github.io/Tally/#x" });
 const inv = sent[sent.length - 1];
-ok(r.body.ok && sent.length === before2 + 1 && inv.To === "+15125550199" && /^Ace Moving: Hi Priya, your move is in the Tally app: https:\/\/mischief503\.github\.io\/Tally\/ Sign in with PRIYANAIR@gmail\.com to see it, book, sign and pay\./.test(inv.Body), "the owner texts Priya the app, from the company line: " + inv.Body);
+ok(r.body.ok && sent.length === before2 + 1 && inv.To === "+15125550199" && /^Ace Moving: Hi Priya, your move is in the MoveCrew app: https:\/\/mischief503\.github\.io\/Tally\/ Sign in with PRIYANAIR@gmail\.com to see it, book, sign and pay\./.test(inv.Body), "the owner texts Priya the app, from the company line: " + inv.Body);
 r = await app("tok-owner", { action: "invite_app", org: ORG, jobId: "b1", url: "https://mischief503.github.io/Tally/" });
 ok(!r.body.ok && /a moment ago/.test(r.body.message) && sent.length === before2 + 1, "not twice in a row");
 putDoc(ORG, "jobs/n1", job("n1", { d: { ...job("x").d, email: "" } }));

@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Tally",
-  "short_name": "Tally",
+  "name": "MoveCrew",
+  "short_name": "MoveCrew",
   "description": "Your move, and everything a moving company runs on: quotes, dispatch, crews and payments.",
   "start_url": "./",
   "scope": "./",

@@ -159,7 +159,7 @@ const H = 36e5;
   click('[data-act="cr:finish"][data-id="' + O.id + '"]'); await sleep(20);
   ok(/Miles for the bill/.test(flow()) && $('#odoA').value === '45210' && $('#odoB').value === '' && $('#backMi').value === '25', L('bill-out: the start reading is in, the odometer now is asked for, and the quote’s 25 mi back to start with'));
   ok(!$('#backOut') && !/min/.test($$('#flow .chip').map((c) => c.textContent).join('')), L('a mileage move adds miles, never time'));
-  ok(/This copy of Tally can’t look up the drive, so this is the quote’s 25 mi from the delivery to the shop\./.test(flow()) || /The quote’s 25 mi/.test(flow()), L('without a map service here, it says the miles back are the quote’s'));
+  ok(/This copy of MoveCrew can’t look up the drive, so this is the quote’s 25 mi from the delivery to the shop\./.test(flow()) || /The quote’s 25 mi/.test(flow()), L('without a map service here, it says the miles back are the quote’s'));
   ok(/Put in both odometer readings to see the bill\./.test(bb()), L('no bill until the odometer now is in'));
   type('#odoB', '45200'); await sleep(5);
   ok(/has to be more than when the truck left/.test(bb()), L('a reading below the start is caught'));

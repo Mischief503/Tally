@@ -1,6 +1,6 @@
 # Local and mileage moves
 
-How Tally prices a move, and how it works out the final bill from what really happened.
+How MoveCrew prices a move, and how it works out the final bill from what really happened.
 
 ## Which kind of move it is
 
@@ -37,7 +37,7 @@ and packing leave the quote form too. Sales tax also needs a tax %. All of them 
 
 ## The final bill
 
-When the crew finishes the job, Tally bills by the clock (with **Final bill by the clock** switched
+When the crew finishes the job, MoveCrew bills by the clock (with **Final bill by the clock** switched
 off in Setup › Options, new quotes are a flat price instead: the bill is the quote, with no
 estimated top price and no drive-back step):
 
@@ -92,7 +92,7 @@ the shop, **Finish job** (and **Collect payment** once the truck is unloaded) fi
   **back to the shop** fill themselves in from the phone's location: the drive from where the
   truck is to the shop address in Setup, from Google Maps (through the server) or OpenStreetMap
   when Google isn't set up. The quote's miles from the delivery to the shop are used when the
-  phone won't share its location, the lookup doesn't answer, or this copy of Tally can't look
+  phone won't share its location, the lookup doesn't answer, or this copy of MoveCrew can't look
   things up (the claude.ai artifact); the step says which. The lead can type over it (**Look up
   again** asks the map once more). No reading from Start job? **Type the miles so far instead**.
   On the bill: *131 mi driven incl. 30 mi back to the shop*; the job sheet keeps both readings and

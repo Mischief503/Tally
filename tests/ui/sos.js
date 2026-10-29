@@ -155,7 +155,7 @@ const tdOpen = async (X) => { X.click('[data-act="more:open"]'); await sleep(10)
   click('[data-act="sos:hide"]'); await sleep(20);
   ok($('#sosBar').hidden && !w.document.body.classList.contains('sos-on'), 'and the red bar is gone');
 
-  /* ---------- Tally reopened while the alert is on, then the office closes it ---------- */
+  /* ---------- MoveCrew reopened while the alert is on, then the office closes it ---------- */
   const dbR = seed({ alerts: [savedAlert] });
   const R = await load(HOSTED, { db: dbR, org: ORG, me: as('u-marcus'), setup: phone({ storage: savedState }), fnReply: sosReply({ ok: true, sent: 2, names: ['Owner', 'Dispatch'] }) });
   all.push(R);
@@ -246,7 +246,7 @@ const tdOpen = async (X) => { X.click('[data-act="more:open"]'); await sleep(10)
   await tdOpen(G);
   ok(!/and a text/.test(G.$('#sos').textContent), 'without a company line it doesn’t promise a text');
   G.click('[data-act="sos:send"]'); await sleep(80);
-  ok(dbG.docs.some((d) => d.collection === 'chat' && d.data.k === 'sos' && d.data.truck === 'Box 1 (26 ft)' && d.data.text === ''), 'the alert still goes to the office’s Tally');
+  ok(dbG.docs.some((d) => d.collection === 'chat' && d.data.k === 'sos' && d.data.truck === 'Box 1 (26 ft)' && d.data.text === ''), 'the alert still goes to the office’s MoveCrew');
   ok(/Texts aren’t set up for this company/.test(G.$('#sos').textContent) && !G.calls.fn.some((c) => c.body.action === 'sos'), 'and it says no texts went out');
   ok(/This phone can’t find its location\./.test(G.$('#sos').textContent), 'a phone with no location says so');
   ok(dbG.docs.find((d) => d.collection === 'chat' && d.data.k === 'sos').data.geo === 'none', 'and the office is told it has none');
@@ -354,7 +354,7 @@ const tdOpen = async (X) => { X.click('[data-act="more:open"]'); await sleep(10)
   dbY.__failSelect = () => true;
   await Y.w.__sb.from('docs').upsert(row('chat/zz', { id: 'zz', t: 'all', from: 'Dee', text: 'hi', ts: Date.now(), k: 'text' })); await sleep(400);
   delete dbY.__failSelect;
-  ok(Y.T.chat.mode === 'shared' && !!Y.T.chat.db, 'one failed chat fetch keeps Tally connected');
+  ok(Y.T.chat.mode === 'shared' && !!Y.T.chat.db, 'one failed chat fetch keeps MoveCrew connected');
   Y.click('#sos [data-act="sos:end"]'); await sleep(10); Y.click('#sos [data-act="sos:end"]'); await sleep(100);
   ok(dbY.docs.find((d) => d.path === 'chat/' + yid).data.end && Y.w.__geo.cleared.length === 1, 'and Running again still ends the alert and stops the location');
   // a location that can't be saved isn't reported as shared
@@ -418,7 +418,7 @@ const tdOpen = async (X) => { X.click('[data-act="more:open"]'); await sleep(10)
   ok(/Marcus can see you got it/.test(AK.$('#sos').textContent) && dbAk.docs.some((d) => d.collection === 'chat' && d.data.k === 'sosack' && d.data.from === 'Dispatch'), 'trying again sends it');
   AK.T.chat.mode = 'local'; AK.T.chat.db = null;
   AK.click('#sos [data-act="sos:end"]'); await sleep(10);
-  ok(/Tally isn’t connected right now/.test(AK.$('#toast').textContent), 'with no connection, the buttons say so instead of doing nothing');
+  ok(/MoveCrew isn’t connected right now/.test(AK.$('#toast').textContent), 'with no connection, the buttons say so instead of doing nothing');
 
   /* ---------- chat that didn't load at first comes back ---------- */
   const dbCF = seed();
@@ -451,7 +451,7 @@ const tdOpen = async (X) => { X.click('[data-act="more:open"]'); await sleep(10)
   AC.click('#sos [data-act="sos:end"][data-id="sx3"]'); await sleep(10); AC.click('#sos [data-act="sos:end"][data-id="sx3"]'); await sleep(250);
   ok(ends === 2 && /The office was texted that it’s sorted/.test(AC.$('#toast').textContent), 'an all-clear asked for while the alert’s texts are still going out is asked for again');
 
-  /* ---------- an all-clear that couldn't reach the server is tried again, even after Tally reopens ---------- */
+  /* ---------- an all-clear that couldn't reach the server is tried again, even after MoveCrew reopens ---------- */
   let ends2 = 0, ends3 = 0;
   const dbAD = seed({ alerts: [alert('sx4')] });
   const AD = await load(HOSTED, { db: dbAD, org: ORG, me: as('u-owner'), setup: phone(),
@@ -461,13 +461,13 @@ const tdOpen = async (X) => { X.click('[data-act="more:open"]'); await sleep(10)
   const q4 = (AD.T.state().ui.sosClearQ || {}).sx4;
   ok(ends2 === 1 && q4 && q4.tries === 1, 'an all-clear that could not reach the server is kept to try again');
   const st4 = JSON.parse(AD.w.localStorage.getItem(KEY));
-  ok(st4.ui.sosClearQ && st4.ui.sosClearQ.sx4, 'and the phone keeps it if Tally closes');
+  ok(st4.ui.sosClearQ && st4.ui.sosClearQ.sx4, 'and the phone keeps it if MoveCrew closes');
   st4.ui.sosClearQ.sx4.at = Date.now() - 1000;   // reopened later
   const AE = await load(HOSTED, { db: dbAD, org: ORG, me: as('u-owner'), setup: phone({ storage: JSON.stringify(st4) }),
     fnReply: (b) => b.action === 'sos' && b.kind === 'end' ? (++ends3, { ok: true, sent: 2 }) : { ok: true, sent: 0 } });
   all.push(AE);
   await sleep(100);
-  ok(ends3 === 1 && !(AE.T.state().ui.sosClearQ || {}).sx4 && /The office was texted that it’s sorted/.test(AE.$('#toast').textContent), 'reopened, Tally asks again and the all-clear goes');
+  ok(ends3 === 1 && !(AE.T.state().ui.sosClearQ || {}).sx4 && /The office was texted that it’s sorted/.test(AE.$('#toast').textContent), 'reopened, MoveCrew asks again and the all-clear goes');
 
   /* ---------- an own-alert record without a name, then someone else signs in ---------- */
   const oldState = JSON.parse(savedState); delete oldState.ui.sosOwn.from;

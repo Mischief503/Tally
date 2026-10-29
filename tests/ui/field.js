@@ -15,7 +15,7 @@ const file = process.argv[2], label = process.argv[3] || 'field';
   click('[data-act="cr:start"][data-id="' + job.id + '"]'); await sleep(10);
   ok(!$('#start').hidden && job.status === 'booked', label + ': Start job opens the prompt without starting yet');
   ok($('#etaOn').checked && $('#etaOut').textContent.trim() === '30min', label + ': arrival text on, 30 minutes by default');
-  ok(/^Your Moving Co\.: Hi Priya, your crew is on the way and should arrive in about 30 minutes, around \d{1,2}:\d\d [AP]M\.$/.test($('#etaMsg').textContent), label + ': message preview: ' + $('#etaMsg').textContent);
+  ok(/^Your Moving Co\.: Hi Priya, your move crew is on the way and should arrive in about 30 minutes, around \d{1,2}:\d\d [AP]M\.$/.test($('#etaMsg').textContent), label + ': message preview: ' + $('#etaMsg').textContent);
   click('[data-act="go:mins"][data-d="5"]'); await sleep(5);
   ok(/about 35 minutes/.test($('#etaMsg').textContent), label + ': +5 makes it 35');
   click('[data-act="go:mins"][data-d="-5"]'); click('[data-act="go:mins"][data-d="-5"]'); await sleep(5);

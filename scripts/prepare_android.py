@@ -4,7 +4,7 @@
 - Puts your Supabase details in, when they are set as repository variables
   (Settings > Secrets and variables > Actions > Variables: TALLY_SUPABASE_URL, TALLY_SUPABASE_ANON_KEY).
   Without them the app runs on the phone alone, with sample data.
-- Bundles supabase-js inside the app so Tally starts with no signal.
+- Bundles supabase-js inside the app so MoveCrew starts with no signal.
 - Tells the page it is the installed app (Back button handling) and drops the website-only
   pieces (web manifest, offline helper) that the Android app doesn't need.
 - Adds a one-line "ready" log the emulator check looks for.

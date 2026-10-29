@@ -22,13 +22,13 @@ const L = (m) => label + ': ' + m;
   const day = (n) => { const d = new w.Date(); d.setDate(d.getDate() + n); return iso(d); };
   const fmtDate = (s) => { const p = s.split('-').map(Number); return new w.Date(p[0], p[1] - 1, p[2]).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
   const t = day(0);
-  ok(st().settings.callcenter === undefined && T.defaultSettings().callcenter === undefined, L('a company has no call center people of its own (it’s Tally’s service)'));
+  ok(st().settings.callcenter === undefined && T.defaultSettings().callcenter === undefined, L('a company has no call center people of its own (it’s MoveCrew’s service)'));
 
   /* ---------------- who's who ---------------- */
   await tap('[data-act="more:open"]'); await tap('[data-act="more:preview"]');
   const pvRoles = $$('#more .pvrow b').map((b) => b.textContent);
   const ccChip = $$('#more [data-act="pv:set"]').find((b) => b.dataset.role === 'callcenter');
-  ok(pvRoles.join('|') === 'Owner|Dispatch|Call center|Crew lead|Crew|Customer' && !!ccChip && ccChip.dataset.staff === '' && ccChip.textContent === 'Anyone', L('See it their way: the call center (anyone on Tally’s team)'));
+  ok(pvRoles.join('|') === 'Owner|Dispatch|Call center|Crew lead|Crew|Customer' && !!ccChip && ccChip.dataset.staff === '' && ccChip.textContent === 'Anyone', L('See it their way: the call center (anyone on MoveCrew’s team)'));
   click(ccChip); await sleep(20);
   const tabs = $$('#tabs button').map((b) => b.textContent).filter(Boolean);
   ok(st().ui.role === 'callcenter' && T.ui.tab === 'desk' && tabs.join('|') === 'Companies|Schedule|Quotes|More' && !$('#fab').hidden, L('the call center: Companies first, then Schedule and Quotes, and the round button for a new quote'));
@@ -191,7 +191,7 @@ const L = (m) => label + ': ' + m;
   ok(/Quote made by the call center/.test($('#sheet').textContent), L('the job sheet says the call center made the quote'));
   click('#sheet [data-act="sheet:close"].btn'); await sleep(5);
   T.ui.tab = 'settings'; T.ui.setSec = 'roles'; T.render(); await sleep(10);
-  ok(/switches for the sides of the app they see when they sign in: Field view \(off, crew or lead\), Dispatch and Call center/.test(view()) && /Call center\s*Your own call center people \(the Call center switch\)/.test(view()) && /Tally’s call center team, when Tally switches the service on for your company/.test(view()), L('Setup › Roles: each person’s switches, the company’s own call center people, and Tally’s team as a service'));
+  ok(/switches for the sides of the app they see when they sign in: Field view \(off, crew or lead\), Dispatch and Call center/.test(view()) && /Call center\s*Your own call center people \(the Call center switch\)/.test(view()) && /MoveCrew’s call center team, when MoveCrew switches the service on for your company/.test(view()), L('Setup › Roles: each person’s switches, the company’s own call center people, and MoveCrew’s team as a service'));
   T.ui.setSec = 'employees'; T.render(); await sleep(10);
   ok(!/Call center/.test(view()), L('Setup › Employees has no call center'));
   T.dirApply({ name: 'Riley', role: 'callcenter', active: true, info: {} });

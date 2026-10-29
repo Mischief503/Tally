@@ -1,7 +1,7 @@
-# Google Maps distances in Tally
+# Google Maps distances in MoveCrew
 
-When you build a quote, Tally looks up the driving miles between the shop, the pickup and the
-delivery. With a Google key, the lookups come from Google Maps. Without one, Tally falls back to
+When you build a quote, MoveCrew looks up the driving miles between the shop, the pickup and the
+delivery. With a Google key, the lookups come from Google Maps. Without one, MoveCrew falls back to
 OpenStreetMap, which is free but less exact.
 
 ## What is set up (October 5, 2026)
@@ -10,7 +10,7 @@ OpenStreetMap, which is free but less exact.
 |---|---|
 | Google Cloud project | **tally** (ID `tally-510721`), on the billing account "My Billing Account" |
 | API turned on | **Routes API** (Google's setup also switched on its other Maps APIs; the key can't use them) |
-| Key | **Tally distances (Supabase)**, restricted to the Routes API only |
+| Key | **MoveCrew distances (Supabase)**, restricted to the Routes API only |
 | Daily caps | Routes API › Quotas: ComputeRoutes **300 a day**, ComputeRouteMatrix **300 a day** |
 | Where the key lives | Supabase › Edge Functions › Secrets, as `GOOGLE_MAPS_KEY` |
 
@@ -27,7 +27,7 @@ Google charges $5 per 1,000.
 ## Putting the key in Supabase
 
 1. Google Cloud › **APIs & Services › Credentials** (project tally). Press **Show key** on
-   *Tally distances (Supabase)* and copy it.
+   *MoveCrew distances (Supabase)* and copy it.
 2. Supabase › your project › **Edge Functions › Secrets** › **Add new secret**.
    Name: `GOOGLE_MAPS_KEY`. Value: the key. **Save**.
 
@@ -57,8 +57,8 @@ needed: the app already gets Google distances through Supabase. If you ever want
    and under **Application restrictions** choose **Android apps** with package `com.tally.movers`
    and SHA-1 `62:D7:C6:F6:98:8D:1E:70:47:11:7C:0C:4C:28:7F:D0:7E:1F:D5:68` (the test signing key
    the GitHub build uses).
-2. GitHub › Tally › **Settings › Secrets and variables › Actions** › **New repository secret**:
-   `TALLY_GOOGLE_MAPS_KEY`. Then run **Actions › Android app** and install the new Tally.apk.
+2. GitHub › MoveCrew › **Settings › Secrets and variables › Actions** › **New repository secret**:
+   `TALLY_GOOGLE_MAPS_KEY`. Then run **Actions › Android app** and install the new MoveCrew.apk.
 
 The app tries its own key first, then Supabase, then OpenStreetMap.
 

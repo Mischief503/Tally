@@ -1,7 +1,7 @@
-// Tally — the server side of the app (Supabase Edge Function, named tally-twilio for history)
+// MoveCrew — the server side of the app (Supabase Edge Function, named tally-twilio for history)
 // Text alerts, masked calling, callbacks to the office, the call/text log, quote distances,
 // emergency alert texts, card payments through Stripe (on the platform's account or each company's
-// own), and the membership each company pays Tally, with Tally admin.
+// own), and the membership each company pays MoveCrew, with MoveCrew admin.
 //
 // Secrets this function reads (Supabase › Edge Functions › Secrets):
 //   TWILIO_ACCOUNT_SID   your Twilio Account SID (starts with AC)
@@ -19,7 +19,7 @@
 // Stripe's.
 //
 // Routes:
-//   POST /app            the Tally app: {action:'job'|'forms'|'short'|'call'|'line'|'pay_…', org, jobId}
+//   POST /app            the MoveCrew app: {action:'job'|'forms'|'short'|'call'|'line'|'pay_…', org, jobId}
 //                        and a customer's own: {action:'cust_list'|'cust_book'|'cust_sign'|'cust_pay'|'cust_check'|'cust_reviewed'|'cust_profile'}
 //                        and {action:'sos', org, msgId, kind:'start'|'end'} for emergency alerts
 //   POST /stripe         Stripe events (payments finishing or failing, pay links used, refunds, disputes,
@@ -189,7 +189,7 @@ function alertOn(S: J, k: string): boolean {
   return a[k] !== false;
 }
 function company(S: J): string {
-  return gsm((S && S.company) || "Tally");
+  return gsm((S && S.company) || "MoveCrew");
 }
 function staffByPhone(S: J, from: string): string {
   const c = contacts(S), want = last10(from);
@@ -318,11 +318,11 @@ async function whoIs(req: Request, org: string): Promise<J> {
   if (!u || !u.id) return null;
   const rows = await rest("GET", "members?select=role,staff&org_id=eq." + q(org) + "&user_id=eq." + q(u.id) + "&limit=1");
   if (rows && rows[0]) return { uid: u.id, role: rows[0].role, staff: rows[0].staff || "", email: String(u.email || "") };
-  // Tally's call center team, in a company with the service (supabase-callcenter.sql)
+  // MoveCrew's call center team, in a company with the service (supabase-callcenter.sql)
   const cc = await ccAgentFor(u.id, org);
   return cc ? { uid: u.id, role: "callcenter", staff: cc.name, phone: cc.phone, email: String(u.email || ""), cc: true } : null;
 }
-// Someone on Tally's call center team working for this company ({name, phone}), or null: not on the team,
+// Someone on MoveCrew's call center team working for this company ({name, phone}), or null: not on the team,
 // the company hasn't the service, or the database hasn't supabase-callcenter.sql yet.
 async function ccAgentFor(uid: string, org: string): Promise<J> {
   if (!uid || !org) return null;
@@ -398,7 +398,7 @@ export async function checkJob(org: string, jobId: string, origin?: string | nul
       if (mine) bits.push("You drive " + gsm(mine.name) + ".");
       else if (trucks.length) bits.push((trucks.length > 1 ? "Trucks " : "Truck ") + trucks.map((t: J) => gsm(t.name)).join(", ") + ".");
       if (lead && lead !== n) bits.push("Lead " + gsm(lead) + ".");
-      if (confirmOn(S)) bits.push(link ? "Confirm in Tally: " + link : "Confirm in Tally under Job messages.");
+      if (confirmOn(S)) bits.push(link ? "Confirm in MoveCrew: " + link : "Confirm in MoveCrew under Job messages.");
       out.push(await sendText({ org, line, jobId, purpose: "assigned", staff: n, to: C[n], body: bits.join(" ") }));
     }
     for (const n of removed) {
@@ -411,7 +411,7 @@ export async function checkJob(org: string, jobId: string, origin?: string | nul
     for (const n of stayed) {
       out.push(await sendText({ org, line, jobId, purpose: "moved", staff: n, to: C[n],
         body: co + ": " + name + " moved to " + when(d) + " (was " + when(old) + ")." + (d.from ? " Pickup " + gsm(d.from) + "." : "") +
-          (!confirmOn(S) ? "" : link ? " Confirm the new time: " + link : " Confirm the new time in Tally.") }));
+          (!confirmOn(S) ? "" : link ? " Confirm the new time: " + link : " Confirm the new time in MoveCrew.") }));
     }
   }
   return { ok: true, sent: out.filter((r) => r.status !== "failed" && r.status !== "no-number").length, log: out.map((r) => r.id) };
@@ -575,7 +575,7 @@ async function sendEta(org: string, me: J, jobId: string, minutes: unknown): Pro
   const recent = await rest("GET", "comm_log?select=id&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&purpose=eq.eta&created_at=gte." + q(since) + "&limit=1");
   if (recent && recent.length) return { ok: false, message: (d.name || "The customer") + " was texted an arrival time a moment ago." };
   const at = clockIn(Date.now() + mins * 60e3);
-  const body = company(S) + ": " + gsm(etaGreeting(d.name)) + ", your crew is on the way and should arrive in about " + mins + " minutes" + (at ? ", around " + at : "") + ".";
+  const body = company(S) + ": " + gsm(etaGreeting(d.name)) + ", your move crew is on the way and should arrive in about " + mins + " minutes" + (at ? ", around " + at : "") + ".";
   const r = await sendText({ org, line, jobId, purpose: "eta", staff: me.staff, party: d.name || "Customer", to: cust, body });
   if (r.status === "failed") return { ok: false, message: "The arrival text did not go out. Check Calls and texts on the job." };
   return { ok: true, message: "Texted " + (d.name || "the customer") + ": about " + mins + " minutes." };
@@ -603,7 +603,7 @@ async function remindJob(org: string, jobId: string, origin?: string | null): Pr
   for (const n of no) {
     if (skip.indexOf(n) >= 0) { later.push(n); continue; }
     const r = await sendText({ org, line, jobId, purpose: "remind", staff: n, to: C[n],
-      body: company(S) + ": Please confirm " + gsm(d.name || "your job") + ", " + when(d) + (link ? ": " + link : ", in Tally under Job messages.") });
+      body: company(S) + ": Please confirm " + gsm(d.name || "your job") + ", " + when(d) + (link ? ": " + link : ", in MoveCrew under Job messages.") });
     if (r.status !== "failed" && r.status !== "no-number") sent++;
   }
   if (!sent && later.length) return { ok: false, message: gsm(later.join(", ")) + " got a reminder in the last 10 minutes." };
@@ -635,7 +635,7 @@ export async function runTomorrow(): Promise<J> {
       const list = people[n];
       const cfm = confirmOn(S), need = cfm && list.some((x: J) => !isConfirmed(x.job, n));
       const items = list.map((x: J) => { const d = x.job.d || {}; return gsm(d.name || "a job") + " at " + fmtTime(d.time) + (d.from ? " (" + gsm(d.from) + ")" : ""); }).join("; ");
-      const body = co + ": Tomorrow you're on " + items + "." + (need ? (link ? " Please confirm: " + link : " Please confirm in Tally under Job messages.") : cfm ? " You're confirmed. See you there." : " See you there.");
+      const body = co + ": Tomorrow you're on " + items + "." + (need ? (link ? " Please confirm: " + link : " Please confirm in MoveCrew under Job messages.") : cfm ? " You're confirmed. See you there." : " See you there.");
       const r = await sendText({ org, line, jobId: list.length === 1 ? list[0].id : undefined, purpose: "tomorrow", staff: n, to: C[n], body: body.slice(0, 600) });
       if (r.status !== "failed" && r.status !== "no-number") sent++;
     }
@@ -696,13 +696,13 @@ async function startCall(org: string, me: J, jobId: string): Promise<J> {
   if (job.test) return { ok: false, message: "Test job: its phone numbers are made up, so nothing is sent." };
   const office = me.role === "owner" || me.role === "dispatch";
   const onJob = ((job.assign && job.assign.crew) || []).indexOf(me.staff) >= 0;
-  // the call center calls customers on open quotes and on the schedule (what it can see): Tally's team, or one of the
+  // the call center calls customers on open quotes and on the schedule (what it can see): MoveCrew's team, or one of the
   // company's own people the owner switched to the call center (Oct 28: their name in the settings' ccStaff)
   const cc = (me.role === "callcenter" || await ccHouse(org, me, S)) && ["lead", "quoted", "booked", "active"].indexOf(job.status) >= 0;
   if (!office && !onJob && !cc) return { ok: false, message: "You can only call customers on your own jobs." };
-  // the call center's own phone is on Tally's team list, not in the company's contacts
+  // the call center's own phone is on MoveCrew's team list, not in the company's contacts
   const mine = e164(me.cc ? me.phone : contacts(S)[me.staff]);
-  if (!mine) return { ok: false, message: me.cc ? "Tally admin adds your phone number to the call center team first. The company line calls you, then connects you." : "Add your phone number in Setup first. The company line calls you, then connects you." };
+  if (!mine) return { ok: false, message: me.cc ? "MoveCrew admin adds your phone number to the call center team first. The company line calls you, then connects you." : "Add your phone number in Setup first. The company line calls you, then connects you." };
   const cust = e164(job.d && job.d.phone);
   if (!cust) return { ok: false, message: "This job has no customer phone number." };
   const since = new Date(Date.now() - 3600e3).toISOString();
@@ -730,7 +730,7 @@ async function startCall(org: string, me: J, jobId: string): Promise<J> {
 
 /* ---------- truck down (the emergency beacon) ----------
    A crew tapped Truck down in the app. The alert itself is a chat message (k "sos") that the
-   office's copies of Tally show at once; these texts reach the office even with the app closed,
+   office's copies of MoveCrew show at once; these texts reach the office even with the app closed,
    with the truck, who sent it, and a map link to where they are.
    What was texted for an alert is kept in comm_job_state under the key "sos:<alert id>":
      crew       who was texted
@@ -748,7 +748,7 @@ function ownerName(S: J): string {
   const o = ((S && S.office) || []).find((x: J) => x && x.kind === "owner");
   return (o && o.name) || "Owner";
 }
-// The names a person goes by in Tally. The app calls an owner by the owner's name in Setup, which
+// The names a person goes by in MoveCrew. The app calls an owner by the owner's name in Setup, which
 // can differ from the staff name on their sign-in (empty to start with, or a profile's name).
 function namesOf(me: J, S: J): string[] {
   const out: string[] = me.staff ? [me.staff] : [];
@@ -872,7 +872,7 @@ export async function sosText(org: string, me: J, msgId: string, kind: string, c
   if (!(age > -120e3 && age < SOS_FRESH_MS)) return { ok: false, message: "That alert is too old to text about." };
   const line = await lineFor(org);
   if (!line) return { ok: false, reason: "no-line", message: "The company line is not set up, so no texts went out." };
-  // a crew trying it out on a test job: the office sees the alert in Tally, but nobody is texted
+  // a crew trying it out on a test job: the office sees the alert in MoveCrew, but nobody is texted
   if (a.jobId && /^[A-Za-z0-9_-]{1,40}$/.test(String(a.jobId))) {
     const j = await getDoc(org, "jobs/" + a.jobId);
     if (j && j.test) return { ok: true, sent: 0, skipped: "test", names: [] };
@@ -906,7 +906,7 @@ export async function sosText(org: string, me: J, msgId: string, kind: string, c
     (note ? ' "' + note + '"' : "") +
     (place ? " Location: " + place + "." : " No location yet.") +
     (num ? " Call " + gsm(from) + ": " + num + "." : "") +
-    (link ? " Live in Tally: " + link : "");
+    (link ? " Live in MoveCrew: " + link : "");
   const got: string[] = [];
   let sent = 0;
   for (const n of to) {
@@ -939,7 +939,7 @@ export async function sosText(org: string, me: J, msgId: string, kind: string, c
 /* ---------- card payments (Stripe) ----------
    Three ways to pay, all started from the app and all ending in the same place:
    - a pay link: a Stripe page the customer opens from a text or a QR code (/p/<code>)
-   - a card typed into the app (Stripe's own card box; card numbers never touch Tally)
+   - a card typed into the app (Stripe's own card box; card numbers never touch MoveCrew)
    - a card kept on file earlier, charged again for the rest of the bill
    Stripe tells this function when money moves (POST /stripe), and the function writes the payment
    onto the job, keeps a ledger (pay_log) and keeps the cards customers agreed to keep on file
@@ -949,11 +949,11 @@ export async function sosText(org: string, me: J, msgId: string, kind: string, c
    date with Stripe, so two phones, or a phone and a pay link, can't take the same money twice.
    A pay link is not one Stripe page: when it is opened it asks for what is owed right then, so a bill
    settled in cash, or lowered, can't be paid again from an old text.
-   Whose Stripe account: the keys in Supabase are the platform's (Tally's owner). A company listed in
+   Whose Stripe account: the keys in Supabase are the platform's (MoveCrew's owner). A company listed in
    pay_orgs takes payments on that account directly. Every other company connects its own Stripe
    account (Stripe Connect: Setup > Payments > Connect with Stripe), and its payments are made on that
    account ("direct charges", the Stripe-Account header): the money is the company's, it pays Stripe's
-   fees, and Stripe carries the risk on it. Tally takes no cut: companies pay Tally a membership instead. pay_accounts says which account is whose, and every payment,
+   fees, and Stripe carries the risk on it. MoveCrew takes no cut: companies pay MoveCrew a membership instead. pay_accounts says which account is whose, and every payment,
    pay link and card on file remembers the account it is on (`account`, '' for the platform). */
 export const STRIPE_VERSION = "2026-09-30.endive";
 export const STRIPE_V2_VERSION = STRIPE_VERSION;   // Stripe's v2 API (connected accounts, their sign-up links): generally available in this version
@@ -963,7 +963,7 @@ export const PAY_EVENTS = ["payment_intent.succeeded", "payment_intent.processin
   "payment_intent.canceled", "checkout.session.completed", "checkout.session.expired", "charge.refunded",
   "charge.refund.updated", "charge.dispute.created", "charge.dispute.closed", "charge.dispute.funds_withdrawn",
   "charge.dispute.funds_reinstated"];
-// the membership companies pay Tally: subscriptions on the platform's own account
+// the membership companies pay MoveCrew: subscriptions on the platform's own account
 export const MEMBER_EVENTS = ["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted",
   "invoice.paid", "invoice.payment_failed"];
 const PAY_PER_HOUR = 40;
@@ -1064,7 +1064,7 @@ export function jobTotalCents(job: J): number {
 function paidCents(payments: J): number {
   return Math.round(r2(vals(payments).reduce((a: number, p: J) => a + (Number(p && p.amt) || 0), 0)) * 100);
 }
-// In live mode, money from Stripe's test mode doesn't count: test payments made while trying Tally out.
+// In live mode, money from Stripe's test mode doesn't count: test payments made while trying MoveCrew out.
 function counts(live: unknown): boolean { return !liveNow() || live !== false; }
 // a customer's tip on the payment (the customer side, Oct 28): kept in the ledger's source as "cust;tip=<cents>"
 export const tipOfRow = (r: J) => { const m = /(?:^|;)tip=(\d{1,9})(?:;|$)/.exec(String((r && r.source) || "")); return m ? Math.min(Number(m[1]), Number(r.amount_cents) || 0) : 0; };
@@ -1175,7 +1175,7 @@ async function payAccount(org: string): Promise<J> {
 // why a company can't take cards, in words for the person trying
 function payOffWhy(reason: string): string {
   if (reason === "connect-pending") return "Stripe is still checking this company's details, so cards can't be taken yet. The owner sees what's left in Setup › Payments.";
-  if (reason === "connect-off") return "This company's Stripe account was disconnected from Tally. The owner connects it again in Setup › Payments.";
+  if (reason === "connect-off") return "This company's Stripe account was disconnected from MoveCrew. The owner connects it again in Setup › Payments.";
   return "Card payments aren't set up for this company yet. The owner connects Stripe in Setup › Payments.";
 }
 // The account a company takes payments on now: '' (the platform's) or its connected account; null when neither.
@@ -1270,8 +1270,8 @@ async function withJobLock<T>(org: string, jobId: string, fn: () => Promise<T>, 
      with the company's account in each event. */
 type HookKind = "platform" | "connect";
 const HOOKS: Record<HookKind, J> = {
-  platform: { table: "pay_config", path: "/stripe", events: PAY_EVENTS.concat(MEMBER_EVENTS), description: "Tally payments" },
-  connect: { table: "pay_config_connect", path: "/stripe/connect", events: PAY_EVENTS.concat(CONNECT_EVENTS), description: "Tally payments (companies' own Stripe accounts)" },
+  platform: { table: "pay_config", path: "/stripe", events: PAY_EVENTS.concat(MEMBER_EVENTS), description: "MoveCrew payments" },
+  connect: { table: "pay_config_connect", path: "/stripe/connect", events: PAY_EVENTS.concat(CONNECT_EVENTS), description: "MoveCrew payments (companies' own Stripe accounts)" },
 };
 async function webhookSecrets(kind: HookKind = "platform"): Promise<string[]> {
   const out: string[] = [];
@@ -1352,7 +1352,7 @@ export async function stripeSigOk(raw: string, header: string, secrets: string[]
   return false;
 }
 
-/* the Stripe customer behind a Tally customer (one per company, per test/live, per Stripe account: a
+/* the Stripe customer behind a MoveCrew customer (one per company, per test/live, per Stripe account: a
    customer lives on the account its payments are made on, so on a company's own account it is filed
    under "<account>|<key>") */
 async function customerFor(org: string, job: J, jobId: string, acct = ""): Promise<string> {
@@ -1740,18 +1740,18 @@ export async function payConfig(org: string, b: J = {}): Promise<J> {
   if (!row.charges_enabled) return { ok: true, ready: false, test, publishableKey: "", reason: "connect-pending", connect };
   return { ok: true, ready: true, test, publishableKey: pk, account: row.account_id, via: "connect", reason: pk ? "" : "no-pk", connect };
 }
-// The owner connects the company's own Stripe account: Tally asks Stripe to make one (or picks up the one
+// The owner connects the company's own Stripe account: MoveCrew asks Stripe to make one (or picks up the one
 // started before) and hands back Stripe's own sign-up page, where the owner gives Stripe the business
-// details, the bank account for payouts and an ID check. Tally never sees those.
+// details, the bank account for payouts and an ID check. MoveCrew never sees those.
 export async function payConnect(org: string, me: J): Promise<J> {
   if (me.role !== "owner") return { ok: false, status: 403, message: "Only the owner connects the company's Stripe account." };
   const mode = stripeMode();
   if (!mode) return { ok: false, message: "Card payments are not set up yet." };
-  if (await payOrgOn(org)) return { ok: false, message: "This company already takes card payments on Tally's own Stripe account." };
+  if (await payOrgOn(org)) return { ok: false, message: "This company already takes card payments on MoveCrew's own Stripe account." };
   const wh = await ensureWebhook("connect");
   if (!wh.ok) return wh;
   let row = await acctRow(org);
-  if (row && row.disabled_reason === "disconnected") {   // disconnected from Tally in Stripe: start again with a new account
+  if (row && row.disabled_reason === "disconnected") {   // disconnected from MoveCrew in Stripe: start again with a new account
     await rest("PATCH", "pay_accounts?account_id=eq." + q(row.account_id), { is_current: false });
     row = null;
   }
@@ -1777,10 +1777,10 @@ export async function payConnect(org: string, me: J): Promise<J> {
   if (!link || !/^https:\/\//.test(String(link.url || ""))) return { ok: false, message: "Stripe did not give a sign-up link. Try again in a minute." };
   return { ok: true, url: link.url };
 }
-/* ---------- the membership: what each company pays Tally every month ----------
+/* ---------- the membership: what each company pays MoveCrew every month ----------
    A company starts with a free trial (tally_plan.trial_days, set when it is made). The owner starts the
    membership on Stripe's own checkout page (a Stripe subscription on the platform's account, with the
-   rest of the trial still free) and manages the card and invoices on Stripe's billing page. Tally's
+   rest of the trial still free) and manages the card and invoices on Stripe's billing page. MoveCrew's
    admins (tally_admins) see every company and set, per company, a test company (never pays), the fee
    waived, or a discount; they also set the price and the trial for new companies. A discount is a
    Stripe coupon on the subscription; waived and test companies get the 100% coupon, so a membership
@@ -1900,11 +1900,11 @@ async function planPrice(mode: string, cents: number): Promise<string> {
   if (have) return have;
   let product = await planId(mode, "product");
   if (!product) {
-    const p = await stripe("POST", "products", { name: "Tally membership", description: "Tally moving-company software, per company, monthly", metadata: { tally: "membership" } }, "tally-product-" + mode);
+    const p = await stripe("POST", "products", { name: "MoveCrew membership", description: "MoveCrew moving-company software, per company, monthly", metadata: { tally: "membership" } }, "tally-product-" + mode);
     product = p.id;
     await planKeep(mode, "product", product);
   }
-  const pr = await stripe("POST", "prices", { product, unit_amount: cents, currency: "usd", recurring: { interval: "month" }, nickname: "Tally membership " + money(cents) + "/month", metadata: { tally: "membership" } }, "tally-price-" + mode + "-" + cents);
+  const pr = await stripe("POST", "prices", { product, unit_amount: cents, currency: "usd", recurring: { interval: "month" }, nickname: "MoveCrew membership " + money(cents) + "/month", metadata: { tally: "membership" } }, "tally-price-" + mode + "-" + cents);
   await planKeep(mode, kind, pr.id);
   return pr.id;
 }
@@ -1913,7 +1913,7 @@ async function planCoupon(mode: string, pct: number): Promise<string> {
   if (have) return have;
   const id = "tally-pct-" + pct;
   try {
-    await stripe("POST", "coupons", { id, percent_off: pct, duration: "forever", name: pct === 100 ? "Tally: no charge" : "Tally discount " + pct + "%" });
+    await stripe("POST", "coupons", { id, percent_off: pct, duration: "forever", name: pct === 100 ? "MoveCrew: no charge" : "MoveCrew discount " + pct + "%" });
   } catch (e) {
     if (!(e instanceof StripeError && e.status === 400 && /already exists/i.test(e.message))) throw e;
   }
@@ -1931,7 +1931,7 @@ async function memberSyncDiscount(org: string): Promise<void> {
   const s = await stripe("POST", "subscriptions/" + sub.subscription_id, { discounts: pct > 0 ? [{ coupon: await planCoupon(mode, pct) }] : "", proration_behavior: "none" });
   await memberFromSub(org, s);
 }
-// Any member: whether this is a test company and whether you're a Tally admin. The owner also gets the
+// Any member: whether this is a test company and whether you're a MoveCrew admin. The owner also gets the
 // membership. refresh: ask Stripe now (the owner is back from Stripe's page).
 export async function memberStatus(org: string, me: J, b: J = {}): Promise<J> {
   const admin = await isAdmin(me.uid), o = await orgRow(org);
@@ -1963,7 +1963,7 @@ export async function memberStart(org: string, me: J): Promise<J> {
   let sub = await subOf(org);
   const m = memberState(o, deal, sub, plan);
   if (m.state === "test") return { ok: false, message: "This is a test company: there's no membership to pay." };
-  if (m.state === "waived") return { ok: false, message: "Tally waived this company's membership, so there's nothing to pay." };
+  if (m.state === "waived") return { ok: false, message: "MoveCrew waived this company's membership, so there's nothing to pay." };
   if (["active", "trialing", "past_due", "paused"].indexOf(m.state) >= 0) return { ok: false, portal: true, message: "The membership is already set up. Use Manage billing to change it." };
   const wh = await ensureWebhook("platform");
   if (!wh.ok) return wh;
@@ -1980,7 +1980,7 @@ export async function memberStart(org: string, me: J): Promise<J> {
   let cus = sub && sub.customer_id;
   if (!cus) {
     const c = await stripe("POST", "customers", { name: String(o.name || company(S)).slice(0, 200), email: validEmail(me.email) || undefined,
-      description: "Tally company " + org, metadata: { tally_member: org } }, "tally-member-cus-" + org + "-" + mode);
+      description: "MoveCrew company " + org, metadata: { tally_member: org } }, "tally-member-cus-" + org + "-" + mode);
     cus = c.id;
     await rest("POST", "member_subs?on_conflict=org_id,livemode", { org_id: org, livemode: live, customer_id: cus, updated_at: nowIso() }, "resolution=merge-duplicates");
   }
@@ -1993,7 +1993,7 @@ export async function memberStart(org: string, me: J): Promise<J> {
     line_items: [{ price, quantity: 1 }],
     discounts: coupon ? [{ coupon }] : undefined,
     subscription_data: { metadata: { tally_member: org }, trial_end: trialEnd > Date.now() / 1000 + 49 * 3600 ? trialEnd : undefined,
-      description: "Tally membership: " + String(o.name || "your company").slice(0, 100) },
+      description: "MoveCrew membership: " + String(o.name || "your company").slice(0, 100) },
     metadata: { tally_member: org },
     success_url: base() + "/member/done", cancel_url: base() + "/member/back",
   }, "tally-member-" + org + "-" + mode + "-" + strHash([cus, price, coupon, trialEnd].join("|")) + "-" + Math.floor(Date.now() / 60e3));   // a double tap gets the same page
@@ -2012,7 +2012,7 @@ export async function memberPortal(org: string, me: J): Promise<J> {
   let conf = await planId(mode, "portal");
   if (!conf) {
     const c = await stripe("POST", "billing_portal/configurations", {
-      business_profile: { headline: "Tally membership" },
+      business_profile: { headline: "MoveCrew membership" },
       features: { invoice_history: { enabled: true }, payment_method_update: { enabled: true }, subscription_cancel: { enabled: true, mode: "at_period_end" } },
       default_return_url: base() + "/member/back",
     }, "tally-portal-" + mode);
@@ -2024,8 +2024,8 @@ export async function memberPortal(org: string, me: J): Promise<J> {
   return { ok: true, url: s.url };
 }
 
-/* Tally admin: every company, and what each pays */
-const adminOnly = (): J => ({ ok: false, status: 403, message: "Only Tally's admins can do that." });
+/* MoveCrew admin: every company, and what each pays */
+const adminOnly = (): J => ({ ok: false, status: 403, message: "Only MoveCrew's admins can do that." });
 function adminCompany(o: J, ctx: J): J {
   const deal = ctx.deals[o.id] || {}, sub = ctx.subs[o.id] || null;
   const st = memberState(o, deal, sub, ctx.plan);
@@ -2048,7 +2048,7 @@ async function adminContext(): Promise<J> {
     planRow(),
   ]);
   const ctx: J = { orgs: orgs || [], plan, deals: {}, subs: {}, owners: {}, invited: {}, count: {}, accts: {}, payOrgs: {}, cc: {}, team: null };
-  // the call center service: which companies have it, and Tally's team (null: no supabase-callcenter.sql yet)
+  // the call center service: which companies have it, and MoveCrew's team (null: no supabase-callcenter.sql yet)
   try {
     const [on, team] = await Promise.all([rest("GET", "cc_orgs?select=org_id&limit=1000"), ccTeam()]);
     (on || []).forEach((r: J) => { ctx.cc[r.org_id] = true; });
@@ -2103,10 +2103,10 @@ export async function adminSet(me: J, b: J): Promise<J> {
   const ctx = await adminContext(), o = ctx.orgs.find((x: J) => x.id === org);
   return { ok: true, message: "Saved." + warn, company: o ? adminCompany(o, ctx) : null };
 }
-/* ---------- the call center: Tally's own team, for the companies Tally admin switches it on for ----------
+/* ---------- the call center: MoveCrew's own team, for the companies MoveCrew admin switches it on for ----------
    Richie (Oct 22): "Call center is a service that the moving companys will be able to purchase to help get
    bookings . So call center will only be able to see companys that pay for that service ." He bills them himself.
-   A person on the team is linked to their sign-in by claim_cc_team() when they open Tally with that email. */
+   A person on the team is linked to their sign-in by claim_cc_team() when they open MoveCrew with that email. */
 const CC_SQL = "The call center isn't set up in the database yet. Run supabase-callcenter.sql in the Supabase SQL editor first.";
 async function ccTeam(): Promise<J[]> {
   const rows = await rest("GET", "tally_cc_team?select=email,name,phone,user_id,added_at&order=added_at.asc&limit=500");
@@ -2122,7 +2122,7 @@ export async function adminCcAdd(me: J, b: J): Promise<J> {
   if (phone && !e164(phone)) return { ok: false, message: "That phone number doesn't look right. Use the 10 digits, like 512-555-0107." };
   try {
     await rest("POST", "tally_cc_team?on_conflict=email", { email, name, phone: phone.slice(0, 40), added_by: String(me.email || "admin").slice(0, 200) }, "resolution=merge-duplicates");
-    return { ok: true, message: name + " is on the call center team. They sign in to Tally with " + email + ".", team: await ccTeam() };
+    return { ok: true, message: name + " is on the call center team. They sign in to MoveCrew with " + email + ".", team: await ccTeam() };
   } catch (e) {
     console.error("call center team", e);
     return { ok: false, message: CC_SQL };
@@ -2176,7 +2176,7 @@ export async function adminAdd(me: J, b: J): Promise<J> {
   if (mine) await rest("POST", "members", { org_id: org, user_id: me.uid, email, staff: "", role: "owner" });
   else await rest("POST", "member_invites", { org_id: org, email, invited_by: String(me.email || "admin").slice(0, 200) });
   return { ok: true, org, mine, message: mine ? name + " is ready. You're its owner: switch to it from the company list." :
-    name + " is ready. When " + email + " signs in to Tally with that email, they go straight in as its owner." };
+    name + " is ready. When " + email + " signs in to MoveCrew with that email, they go straight in as its owner." };
 }
 async function textedLately(org: string, jobId: string): Promise<boolean> {
   const since = new Date(Date.now() - 120e3).toISOString();
@@ -2415,7 +2415,7 @@ async function payRedirect(token: string): Promise<Response> {
   const rows = await rest("GET", "pay_links?select=*&token=eq." + q(token) + "&limit=1");
   const l = rows && rows[0];
   if (!l) return text("This payment link isn't valid. Ask the moving company for a new one.", 404);
-  if (l.created_by === CUST_BY) return text("Open the Tally app to pay. Your move and its bill are there.", 410);   // a customer's own page, from their app
+  if (l.created_by === CUST_BY) return text("Open the MoveCrew app to pay. Your move and its bill are there.", 410);   // a customer's own page, from their app
   const S = await getDoc(l.org_id, "org/settings");
   const co = String((S && S.company) || "the moving company");
   if (l.status === "paid") return text("This payment is done. Thank you!");
@@ -2472,7 +2472,7 @@ async function handleStripe(req: Request, kind: HookKind = "platform"): Promise<
       return json({ received: true });
     }
     if (kind === "connect" && type === "account.application.deauthorized") {
-      // the company disconnected Tally in its Stripe dashboard: no more card payments until it connects again
+      // the company disconnected MoveCrew in its Stripe dashboard: no more card payments until it connects again
       await rest("PATCH", "pay_accounts?account_id=eq." + q(acct), { charges_enabled: false, disabled_reason: "disconnected", updated_at: nowIso() });
       return json({ received: true });
     }
@@ -2777,7 +2777,7 @@ async function handleApp(req: Request): Promise<Response> {
       return json({ ok: true, number: l ? l.phone_number : "", twilio: !!(env("TWILIO_ACCOUNT_SID") && env("TWILIO_AUTH_TOKEN")) });
     }
     if (b.action === "distance") {
-      // quotes: the office and the call center (Tally's team, or the company's own)
+      // quotes: the office and the call center (MoveCrew's team, or the company's own)
       if (!office && me.role !== "callcenter" && !(await ccHouse(org, me))) return json({ ok: false, message: "Only the office and the call center build quotes." }, 403);
       return json(await driveDistance(b.from, b.to));
     }
@@ -2811,7 +2811,7 @@ async function handleApp(req: Request): Promise<Response> {
       delete out.status;
       return json(out, typeof st === "number" ? st : 200);
     }
-    // the membership, and Tally admin (every company; Tally's admins only)
+    // the membership, and MoveCrew admin (every company; MoveCrew's admins only)
     const member: Record<string, (o: string, m: J, x: J) => Promise<J>> = {
       member_status: memberStatus, member_start: (o: string, m: J) => memberStart(o, m), member_portal: (o: string, m: J) => memberPortal(o, m),
       admin_list: (_o: string, m: J) => adminList(m), admin_set: (_o: string, m: J, x: J) => adminSet(m, x),
@@ -2878,7 +2878,7 @@ async function handleApp(req: Request): Promise<Response> {
    Richie: "I want there to be a customer side as well . Where they have a profile . Then they can have the app on there
    phone if they would like and pay with google pay"; "They open the app and sign in with their gmail . Their move will
    already be link to their gmail".
-   A customer signs in to the Tally app with the email on their move (Google, or a code by email). They are none of a
+   A customer signs in to the MoveCrew app with the email on their move (Google, or a code by email). They are none of a
    company's people, so nothing of theirs goes through the members table or the docs rules: this is their only way in.
    Who they are comes from their sign-in (a confirmed email); their moves are the jobs with that email, in any company
    (custJobs); what they see of each is a customer's copy (custCopy, the same as the app's custMoveOf: never the crew's
@@ -3064,7 +3064,7 @@ async function custBook(user: J, org: string, jobId: string): Promise<J> {
     if (line && !w.job.test && alertOn(S, "custBook")) {
       for (const n of ringNames(S)) {
         await sendText({ org, line, jobId, purpose: "custbook", staff: n, to: contacts(S)[n],
-          body: co + ": " + gsm(d.name || "A customer") + " booked their move for " + when(d) + " in the customer app. Add the truck and crew in Tally." });
+          body: co + ": " + gsm(d.name || "A customer") + " booked their move for " + when(d) + " in the customer app. Add the truck and crew in MoveCrew." });
       }
     }
   } catch (e) { console.error("custbook text", e); }
@@ -3251,7 +3251,7 @@ export async function custInvite(org: string, me: J, jobId: string, url: unknown
   const recent = await rest("GET", "comm_log?select=id&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&purpose=eq.custapp&created_at=gte." + q(since) + "&status=neq.failed&limit=1");
   if (recent && recent.length) return { ok: false, message: (d.name || "The customer") + " was texted the app a moment ago." };
   const r = await sendText({ org, line, jobId, purpose: "custapp", staff: me.staff, party: d.name || "Customer", to: d.phone,
-    body: company(S) + ": " + gsm(etaGreeting(d.name)) + ", your move is in the Tally app: " + site + " Sign in with " + String(d.email).trim() + " to see it, book, sign and pay." });
+    body: company(S) + ": " + gsm(etaGreeting(d.name)) + ", your move is in the MoveCrew app: " + site + " Sign in with " + String(d.email).trim() + " to see it, book, sign and pay." });
   if (r.status === "failed" || r.status === "no-number") return { ok: false, message: "The text did not go out. Check Calls and texts on the job." };
   return { ok: true, message: "Texted " + (d.name || "the customer") + " the app." };
 }
@@ -3315,7 +3315,7 @@ async function handleTwilio(sub: string, url: URL, p: Record<string, string>): P
     const row = await getLog(logId);
     if (!row) return xml("<Hangup/>");
     return xml('<Gather numDigits="1" timeout="8" action="' + x(B + "/twilio/connect?log=" + logId) + '">' +
-      "<Say>Tally. Press 1 to call " + x(row.party || "the customer") + " from the company line.</Say></Gather>" +
+      "<Say>Move Crew. Press 1 to call " + x(row.party || "the customer") + " from the company line.</Say></Gather>" +
       "<Say>No key pressed. Goodbye.</Say>");
   }
 
@@ -3344,7 +3344,7 @@ async function handleTwilio(sub: string, url: URL, p: Record<string, string>): P
   const line = await lineByNumber(e164(p.To || p.Called || ""));
   if (sub === "whisper") {
     const row = logId ? await getLog(logId) : null;
-    return xml("<Say>Tally call from " + x((row && row.party) || "a customer") + ".</Say>");
+    return xml("<Say>Move Crew call from " + x((row && row.party) || "a customer") + ".</Say>");
   }
   if (!line) return xml(sub === "sms" ? "" : "<Say>This number is not in service.</Say><Hangup/>");
   const org = line.org_id;
@@ -3380,7 +3380,7 @@ async function handleTwilio(sub: string, url: URL, p: Record<string, string>): P
     if (row) {
       await patchLog(logId, { status: "missed" });
       const who = row.party || "someone";
-      const body = company(S) + ": Missed call on the company line from " + gsm(who) + " " + (row.from_number || "") + ". Call them back from Tally.";
+      const body = company(S) + ": Missed call on the company line from " + gsm(who) + " " + (row.from_number || "") + ". Call them back from MoveCrew.";
       for (const n of ringNames(S)) await sendText({ org, line, jobId: row.job_id || undefined, purpose: "missed-call", staff: n, to: C[n], body });
     }
     return xml("<Say>Sorry, no one could get to the phone. We got your number and will call you right back.</Say><Hangup/>");
@@ -3430,11 +3430,11 @@ export async function handle(req: Request): Promise<Response> {
     } catch (e) { console.error(e); return text("Something went wrong. Try the link again in a minute.", 500); }
     if (/^\/pay\/done\/?$/.test(sub)) return text("Payment received. Thank you!\n\nYou can close this page.");
     // where Stripe's sign-up for a company's own account sends the owner back to
-    if (/^\/connect\/done\/?$/.test(sub)) return text("Thanks, that's all Stripe needed for now.\n\nGo back to Tally: Setup › Payments shows when Stripe has finished checking your details and card payments are on.");
-    if (/^\/connect\/again\/?$/.test(sub)) return text("This Stripe sign-up link has expired or was already used.\n\nGo back to Tally and press Continue with Stripe in Setup › Payments for a fresh one.");
+    if (/^\/connect\/done\/?$/.test(sub)) return text("Thanks, that's all Stripe needed for now.\n\nGo back to MoveCrew: Setup › Payments shows when Stripe has finished checking your details and card payments are on.");
+    if (/^\/connect\/again\/?$/.test(sub)) return text("This Stripe sign-up link has expired or was already used.\n\nGo back to MoveCrew and press Continue with Stripe in Setup › Payments for a fresh one.");
     // where Stripe's membership checkout and billing pages send the owner back to
-    if (/^\/member\/done\/?$/.test(sub)) return text("Thanks! Your Tally membership is set up.\n\nGo back to Tally: Setup › Membership shows it.");
-    if (/^\/member\/back\/?$/.test(sub)) return text("Go back to Tally: Setup › Membership shows where your membership stands.");
+    if (/^\/member\/done\/?$/.test(sub)) return text("Thanks! Your MoveCrew membership is set up.\n\nGo back to MoveCrew: Setup › Membership shows it.");
+    if (/^\/member\/back\/?$/.test(sub)) return text("Go back to MoveCrew: Setup › Membership shows where your membership stands.");
   }
   if (req.method !== "POST") return json({ ok: false, message: "POST only" }, 405);
   if (sub === "/app" || sub === "/app/") return handleApp(req);

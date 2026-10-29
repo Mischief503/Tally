@@ -1,6 +1,6 @@
-# The Tally membership and Tally admin
+# The MoveCrew membership and MoveCrew admin
 
-Companies pay Tally a monthly membership. Tally takes no cut of their customers' card payments
+Companies pay MoveCrew a monthly membership. MoveCrew takes no cut of their customers' card payments
 (those go to each company's own Stripe account, see `SETUP-stripe.md`).
 
 ## What a company sees
@@ -13,12 +13,12 @@ Companies pay Tally a monthly membership. Tally takes no cut of their customers'
   membership then runs to the end of the month it's paid for).
 - In the last three days of the trial, after it, or when a membership payment fails, **Today**
   reminds the owner, with a button to the Membership card. **Nobody is locked out**: the app keeps
-  working. If you ever want the app to stop after a trial, that can be a switch in Tally admin.
+  working. If you ever want the app to stop after a trial, that can be a switch in MoveCrew admin.
 - Dispatch and the crew never see the membership.
 
-## Tally admin (you only)
+## MoveCrew admin (you only)
 
-**More › Tally admin**, shown only to Tally's admins (you, by your sign-in; it isn't a role a
+**More › MoveCrew admin**, shown only to MoveCrew's admins (you, by your sign-in; it isn't a role a
 company can give anyone). It lists every company:
 
 - the owner's email (or who it's waiting for), how many people, since when;
@@ -41,24 +41,24 @@ company can give anyone). It lists every company:
 **Membership price**: the monthly price and the free trial for new companies. Companies already
 paying keep their price.
 
-**Add a company**: the company name and the owner's email. When that person signs in to Tally with
+**Add a company**: the company name and the owner's email. When that person signs in to MoveCrew with
 that email, they go straight in as the owner (no company code). With your own email you're its
 owner at once (tick Test company for another test company; switch to it from the company list).
 
 ## On the Stripe side
 
 Nothing to set up. The first time a membership starts, the server makes in Stripe, on your own
-account: a product "Tally membership", a monthly price (a new one whenever you change the price),
+account: a product "MoveCrew membership", a monthly price (a new one whenever you change the price),
 coupons for the discounts used, and the settings for Stripe's billing page. Memberships show in
 Stripe under **Billing › Subscriptions**, each labelled with the company. Stripe can also email the
 owner receipts and failed-payment notices: switch those on in Stripe › **Settings › Customer
 emails** (Stripe doesn't send them in test mode).
 
-The server's own webhook (*Tally payments*) also listens for memberships: started, changed,
+The server's own webhook (*MoveCrew payments*) also listens for memberships: started, changed,
 cancelled, invoices paid or failed. It updates itself the first time a payment or membership
 starts after this version is deployed.
 
-**In test mode** (now) nothing real is charged. To try it: Tally admin › Add a company, with your
+**In test mode** (now) nothing real is charged. To try it: MoveCrew admin › Add a company, with your
 own email and Test company left unticked; switch to it, then Setup › Membership › Start membership,
 and pay with `4242 4242 4242 4242`. **With live keys**, memberships charge real cards;
 test-mode memberships don't carry over. A restricted live key also needs Stripe's permissions for

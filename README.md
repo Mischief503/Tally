@@ -1,4 +1,4 @@
-# Tally
+# MoveCrew
 
 Moving-company software: quotes, dispatch, crew in the field, signing, payments, texts and calls,
 and a truck-down alert that tells the office where a broken-down truck is ([docs/TRUCK-DOWN.md](docs/TRUCK-DOWN.md)).
@@ -13,12 +13,12 @@ One web app (`web/index.html`) that runs three ways:
 
 ## Get the app on a phone
 
-On the phone, open **Releases › latest** in this repository and tap **Tally.apk**. The full
+On the phone, open **Releases › latest** in this repository and tap **MoveCrew.apk**. The full
 steps, including the one-time "install unknown apps" permission, are in
 [docs/GET-THE-APP.md](docs/GET-THE-APP.md).
 
 Each push to `main` builds a new APK, opens it in an Android emulator to prove it loads, then
-replaces `Tally.apk` in the latest release. Installing a new one updates the app in place.
+replaces `MoveCrew.apk` in the latest release. Installing a new one updates the app in place.
 
 ## Settings GitHub uses when it builds
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Tally: moving company software</title>
+<title>MoveCrew</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Rubik:wght@400;500;700&family=Sora:wght@400;500;700&family=Lora:wght@500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -917,7 +917,7 @@ window.TALLY_SUPABASE = {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 /* ============================================================
-   Tally — Supabase back end
+   MoveCrew — Supabase back end
    Gives the app the same little database it already speaks to,
    backed by Postgres, with email sign-in in front of it.
    Loads before the app: it defines window.claude.use('db' | 'user').
@@ -1011,7 +1011,7 @@ function collectionRef(collection){
 function docRef(path){
   var parts=split(path),collection=parts[0],id=parts[1];
   function readOne(){
-    // Tally's call center team isn't one of the company's people: who they are comes from the team list
+    // MoveCrew's call center team isn't one of the company's people: who they are comes from the team list
     if(collection==='users'&&me.role==='callcenter'&&id===me.id)return Promise.resolve(snapOne(path,{data:{uid:me.id,staff:me.staff,role:'callcenter',email:me.email,ts:0}}));
     if(path==='org/settings'&&me.role==='callcenter')return sb.from('docs').select('data').eq('org_id',ORG).eq('path','ratecard/main').maybeSingle().then(function(r){if(r.error)throw r.error;return snapOne(path,r.data)});
     if(collection==='users')return sb.from('members').select('*').eq('org_id',ORG).eq('user_id',id).maybeSingle().then(function(r){return snapOne(path,r.data?{data:membersToDoc(r.data)}:null)});
@@ -1078,7 +1078,7 @@ function refreshMe(){
     var m=r.data;
     me.role=m?m.role:'';me.staff=m?m.staff:'';
     me.isOwner=!!(m&&m.role==='owner');me.canEdit=me.isOwner;
-    // Tally's call center team, in a company with the service (supabase-callcenter.sql): not a member
+    // MoveCrew's call center team, in a company with the service (supabase-callcenter.sql): not a member
     if(!m&&window.tallyOrg&&window.tallyOrg.role==='callcenter')return sb.rpc('cc_me').then(function(x){me.role='callcenter';me.staff=(x&&x.data)||'Call center';return me});
     return me;
   }).catch(function(){return me});
@@ -1131,12 +1131,12 @@ function render(){
   var b=state.busy;
   if(state.step==='email')oauthAsk();
   var g=!!oauth&&oauth.google&&!window.TALLY_STANDALONE;   // Google won't sign in inside the Android app's own window
-  el.innerHTML='<div class="box"><h1>Tally</h1>'+(state.step==='email'
+  el.innerHTML='<div class="box"><h1>MoveCrew</h1>'+(state.step==='email'
     ? '<p>Sign in to see your move, or to get to work.</p>'+
       (g?'<button id="lgGoogle" class="google"'+(b?' disabled':'')+'>'+GLOGO+'Continue with Google</button><div class="or">or with a code by email</div>':'')+
       '<label for="lgEmail">Email</label><input id="lgEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" value="'+(state.email||'')+'">'+
       '<button id="lgSend"'+(b?' disabled':'')+'>'+(b?'Sending…':'Send my code')+'</button>'+
-      '<p class="note2">Moving with a company that uses Tally? Use the email they have for your move.</p>'
+      '<p class="note2">Moving with a company that uses MoveCrew? Use the email they have for your move.</p>'
     : '<p>We sent a code to <b>'+state.email.replace(/[<>&]/g,'')+'</b>. It is good for a few minutes.</p>'+
       '<label for="lgCode">Code from the email</label><input id="lgCode" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10">'+
       '<button id="lgVerify"'+(b?' disabled':'')+'>'+(b?'Checking…':'Sign in')+'</button>'+
@@ -1201,10 +1201,10 @@ function renderPicker(){
     var rows=pick.orgs.map(function(o){
       var sub=o.pending?'Waiting for the owner to approve you':({owner:'Owner',dispatch:'Dispatch',lead:'Crew lead',crew:'Crew',callcenter:'Call center'}[o.role]||o.role);
       return '<button class="org" data-org="'+esc(o.id)+'"><b>'+esc(o.name)+'</b><small>'+esc(sub)+'</small></button>'}).join('');
-    // someone on Tally's call center team with no company switched on yet: nothing to start or join
-    if(pick.agent&&!pick.orgs.length)body='<h1>Tally</h1><p>You’re on Tally’s call center team. No company has the call center switched on yet; Tally admin turns it on for each company that buys it.</p>'+
+    // someone on MoveCrew's call center team with no company switched on yet: nothing to start or join
+    if(pick.agent&&!pick.orgs.length)body='<h1>MoveCrew</h1><p>You’re on MoveCrew’s call center team. No company has the call center switched on yet; MoveCrew admin turns it on for each company that buys it.</p>'+
       '<button class="link" id="pkOut">Sign out ('+esc(me.email)+')</button>';
-    else body='<h1>Tally</h1>'+(pick.noMove&&!pick.orgs.length?'<p><b>No move here yet for '+esc(me.email)+'.</b> If you’re moving with a company that uses Tally, ask them to put this email on your move, then sign in again.</p><p>Run a moving company?</p>':'<p>'+(pick.orgs.length?'Pick a company to work in.':'You are not part of a company yet.')+'</p>')+rows+
+    else body='<h1>MoveCrew</h1>'+(pick.noMove&&!pick.orgs.length?'<p><b>No move here yet for '+esc(me.email)+'.</b> If you’re moving with a company that uses MoveCrew, ask them to put this email on your move, then sign in again.</p><p>Run a moving company?</p>':'<p>'+(pick.orgs.length?'Pick a company to work in.':'You are not part of a company yet.')+'</p>')+rows+
       '<button id="pkNew">Start a new company</button><button class="link" id="pkJoin">Join a company with a code</button>'+
       '<button class="link" id="pkOut">Sign out ('+esc(me.email)+')</button>';
   }else if(pick.mode==='new'){
@@ -1250,7 +1250,7 @@ function onSession(session){
   me.id=session.user.id;me.email=session.user.email||'';
   if(window.__tallyBooted){reload();return}   // a different person signed in on this device: start clean
   // a profile the owner set up with this email links now, so the person walks straight in
-  // and a company Tally's admin added for this email becomes theirs
+  // and a company MoveCrew's admin added for this email becomes theirs
   sb.rpc('claim_invites').then(function(){},function(){}).then(function(){return sb.rpc('claim_company_invites')}).then(function(){},function(){}).then(function(){return sb.rpc('claim_cc_team')}).then(function(r){pick.agent=!!(r&&r.data===true)},function(){}).then(function(){return sb.rpc('my_orgs')}).then(function(r){
     var list=r.data||[],hit=list.filter(function(o){return o.id===ORG})[0],ready=list.filter(function(o){return !o.pending});
     // a customer (no company of their own), or someone who asked for their own moves: the customer side
@@ -1390,7 +1390,7 @@ window.tallyPay={
   forget:function(vaultId){return commsPost({action:'pay_forget',vaultId:vaultId})},
   refresh:function(){Object.keys(watchers).forEach(function(k){if(k.indexOf('jobs|')===0||k.indexOf('vault|')===0)bump(k)})}
 };
-/* ---------- the membership each company pays Tally, and Tally admin (Tally's own admins only) ---------- */
+/* ---------- the membership each company pays MoveCrew, and MoveCrew admin (MoveCrew's own admins only) ---------- */
 window.tallyMember={
   status:function(refresh){return commsPost(refresh?{action:'member_status',refresh:true}:{action:'member_status'})},
   start:function(){return commsPost({action:'member_start'})},
@@ -1432,7 +1432,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 </head>
 <body>
 <header class="top">
-  <div class="brand">Tally<small id="brandCo">Your Moving Co.</small></div>
+  <div class="brand">MoveCrew<small id="brandCo">Your Moving Co.</small></div>
   <div class="row" style="gap:10px;flex-wrap:nowrap">
   <span id="whoami" style="font-size:14px;font-weight:600;text-align:right"></span>
   <button id="themeBtn" class="icon-btn" data-act="theme:open" aria-label="Change the look" title="Change the look"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="9.5" cy="15" r="1.3" fill="currentColor" stroke="none"/><path d="M15 13.5c2.2 0 3.6 1.3 3.6 2.9"/></svg></button>
@@ -1641,7 +1641,7 @@ var byId=function(id){return state.jobs.find(function(j){return j.id===id})};
 function truckName(id){var t=state.settings.trucks.find(function(x){return x.id===id});return t?t.name:(id?'Removed truck':'No truck')}
 // What counts toward a bill, the same way the server counts it: a payment the server wrote down, or one
 // a person recorded for more than zero (only the server takes money off a bill, for a refund or a
-// dispute). Payments made in Stripe's test mode (trying Tally out) count only while Stripe is in test
+// dispute). Payments made in Stripe's test mode (trying MoveCrew out) count only while Stripe is in test
 // mode; until this phone hears which mode it is in, it goes by what it heard last time.
 function payTestMode(){if(typeof pay==='undefined'||!pay)return false;if(pay.cfg&&pay.cfg.ready)return pay.cfg.test===true;return pay.lastTest===true}
 function payCounts(p){if(!p)return false;if(p.stripe)return p.live!==false||payTestMode();return p.amt>0}
@@ -1990,7 +1990,7 @@ function clockSig(j){
   return CLOCK_V2+':'+core+'|n:'+v(q.crew)+'|m:'+A.map(function(e){return e.ts+(e.d>0?'+':'-')}).join(',')+rates;
 }
 // a bill line from another phone that's out of date here: worked out from other numbers, or the crew
-// changes on lines of their own (the version before). A signature from another version of Tally is left.
+// changes on lines of their own (the version before). A signature from another version of MoveCrew is left.
 function clockStale(j){
   var s=j&&j.clockAt&&j.clockSig;if(typeof s!=='string'||!/^c[1-5]:/.test(s))return false;
   return s!==clockSig(j)||(j.extras||[]).some(isCrewLine);
@@ -2236,13 +2236,13 @@ var ICON={
   admin:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
   history:'<svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.7h3.7"/><path d="M12 8v4.3l2.8 1.7"/></svg>'
 };
-var TABS=[{id:'desk',label:'Companies'},{id:'sched',label:'Schedule'},{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'quotes',label:'Quotes'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'},{id:'mymove',label:'My move'},{id:'mypay',label:'Pay'},{id:'myprofile',label:'Profile'}];
+var TABS=[{id:'desk',label:'Companies'},{id:'sched',label:'Schedule'},{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'quotes',label:'Quotes'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'MoveCrew admin'},{id:'mymove',label:'My move'},{id:'mypay',label:'Pay'},{id:'myprofile',label:'Profile'}];
 var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['crew','chat'],crew:['crew','chat'],callcenter:['desk','sched','quotes'],customer:['mymove','mypay','myprofile']};
 function navTabs(){var r=state.ui.role,ids=ccToo()?['crew','sched','quotes','chat']:r==='callcenter'&&ccHouse()?['sched','quotes','chat']:(NAV[r]||NAV.owner);return ids.map(function(id){return TABS.filter(function(t){return t.id===id})[0]})}
 function allowedTabs(role){
   var ids=role==='customer'?['mymove','mypay','myprofile']:role==='crew'||role==='lead'?['crew','chat'].concat(ccToo()?['sched','quote','quotes']:[]):role==='callcenter'?(ccHouse()?['sched','quote','quotes','chat']:['desk','sched','quote','quotes']):role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
     ['today','quote','jobs','dispatch','crew','history','chat','reports','settings'];
-  if(role!=='customer'&&typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // Tally's own admins, in any company
+  if(role!=='customer'&&typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // MoveCrew's own admins, in any company
   var out=TABS.filter(function(t){return ids.indexOf(t.id)>=0});
   if(ccToo())out.sort(function(a,b){return (b.id==='crew')-(a.id==='crew')});   // their jobs first, then the call center's
   return out;
@@ -2295,7 +2295,7 @@ function viewerName(){
   if(sync.mode==='shared'&&sync.identity.status==='ok')return sync.identity.staff||'';
   var r=state.ui.role;return String((r==='crew'||r==='lead'?state.ui.me:state.ui.who)||'');
 }
-// a company's own call center person (not Tally's team; the office can quote anyway)
+// a company's own call center person (not MoveCrew's team; the office can quote anyway)
 function ccHouse(){var n=viewerName();return ccStaffHas(n)&&!isOfficeName(n)}
 // in the field and the call center both: their jobs, and the call center's Schedule, Quotes and New quote
 function ccToo(){var r=state.ui.role;return (r==='crew'||r==='lead')&&ccHouse()}
@@ -2394,10 +2394,10 @@ var CUST_PILL={quote:['Quote','quoted'],booked:['Booked','booked'],today:['Movin
 function custBtn(m,act,label,pri){return '<button class="btn'+(pri?' primary':'')+'" data-act="'+act+'" data-k="'+esc(custKeyOf(m))+'">'+label+'</button>'}
 function custCardHtml(m){
   var s=custStage(m),pl=CUST_PILL[s],q=m.quote,day=m.d.moveDate;
-  var when=day?'<h2 class="cm-when">'+esc(custLong(day))+'</h2><p class="cm-sub">'+(m.d.time?'Your crew arrives at '+esc(fmtTime(m.d.time)):'Arrival time to be set')+((s==='booked'||s==='quote')&&custIn(day)?' · '+custIn(day):'')+'</p>'
+  var when=day?'<h2 class="cm-when">'+esc(custLong(day))+'</h2><p class="cm-sub">'+(m.d.time?'Your move crew will arrive at '+esc(fmtTime(m.d.time)):'Arrival time to be set')+((s==='booked'||s==='quote')&&custIn(day)?' · '+custIn(day):'')+'</p>'
     :'<h2 class="cm-when">Day not set yet</h2><p class="cm-sub">Call or text us to pick a day.</p>';
   var price=s==='quote'?'<div class="cm-price"><b>'+money(q.total)+'</b><span>'+(q.flat?'Flat price':'Estimate, billed by the hour'+(q.nte?' · top price about '+money(q.nte):''))+'</span></div>':'';
-  var crew=(s==='booked'||s==='today')&&m.crew.lead?'<p class="cm-sub">'+esc(m.crew.lead)+' leads your crew'+(m.crew.n>1?' of '+m.crew.n:'')+'.</p>':'';
+  var crew=(s==='booked'||s==='today')&&m.crew.lead?'<p class="cm-sub">'+esc(m.crew.lead)+' leads your move crew'+(m.crew.n>1?' of '+m.crew.n:'')+'.</p>':'';
   return '<section class="card cm-card"><div class="cm-top"><span class="pill" data-s="'+pl[1]+'">'+pl[0]+'</span>'+(m.test?'<span class="pill">Test</span>':'')+'</div>'+when+custRouteHtml(m)+(custSizeWords(m)?'<p class="cm-sub">'+esc(custSizeWords(m))+'</p>':'')+price+crew+'</section>';
 }
 function custStepHtml(st,title,sub,btn){return '<li class="'+st+'"><span class="cm-dot" aria-hidden="true">'+(st==='done'?'✓':'')+'</span><span class="tx"><b>'+title+'</b>'+(sub?'<small>'+sub+'</small>':'')+(btn||'')+'</span></li>'}
@@ -2405,7 +2405,7 @@ function custStepHtml(st,title,sub,btn){return '<li class="'+st+'"><span class="
 function custNextHtml(m){
   var s=custStage(m),A=custAhead(m),due=custDueNow(m),out=[],add=function(st,t,sub,b){out.push(custStepHtml(st,t,sub,b))};
   var past=!!m.d.moveDate&&m.d.moveDate<todayISO(),aheadAll=(m.forms||[]).filter(function(f){return f.ahead});
-  if(s==='quote')add('now','Book your move',!m.d.moveDate?'Call or text us to pick a day first.':past?'That day has passed. Call or text us to pick a new one.':m.book?'Check the details and book it here.':'Call or text us to book it.',m.book&&m.d.moveDate&&!past?custBtn(m,'cs:book','Book my move',1):'');
+  if(s==='quote')add('now','Book your move crew today',!m.d.moveDate?'Call or text us to pick a day first.':past?'That day has passed. Call or text us to pick a new one.':m.book?'Check the details and book it here.':'Call or text us to book it.',m.book&&m.d.moveDate&&!past?custBtn(m,'cs:book','Book my move crew',1):'');
   else add('done','Booked',m.bookedBy==='customer'?'You booked it here.':'');
   var crewOnly=A.length===1&&A[0].kind==='crew';
   if(aheadAll.length&&(s==='quote'||s==='booked'))add(A.length?(s==='booked'?'now':'later'):'done',A.length?(crewOnly?'Sign for your bigger crew':A.length===1?'Sign a form before move day':'Sign '+A.length+' forms before move day'):'Forms signed',A.length?esc(crewOnly?A[0].n+' movers at '+money(A[0].rate)+'/hr, before your crew loads':A.map(function(f){return f.title}).join(', ')):'',A.length&&s==='booked'?custBtn(m,'cs:sign','Sign now',!due.amt):'');
@@ -2424,7 +2424,7 @@ function custNextHtml(m){
 function custDayHtml(m){
   var p=m.day.phases||{},st=m.day.startedAt,eta=m.day.eta,now=Date.now();
   var L=[
-    {t:'Your crew is on the way',sub:p.loadStart?'Arrived':st?(eta?(eta>now?'Arriving about '+fmtClock(eta):'Arriving any minute'):'On the way since '+fmtClock(st)):'',done:!!p.loadStart,on:!!st},
+    {t:'Your move crew is on the way',sub:p.loadStart?'Arrived':st?(eta?(eta>now?'Arriving about '+fmtClock(eta):'Arriving any minute'):'On the way since '+fmtClock(st)):'',done:!!p.loadStart,on:!!st},
     {t:'Loading at '+(m.d.from||'your place'),sub:p.loadStart?(p.loadEnd?'Done at '+fmtClock(p.loadEnd):'Started at '+fmtClock(p.loadStart)):'',done:!!p.loadEnd,on:!!p.loadStart},
     {t:'On the road to '+(m.d.to||'your new place'),sub:p.loadEnd&&!p.unloadStart?'Left at '+fmtClock(p.loadEnd):'',done:!!p.unloadStart,on:!!p.loadEnd},
     {t:'Unloading',sub:p.unloadStart?(p.unloadEnd?'Done at '+fmtClock(p.unloadEnd):'Started at '+fmtClock(p.unloadStart)):'',done:!!p.unloadEnd,on:!!p.unloadStart},
@@ -2492,7 +2492,7 @@ function csOpen(kind,m,extra){clearInterval(csTimer);csTimer=null;ui.cs=Object.a
 function csClose(){clearInterval(csTimer);csTimer=null;ui.cs=null;renderCs()}
 function csFail(t){var e=$('#csErr');if(e){e.textContent=t;e.style.color='var(--bad)'}}
 function csTipAmt(m,c){if(!custTipOk(m)||!c)return 0;if(c.tip==='other')return Math.max(0,round2(num(String(c.other||'').replace(/[^0-9.]/g,''))));var p=num(c.tip);return p>0?Math.round(m.bill.total*p)/100:0}
-function csTitle(m,c){var due=custDueNow(m);return {book:'Book your move',sign:m.status==='active'||m.d.moveDate===todayISO()?'Sign before loading':'Sign before move day',pay:due.amt>0?(due.kind==='deposit'?'Pay your deposit':'Pay your bill'):'Tip your crew',thanks:'Your move is done'}[c.kind]||''}
+function csTitle(m,c){var due=custDueNow(m);return {book:'Book your move crew',sign:m.status==='active'||m.d.moveDate===todayISO()?'Sign before loading':'Sign before move day',pay:due.amt>0?(due.kind==='deposit'?'Pay your deposit':'Pay your bill'):'Tip your crew',thanks:'Your move is done'}[c.kind]||''}
 function renderCs(){
   var el=$('#cust');if(!el)return;
   var c=ui.cs,m=c&&isCust()?custFind(c.key):null;
@@ -2506,11 +2506,11 @@ function renderCs(){
 }
 function csBookHtml(m){
   var q=m.quote,dep=Math.max(0,round2(q.deposit-m.bill.paid));
-  return '<div class="cm-sum"><b>'+esc(custLong(m.d.moveDate))+'</b><span>'+(m.d.time?'Your crew arrives at '+esc(fmtTime(m.d.time)):'')+'</span></div>'+custRouteHtml(m)+
+  return '<div class="cm-sum"><b>'+esc(custLong(m.d.moveDate))+'</b><span>'+(m.d.time?'Your move crew will arrive at '+esc(fmtTime(m.d.time)):'')+'</span></div>'+custRouteHtml(m)+
     (custSizeWords(m)?'<p class="cm-sub" style="margin:0 0 8px">'+esc(custSizeWords(m))+'</p>':'')+custLinesHtml(m,false)+
     (dep>0?'<div class="note" style="margin-top:10px">A '+money(dep)+' deposit holds your date. You pay it next, with Google Pay, Apple Pay or a card.</div>':'')+
     '<label class="check" style="margin-top:6px"><input type="checkbox" id="csAgree"> I accept this quote.</label>'+
-    '<button class="btn primary bigbtn" data-act="cs:bookgo" data-k="'+esc(custKeyOf(m))+'">'+(dep>0?'Book and pay the deposit':'Book my move')+'</button><p class="hint" id="csErr" role="alert"></p>';
+    '<button class="btn primary bigbtn" data-act="cs:bookgo" data-k="'+esc(custKeyOf(m))+'">'+(dep>0?'Book and pay the deposit':'Book my move crew')+'</button><p class="hint" id="csErr" role="alert"></p>';
 }
 function csSignHtml(m){
   var A=custAhead(m),all=(m.forms||[]).filter(function(f){return f.ahead}),f=A[0];
@@ -2658,7 +2658,7 @@ function csProfSave(){
     if(ch.length){logEv(j,'The customer changed their '+ch.join(' and ')+' in the customer app');n++}});
   if(n)save();render();toast(n?'Saved. Your moving company has it.':'Saved.');
 }
-// where customers open the app: this page when it's the website, else Tally's website (GitHub Pages)
+// where customers open the app: this page when it's the website, else MoveCrew's website (GitHub Pages)
 var TALLY_SITE='https://mischief503.github.io/Tally/';
 function custSite(){try{if(location.protocol==='https:'&&!/androidplatform\.net$/.test(location.hostname)&&window.TALLY_SUPABASE)return location.origin+location.pathname}catch(e){}return TALLY_SITE}
 // the job sheet: text the customer the app (the company line), when the job has their email and phone
@@ -2953,7 +2953,7 @@ function renderMore(){
     :[];   // the crew's past jobs are in Jobs › History
   var company=role==='owner'?[go('settings','Setup','Rates, crew, forms, payments'),
       row('more:go',' data-tab="settings" data-sec="options"',SICON.options,'Options',optsOnCount()+' of '+OPTS.length+' switches on')]:[];
-  if(isTallyAdmin())company.push(go('admin','Tally admin','Every company, fees and trials'));
+  if(isTallyAdmin())company.push(go('admin','MoveCrew admin','Every company, fees and trials'));
   var look=row('more:theme','',SICON.theme,'Change the look','24 themes, light or dark');
   var you=[office?'':look,canMyProfile()?row('me:open','',SICON.profile,'My profile','Your details and documents'):'',
     canPreview()?row('more:preview','',SICON.eye,'See it their way',previewing()?'Previewing '+(ui.preview.staff||KIND[ui.preview.role]||ui.preview.role):'Owner, dispatch, call center, lead or crew'):'',
@@ -4074,7 +4074,7 @@ function mvNote(j,c){
    but scheduled jobs and being able to make quotes"; then: "Call center is a service that the moving companys will be
    able to purchase to help get bookings . So call center will only be able to see companys that pay for that
    service .") ----------
-   Tally's own team (Tally admin lists them, and switches the service on for each company that buys it), not a
+   MoveCrew's own team (MoveCrew admin lists them, and switches the service on for each company that buys it), not a
    company's employees. Four screens: Companies (below: a map of the companies, their rate cards, Make a quote),
    and for the company they're working in, Schedule (a calendar of how busy each day is, and each day's jobs: the
    customer, the day and time, the addresses, the items and the crew size, no prices or payments), New quote (the
@@ -4533,7 +4533,7 @@ function ccCall(id){
    will be able to purchase to help get bookings . So call center will only be able to see companys that pay for that
    service ."; asked how they move between companies: "Really a map with rate cards available would be awesome then a
    place on their rate card to take you to making a quote for them .") ----------
-   The call center is Tally's own team: Tally admin lists the people and switches the service on for each company
+   The call center is MoveCrew's own team: MoveCrew admin lists the people and switches the service on for each company
    (Richie bills the companies himself). Their first screen: the customer's pickup address and move date, a map of
    the companies with the service, nearest first, each with how busy it is that day, each company's rate card (its
    prices, nothing of its own business), and Make a quote, which opens that company's quote builder with the address
@@ -4655,7 +4655,7 @@ function renderDeskRes(){
   var waiting=deskHosted()&&desk.busy&&!cos.length;
   el.innerHTML='<div class="card dkmapcard"><div id="dkMap" class="dkmap"></div>'+(window.TALLY_ARTIFACT?'<p class="hint dkcap">The phone app shows a street map here. This shows how far each company is.</p>':'')+'</div>'+
     '<div class="secline"><h2>'+(D.geo?'Nearest first':'Companies')+'</h2><small>'+(waiting?'Loading…':rows.length)+'</small></div>'+
-    (rows.length?rows.map(deskCard).join(''):(waiting?'':'<div class="card empty"><h3>No companies yet</h3><p>'+esc(desk.err||'Tally admin switches the call center on for each company that buys it.')+'</p></div>'));
+    (rows.length?rows.map(deskCard).join(''):(waiting?'':'<div class="card empty"><h3>No companies yet</h3><p>'+esc(desk.err||'MoveCrew admin switches the call center on for each company that buys it.')+'</p></div>'));
   deskMapDraw();
 }
 // one company, folded to its number, name, distance and that day's trucks; open, its rate card and Make a quote
@@ -5211,15 +5211,15 @@ function setupSecs(){
   var nReq=(S.forms||[]).filter(function(f){return f.required}).length,nIn=assignable().length,shop=String(S.shopAddress||'').trim();
   var payWord=!window.tallyPay?'Cash and checks here; cards in the hosted app':!pay.cfg?'Card payments':pay.cfg.ready?'Cards on'+(pay.cfg.test?' (test mode)':''):'Cards not set up yet';
   var line=window.tallyComms&&window.tallyComms.number();
-  add('options','top','Options',optsOnCount()+' of '+OPTS.length+' switches on · turn parts of Tally on or off',
-    '<section class="card"><h2>Options</h2><p class="sub">Turn parts of Tally on or off for everyone in your company. Changes save as you go. The same switches also sit in the Setup section they belong to.</p><p class="optcount" id="optCount">'+optsOnCount()+' of '+OPTS.length+' on</p></section>'+
-    OPT_GROUPS.map(function(g){return optGroup(g[0],g[1],g[0]==='texts'&&!window.tallyComms?'Texts go out from the hosted Tally app once the company line is set up.':g[0]==='price'?'These change quotes made or saved from now on.':'')}).join(''),
+  add('options','top','Options',optsOnCount()+' of '+OPTS.length+' switches on · turn parts of MoveCrew on or off',
+    '<section class="card"><h2>Options</h2><p class="sub">Turn parts of MoveCrew on or off for everyone in your company. Changes save as you go. The same switches also sit in the Setup section they belong to.</p><p class="optcount" id="optCount">'+optsOnCount()+' of '+OPTS.length+' on</p></section>'+
+    OPT_GROUPS.map(function(g){return optGroup(g[0],g[1],g[0]==='texts'&&!window.tallyComms?'Texts go out from the hosted MoveCrew app once the company line is set up.':g[0]==='price'?'These change quotes made or saved from now on.':'')}).join(''),
     'switches on off features turn');
   add('company','co','Company',(S.company||'Your company')+' · '+(shop?'shop: '+shop:'no shop address yet'),
     '<section class="card"><h2>Company</h2>'+fld('Name','<input data-s="company" data-t="text" value="'+esc(S.company)+'">')+
     '<div style="margin-top:8px">'+fld('Shop address (where trucks start and end the day)','<input data-s="shopAddress" data-t="text" autocomplete="street-address" placeholder="1200 Industrial Blvd, Austin, TX" value="'+esc(S.shopAddress||'')+'">')+'</div>'+
     '<p class="hint">Quotes add the drive from here to the pickup and from the delivery back here.</p></section>','name shop address');
-  add('member','co','Membership','Your Tally membership',memberCardHtml(),'billing plan trial subscription');
+  add('member','co','Membership','Your MoveCrew membership',memberCardHtml(),'billing plan trial subscription');
   add('rates','price','Rate card',rateSum,rates,'prices hourly rate movers minimum radius mileage per mile deposit tax stairs packing truck fee estimated top price not-to-exceed');
   add('mats','price','Materials and job costs',(S.materials||[]).length+' materials · '+(S.costCats||[]).length+' kinds of cost',materialsCard(),'boxes tape supplies costs dump fee');
   add('catalog','price','Inventory catalog',S.catalog.length+' items',
@@ -5244,7 +5244,7 @@ function setupSecs(){
     '<div class="who" style="display:block"><b>Crew lead</b><br><small>Everything crew can do, plus the job timer, prices, and billing out'+(opt('leadCharges')?' with extra charges':'')+(opt('leadPay')?' and payments':' (the office collects the payment)')+'.</small></div>'+
     '<div class="who" style="display:block"><b>Dispatch</b><br><small>Books quotes and schedules crews and trucks'+(opt('dispatchMoney')?', and sees company revenue and revenue by crew':'')+'. Can also work in the field with lead-level access'+(opt('dispatchPay')?', including billing':'')+'.</small></div>'+
     '<div class="who" style="display:block"><b>Owner</b><br><small>Everything, plus employee hours, job hours, and bid accuracy for the company and each crew. Can also work in the field and waive a form for a job.</small></div>'+
-    '<div class="who" style="display:block"><b>Call center</b><br><small>Your own call center people (the Call center switch): the schedule, your open quotes and New quote, with the day’s slots to line a move up in. They book it in a slot; dispatch picks the truck and crew. No money, no discounts, no payments. Tally’s call center team, when Tally switches the service on for your company, sees the same for you: your rate card, your open quotes and your schedule without the money.</small></div></section>'+
+    '<div class="who" style="display:block"><b>Call center</b><br><small>Your own call center people (the Call center switch): the schedule, your open quotes and New quote, with the day’s slots to line a move up in. They book it in a slot; dispatch picks the truck and crew. No money, no discounts, no payments. MoveCrew’s call center team, when MoveCrew switches the service on for your company, sees the same for you: your rate card, your open quotes and your schedule without the money.</small></div></section>'+
     optGroup('field','Crew and field')+optGroup('bill','Billing out')+optGroup('office','Office'),'permissions crew lead dispatch owner can');
   add('clock','people','Time clock',opt('clock')?'On · '+S.activities.length+' work types'+(opt('lateNote')?' · note after '+num(S.lateMins)+' min':''):'Off',
     '<section class="card"><h2>Time clock</h2><p class="sub">Separate from the job clock: job days, warehouse work, dump runs and the rest.</p><div class="f" style="margin-top:4px"><span>Work types</span></div>'+chips(S.activities,'st:rmact')+'<div class="row"><input id="nAct" placeholder="Work type" aria-label="New work type" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addact">Add</button></div></section>'+
@@ -5269,7 +5269,7 @@ function setupSecs(){
   add('pay','money','Payments',payWord,payCardHtml()+optGroup('pay','Ways to pay'),'stripe cards connect pay links cash checks');
   add('vault','money','Saved payment methods',state.vault.length+' saved',
     '<section class="card"><h2>Saved payment methods</h2><p class="sub">Only the last four digits are kept. Customers find their saved cards and bank accounts when they pay.</p>'+vaultList+'</section>','cards on file bank');
-  add('comms','money','Texts and calls',window.tallyComms?(line?'Company line '+fmtPhone(line):'Company line not connected yet'):'Sent from the hosted Tally app',commsCard(),'twilio sms text alerts calls phone line');
+  add('comms','money','Texts and calls',window.tallyComms?(line?'Company line '+fmtPhone(line):'Company line not connected yet'):'Sent from the hosted MoveCrew app',commsCard(),'twilio sms text alerts calls phone line');
   add('data','data','Your data','Export, import and test jobs',
     '<section class="card"><h2>Your data</h2><p class="sub">'+(sync.mode==='shared'?'This workspace is shared, so these actions change data for everyone.':'Stored on this device. Copy an export to back it up or move it.')+'</p><div class="row"><button class="btn" data-act="st:export">Export data</button><label class="check" style="min-height:44px"><input type="checkbox" id="expPhotos"> Include photos</label></div><textarea class="code" id="dataBox" placeholder="Export appears here. Paste an export here to import." aria-label="Data export or import">'+esc(ui.exportText||'')+'</textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="st:copy">Copy</button><button class="btn primary" data-act="st:import">Import</button></div>'+
     '<div class="row" style="margin-top:14px">'+arm('st:testpack','Add 3 weeks of test jobs')+(state.jobs.some(function(j){return j.test})?arm('st:rmtest','Remove the '+state.jobs.filter(function(j){return j.test}).length+' test jobs'):'')+'</div>'+'<p class="hint">Test jobs are made up: last week through three weeks out, in every stage, using your crew and trucks. They are tagged “Test”, never send a text or call, and Remove takes out only them.</p>'+'<div class="row" style="margin-top:14px">'+arm('st:demo','Replace all jobs with sample data',1)+arm('st:clearjobs','Delete all jobs',1)+arm('st:reset','Reset everything',1)+'</div></section>','export import backup test jobs sample reset delete');
@@ -5388,7 +5388,7 @@ function directory(){
   (S.ccStaff||[]).forEach(function(n){add(n,'callcenter')});
   return out;
 }
-// the people in chat (the call center, Tally's own team, has no chat)
+// the people in chat (the call center, MoveCrew's own team, has no chat)
 function chatDir(){return directory()}
 function lockedStaff(){if(ui.preview&&(sync.mode!=='shared'||sync.isOwner))return ui.preview.staff||'';return sync.mode==='shared'&&sync.identity.status==='ok'&&!sync.isOwner?sync.identity.staff:''}
 function chatRoster(){
@@ -5607,15 +5607,15 @@ function sosStartHtml(){
   var head='<div class="row between"><p class="sos-k">Truck down</p><button class="linkbtn" style="padding:6px 4px" data-act="sos:cancel">Cancel</button></div>';
   if(why){
     var msg=why==='preview'?'You are looking at '+esc((ui.preview&&ui.preview.staff)||'someone else')+'’s screen. An alert can’t be sent from a preview. Leave the preview to send one as yourself.'
-      :why==='noname'?'Tally doesn’t know who you are in this company yet, so it can’t tell the office. Ask the owner to link your sign-in to your name.'
-      :'This copy of Tally isn’t connected to the office, so it can’t tell them from here. Call the office instead.';
+      :why==='noname'?'MoveCrew doesn’t know who you are in this company yet, so it can’t tell the office. Ask the owner to link your sign-in to your name.'
+      :'This copy of MoveCrew isn’t connected to the office, so it can’t tell them from here. Call the office instead.';
     var people=sosOfficeList(me);
     return head+'<h2>Call the office</h2><p class="sos-sub">'+msg+'</p>'+(people.length?'<div class="card2"><b>The office</b>'+people.map(sosCallRow).join('')+'</div>':'')+sosHurt();
   }
   var job=sosMyJob(me),mineT=job?jobTrucks(job).filter(function(id){return driverOf(job,id)===me})[0]:'',tk=d.sosTruck!=null?d.sosTruck:(mineT||(job&&job.assign.truckId)||'');
   var trucks='<option value="">Not sure</option>'+(S.trucks||[]).map(function(t){return '<option value="'+esc(t.id)+'"'+(t.id===tk?' selected':'')+'>'+esc(t.name)+'</option>'}).join('');
   return head+'<h2>Tell the office your truck is down?</h2><p class="sos-sub">They get an alert right away with where you are'+(commsReady()&&!(job&&job.test)?', and a text':'')+'.'+(job?' Job: '+esc(job.d.name)+'.':'')+'</p>'+
-    (job&&job.test?'<p class="sos-sub"><b>You’re on a test job,</b> so this is a good way to try it: the office sees the alert in Tally, but no texts go out.</p>':'')+
+    (job&&job.test?'<p class="sos-sub"><b>You’re on a test job,</b> so this is a good way to try it: the office sees the alert in MoveCrew, but no texts go out.</p>':'')+
     '<label class="lbl" for="sosTruck">Truck<select id="sosTruck">'+trucks+'</select></label>'+
     '<label class="lbl" for="sosNote">What happened? (optional)<textarea id="sosNote" maxlength="280" placeholder="Flat tire, won’t start, accident">'+esc(d.sosNote||'')+'</textarea></label>'+
     (st.err?'<p class="err" role="alert">'+esc(st.err)+'</p>':'')+
@@ -5625,8 +5625,8 @@ function sosStartHtml(){
 function sosMyLocText(a){
   if(sos.id===a.id){
     if(sos.geo==='denied')return 'Location is blocked on this phone, so the office can’t see where you are. Say where you are in the note, or call them.';
-    if(sos.locErr)return 'Your location didn’t go out just now. Check your signal; Tally keeps trying.';
-    if(sos.pub){var L=sos.pub,lt=sosNum(L.ts)||Date.now();return 'Sharing where you are · updated <span data-ago="'+lt+'">'+ago(lt)+'</span>'+(sosAcc(L)?' · '+sosAcc(L):'')+'. Keep Tally open so it keeps updating.'}
+    if(sos.locErr)return 'Your location didn’t go out just now. Check your signal; MoveCrew keeps trying.';
+    if(sos.pub){var L=sos.pub,lt=sosNum(L.ts)||Date.now();return 'Sharing where you are · updated <span data-ago="'+lt+'">'+ago(lt)+'</span>'+(sosAcc(L)?' · '+sosAcc(L):'')+'. Keep MoveCrew open so it keeps updating.'}
     if(sos.last)return 'Sending your location…';
     if(sos.geo==='unavailable')return 'This phone can’t find its location. Say where you are in the note.';
     return 'Finding your location…';
@@ -5636,13 +5636,13 @@ function sosMyLocText(a){
 }
 function sosTextsLine(id){
   var t=sos.texts[id];
-  if(!t)return window.tallyComms?'Texts go out from the phone that sent the alert.':'This copy of Tally can’t send texts, so the office sees the alert only with Tally open. Call them too.';
+  if(!t)return window.tallyComms?'Texts go out from the phone that sent the alert.':'This copy of MoveCrew can’t send texts, so the office sees the alert only with MoveCrew open. Call them too.';
   if(t.st==='wait'||t.st==='sending')return 'Texting the office…';
   if(t.st==='sent')return t.names&&t.names.length?'Texted '+esc(andList(t.names))+'.':'No one in the office has a phone number saved in Setup, so no texts went out. Call them.';
-  if(t.st==='test')return 'You’re on a test job, so no texts went out. The office sees the alert in Tally.';
+  if(t.st==='test')return 'You’re on a test job, so no texts went out. The office sees the alert in MoveCrew.';
   if(t.st==='ended')return 'The alert ended before the texts went out.';
-  if(t.st==='noline')return 'Texts aren’t set up for this company, so the office sees the alert only with Tally open. Call them too.';
-  if(t.st==='nocopy')return 'This copy of Tally can’t send texts, so the office sees the alert only with Tally open. Call them too.';
+  if(t.st==='noline')return 'Texts aren’t set up for this company, so the office sees the alert only with MoveCrew open. Call them too.';
+  if(t.st==='nocopy')return 'This copy of MoveCrew can’t send texts, so the office sees the alert only with MoveCrew open. Call them too.';
   return 'The texts did not go out.'+(t.msg&&!/did not go out/.test(t.msg)?' '+esc(t.msg):'')+' Call the office. <button class="btn sm" data-act="sos:texts" data-id="'+esc(id)+'">Try the texts again</button>';
 }
 function sosMineCard(a){
@@ -5834,7 +5834,7 @@ function sosTextsNow(id){
   },function(){t.st='failed';t.msg=''}).then(function(){sosTextsKeep(id);renderSos()});
 }
 function sosTextsKeep(id){var o=state.ui.sosOwn,t=sos.texts[id];if(o&&o.id===id&&t){o.texts={st:t.st,names:t.names||[],msg:t.msg||''};save()}}
-var SOS_OFFLINE='Tally isn’t connected right now. Check your signal and try again.';
+var SOS_OFFLINE='MoveCrew isn’t connected right now. Check your signal and try again.';
 // Got it shows as sent only once it is saved, so the crew is never told the office has it when it doesn't
 function sosAck(id){
   var a=sosAll()[id],bk='ack:'+id;if(!sosIsOn(a)||!sosOffice()||ui.sosBusy[bk])return;
@@ -5873,7 +5873,7 @@ function sosEnd(id){
   });
 }
 // The all-clear text. While the alert's own texts are still going out, or the server couldn't be
-// reached, it is asked for again a little later, and this phone remembers to even if Tally closes.
+// reached, it is asked for again a little later, and this phone remembers to even if MoveCrew closes.
 function sosClearText(id,tries){
   if(!commsReady())return;
   window.tallyComms.sos(id,'end').then(function(r){
@@ -5919,7 +5919,7 @@ function sosSync(){
       sosWake(false);state.ui.sosOwn=null;save();
       if(oa&&oa.end&&oa.end.by&&oa.end.by!==me&&ownFrom===me)toast(String(oa.end.by).slice(0,40)+' closed your truck-down alert. Your location is no longer shared.');
     }else if(oa&&sos.id!==own.id&&sosShared()){
-      // Tally opened again while the alert is on: pick the location back up
+      // MoveCrew opened again while the alert is on: pick the location back up
       sosGeoStart(own.id);sosWake(true);
       if(!sos.texts[own.id]){var tx=own.texts||{st:'wait'};sos.texts[own.id]={st:tx.st,names:tx.names||[],msg:tx.msg||''};if(tx.st==='wait'||tx.st==='sending')sosTextsSoon(own.id)}
     }
@@ -6154,7 +6154,7 @@ function pullJobs(snap){
   });
   state.jobs=Object.keys(byId).map(function(k){return byId[k]});
   // a bill line worked out on another phone from older numbers (two phones changed the job at once):
-  // work it out again here, so the bill matches the job. Lines from another version of Tally are left.
+  // work it out again here, so the bill matches the job. Lines from another version of MoveCrew are left.
   Object.keys(remote).forEach(function(id){var cj=byId[id];if(clockStale(cj)){rebill(cj,'worked out again');changed=true}});
   sync.got.jobs=true;
   jobMsgNotice();noteNotice();onJobNotice(false);rqNotice();
@@ -6241,9 +6241,9 @@ function renderGate(){
   var b='';
   if(st==='connecting')b='<h2>Checking your access</h2><p class="hint">One moment.</p>';
   else if(st==='setup')b='<h2>Set up your shared workspace</h2><p>This workspace is new, so nothing is shared yet. Pick where to start.</p><button class="btn primary bigbtn" data-act="sync:init" data-m="fresh">Start fresh</button><button class="btn bigbtn" data-act="sync:init" data-m="sample">Load sample data</button><button class="btn bigbtn" data-act="sync:init" data-m="device">Use the data on this device</button>';
-  else if(st==='notready')b='<h2>Almost ready</h2><p>The owner needs to open Tally once to set up the shared workspace. Try again in a minute.</p>';
+  else if(st==='notready')b='<h2>Almost ready</h2><p>The owner needs to open MoveCrew once to set up the shared workspace. Try again in a minute.</p>';
   else if(st==='pending')b='<h2>You need access</h2><p>You are signed in'+(sync.meName?' as <b>'+esc(sync.meName)+'</b>':'')+'. The owner has to approve you before you can see anything.</p>'+(sync.requested?'<p class="hint">Request sent. You will be let in as soon as the owner approves it.</p>':'<button class="btn primary bigbtn" data-act="sync:request">Request access</button>');
-  else if(st==='noid')b='<h2>Sign in to continue</h2><p>Tally could not tell who you are. Open it while signed in to your account.</p>';
+  else if(st==='noid')b='<h2>Sign in to continue</h2><p>MoveCrew could not tell who you are. Open it while signed in to your account.</p>';
   g.innerHTML='<div class="card" style="max-width:480px;width:100%">'+b+'</div>';g.hidden=false;syncLock();
 }
 function setGate(st){sync.gate=st;renderGate()}
@@ -6296,20 +6296,20 @@ function syncBoot(){
   }).catch(function(){setGate('')});
 }
 function accessCard(){
-  if(sync.mode!=='shared')return '<section class="card"><h2>App access</h2><p class="sub">Sign-in and access control switch on when Tally is opened with shared storage. Right now this copy runs on one device.</p></section>';
+  if(sync.mode!=='shared')return '<section class="card"><h2>App access</h2><p class="sub">Sign-in and access control switch on when MoveCrew is opened with shared storage. Right now this copy runs on one device.</p></section>';
   var dir=directory(),staffOpts='<option value="">Choose a person</option>'+(peopleHosted()?empRoster().filter(function(x){return !x.rec||(!x.rec.user_id&&x.rec.active!==false)}).map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''):dir.map(function(x){return '<option>'+esc(x.name)+'</option>'}).join(''));
   var roleOpts=function(sel){return ['crew','lead','dispatch','owner'].map(function(r){return '<option value="'+r+'"'+(r===sel?' selected':'')+'>'+KIND[r]+'</option>'}).join('')};
   var nm=function(id){return esc(sync.names[id]||'Someone')};
   var pend=sync.requests.map(function(r){var f={kind:'crew'};return '<div class="who" style="display:block"><b>'+nm(r.uid)+'</b> <small>is asking for access</small><div class="accpick"><label class="f"><span>This person is</span><select id="accStaff_'+esc(r.uid)+'">'+staffOpts+'</select></label><label class="f"><span>Role</span><select id="accRole_'+esc(r.uid)+'">'+roleOpts(f.kind)+'</select></label></div><div class="row" style="margin-top:6px"><button class="btn primary sm" data-act="acc:approve" data-uid="'+esc(r.uid)+'">Approve</button><button class="btn sm ghost" data-act="acc:deny" data-uid="'+esc(r.uid)+'">Deny</button></div></div>'}).join('');
   var appr=sync.users.map(function(u){return '<div class="who"><span><b>'+nm(u.uid)+'</b><br><small>'+esc(u.staff||'')+' · '+esc(KIND[u.role]||u.role)+'</small></span><button class="btn sm danger" data-act="acc:revoke" data-uid="'+esc(u.uid)+'">Revoke</button></div>'}).join('');
   var org=window.tallyOrg,codeHtml=org&&org.join_code?'<div class="note" style="margin-bottom:10px"><b>'+esc(org.name)+'</b> · company code <b style="letter-spacing:3px;font-size:18px">'+esc(org.join_code)+'</b><br><small>'+(peopleHosted()?'Easiest: add each person under Employees with the email they sign in with, and they go straight in. Anyone else can tap Join a company, enter this code, and wait for you to approve them here.':'Employees sign in with their own email, tap Join a company, and enter this code. You approve them here.')+'</small></div>':'';
-  return '<section class="card"><h2>App access</h2>'+codeHtml+'<p class="sub">Everyone signs in with their own account. Approve each person and pick who they are in Tally. Their role decides what they can see and do, and they cannot change it themselves.</p>'+
+  return '<section class="card"><h2>App access</h2>'+codeHtml+'<p class="sub">Everyone signs in with their own account. Approve each person and pick who they are in MoveCrew. Their role decides what they can see and do, and they cannot change it themselves.</p>'+
     '<h3 style="margin-bottom:4px">Waiting for approval</h3>'+(pend||'<p class="hint">No one is waiting.</p>')+
     '<h3 style="margin:14px 0 4px">People with access</h3>'+(appr||'<p class="hint">Only you so far.</p>')+'</section>';
 }
 
 /* ---------- employees: profiles with hiring info ----------
-   The owner keeps a profile for everyone who works here: the name Tally uses, their role, the
+   The owner keeps a profile for everyone who works here: the name MoveCrew uses, their role, the
    email they sign in with, and their hiring details. In the hosted app profiles live in the
    employees table, which only the owner can read; each person sees their own through My profile,
    and signing in with the profile's email links them to it (claim_invites). Without a server
@@ -6327,7 +6327,7 @@ var EMP_SECS=[
   {t:'Leaving',f:[['endDate','Last day','date'],['endReason','Reason','text']]}
 ];
 var DOC_TYPES=[['i9','I-9'],['w4','W-4'],['license',"Driver's license"],['dot','DOT medical card'],['background','Background check'],['handbook','Signed handbook'],['other','Other']];
-var DEFAULT_APP_LINK='https://github.com/Mischief503/Tally/releases/latest/download/Tally.apk';
+var DEFAULT_APP_LINK='https://github.com/Mischief503/Tally/releases/latest/download/MoveCrew.apk';
 var people={list:[],loaded:false,loading:false,err:'',mine:null,mineState:'',docs:{},docsLoading:{}};
 function peopleHosted(){return !!window.tallyPeople}
 function canMyProfile(){return peopleHosted()&&sync.mode==='shared'&&sync.identity.status==='ok'&&!sync.isOwner}
@@ -6378,7 +6378,7 @@ function employeesCard(){
   if(!people.loaded&&!people.loading)loadPeople();
   var rows=empRoster().map(function(x){var st=empStatus(x.rec);
     return '<button class="emprow'+(x.rec&&x.rec.active===false?' off':'')+'" data-act="emp:open" '+(x.rec?'data-id="'+esc(x.rec.id)+'"':'data-name="'+esc(x.name)+'"')+'><span><span class="nm">'+esc(x.name)+'</span> '+(x.rec?sidesList(sidesOf(x.name,x.rec)):[KIND[x.role]||x.role]).map(function(w){return '<span class="pill">'+esc(w)+'</span>'}).join(' ')+(driversOn()&&(S.drivers||[]).indexOf(x.name)>=0?' <span class="pill">Drives</span>':'')+'<small>'+esc(st.t)+'</small></span><span class="go" aria-hidden="true">›</span></button>'}).join('');
-  return '<section class="card"><h2>Employees</h2><p class="sub">'+(host?'Everyone who works for you. Add the email each person signs in with: when they sign in, Tally connects them to their profile and role, with no code to share. Hiring details are visible only to you and that person.':'Everyone who works for you, with their hiring details. In this copy, profiles stay on this device. In the Tally app they are private to you and each employee, and signing in connects people to their profile.')+'</p>'+
+  return '<section class="card"><h2>Employees</h2><p class="sub">'+(host?'Everyone who works for you. Add the email each person signs in with: when they sign in, MoveCrew connects them to their profile and role, with no code to share. Hiring details are visible only to you and that person.':'Everyone who works for you, with their hiring details. In this copy, profiles stay on this device. In the MoveCrew app they are private to you and each employee, and signing in connects people to their profile.')+'</p>'+
     (people.err?'<div class="note">'+esc(people.err)+'</div>':'')+(host&&people.loading&&!people.list.length?'<p class="hint">Loading profiles…</p>':'')+
     '<button class="btn primary" data-act="emp:new" style="margin:2px 0 12px">Add employee</button>'+(rows||'<p class="hint">No one yet.</p>')+
     (host?'<div style="margin-top:10px">'+fld('Link to download the app (used in invite texts)','<input data-s="appLink" data-t="text" inputmode="url" autocomplete="off" placeholder="'+esc(DEFAULT_APP_LINK)+'" value="'+esc(S.appLink||'')+'">')+'</div>':'')+'</section>';
@@ -6426,7 +6426,7 @@ function empField(k,label,type,opts,val,attr){
 function inviteHtml(rec){
   if(!peopleHosted()||!rec||rec.user_id||!rec.email||rec.active===false)return '';
   var first=rec.name.split(' ')[0],ph=(rec.info&&rec.info.phone)||'',link=state.settings.appLink||DEFAULT_APP_LINK,co=String((window.tallyOrg&&window.tallyOrg.name)||state.settings.company||'work').trim().replace(/[.!]+$/,'');
-  var msg='Hi '+first+', it\'s '+co+'. Get the Tally app here: '+link+' and sign in with '+rec.email+'. You\'ll go straight to your jobs.';
+  var msg='Hi '+first+', it\'s '+co+'. Get the MoveCrew app here: '+link+' and sign in with '+rec.email+'. You\'ll go straight to your jobs.';
   return '<div class="note">'+esc(first)+' hasn\'t signed in yet.'+(ph?' <a class="btn sm" href="'+esc(smsHref(ph,msg))+'">Text '+esc(first)+' the app</a>':' Add a phone number to text them the app link.')+'</div>';
 }
 function empEditBody(){
@@ -6438,24 +6438,24 @@ function empEditBody(){
   var sides='<h3 class="empsec">What they see</h3><div class="sides">'+sw('owner','Owner','Everything, Setup included')+
     (A.owner?'':'<div class="sidesw"><span><b>Field view</b><small>Their jobs in the field</small></span><span class="seg" role="radiogroup" aria-label="Field view">'+[['off','Off'],['crew','Crew'],['lead','Lead']].map(function(f){return '<label><input type="radio" name="empField" data-ak="field" value="'+f[0]+'"'+(A.field===f[0]?' checked':'')+dis+'><span>'+f[1]+'</span></label>'}).join('')+'</span></div>'+
       sw('dispatch','Dispatch','Today, Jobs, the Board and quotes')+sw('cc','Call center','The schedule, quotes and booking, no money'))+'</div>'+
-    '<p class="hint sidesnote">'+(sees.length?esc(fn)+' sees: '+esc(tabsW.join('; '))+'.'+(tabsW.length>1?' All in one app.':''):'With every side off, '+esc(fn)+' sees nothing. Turn one on, or turn off “Can use Tally”.')+'</p>';
+    '<p class="hint sidesnote">'+(sees.length?esc(fn)+' sees: '+esc(tabsW.join('; '))+'.'+(tabsW.length>1?' All in one app.':''):'With every side off, '+esc(fn)+' sees nothing. Turn one on, or turn off “Can use MoveCrew”.')+'</p>';
   var nameCtl='<input data-ek="name" autocomplete="off" value="'+esc(d.name)+'"'+(E.fixedName?' readonly aria-readonly="true"':' placeholder="The name the crew uses"')+'>';
   var head='<div class="sheet-head"><div><h2>'+esc(E.fixedName?d.name:'New employee')+'</h2><small>'+esc(sidesList(A).join(' · ')||'No access')+'</small></div><button class="btn sm" data-act="emp:close">Close</button></div>';
-  var access='<div class="grid2 stack">'+fld('Name in Tally',nameCtl)+
+  var access='<div class="grid2 stack">'+fld('Name in MoveCrew',nameCtl)+
       fld('Email they sign in with','<input data-ek="email" type="email" inputmode="email" autocapitalize="off" spellcheck="false" autocomplete="off" value="'+esc(d.email)+'" placeholder="name@example.com">')+'</div>'+
     (E.fixedName?'<p class="hint">The name ties together their jobs, hours and chat, so it can\'t be changed here.</p>':'')+
     (rec?'<div class="empst '+st.k+'">'+esc(st.t)+'</div>':'')+
-    '<label class="check"><input type="checkbox" data-ek="active"'+(d.active?' checked':'')+(self?' disabled':'')+'> Can use Tally'+(host?' (turn off when someone leaves: their access ends at once)':'')+'</label>'+
+    '<label class="check"><input type="checkbox" data-ek="active"'+(d.active?' checked':'')+(self?' disabled':'')+'> Can use MoveCrew'+(host?' (turn off when someone leaves: their access ends at once)':'')+'</label>'+
     (self?'<p class="hint">This is you, so your role and access can\'t be changed here.</p>':'')+inviteHtml(rec)+sides;
   var secs=EMP_SECS.map(function(sx){
     var key='emp:'+sx.t,filled=sx.f.some(function(f){return i[f[0]]}),open=ui.open[key];if(open===undefined)open=!!(sx.open||filled);
     var inner='<div class="grid2 stack">'+sx.f.map(function(f){return empField(f[0],f[1],f[2],f[3],i[f[0]],'data-ek')}).join('')+'</div>'+
-      (sx.t==='Personal'?'<p class="hint">Keep full Social Security and bank account numbers with your payroll company. Tally keeps only the last 4 digits.</p>':'');
+      (sx.t==='Personal'?'<p class="hint">Keep full Social Security and bank account numbers with your payroll company. MoveCrew keeps only the last 4 digits.</p>':'');
     return '<details class="acc" data-k="'+esc(key)+'"'+(open?' open':'')+'><summary><span>'+esc(sx.t)+'</span></summary><div class="acc-body">'+inner+'</div></details>';
   }).join('');
   var docs='<h3 class="empsec">Documents</h3>'+(rec?docsHtml(rec.id,true):'<p class="hint">Save the profile first, then add their I-9, W-4, license and other papers.</p>');
   var notes='<h3 class="empsec">Your notes</h3>'+fld('Only you see these. They never show on '+esc((d.name||'their').split(' ')[0])+'\'s profile.','<textarea data-ek="notes" rows="3">'+esc(d.notes||'')+'</textarea>');
-  var btns=(rec&&!self?'<button class="btn '+(E.armed==='del'?'danger':'ghost')+'" data-act="emp:del" style="margin-top:14px">'+(E.armed==='del'?'Tap again to delete '+esc(rec.name)+' and their documents':'Delete profile')+'</button><p class="hint">To keep their records, turn off “Can use Tally” instead.</p>':'')+
+  var btns=(rec&&!self?'<button class="btn '+(E.armed==='del'?'danger':'ghost')+'" data-act="emp:del" style="margin-top:14px">'+(E.armed==='del'?'Tap again to delete '+esc(rec.name)+' and their documents':'Delete profile')+'</button><p class="hint">To keep their records, turn off “Can use MoveCrew” instead.</p>':'')+
     empFoot('emp:save',E.busy?'Saving…':'Save',E);
   return head+'<div class="sheet-body">'+access+'<h3 class="empsec">Hiring details</h3>'+secs+docs+notes+btns+'</div>';
 }
@@ -6511,7 +6511,7 @@ function empSave(){
   if(email&&people.list.some(function(x){return x.email===email&&(!rec||x.id!==rec.id)}))return fail('Another profile already uses that email.');
   if(i.ssnLast4&&!/^\d{4}$/.test(String(i.ssnLast4).trim()))return fail('Social Security: enter only the last 4 digits.');
   var A=d.access||{owner:false,field:'crew',dispatch:false,cc:false},A2={owner:!!A.owner,field:A.owner?'off':(A.field==='lead'||A.field==='crew'?A.field:'off'),dispatch:!A.owner&&!!A.dispatch,cc:!A.owner&&!!A.cc};
-  if(d.active&&!A2.owner&&A2.field==='off'&&!A2.dispatch&&!A2.cc)return fail('Turn on at least one side for them (Field view, Dispatch or Call center), or turn off “Can use Tally”.');
+  if(d.active&&!A2.owner&&A2.field==='off'&&!A2.dispatch&&!A2.cc)return fail('Turn on at least one side for them (Field view, Dispatch or Call center), or turn off “Can use MoveCrew”.');
   var info={};Object.keys(i).forEach(function(k){var v=i[k];if(v!==''&&v!=null)info[k]=typeof v==='string'?v.trim():v});info.access=A2;
   var out={id:rec?rec.id:undefined,name:name,role:roleOfSides(A2),email:email,active:!!d.active,info:info,notes:String(d.notes||'').slice(0,5000)};
   var done=function(saved){
@@ -6568,7 +6568,7 @@ function loadDocs(id){
 function docMeta(name){var m=/^(\d+)_([a-z0-9]+)_(.+)$/.exec(name||''),tp=m&&DOC_TYPES.filter(function(x){return x[0]===m[2]})[0];return {type:tp?tp[1]:'Document',file:m?m[3]:name,ts:m?+m[1]:0}}
 function docName(type,file){var safe=String(file||'file').replace(/[^A-Za-z0-9._-]+/g,'-').replace(/-+/g,'-').replace(/^-+|-+$/g,'').slice(-60)||'file';return Date.now()+'_'+type+'_'+safe}
 function docsHtml(id,canDelete){
-  if(!peopleHosted())return '<p class="hint">Document uploads work in the Tally app, where they are stored privately. This copy has nowhere private to keep them.</p>';
+  if(!peopleHosted())return '<p class="hint">Document uploads work in the MoveCrew app, where they are stored privately. This copy has nowhere private to keep them.</p>';
   var E=ui.emp,list=people.docs[id];
   var rows=list===undefined?'<p class="hint">Loading documents…</p>':list===null?'<p class="hint">Could not load documents.</p>':!list.length?'<p class="hint">No documents yet.</p>':
     list.slice().sort(function(a,b){return docMeta(b.name).ts-docMeta(a.name).ts}).map(function(f){var m=docMeta(f.name),arm=E&&E.armed==='doc:'+f.path;
@@ -7027,7 +7027,7 @@ function previewPeople(role){
   var S=state.settings;
   if(role==='crew')return S.crew.filter(function(n){return !isLead(n)});
   if(role==='lead')return S.crew.filter(isLead);
-  if(role==='callcenter')return (S.ccStaff||[]).filter(function(n){return !isOfficeName(n)});   // the company's own (Tally's team: Anyone)
+  if(role==='callcenter')return (S.ccStaff||[]).filter(function(n){return !isOfficeName(n)});   // the company's own (MoveCrew's team: Anyone)
   return (S.office||[]).filter(function(o){return o.kind===role}).map(function(o){return o.name});
 }
 function startPreview(role,staff){
@@ -7058,7 +7058,7 @@ function previewSheet(){
   var roles=[['owner','Owner'],['dispatch','Dispatch'],['callcenter','Call center'],['lead','Crew lead'],['crew','Crew']];
   var rows=roles.map(function(r){
     var people=previewPeople(r[0]);
-    var who=people.length?people.map(function(n){return '<button class="chip" data-act="pv:set" data-role="'+r[0]+'" data-staff="'+esc(n)+'">'+esc(n)+'</button>'}).join('')+(r[0]==='callcenter'?'<button class="chip" data-act="pv:set" data-role="callcenter" data-staff="">Tally’s team</button>':'')
+    var who=people.length?people.map(function(n){return '<button class="chip" data-act="pv:set" data-role="'+r[0]+'" data-staff="'+esc(n)+'">'+esc(n)+'</button>'}).join('')+(r[0]==='callcenter'?'<button class="chip" data-act="pv:set" data-role="callcenter" data-staff="">MoveCrew’s team</button>':'')
       :'<button class="chip" data-act="pv:set" data-role="'+r[0]+'" data-staff="">Anyone</button>';
     return '<div class="pvrow"><span class="who-n"><b>'+r[1]+'</b></span></div><div class="scrollx">'+who+'</div>';
   }).join('')+custPvRow();
@@ -7182,7 +7182,7 @@ function commsSection(j){
 function commsCard(){
   var S=state.settings,C=S.comms||{alerts:{},ring:[]};
   if(window.tallyComms&&sync.isAdmin&&!C.appUrl&&/^https:$/.test(location.protocol)&&!/androidplatform\.net$/.test(location.hostname)){C.appUrl=location.origin+location.pathname;save()}
-  if(!window.tallyComms)return '<section class="card"><h2>Texts and calls</h2><p class="sub">Text alerts to the crew and calls through the company line run on the hosted edition of Tally, which can reach Twilio. This copy cannot make outside connections, so the settings below are saved but nothing is sent from here.</p>'+commsToggles(C)+'</section>';
+  if(!window.tallyComms)return '<section class="card"><h2>Texts and calls</h2><p class="sub">Text alerts to the crew and calls through the company line run on the hosted edition of MoveCrew, which can reach Twilio. This copy cannot make outside connections, so the settings below are saved but nothing is sent from here.</p>'+commsToggles(C)+'</section>';
   var num=window.tallyComms.number();
   var status=num?'<div class="note"><b>Company line '+esc(fmtPhone(num))+'</b><br><small>Texts come from this number, customers see it when you call through it, and calls back to it ring the people chosen below.</small></div>'
     :'<div class="note"><b>Not connected yet.</b><br><small>Once your Twilio number is added for this company in Supabase (see the setup guide), texts and company-line calls switch on here. Nothing else to do in the app.</small></div>';
@@ -7235,7 +7235,7 @@ function renderDistNote(){
   var btn=canLookup()&&dist.busy!==k?' <button class="btn sm" data-act="q:dist">'+(r&&String(d.miles||'').trim()===String(r.miles)?'Look up again':'Look up distance')+'</button>':'';
   if(!canLookup()&&a&&b)link=' <a class="btn sm" href="'+esc(shopTripUrl()||mapsDirUrl(a,b))+'" target="_blank" rel="noopener">'+(shopTripUrl()?'Open the whole trip in Google Maps':'Open the drive in Google Maps')+'</a>';
   if(!a||!b)h=canLookup()?'Enter both addresses and the distance fills itself in. <button class="btn sm" data-act="q:dist">Look up distance</button>':'Enter both addresses, then check the drive on Google Maps.';
-  else if(!canLookup())h='Type the miles from the map. This copy of Tally can’t look distances up itself; the Tally app on your phone does it for you.'+link;
+  else if(!canLookup())h='Type the miles from the map. This copy of MoveCrew can’t look distances up itself; the MoveCrew app on your phone does it for you.'+link;
   else if(dist.busy===k)h='Looking up the drive…';
   else if(r){
     var same=String(d.miles||'').trim()===String(r.miles);
@@ -7490,7 +7490,7 @@ function phaseRows(j){
   }).join('')+(bm>0?'<div class="ps est"><span><i></i>Drive back to the shop</span><span>about <b>'+fmtDur(bm*60000)+'</b>, at bill-out</span></div>':'');
 }
 /* ---------- test pack ----------
-   Made-up jobs for trying every part of Tally. Same crew and trucks as the company, two
+   Made-up jobs for trying every part of MoveCrew. Same crew and trucks as the company, two
    time slots per truck so nobody is double-booked, a fixed seed so every load looks alike. */
 var TP_FIRST=['Harper','Diego','Priya','Owen','Mai','Grace','Leo','Sofia','Caleb','Nora','Isaac','Ruby','Hannah','Theo','Ava','Elijah','Zoe','Samuel','Lily','Jonah','Maya','Felix','Chloe','Ezra','Ivy','Rowan','Nadia','Silas','Wren','Jasper'];
 var TP_LAST=['Lane','Morales','Shah','Fitzgerald','Tran','Okafor','Brennan','Reyes','Wright','Lindqvist','Patel','Chen','Kim','Novak','Robinson','Brooks','Fischer','Ortiz','Nakamura','Weiss','Johnson','Andersen','Dubois','Cohen','Martinez','Clarke','Haddad','Grant','Takahashi','Moreau'];
@@ -7600,7 +7600,7 @@ function phaseCard(list){
 }
 function openStart(id,who,office){var j=byId(id);if(!j)return;ui.start={jobId:id,who:who||'',office:!!office,mins:state.ui.etaMins||30,text:!!j.d.phone&&opt('eta')};renderStart()}
 function etaGreeting(name){name=String(name||'').trim();if(!name||/&|\b(and|family|inc|llc|law|co|company|corp|group)\b/i.test(name))return 'Hello';return 'Hi '+name.split(/\s+/)[0]}
-function etaText(j,m){return (state.settings.company||'Your movers')+': '+etaGreeting(j.d.name)+', your crew is on the way and should arrive in about '+m+' minutes, around '+fmtClock(Date.now()+m*60000)+'.'}
+function etaText(j,m){return (state.settings.company||'Your movers')+': '+etaGreeting(j.d.name)+', your move crew is on the way and should arrive in about '+m+' minutes, around '+fmtClock(Date.now()+m*60000)+'.'}
 function smsHref(phone,body){return 'sms:'+String(phone||'').replace(/[^0-9+]/g,'')+'?&body='+encodeURIComponent(body)}
 function renderStart(){
   var el=$('#start');if(!el)return;
@@ -7642,7 +7642,7 @@ function qrSvg(text){
 /* ---------- card payments through Stripe (hosted edition) ----------
    window.tallyPay comes from the Supabase adapter. Without it (the artifact edition), or for a
    company that isn't turned on for payments, the payment screen stays the demo it always was.
-   Card numbers never reach Tally: a pay link opens Stripe's own page, a typed card goes into
+   Card numbers never reach MoveCrew: a pay link opens Stripe's own page, a typed card goes into
    Stripe's own card box, and a card on file is charged by the server. The server, not this
    screen, decides what is still owed. */
 var STRIPE_JS='https://js.stripe.com/endive/stripe.js',MIN_PAY=50;
@@ -7861,7 +7861,7 @@ var STRIPE_DUE=[[/^external_account/,'The bank account Stripe pays out to'],[/^t
   [/^(owners|directors|executives|person_)/,'The business owners’ details'],[/^settings\./,'What shows on customers’ card statements']];
 function stripeDue(list){var out=[];(list||[]).forEach(function(k){var hit=STRIPE_DUE.filter(function(x){return x[0].test(String(k))})[0],t=hit?hit[1]:'Something else Stripe asks for';if(out.indexOf(t)<0)out.push(t)});return out}
 function payCardHtml(){
-  if(!window.tallyPay)return '<section class="card"><h2>Payments</h2><p class="sub">Card payments run on the hosted edition of Tally (the website and the Android app), through Stripe. This copy records payments but does not charge cards.</p></section>';
+  if(!window.tallyPay)return '<section class="card"><h2>Payments</h2><p class="sub">Card payments run on the hosted edition of MoveCrew (the website and the Android app), through Stripe. This copy records payments but does not charge cards.</p></section>';
   var c=pay.cfg,st,cn=(c&&c.connect)||{},due=stripeDue(cn.due),btn='<button class="btn sm" data-act="pay:reload">Check again</button>',test=c&&c.test?' (test mode)':'';
   // a company's own Stripe account: what is next, and the button to Stripe's sign-up
   var go=function(label){return '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="pay:connect"'+(pay.conn.busy?' disabled':'')+'>'+(pay.conn.busy?'Opening Stripe…':label)+'</button>'+btn+'</div>'+
@@ -7870,21 +7870,21 @@ function payCardHtml(){
     (pay.conn.wait?'<p class="hint">Finished with Stripe? Come back here; this updates by itself.</p>':'')};
   var dueList=due.length?'<p class="hint" style="margin-bottom:0">Stripe still needs:</p><ul class="duelist">'+due.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul>':'';
   if(!c)st='<p class="hint">Checking…</p>';
-  else if(c.ready&&c.via==='connect')st='<div class="note"><b>Card payments go to your own Stripe account'+test+'.</b><br><small>Pay links, cards on file and typed cards are on'+(c.publishableKey?'':' (typing a card in needs STRIPE_PUBLISHABLE_KEY in Supabase)')+'. Stripe pays the money out to your bank'+(cn.payouts===false?' once it has finished checking the bank account':'')+'. Tally takes no cut; Stripe’s card fee comes out of each payment. Refunds, disputes and payouts are in your Stripe Dashboard at dashboard.stripe.com.'+(c.test?' Test mode: no real money moves.':'')+'</small></div>'+(due.length?dueList+go('Continue with Stripe'):'')+'<div class="row" style="margin-top:8px">'+btn+'</div>';
+  else if(c.ready&&c.via==='connect')st='<div class="note"><b>Card payments go to your own Stripe account'+test+'.</b><br><small>Pay links, cards on file and typed cards are on'+(c.publishableKey?'':' (typing a card in needs STRIPE_PUBLISHABLE_KEY in Supabase)')+'. Stripe pays the money out to your bank'+(cn.payouts===false?' once it has finished checking the bank account':'')+'. MoveCrew takes no cut; Stripe’s card fee comes out of each payment. Refunds, disputes and payouts are in your Stripe Dashboard at dashboard.stripe.com.'+(c.test?' Test mode: no real money moves.':'')+'</small></div>'+(due.length?dueList+go('Continue with Stripe'):'')+'<div class="row" style="margin-top:8px">'+btn+'</div>';
   else if(c.ready)st='<div class="note"><b>Stripe is connected'+test+'.</b><br><small>Pay links and cards on file are on'+(c.publishableKey?', and cards can be typed in':'. Typing a card in needs STRIPE_PUBLISHABLE_KEY in Supabase')+'. '+(c.test?'No real money moves until Supabase has your live keys.':'Payments are real.')+'</small></div>'+btn;
-  else if(c.reason==='connect')st='<div class="note"><b>Take card payments with your company’s own Stripe account'+test+'.</b><br><small>Customers’ payments go straight to your Stripe account, and Stripe pays them out to your bank. Tally takes no cut; Stripe’s card fee comes out of each payment.</small></div>'+
-    '<p class="hint">Stripe asks for your business details, the bank account for payouts and an ID check, on Stripe’s own page. It takes about 10 minutes, and Tally never sees those details. Have your EIN (or SSN if you’re a sole owner) and your bank account ready.'+(c.test?' Test mode: Stripe’s page offers test details to fill in, and no real money moves.':'')+'</p>'+go('Connect with Stripe');
+  else if(c.reason==='connect')st='<div class="note"><b>Take card payments with your company’s own Stripe account'+test+'.</b><br><small>Customers’ payments go straight to your Stripe account, and Stripe pays them out to your bank. MoveCrew takes no cut; Stripe’s card fee comes out of each payment.</small></div>'+
+    '<p class="hint">Stripe asks for your business details, the bank account for payouts and an ID check, on Stripe’s own page. It takes about 10 minutes, and MoveCrew never sees those details. Have your EIN (or SSN if you’re a sole owner) and your bank account ready.'+(c.test?' Test mode: Stripe’s page offers test details to fill in, and no real money moves.':'')+'</p>'+go('Connect with Stripe');
   else if(c.reason==='connect-pending'){
     var rejected=/^rejected/.test(cn.disabled||'');
     st=rejected?'<div class="note"><b>Stripe turned this account down, so cards can’t be taken.</b><br><small>Stripe emails the reason. Ask Stripe’s support at support.stripe.com.</small></div>'+btn:
       due.length?'<div class="note"><b>Stripe needs a few more details before cards can be taken.</b></div>'+dueList+go('Continue with Stripe'):
       '<div class="note"><b>Stripe is checking your details.</b><br><small>This usually takes a few minutes, sometimes a day or two. Card payments turn on by themselves when Stripe is done; Stripe emails you if it needs anything.</small></div>'+btn;
   }
-  else if(c.reason==='connect-off')st='<div class="note"><b>Your Stripe account was disconnected from Tally, so cards can’t be taken.</b><br><small>Connecting again sets up a new Stripe account for Tally’s payments. Payments already taken stay in the old one.</small></div>'+go('Connect again');
+  else if(c.reason==='connect-off')st='<div class="note"><b>Your Stripe account was disconnected from MoveCrew, so cards can’t be taken.</b><br><small>Connecting again sets up a new Stripe account for MoveCrew’s payments. Payments already taken stay in the old one.</small></div>'+go('Connect again');
   else if(c.reason==='org-off')st='<div class="note"><b>Stripe is set up, but this company is not turned on for card payments yet.</b><br><small>Add it to the pay_orgs table in Supabase (the payments setup guide shows how).</small></div>'+btn;
   else if(c.reason==='no-key')st='<div class="note"><b>Not connected yet.</b><br><small>Add STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY under Supabase › Edge Functions › Secrets. The payments setup guide walks through it.</small></div>'+btn;
   else st='<div class="note"><b>The payment service did not answer.</b></div>'+btn;
-  return '<section class="card"><h2>Payments</h2>'+st+'<p class="sub">Card numbers never touch Tally. Customers pay on Stripe’s own page or in Stripe’s card box, and only the brand, last four digits, expiry and name of a card kept on file are saved here.</p></section>';
+  return '<section class="card"><h2>Payments</h2>'+st+'<p class="sub">Card numbers never touch MoveCrew. Customers pay on Stripe’s own page or in Stripe’s card box, and only the brand, last four digits, expiry and name of a card kept on file are saved here.</p></section>';
 }
 // Opens a Stripe page the server hands back (Connect sign-up, membership checkout, billing page). In a
 // browser a tab is opened on the tap itself (so it isn't blocked) and the page loads into it; the Android
@@ -7912,16 +7912,16 @@ function stripeOpen(call,st,draw){
   });
 }
 // The owner connects the company's own Stripe account: the server makes it (or picks up the one started
-// before) and hands back Stripe's sign-up page, which opens outside Tally (in the phone's browser in the app).
+// before) and hands back Stripe's sign-up page, which opens outside MoveCrew (in the phone's browser in the app).
 function payConnect(){
   if(pay.conn.busy||!window.tallyPay)return;
   stripeOpen(function(){return window.tallyPay.connect()},pay.conn,function(now){if(now)renderSettings();else softSettings()}).then(function(r){
     if(!r||!r.ok)return;
     if(r.done){toast(r.message||'Your Stripe account is connected.');payLoad(true,true);return}
-    pay.cfgAt=0;   // the first time back in Tally asks again
+    pay.cfgAt=0;   // the first time back in MoveCrew asks again
   });
 }
-// back in Tally from Stripe's page (or after a while away): ask Stripe how the account stands
+// back in MoveCrew from Stripe's page (or after a while away): ask Stripe how the account stands
 document.addEventListener('visibilitychange',function(){
   if(document.hidden||!window.tallyPay||!pay.cfg)return;
   var c=pay.cfg,waiting=pay.conn.wait||(!c.ready&&/^connect/.test(c.reason||''))||(c.connect&&(c.connect.due||[]).length);
@@ -7933,7 +7933,7 @@ document.addEventListener('visibilitychange',function(){
   if(w&&Date.now()-(member.at||0)>4e3)memberLoad(true,true);
 });
 
-/* ---------- the membership each company pays Tally (hosted edition) ----------
+/* ---------- the membership each company pays MoveCrew (hosted edition) ----------
    The server says where the company stands (member_status): a free trial, a membership on Stripe, the
    fee waived or a test company. The owner starts it on Stripe's checkout page and manages the card and
    invoices on Stripe's billing page. Nobody is locked out when a trial ends: the owner is reminded. */
@@ -7966,14 +7966,14 @@ function brandLine(){
 }
 function shortDay(iso){var d=iso?new Date(iso):null;return d&&!isNaN(d)?d.toLocaleDateString('en-US',{month:'short',day:'numeric'}):''}
 function daysLeft(iso){var t=Date.parse(iso||'');return t?Math.max(0,Math.ceil((t-Date.now())/864e5)):0}
-function memberPrice(m){return money((m.price_cents||0)/100)+'/month'+(m.discount_pct>0?' ('+m.discount_pct+'% off '+money((m.list_cents||0)/100)+', from Tally)':'')}
+function memberPrice(m){return money((m.price_cents||0)/100)+'/month'+(m.discount_pct>0?' ('+m.discount_pct+'% off '+money((m.list_cents||0)/100)+', from MoveCrew)':'')}
 // Today, for the owner: a reminder near the end of the trial, after it, or when a payment failed
 function memberNudge(){
   var m=member.st;if(!m||!m.ok||state.ui.role!=='owner'||!m.payments)return '';
   var t='';
   if(m.state==='trial'&&daysLeft(m.trial_ends)<=3)t='Your free trial ends '+(daysLeft(m.trial_ends)<=0?'today':'in '+daysLeft(m.trial_ends)+' day'+(daysLeft(m.trial_ends)===1?'':'s'))+'. Start the membership to keep going: '+memberPrice(m)+'.';
-  else if(m.state==='ended')t='Your free trial has ended. Start the membership to keep using Tally: '+memberPrice(m)+'.';
-  else if(m.state==='past_due')t='Your last Tally membership payment didn’t go through. Update the card on Stripe’s billing page.';
+  else if(m.state==='ended')t='Your free trial has ended. Start the membership to keep using MoveCrew: '+memberPrice(m)+'.';
+  else if(m.state==='past_due')t='Your last MoveCrew membership payment didn’t go through. Update the card on Stripe’s billing page.';
   if(!t)return '';
   return '<div class="note member-nudge"><b>Membership</b><br>'+esc(t)+' <button class="btn sm" data-act="mem:go">Open Membership</button></div>';
 }
@@ -7986,8 +7986,8 @@ function memberCardHtml(){
     (member.wait?'<p class="hint">Done on Stripe’s page? Come back here; this updates by itself.</p>':'')};
   if(!m)body='<p class="hint">Checking…</p>';
   else if(!m.ok)body='<div class="note"><b>The membership service did not answer.</b></div>'+chk;
-  else if(m.state==='test')body='<div class="note"><b>This is a test company.</b><br><small>Tally never charges it a membership. Use it to try things out.</small></div>';
-  else if(m.state==='waived')body='<div class="note"><b>Tally waived your membership.</b><br><small>There’s nothing to pay.</small></div>';
+  else if(m.state==='test')body='<div class="note"><b>This is a test company.</b><br><small>MoveCrew never charges it a membership. Use it to try things out.</small></div>';
+  else if(m.state==='waived')body='<div class="note"><b>MoveCrew waived your membership.</b><br><small>There’s nothing to pay.</small></div>';
   else if(!m.payments)body='<div class="note"><b>'+(m.state==='trial'?'Free trial until '+esc(shortDay(m.trial_ends)):'Your free trial has ended')+'.</b><br><small>Membership payments aren’t switched on yet, so there’s nothing to do.</small></div>';
   else if(m.state==='trial')body='<div class="note"><b>Free trial until '+esc(shortDay(m.trial_ends))+' ('+daysLeft(m.trial_ends)+' day'+(daysLeft(m.trial_ends)===1?'':'s')+' left).</b><br><small>After that, '+esc(memberPrice(m))+'. Start now and the card isn’t charged until the trial ends'+(daysLeft(m.trial_ends)<=2?' (with less than two days left, Stripe starts it today)':'')+'. Cancel any time.</small></div>'+go('mem:start','Start membership');
   else if(m.state==='ended')body='<div class="note"><b>Your free trial ended'+(m.trial_ends?' on '+esc(shortDay(m.trial_ends)):'')+'.</b><br><small>'+esc(memberPrice(m))+'. Cancel any time.</small></div>'+go('mem:start','Start membership');
@@ -7995,7 +7995,7 @@ function memberCardHtml(){
   else if(m.state==='active')body='<div class="note"><b>Membership active: '+esc(memberPrice(m))+'.</b><br><small>'+(m.cancel_at_period_end?'It ends on '+esc(shortDay(m.period_end))+'.':'Renews '+esc(shortDay(m.period_end))+'.')+'</small></div>'+go('mem:portal','Manage billing');
   else if(m.state==='past_due')body='<div class="note"><b>Your last membership payment didn’t go through.</b><br><small>Update the card on Stripe’s billing page; Stripe tries again.</small></div>'+go('mem:portal','Manage billing');
   else body='<div class="note"><b>Membership paused.</b></div>'+go('mem:portal','Manage billing');
-  return '<section class="card"><h2>Membership</h2>'+body+'<p class="sub">What your company pays for Tally. Card details stay with Stripe: changing the card, invoices and cancelling are on Stripe’s own billing page.</p></section>';
+  return '<section class="card"><h2>Membership</h2>'+body+'<p class="sub">What your company pays for MoveCrew. Card details stay with Stripe: changing the card, invoices and cancelling are on Stripe’s own billing page.</p></section>';
 }
 function memberOpen(kind){
   if(member.busy||!window.tallyMember)return;
@@ -8003,16 +8003,16 @@ function memberOpen(kind){
     if(!r)return;
     if(r.ok&&r.done){toast(r.message||'Your membership is set up.');memberLoad(true,true);return}
     if(!r.ok&&r.portal){member.msg='';memberLoad(true,true)}
-    if(r.ok)member.at=0;   // the first time back in Tally asks again
+    if(r.ok)member.at=0;   // the first time back in MoveCrew asks again
   });
 }
 
-/* ---------- Tally admin: every company on Tally (Tally's own admins only) ---------- */
+/* ---------- MoveCrew admin: every company on MoveCrew (MoveCrew's own admins only) ---------- */
 var adm={data:null,loading:null,msg:'',addMsg:'',open:''};
 function adminLoad(){
   if(!window.tallyAdmin)return Promise.resolve(null);
   if(adm.loading)return adm.loading;
-  adm.loading=Promise.resolve(window.tallyAdmin.list()).then(function(r){adm.data=r&&r.ok?r:{ok:false,message:(r&&r.message)||'Tally admin did not answer.'}},function(){adm.data={ok:false,message:'Tally admin did not answer.'}})
+  adm.loading=Promise.resolve(window.tallyAdmin.list()).then(function(r){adm.data=r&&r.ok?r:{ok:false,message:(r&&r.message)||'MoveCrew admin did not answer.'}},function(){adm.data={ok:false,message:'MoveCrew admin did not answer.'}})
     .then(function(){adm.loading=null;if(ui.tab==='admin')renderAdmin();return adm.data});
   return adm.loading;
 }
@@ -8022,7 +8022,7 @@ function admCompany(c){
   var who=c.owners.length?esc(c.owners.join(', ')):c.invited.length?'Waiting for '+esc(c.invited.join(', '))+' to sign in':'No owner yet';
   var st=MSTATE[m.state]||m.state||'';
   var detail=m.state==='trial'?' until '+shortDay(m.trial_ends):m.state==='active'?' '+memberPrice(m):m.state==='trialing'?', billing starts '+shortDay(m.billing_trial_end||m.period_end):'';
-  var cards={platform:'Cards: Tally’s own Stripe account',connected:'Cards: its own Stripe account',connecting:'Cards: Stripe still checking',disconnected:'Cards: Stripe disconnected',none:'Cards: not set up'}[c.cards]||'';
+  var cards={platform:'Cards: MoveCrew’s own Stripe account',connected:'Cards: its own Stripe account',connecting:'Cards: Stripe still checking',disconnected:'Cards: Stripe disconnected',none:'Cards: not set up'}[c.cards]||'';
   var open=adm.open===c.id;
   return '<div class="card adm-co'+(c.test?' is-test':'')+'"><div class="row between" style="align-items:flex-start"><div class="grow"><h3>'+esc(c.name)+(c.test?' <b class="testtag">TEST</b>':'')+'</h3>'+
     '<small>'+who+'</small><br><small>'+esc(st+detail)+' · '+c.members+' '+(c.members===1?'person':'people')+' · since '+esc(shortDay(c.created))+'</small><br><small>'+esc(cards)+'</small>'+(c.cc?'<br><small><b>Call center: on</b></small>':'')+(c.note?'<br><small>Note: '+esc(c.note)+'</small>':'')+'</div>'+
@@ -8036,11 +8036,11 @@ function admCompany(c){
 }
 function renderAdmin(){
   var v=$('#view');
-  if(!isTallyAdmin()){v.innerHTML='<div class="empty"><h3>Tally admin</h3><p>Only Tally’s admins see this.</p></div>';return}
+  if(!isTallyAdmin()){v.innerHTML='<div class="empty"><h3>MoveCrew admin</h3><p>Only MoveCrew’s admins see this.</p></div>';return}
   if(!adm.data&&!adm.loading)adminLoad();
-  var d=adm.data,head='<div class="hero-day"><h1>Tally admin</h1><div class="sub">Every company on Tally. Only Tally’s admins see this.</div></div>';
+  var d=adm.data,head='<div class="hero-day"><h1>MoveCrew admin</h1><div class="sub">Every company on MoveCrew. Only MoveCrew’s admins see this.</div></div>';
   if(!d){v.innerHTML=head+'<p class="hint">Loading…</p>';return}
-  if(!d.ok){v.innerHTML=head+'<div class="note">'+esc(d.message||'Tally admin did not answer.')+' <button class="btn sm" data-act="adm:reload">Try again</button></div>';return}
+  if(!d.ok){v.innerHTML=head+'<div class="note">'+esc(d.message||'MoveCrew admin did not answer.')+' <button class="btn sm" data-act="adm:reload">Try again</button></div>';return}
   var cos=d.companies||[],paying=cos.filter(function(c){return c.member&&c.member.state==='active'}),trial=cos.filter(function(c){return c.member&&/^(trial|trialing)$/.test(c.member.state)});
   var mrr=paying.reduce(function(a,c){return a+(c.member.price_cents||0)},0);
   var p=d.plan||{};
@@ -8050,17 +8050,17 @@ function renderAdmin(){
   var add='<section class="card"><h2>Add a company</h2><p class="sub">For a company you’re signing up yourself. Anyone can also start one in the app, with the free trial.</p><div class="grid2 stack">'+
     fld('Company name','<input id="admName" maxlength="120" autocomplete="off">')+fld('Owner’s email','<input id="admEmail" type="email" autocomplete="off" placeholder="owner@company.com">')+'</div>'+
     '<label class="check"><input type="checkbox" id="admTest"> Test company (never charged)</label><div class="row"><button class="btn primary" data-act="adm:add">Add company</button></div>'+
-    '<p class="hint">The owner goes straight in when they sign in to Tally with that email. Use your own email to be its owner yourself.</p>'+(adm.addMsg?'<p class="hint" role="status">'+esc(adm.addMsg)+'</p>':'')+'</section>';
+    '<p class="hint">The owner goes straight in when they sign in to MoveCrew with that email. Use your own email to be its owner yourself.</p>'+(adm.addMsg?'<p class="hint" role="status">'+esc(adm.addMsg)+'</p>':'')+'</section>';
   v.innerHTML=head+sum+'<div class="secline"><h2>Companies</h2><button data-act="adm:reload">Refresh</button></div>'+(cos.length?cos.map(admCompany).join(''):'<p class="hint">No companies yet.</p>')+admTeam(d)+plan+add;
 }
-// The call center: Tally's own team, who quote and book for the companies switched on above (Richie bills them)
+// The call center: MoveCrew's own team, who quote and book for the companies switched on above (Richie bills them)
 function admTeam(d){
   var on=(d.companies||[]).filter(function(c){return c.cc}).length;
   if(!d.team)return '<section class="card" id="admTeam"><h2>Call center team</h2><p class="sub">Your own people, who quote and book for the companies that buy the call center.</p><div class="note">The database isn’t set up for it yet. Run <b>supabase-callcenter.sql</b> in the Supabase SQL editor, then come back here.</div></section>';
   var rows=d.team.map(function(t){var a='adm:ccrm:'+t.email;
     return '<div class="row between adm-cc" style="align-items:flex-start;gap:8px;padding:8px 0;border-top:1px solid var(--line2)"><div class="grow" style="min-width:0"><b>'+esc(t.name||t.email)+'</b><br><small>'+esc(t.email)+(t.phone?' · '+esc(t.phone):' · no phone yet')+'</small><br><small>'+(t.signedIn?'Signed in':'Hasn’t signed in yet')+'</small></div>'+
       '<button class="btn sm ghost" data-act="adm:ccrm" data-email="'+esc(t.email)+'">'+(ui.armed===a?'Tap again to remove':'Remove')+'</button></div>'}).join('');
-  return '<section class="card" id="admTeam"><h2>Call center team</h2><p class="sub">Your own people. They quote and book for the '+on+' compan'+(on===1?'y':'ies')+' with the call center switched on (Change on a company), and see no other company. They sign in to Tally with the email here.</p>'+
+  return '<section class="card" id="admTeam"><h2>Call center team</h2><p class="sub">Your own people. They quote and book for the '+on+' compan'+(on===1?'y':'ies')+' with the call center switched on (Change on a company), and see no other company. They sign in to MoveCrew with the email here.</p>'+
     (rows||'<p class="hint">Nobody yet.</p>')+
     '<div class="grid2 stack" style="margin-top:8px">'+fld('Name','<input id="admCcName" maxlength="80" autocomplete="off">')+fld('Email they sign in with','<input id="admCcEmail" type="email" autocomplete="off" placeholder="name@yourcallcenter.com">')+fld('Their phone (for calls through a company’s line)','<input id="admCcPhone" type="tel" autocomplete="off" placeholder="512-555-0107">')+'</div>'+
     '<div class="row"><button class="btn primary" data-act="adm:ccadd">Add to the team</button></div>'+(adm.ccMsg?'<p class="hint" role="status">'+esc(adm.ccMsg)+'</p>':'')+'</section>';
@@ -8222,7 +8222,7 @@ function backSrcLine(j,fb){
   if(g.st==='denied')return 'Location is blocked on this phone.'+fall+again;
   if(g.st==='noloc')return 'The phone couldn’t tell where it is.'+fall+again;
   if(g.st==='failed')return esc(g.msg||'The drive back couldn’t be looked up.')+fall+again;
-  if(!canFindShop()&&fb.miSrc==='quote')return (opt('gpsMiles')?'This copy of Tally can’t look up the drive, so this is the quote’s ':'The quote’s ')+qb+' mi from the delivery to the shop. Change it if the drive is different.';
+  if(!canFindShop()&&fb.miSrc==='quote')return (opt('gpsMiles')?'This copy of MoveCrew can’t look up the drive, so this is the quote’s ':'The quote’s ')+qb+' mi from the delivery to the shop. Change it if the drive is different.';
   return (fb.miSrc==='quote'?'The quote’s '+qb+' mi from the delivery to the shop.':fb.miSrc==='gps'?'From the phone’s location.':'Typed in.')+again;
 }
 function backStep(j,f){
@@ -8358,7 +8358,7 @@ function payStepOffline(j){
     c.reason==='no-key'?'Card payments are not set up yet.':c.reason==='org-off'?'Card payments are not turned on for this company yet.':
     c.reason==='connect'?'Card payments aren’t set up for this company yet. The owner connects Stripe in Setup › Payments.':
     c.reason==='connect-pending'?'Stripe is still checking this company’s details, so cards can’t be taken yet.':
-    c.reason==='connect-off'?'This company’s Stripe account was disconnected from Tally, so cards can’t be taken. The owner connects it again in Setup › Payments.':
+    c.reason==='connect-off'?'This company’s Stripe account was disconnected from MoveCrew, so cards can’t be taken. The owner connects it again in Setup › Payments.':
     'The payment service did not answer, so cards can’t be taken right now.';
   return '<h2>'+payTitle(j)+'</h2><div class="note">'+why+' Cash and checks can still be recorded. <button class="btn sm" data-act="pay:retry">Check again</button></div>'+
     payTiles(j)+
@@ -8886,7 +8886,7 @@ document.addEventListener('click',function(e){
     case 'st:additem':var inn=$('#nItName').value.trim(),icf=num($('#nItCf').value);if(!inn||icf<=0){toast('Enter an item name and cubic feet.');break}var itm={id:uid(),name:inn,cf:icf,cat:$('#nItCat').value.trim()||'Other'};if(num($('#nItFee').value)>0)itm.fee=num($('#nItFee').value);S.catalog.push(itm);save();renderSettings();break;
     case 'st:export':var ex=clone(state);ex.draft=blankDraft();if(!$('#expPhotos').checked)ex.jobs.forEach(function(x){x.photos=[]});ui.exportText=JSON.stringify(ex);renderSettings();break;
     case 'st:copy':var box=$('#dataBox');box.select();try{document.execCommand('copy');toast('Copied.')}catch(er){toast('Select the text and copy it.')}break;
-    case 'st:import':try{var p=JSON.parse($('#dataBox').value);if(!p.settings||!Array.isArray(p.jobs))throw 0;p.draft=blankDraft();p.shifts=p.shifts||[];p.vault=p.vault||[];p.chatMsgs=p.chatMsgs||[];p.locs=p.locs||{};p.ui=p.ui||{role:'owner',me:''};p.ui.reads=p.ui.reads||{};p.ui.who=p.ui.who||'';p.ui.theme=state.ui.theme;p.ui.mode=state.ui.mode;var DS=defaultSettings();p.settings.office=p.settings.office||DS.office;p.settings.contacts=p.settings.contacts||{};p.settings.leads=p.settings.leads||[];p.settings.forms=p.settings.forms||DS.forms;p.settings.activities=p.settings.activities||DS.activities;state=p;chat.msgs=state.chatMsgs;chat.locs=state.locs;save();ui.exportText='';render();toast('Imported '+state.jobs.length+' jobs.')}catch(er){toast('That does not look like a Tally export.')}break;
+    case 'st:import':try{var p=JSON.parse($('#dataBox').value);if(!p.settings||!Array.isArray(p.jobs))throw 0;p.draft=blankDraft();p.shifts=p.shifts||[];p.vault=p.vault||[];p.chatMsgs=p.chatMsgs||[];p.locs=p.locs||{};p.ui=p.ui||{role:'owner',me:''};p.ui.reads=p.ui.reads||{};p.ui.who=p.ui.who||'';p.ui.theme=state.ui.theme;p.ui.mode=state.ui.mode;var DS=defaultSettings();p.settings.office=p.settings.office||DS.office;p.settings.contacts=p.settings.contacts||{};p.settings.leads=p.settings.leads||[];p.settings.forms=p.settings.forms||DS.forms;p.settings.activities=p.settings.activities||DS.activities;state=p;chat.msgs=state.chatMsgs;chat.locs=state.locs;save();ui.exportText='';render();toast('Imported '+state.jobs.length+' jobs.')}catch(er){toast('That does not look like a MoveCrew export.')}break;
     case 'st:testpack':if(armed(a)){var tp=testPack(S);state.jobs=state.jobs.concat(tp);save();renderSettings();toast('Added '+tp.length+' test jobs, from last week through three weeks out.')}break;
     case 'st:rmtest':if(armed(a)){var nt0=state.jobs.length;state.jobs=state.jobs.filter(function(x){return !x.test});save();renderSettings();toast('Removed '+(nt0-state.jobs.length)+' test jobs. Your real jobs are untouched.')}break;
     case 'st:demo':if(armed(a)){state.jobs=demoJobs(S);state.shifts=demoShifts();state.demo=true;save();renderSettings();toast('Sample data loaded.')}break;

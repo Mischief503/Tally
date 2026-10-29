@@ -1,4 +1,4 @@
-# Tally — turning on texts and the company line (Twilio)
+# MoveCrew — turning on texts and the company line (Twilio)
 
 No terminal needed. Everything below is done in a browser: Twilio's console, the Supabase
 dashboard, and Netlify Drop. Allow about an hour of clicking, then a wait of days to a few weeks
@@ -36,17 +36,17 @@ US carriers block business texts from unregistered numbers. Calls aren't affecte
   job alerts by text. Customers give us their mobile number when they book and are told we
   will text them on moving day when the crew is on the way."* Make that true: say it when you
   book, or put it on the quote.
-- **Sample messages** (copy from what Tally sends):
+- **Sample messages** (copy from what MoveCrew sends):
   - `Ace Moving: You're on Priya Nair, Sat Oct 4 at 8:00 AM. Pickup 418 Oak St, Austin. Truck Box 1 (26 ft). Lead Marcus. Reply STOP to opt out.`
   - `Ace Moving: Priya Nair moved to Mon Oct 6 at 9:30 AM (was Sat Oct 4 at 8:00 AM).`
   - `Ace Moving: Tomorrow you're on Priya Nair at 8:00 AM (418 Oak St). Please confirm: https://your-tally-site#messages`
   - `Ace Moving: Hi Priya, your crew is on the way and should arrive in about 30 minutes, around 8:35 AM. Reply STOP to opt out.`
   - `Ace Moving TRUCK DOWN: Box 1 (26 ft) is down. Sent by Marcus at 2:14 PM, on the Priya Nair job. "Flat tire" Location: https://maps.google.com/?q=30.26715,-97.74306 (within 12 m). Call Marcus: +15125550101.`
-- Tick that messages include opt-out wording. Tally adds "Reply STOP to opt out." to the first
+- Tick that messages include opt-out wording. MoveCrew adds "Reply STOP to opt out." to the first
   text each number receives, and Twilio handles STOP itself.
 
 Approval usually takes a few days, sometimes two to three weeks. Until then texts may fail with
-error **30034**; Tally shows that on the job's "Calls and texts" log so you can see it.
+error **30034**; MoveCrew shows that on the job's "Calls and texts" log so you can see it.
 
 ## 3. Supabase: the tables
 
@@ -58,7 +58,7 @@ error **30034**; Tally shows that on the job's "Calls and texts" log so you can 
    - `phone_number`: your Twilio number as `+15125550000` (plus sign, country code, no spaces)
    - `enabled`: true
 
-This table is the lock on your Twilio account. Anyone can start a company in Tally, but only a
+This table is the lock on your Twilio account. Anyone can start a company in MoveCrew, but only a
 company with a row here can send a text or place a call — and only you can add rows. A second
 company (the property work) needs its own Twilio number and its own row.
 
@@ -102,14 +102,14 @@ office gets who hasn't confirmed yet.
    - Header: `x-tally-cron` = the same phrase as `TALLY_CRON_SECRET`
 3. Save. It never sends the same person two "tomorrow" texts in one evening, so a test run is safe.
 
-Turn it off any time in Tally › Setup › Texts and calls.
+Turn it off any time in MoveCrew › Setup › Texts and calls.
 
 ## 4c. Distance lookup on quotes (Google Maps)
 
-When both addresses are in on a quote, Tally fills in the driving miles. This needs a Google
+When both addresses are in on a quote, MoveCrew fills in the driving miles. This needs a Google
 key. It doesn't need Twilio, so you can do it on its own.
 
-1. Go to **console.cloud.google.com**, create a project (e.g. "Tally"), and add a billing account
+1. Go to **console.cloud.google.com**, create a project (e.g. "MoveCrew"), and add a billing account
    when asked. Google requires a card even for the free allowance.
 2. **APIs & Services › Library**: search **Routes API** and click **Enable**.
 3. **APIs & Services › Credentials › Create credentials › API key**. Then edit the key and,
@@ -142,7 +142,7 @@ Drag the new `tally-supabase.html` onto your Netlify site (Deploys › drag and 
 before. Your two config lines are blank in the new file, so paste the Project URL and anon key
 back in first (same values as last time).
 
-## 7. In Tally
+## 7. In MoveCrew
 
 **More › Setup › Texts and calls** should now say *Company line (512) 555-0000*.
 
@@ -155,7 +155,7 @@ back in first (same values as last time).
   at the alert).
 
 **Try it:** call the Twilio number from your cell — your office phones should ring and announce
-"Tally call from…". Then open a job, tap Call, choose *Call through the company line*: your
+"MoveCrew call from…". Then open a job, tap Call, choose *Call through the company line*: your
 phone rings from the company number, press 1, and the customer's phone shows the company
 number.
 
@@ -182,5 +182,5 @@ Past jobs, quotes and finished jobs never trigger schedule texts. Every text and
 on the job (job sheet › Calls and texts), with delivery status and any error. Crew see only
 their own entries; owner and dispatch see all of them.
 
-Calls are not recorded. Some states require everyone on a call to agree to recording, and Tally
+Calls are not recorded. Some states require everyone on a call to agree to recording, and MoveCrew
 doesn't ask, so it's left off.

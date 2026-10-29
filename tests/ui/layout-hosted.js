@@ -1,5 +1,5 @@
 // The hosted app's own screens in a real browser (Chromium, like a phone): Membership, Payments, App access,
-// Employees and one employee's file, Texts and calls, the More menu, Tally admin, a job sheet with card
+// Employees and one employee's file, Texts and calls, the More menu, MoveCrew admin, a job sheet with card
 // payments on, a crew lead's Today and My profile, and the company picker. On each one nothing runs off the
 // side, nothing to tap sits under the bars, every button is 36 px or more, and axe-core's colour-contrast
 // rule passes in light and in dark. The hosted build runs against the tests' stand-in Supabase (lib.js) and
@@ -74,7 +74,7 @@ const SCREENS = {
   'an employee’s file': [{}, async (p) => { await more(p, 'settings', 'employees'); await tap(p, '[data-act="emp:open"][data-id="e-marcus"]', 700); }],
   'Setup › Texts and calls': [{}, async (p) => { await more(p, 'settings', 'comms'); }],
   'the More menu': [{}, async (p) => { await tap(p, '[data-act="more:open"]', 400); }],
-  'Tally admin': [{ replies: R({ member_status: ST({ admin: true }) }) }, async (p) => { await more(p, 'admin'); }],
+  'MoveCrew admin': [{ replies: R({ member_status: ST({ admin: true }) }) }, async (p) => { await more(p, 'admin'); }],
   'a job sheet with cards on': [{ replies: R({ pay_config: PAY.ready }) }, async (p) => { await tap(p, '#tabs [data-act="tab"][data-tab="jobs"]', 300); await tap(p, '[data-act="job:open"][data-id="j1"]', 500); await p.evaluate(() => document.querySelectorAll('#sheet details').forEach((d) => { d.open = true; })); }],
   'taking a deposit by card': [{ replies: R({ pay_config: PAY.ready }) }, async (p) => { await tap(p, '#tabs [data-act="tab"][data-tab="jobs"]', 300); await tap(p, '[data-act="job:open"][data-id="j1"]', 500); await p.evaluate(() => { const b = Array.from(document.querySelectorAll('#sheet [data-act="flow:open"]')).find((x) => /Take a payment/.test(x.textContent)); b.click(); }); await sleep(600); }],
   'crew lead Jobs': [{ me: lead }, async () => {}],
@@ -82,8 +82,8 @@ const SCREENS = {
   'crew lead My profile': [{ me: lead }, async (p) => { await tap(p, '[data-act="more:open"]'); await tap(p, '#more [data-act="me:open"]', 700); }],
   'the company picker': [{ org: '', twoOrgs: true }, async () => {}],
 };
-const NARROW = ['Setup › Membership, paying with a discount', 'Setup › Payments, ready', 'Setup › App access, someone asking', 'an employee’s file', 'Tally admin', 'taking a deposit by card', 'the company picker'];
-const AXE_ON = ['Setup › Membership, on trial', 'Setup › Payments, ready', 'Setup › App access, someone asking', 'an employee’s file', 'Tally admin', 'taking a deposit by card', 'the company picker'];
+const NARROW = ['Setup › Membership, paying with a discount', 'Setup › Payments, ready', 'Setup › App access, someone asking', 'an employee’s file', 'MoveCrew admin', 'taking a deposit by card', 'the company picker'];
+const AXE_ON = ['Setup › Membership, on trial', 'Setup › Payments, ready', 'Setup › App access, someone asking', 'an employee’s file', 'MoveCrew admin', 'taking a deposit by card', 'the company picker'];
 
 (async () => {
   const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
@@ -129,7 +129,7 @@ const AXE_ON = ['Setup › Membership, on trial', 'Setup › Payments, ready', '
       } catch (e) { found.push(n + ': ' + String(e).slice(0, 120)); }
       if (p) await p.context().close();
     }
-    ok(!found.length, `a phone set to ${scheme}: Membership, Payments, App access, an employee’s file, Tally admin, a card payment and the company picker pass axe’s colour-contrast rule` + (found.length ? ' (' + found.slice(0, 4).join('; ') + ')' : ''));
+    ok(!found.length, `a phone set to ${scheme}: Membership, Payments, App access, an employee’s file, MoveCrew admin, a card payment and the company picker pass axe’s colour-contrast rule` + (found.length ? ' (' + found.slice(0, 4).join('; ') + ')' : ''));
   }
   ok(!errors.length, 'no page errors' + (errors.length ? ' (' + errors.slice(0, 3).join(' | ') + ')' : ''));
   await b.close();

@@ -39,7 +39,7 @@ function seed(opts = {}) {
     __noDocPatch: !!opts.noDocPatch,
   };
 }
-// a fake Stripe.js that records what Tally asks of it
+// a fake Stripe.js that records what MoveCrew asks of it
 function fakeStripe(log, ctl) {
   return (w) => {
     w.Stripe = function (pk) {
@@ -101,7 +101,7 @@ const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
   const chipNames = $$('#flow [data-act="flow:method"]').map((c) => c.textContent).join('|');
   ok(chipNames === 'Card on file|Pay link|Card|Cash or check', 'four ways to pay: ' + chipNames);
   ok($('#flow [data-act="flow:method"][data-m="vault"]').classList.contains('on') && $$('#flow input[name=vaultPick]').length === 1 && $('#flow input[name=vaultPick]').checked && /Visa ending 4242 · Lena Wu exp 03\/30 · kept on this job/.test(flowText()) && !/1111/.test(flowText()), 'the card Lena kept on this job is picked first, with the name on it; the old demo card (last four only) is not offered');
-  ok(!/Bank \(ACH\)|Card number/.test(flowText()), 'no fields for card or bank numbers anywhere in Tally');
+  ok(!/Bank \(ACH\)|Card number/.test(flowText()), 'no fields for card or bank numbers anywhere in MoveCrew');
 
   // ---- the owner's Ways to pay switches (Setup › Options › Payments)
   {

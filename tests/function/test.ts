@@ -1,4 +1,4 @@
-// Harness for the Tally Twilio Edge Function: an in-memory PostgREST, a fake Twilio and a fake auth server.
+// Harness for the MoveCrew Twilio Edge Function: an in-memory PostgREST, a fake Twilio and a fake auth server.
 // deno-lint-ignore-file no-explicit-any
 (globalThis as any).__TALLY_TEST = true;
 Deno.env.set("SUPABASE_URL", "https://proj.supabase.co");
@@ -315,7 +315,7 @@ for (let i = 0; i < 25; i++) DB.comm_log.push({ id: nextId++, org_id: ORG, chann
 r = await app("tok-dispatch", { action: "call", org: ORG, jobId: "j1" });
 ok(r.body.ok === false && /a lot of calls/.test(r.body.message), "runaway calling is capped per hour");
 
-// the call center (Oct 22): Tally's own team, for the companies with the service; customers on open quotes
+// the call center (Oct 22): MoveCrew's own team, for the companies with the service; customers on open quotes
 // and on the schedule, the jobs it can see
 putDoc(ORG, "jobs/q1", job("q1", { status: "quoted", assign: { truckId: "", crew: [] } }));
 putDoc(ORG, "jobs/d1", job("d1", { status: "done" }));
@@ -325,7 +325,7 @@ ok(r.status === 401, "on the team, but the company hasn't the service: the serve
 DB.cc_orgs.push({ org_id: ORG });
 n0 = sent.length;
 r = await app("tok-jess", { action: "call", org: ORG, jobId: "q1" });
-ok(r.body.ok === false && /Tally admin adds your phone number/.test(r.body.message) && sent.length === n0, "switched on: with no phone of hers on the team list, the company line can't ring her (and says how to fix it)");
+ok(r.body.ok === false && /MoveCrew admin adds your phone number/.test(r.body.message) && sent.length === n0, "switched on: with no phone of hers on the team list, the company line can't ring her (and says how to fix it)");
 DB.tally_cc_team[0].phone = "512-555-0107";
 r = await app("tok-jess", { action: "call", org: ORG, jobId: "q1" });
 ok(r.body.ok && sent.length === n0 + 1 && sent[sent.length - 1].To === "+15125550107", "the call center calls a customer on an open quote through the company line (her phone from the team list)");
@@ -366,7 +366,7 @@ const inRow = DB.comm_log.find((x) => x.sid === "CAin1")!;
 ok(inRow && inRow.job_id && inRow.party === 'Priya “P” Nair' && inRow.direction === "in", "callback matched to the customer's job");
 ok(/<Dial callerId="\+15125550000" timeout="22" action="[^"]*after\?log=\d+">(<Number url="[^"]*whisper[^"]*">\+1512555(0100|0199)<\/Number>){2}<\/Dial>/.test(h.text), "callback rings the office phones, not the mover");
 h = await hook("whisper?log=" + inRow.id, { To: "+15125550100" });
-ok(/Tally call from Priya/.test(h.text), "office hears who is calling before picking up");
+ok(/Move Crew call from Priya/.test(h.text), "office hears who is calling before picking up");
 n0 = sent.length;
 h = await hook("after?log=" + inRow.id, { DialCallStatus: "no-answer", To: "+15125550000", From: "+15125550142" });
 ok(/will call you right back/.test(h.text) && DB.comm_log.find((x) => x.id === inRow.id)!.status === "missed", "nobody answered: caller told, call logged missed");
@@ -409,7 +409,7 @@ n0 = sent.length;
 r = await app("tok-marcus", { action: "eta", org: ORG, jobId: "j7", minutes: 25 });
 const eta = sent[sent.length - 1];
 ok(r.body.ok && sent.length - n0 === 1 && eta.To === "+15125550142" && eta.From === "+15125550000", "arrival text goes to the customer from the company line");
-ok(/^Ace Moving - Austin: Hi Priya, your crew is on the way and should arrive in about 25 minutes, around \d{1,2}:\d\d [AP]M\./.test(eta.Body), "arrival text reads right: " + eta.Body);
+ok(/^Ace Moving - Austin: Hi Priya, your move crew is on the way and should arrive in about 25 minutes, around \d{1,2}:\d\d [AP]M\./.test(eta.Body), "arrival text reads right: " + eta.Body);
 ok(/^[\x20-\x7E]*$/.test(eta.Body), "arrival text is plain characters");
 const etaRow = DB.comm_log.find((x) => x.sid === eta.sid)!;
 ok(etaRow.purpose === "eta" && etaRow.job_id === "j7" && etaRow.staff === "Marcus" && /Priya/.test(etaRow.party), "logged on the job, by Marcus, to the customer");
@@ -420,7 +420,7 @@ r = await app("tok-kim", { action: "eta", org: ORG, jobId: "j7", minutes: 25 });
 ok(!r.body.ok && /your own jobs/.test(r.body.message), "crew not on the job cannot text the customer");
 putDoc(ORG, "jobs/j8", job("j8", { status: "active", d: { ...job("j8").d, name: "Hollis & Reed Law" } }));
 r = await app("tok-dispatch", { action: "eta", org: ORG, jobId: "j8", minutes: 999 });
-ok(/Hello, your crew is on the way and should arrive in about 240 minutes/.test(sent[sent.length - 1].Body), "business names get Hello, and minutes are capped");
+ok(/Hello, your move crew is on the way and should arrive in about 240 minutes/.test(sent[sent.length - 1].Body), "business names get Hello, and minutes are capped");
 putDoc(ORG, "jobs/j9", job("j9", { status: "active", d: { ...job("j9").d, phone: "" } }));
 r = await app("tok-dispatch", { action: "eta", org: ORG, jobId: "j9", minutes: 20 });
 ok(!r.body.ok && /no customer phone/.test(r.body.message), "no customer phone: clear message");
@@ -441,7 +441,7 @@ putDoc(ORG, "org/settings", settings);
 putDoc(ORG, "jobs/c1", job("c1", { assign: { truckId: "t26", crew: ["Marcus"] } }));
 n0 = sent.length;
 await app("tok-dispatch", { action: "job", org: ORG, jobId: "c1" }, "https://ace.netlify.app");
-ok(sent.length - n0 === 1 && /Confirm in Tally: https:\/\/ace\.netlify\.app#messages/.test(sent[sent.length - 1].Body), "assignment text links to Job messages: " + sent[sent.length - 1].Body);
+ok(sent.length - n0 === 1 && /Confirm in MoveCrew: https:\/\/ace\.netlify\.app#messages/.test(sent[sent.length - 1].Body), "assignment text links to Job messages: " + sent[sent.length - 1].Body);
 putDoc(ORG, "jobs/c1", job("c1", { assign: { truckId: "t26", crew: ["Marcus"] }, d: { ...job("c1").d, time: "10:00" } }));
 await app("tok-dispatch", { action: "job", org: ORG, jobId: "c1" }, "https://ace.netlify.app");
 ok(/moved to .* Confirm the new time: https:\/\/ace\.netlify\.app#messages$/.test(sent[sent.length - 1].Body), "a moved job asks to confirm the new time");
@@ -649,7 +649,7 @@ ok(r.body.number === "+15125550000" && r.body.twilio === true, "line check repor
   ok(r.body.ok && r.body.sent === 2 && JSON.stringify(r.body.names) === '["Owner","Dispatch"]', "Marcus's alert texts the office");
   const t1 = texts(n0);
   ok(t1.map((s) => s.To).sort().join() === "+15125550100,+15125550199" && t1.every((s) => s.From === "+15125550000"), "both office phones, from the company line");
-  ok(/^Ace Moving - Austin TRUCK DOWN: Box 1 \(26 ft\) is down\. Sent by Marcus at \d{1,2}:\d{2} [AP]M, on the Priya Nair job\. "Flat tire, rear left" Location: https:\/\/maps\.google\.com\/\?q=30\.26715,-97\.74306 \(within 12 m\)\. Call Marcus: \+15125550101\. Live in Tally: https:\/\/tally\.example\.com\/app\/#sos/.test(t1[0].Body),
+  ok(/^Ace Moving - Austin TRUCK DOWN: Box 1 \(26 ft\) is down\. Sent by Marcus at \d{1,2}:\d{2} [AP]M, on the Priya Nair job\. "Flat tire, rear left" Location: https:\/\/maps\.google\.com\/\?q=30\.26715,-97\.74306 \(within 12 m\)\. Call Marcus: \+15125550101\. Live in MoveCrew: https:\/\/tally\.example\.com\/app\/#sos/.test(t1[0].Body),
     "the text says which truck, who, when, the job, the note, where, and how to reach them: " + t1[0].Body);
   ok(!/evil/.test(t1[0].Body), "the link is the company's own app address, never one the phone sent");
   ok(t1.every((s) => /^[\x20-\x7E]*$/.test(s.Body)), "plain characters only");
@@ -680,7 +680,7 @@ ok(r.body.number === "+15125550000" && r.body.twilio === true, "line check repor
   putDoc(ORG, "chat/sa2", sos("sa2", { text: "", loc: null }));
   n0 = sent.length;
   r = await step("tok-marcus", "sa2", "start");
-  ok(r.body.sent === 2 && / is down\. Sent by Marcus at [^.]*\. No location yet\. Call Marcus: \+15125550101\. Live in Tally: \S+#sos( Reply STOP to opt out\.)?$/.test(texts(n0)[0].Body), "no note and no location yet: the text says so: " + texts(n0)[0].Body);
+  ok(r.body.sent === 2 && / is down\. Sent by Marcus at [^.]*\. No location yet\. Call Marcus: \+15125550101\. Live in MoveCrew: \S+#sos( Reply STOP to opt out\.)?$/.test(texts(n0)[0].Body), "no note and no location yet: the text says so: " + texts(n0)[0].Body);
   putDoc(ORG, "chat/sa2", sos("sa2", { text: "", loc: null, end: { by: "Marcus", ts: Date.now() } }));
   n0 = sent.length;
   r = await step("tok-dispatch", "sa2", "end");
@@ -825,7 +825,7 @@ ok(r.body.number === "+15125550000" && r.body.twilio === true, "line check repor
   putDoc(ORG, "chat/sc1", sos("sc1"));
   n0 = sent.length;
   r = await step("tok-marcus", "sc1", "start", {}, "https://evil.example.com");
-  ok(r.body.sent === 2 && texts(n0).length === 2 && texts(n0).every((s) => !/Live in Tally|evil/.test(s.Body)), "with no app address in Setup the text has no link, whatever address the phone sends");
+  ok(r.body.sent === 2 && texts(n0).length === 2 && texts(n0).every((s) => !/Live in MoveCrew|evil/.test(s.Body)), "with no app address in Setup the text has no link, whatever address the phone sends");
   putDoc(ORG, "org/settings", appSettings);
 
   // no company line

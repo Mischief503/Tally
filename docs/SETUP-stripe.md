@@ -1,12 +1,12 @@
-# Card payments in Tally (Stripe)
+# Card payments in MoveCrew (Stripe)
 
-Tally takes real card payments three ways. All of them run through Stripe, and card numbers never
-touch Tally:
+MoveCrew takes real card payments three ways. All of them run through Stripe, and card numbers never
+touch MoveCrew:
 
 | | How it works | Good for |
 |---|---|---|
-| **Pay link** | Tally makes a secure Stripe page for the amount. The customer opens it from a text or by scanning a QR code on the crew's screen, then pays with Apple Pay, Google Pay or a card. | Paying at the end of the move, deposits when you book |
-| **Card** | Stripe's own card box inside Tally. The crew types the card the customer hands over. | A customer without a phone handy |
+| **Pay link** | MoveCrew makes a secure Stripe page for the amount. The customer opens it from a text or by scanning a QR code on the crew's screen, then pays with Apple Pay, Google Pay or a card. | Paying at the end of the move, deposits when you book |
+| **Card** | Stripe's own card box inside MoveCrew. The crew types the card the customer hands over. | A customer without a phone handy |
 | **Card on file** | A card the customer agreed to keep on file (ticked on a pay link or a typed card) is charged again for the rest of the bill. | The balance after the move, when a deposit was paid by link |
 
 Cash and checks are recorded the same way as before.
@@ -18,13 +18,13 @@ and every phone shows it. A finished job moves to **Paid** when the balance reac
 
 - The database parts: the payments tables, the ledger and the safe-merge function.
 - A company listed in **Supabase › Table Editor › pay_orgs** (with enabled on) takes cards
-  straight into your own Stripe account. Anyone can start a company in Tally, so this list is what
+  straight into your own Stripe account. Anyone can start a company in MoveCrew, so this list is what
   keeps a stranger's company from charging cards into your account. Since October 10 none is on:
   your **Live company trst** is a test company and connects its own Stripe account like the others.
-- Every other company connects **its own** Stripe account from Tally (Stripe Connect, below). Its
-  customers' money goes to that company, not to you, and Tally takes no cut.
+- Every other company connects **its own** Stripe account from MoveCrew (Stripe Connect, below). Its
+  customers' money goes to that company, not to you, and MoveCrew takes no cut.
 - Companies pay you a monthly **membership** through the same Stripe account: see `MEMBERSHIP.md`
-  (Setup › Membership for owners, More › Tally admin for you).
+  (Setup › Membership for owners, More › MoveCrew admin for you).
 
 ## What you do: two keys into Supabase
 
@@ -40,11 +40,11 @@ and every phone shows it. A finished job moves to **Paid** when the balance reac
 
    Paste them into Supabase, not into a chat.
 
-That's all. The first time anyone starts a payment, Tally sets up its own Stripe webhook (it shows
-up in Stripe under **Developers › Webhooks** as *Tally payments*) and keeps its signing secret where
+That's all. The first time anyone starts a payment, MoveCrew sets up its own Stripe webhook (it shows
+up in Stripe under **Developers › Webhooks** as *MoveCrew payments*) and keeps its signing secret where
 only the server can read it.
 
-**Check it:** in Tally, **Setup › Payments** should say *Stripe is connected (test mode)*.
+**Check it:** in MoveCrew, **Setup › Payments** should say *Stripe is connected (test mode)*.
 
 ## Try it with test cards
 
@@ -64,7 +64,7 @@ deposit link keeps the card on file for the balance. Before the move, **Take a p
 has a **Deposit** button and a **Whole balance** button that fill in the amount, and a booked job
 whose deposit hasn't come in shows under **Needs you** on Today and as **No deposit yet** on Jobs.
 
-## How Tally keeps a customer from being charged twice
+## How MoveCrew keeps a customer from being charged twice
 
 - **The server decides what is owed**, from the job and its own record of every Stripe payment.
   A phone can't ask for more than that.
@@ -104,9 +104,9 @@ line comes off again. Answer disputes in Stripe (**Payments › Disputes**).
 
 ## Other companies: their own Stripe account (Connect)
 
-Your Stripe account is the *platform*: Tally uses your keys to set up each company's own Stripe
+Your Stripe account is the *platform*: MoveCrew uses your keys to set up each company's own Stripe
 account and to take payments on it for them. The money lands in the company's account, Stripe pays
-it out to the company's bank, and Stripe's card fee comes out of each payment. Tally takes no cut
+it out to the company's bank, and Stripe's card fee comes out of each payment. MoveCrew takes no cut
 (companies pay you the membership instead). Refunds, disputes and payouts are the company's own, in
 its own Stripe Dashboard at dashboard.stripe.com.
 
@@ -115,15 +115,15 @@ its own Stripe Dashboard at dashboard.stripe.com.
 1. **Setup › Payments › Connect with Stripe.** Stripe's own sign-up page opens (in the phone's
    browser in the Android app).
 2. On Stripe's page: the business details, the bank account for payouts, and an ID check. About ten
-   minutes. Tally never sees any of it. Have the EIN (or SSN for a sole owner) and the bank account
+   minutes. MoveCrew never sees any of it. Have the EIN (or SSN for a sole owner) and the bank account
    ready.
-3. Back in Tally, **Setup › Payments** shows where it stands: what Stripe still needs (in plain
+3. Back in MoveCrew, **Setup › Payments** shows where it stands: what Stripe still needs (in plain
    words, with **Continue with Stripe**), *Stripe is checking your details*, and then
    *Card payments go to your own Stripe account*. It updates by itself when the owner comes back
    from Stripe, and when Stripe finishes checking.
 
 Until then the payment screen offers cash and checks, and says the owner connects Stripe in Setup.
-If a company disconnects Tally in its Stripe Dashboard, cards stop and Setup says so, with
+If a company disconnects MoveCrew in its Stripe Dashboard, cards stop and Setup says so, with
 **Connect again** (that sets up a new Stripe account; old payments stay in the old one and their
 refunds still show on the jobs).
 
@@ -131,22 +131,22 @@ refunds still show on the jobs).
 
 - **Sandbox (test keys): done October 10.** Connect is set up in the *Massive Art ENT. sandbox*
   (direct charges, Stripe collects its fees from the companies and covers losses, companies use the
-  full Stripe Dashboard). Tally makes a second webhook for the companies' accounts by itself
-  (*Tally payments (companies' own Stripe accounts)*).
+  full Stripe Dashboard). MoveCrew makes a second webhook for the companies' accounts by itself
+  (*MoveCrew payments (companies' own Stripe accounts)*).
 - **Live, before another company takes real cards:** Stripe › **Settings › Connect › Platform
-  profile › View onboarding**, and answer Stripe's questions about Tally as a platform (it starts
+  profile › View onboarding**, and answer Stripe's questions about MoveCrew as a platform (it starts
   with sales tax). Add your branding under **Settings › Connect › Onboarding interface** (name,
-  icon, color) so companies see Tally on Stripe's sign-up page. If you use a restricted live key,
+  icon, color) so companies see MoveCrew on Stripe's sign-up page. If you use a restricted live key,
   it also needs Stripe's Connect permissions for accounts and account links.
 
 **Try it in the sandbox:**
 
-1. In Tally, start a second company (any name; you're its owner).
+1. In MoveCrew, start a second company (any name; you're its owner).
 2. In that company: **Setup › Payments › Connect with Stripe**.
 3. Stripe's sandbox page usually offers test details to fill in. If it asks: phone code `000000`,
    SSN `000-00-0000`, address line 1 `address_full_match`, bank routing `110000000` and account
    `000123456789`.
-4. Back in Tally, **Setup › Payments** should turn to *Card payments go to your own Stripe account
+4. Back in MoveCrew, **Setup › Payments** should turn to *Card payments go to your own Stripe account
    (test mode)*. Take a test card payment on one of that company's jobs: it shows in the sandbox
    under **Connect › Connected accounts ›** the company › **Payments**, not in your own payments.
 
@@ -170,11 +170,11 @@ again and a job marked Paid goes back to Complete. The card box on the crew's ph
    - Disputes: **Read**
    - Webhook Endpoints: **Write**
 3. In Supabase, replace `STRIPE_SECRET_KEY` with the restricted key (`rk_live_…`) and
-   `STRIPE_PUBLISHABLE_KEY` with the live publishable key (`pk_live_…`). Tally makes a separate
+   `STRIPE_PUBLISHABLE_KEY` with the live publishable key (`pk_live_…`). MoveCrew makes a separate
    webhook for live mode the first time a live payment starts.
 
 Tip: make the same restricted key in test mode first (`rk_test_…`), put it in Supabase, and run the
-test cards once more. If Tally says *The Stripe key is missing a permission*, the request that failed
+test cards once more. If MoveCrew says *The Stripe key is missing a permission*, the request that failed
 shows in Stripe under **Developers › Logs**, with the permission it needed.
 
 Once the live keys are in, test payments stop counting toward any bill (they show as *· test*),
@@ -194,5 +194,5 @@ payments **0.8% capped at $5**, and **$15** per dispute (returned if you win). N
 - **Connect with Stripe** shows Stripe's reason when Stripe says no (for example, that your
   platform questions aren't answered yet in live mode).
 - Server log: Supabase › Edge Functions › **tally-twilio** › Logs.
-- Stripe's side: **Developers › Webhooks › Tally payments** shows every event and whether Tally took
+- Stripe's side: **Developers › Webhooks › MoveCrew payments** shows every event and whether MoveCrew took
   it. If you ever delete that webhook, the next payment that starts makes a new one.

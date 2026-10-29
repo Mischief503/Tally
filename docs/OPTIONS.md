@@ -18,7 +18,7 @@ the old notes, tallies, photos and settings are still there.
 |---|---|
 | Arrival text at Start job | **Start job** just starts the clock; no text to the customer. |
 | Crew confirm their jobs | No **Confirm I'll be there**. Job messages lists the jobs as Booked, texts stop asking to confirm, the evening text is a plain reminder, the office summary leaves confirmations out, and **Remind** is refused. |
-| Load tally | No Tally on the job card or on Today. |
+| Load tally | No MoveCrew on the job card or on Today. |
 | Quick updates | No *On my way* / *Arrived at pickup* buttons on the job card. |
 | Crew members can call the customer | No Call button for crew members. Leads and the office always have it. |
 | Crew add materials and costs | Nothing on the job card to add materials or costs with. Materials the office put on the job still show there, to read. The office can still add them on the job sheet. |

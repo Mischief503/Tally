@@ -261,7 +261,7 @@ ok(!r.body.ok && /The owner connects Stripe in Setup › Payments/.test(r.body.m
 r = await app("tok-richie", { action: "pay_config", org: RICH });
 ok(r.body.ready && r.body.account === "" && r.body.via === "platform" && r.body.publishableKey === "pk_test_platform", "Richie's own company is on the platform's account, as before");
 r = await app("tok-richie", { action: "pay_connect", org: RICH });
-ok(!r.body.ok && /already takes card payments on Tally's own Stripe account/.test(r.body.message), "and has nothing to connect");
+ok(!r.body.ok && /already takes card payments on MoveCrew's own Stripe account/.test(r.body.message), "and has nothing to connect");
 
 /* ---------- the owner connects ---------- */
 r = await app("tok-ana-dispatch", { action: "pay_connect", org: BLUE });
@@ -277,7 +277,7 @@ ok(mk.body.configuration.merchant.capabilities.card_payments.requested === true 
 ok(mk.body.display_name === "Blue Moving" && mk.body.contact_email === "ana@bluemoving.example", "named for the company, with the owner's email filled in");
 ok(/^tally-acct-33333333-3333-3333-3333-333333333333-test-0$/.test(mk.idem), "made with a key that makes a double tap harmless");
 const lk = last("/v2/core/account_links");
-ok(lk.body.use_case.type === "account_onboarding" && lk.body.use_case.account_onboarding.configurations.join() === "merchant" && lk.body.use_case.account_onboarding.return_url === BASE + "/connect/done" && lk.body.use_case.account_onboarding.refresh_url === BASE + "/connect/again", "the sign-up link comes back to Tally's own pages");
+ok(lk.body.use_case.type === "account_onboarding" && lk.body.use_case.account_onboarding.configurations.join() === "merchant" && lk.body.use_case.account_onboarding.return_url === BASE + "/connect/done" && lk.body.use_case.account_onboarding.refresh_url === BASE + "/connect/again", "the sign-up link comes back to MoveCrew's own pages");
 const A1 = acctOfBlue();
 ok(/^acct_/.test(A1) && DB.pay_accounts.length === 1 && DB.pay_accounts[0].is_current === true && DB.pay_accounts[0].livemode === false && DB.pay_accounts[0].created_by === "Ana", "the account is kept for the company, in test mode");
 const ch = ST.hooks.find((w: any) => w.connect);
@@ -285,9 +285,9 @@ ok(ch && ch.url === BASE + "/stripe/connect" && ch.enabled_events.indexOf("accou
 r = await app("tok-ana", { action: "pay_connect", org: BLUE });
 ok(r.body.ok && acctOfBlue() === A1 && DB.pay_accounts.length === 1 && Object.keys(ST.accounts).length === 1, "pressing it again picks up the same account with a fresh link");
 let g = await getUrl("/connect/done");
-ok(g.status === 200 && /Go back to Tally: Setup › Payments shows when Stripe has finished/.test(g.text), "Stripe's return page says what's next");
+ok(g.status === 200 && /Go back to MoveCrew: Setup › Payments shows when Stripe has finished/.test(g.text), "Stripe's return page says what's next");
 g = await getUrl("/connect/again");
-ok(g.status === 200 && /expired or was already used/.test(g.text) && /Continue with Stripe/.test(g.text), "an old sign-up link says to start again from Tally (it can't make one: that would need the owner signed in)");
+ok(g.status === 200 && /expired or was already used/.test(g.text) && /Continue with Stripe/.test(g.text), "an old sign-up link says to start again from MoveCrew (it can't make one: that would need the owner signed in)");
 
 /* ---------- waiting on Stripe ---------- */
 r = await app("tok-ana", { action: "pay_config", org: BLUE });
@@ -321,7 +321,7 @@ ok(r.body.ok && /\/p\/[A-Za-z0-9]{10}$/.test(r.body.url), "the lead makes a pay 
 const pay = calls.slice(before).filter((c) => /customers|checkout\/sessions|payment_intents/.test(c.path));
 ok(pay.length >= 2 && pay.every((c) => c.acct === A1), "the customer and the Stripe page are made on Blue Moving's own account (" + pay.map((c) => c.path + "@" + c.acct).join(", ") + ")");
 const cs = last("/v1/checkout/sessions");
-ok(cs.acct === A1 && !Object.keys(cs.p).some((k) => /application_fee/.test(k)), "Tally takes no cut of the payment");
+ok(cs.acct === A1 && !Object.keys(cs.p).some((k) => /application_fee/.test(k)), "MoveCrew takes no cut of the payment");
 const link = DB.pay_links.find((l) => l.job_id === "b1");
 ok(link && link.account === A1, "the pay link remembers its account");
 g = await getUrl("/p/" + link.token);
@@ -359,7 +359,7 @@ ok(!r.body.ok && /kept on file on a different Stripe account/.test(r.body.messag
 card.account = A1;
 
 /* ---------- only Blue Moving's account writes to Blue Moving ---------- */
-// another company's Stripe account (connected to Tally too) sends a payment that claims to be Blue's or Richie's
+// another company's Stripe account (connected to MoveCrew too) sends a payment that claims to be Blue's or Richie's
 ST.accounts.acct_1Rogue0000 = { id: "acct_1Rogue0000", charges: true, due: [] };
 DB.pay_accounts.push({ account_id: "acct_1Rogue0000", org_id: "44444444-4444-4444-4444-444444444444", livemode: false, is_current: true, charges_enabled: true, due: [] });
 DB.orgs.push({ id: "44444444-4444-4444-4444-444444444444" });
@@ -380,11 +380,11 @@ ok(ST.hooks.some((w: any) => !w.connect && w.url === BASE + "/stripe"), "with th
 
 /* ---------- disconnected in Stripe, then connected again ---------- */
 h = await hook("/stripe/connect", { id: "evt_d1", type: "account.application.deauthorized", livemode: false, account: A1, data: { object: { id: "ca_x", object: "application" } } }, secretOf("pay_config_connect"));
-ok(h.status === 200 && DB.pay_accounts.find((a) => a.account_id === A1).charges_enabled === false, "the company disconnected Tally in its Stripe dashboard: cards stop");
+ok(h.status === 200 && DB.pay_accounts.find((a) => a.account_id === A1).charges_enabled === false, "the company disconnected MoveCrew in its Stripe dashboard: cards stop");
 r = await app("tok-ana", { action: "pay_config", org: BLUE });
 ok(r.body.ready === false && r.body.reason === "connect-off" && r.body.connect.state === "disconnected", "the owner sees it was disconnected");
 r = await app("tok-ana-lead", { action: "pay_link", org: BLUE, jobId: "b2", amount: 100 });
-ok(!r.body.ok && /disconnected from Tally/.test(r.body.message), "a payment says why");
+ok(!r.body.ok && /disconnected from MoveCrew/.test(r.body.message), "a payment says why");
 ST.accounts[A1].gone = true;
 r = await app("tok-ana", { action: "pay_connect", org: BLUE });
 const A2 = acctOfBlue();

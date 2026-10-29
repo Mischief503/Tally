@@ -1,4 +1,4 @@
-// The full UI check (Oct 15, for "double and triple check everything"): a walk through every screen of Tally,
+// The full UI check (Oct 15, for "double and triple check everything"): a walk through every screen of MoveCrew,
 // for every role (about 90 states), with checks on each: sideways overflow, text cut off, small tap targets,
 // buttons covered by the fixed bars, duplicate ids, unnamed controls, page errors, and axe-core's WCAG 2.1 AA
 // rules (contrast included). A screenshot of each screen, a screen-height at a time, for looking at by eye.

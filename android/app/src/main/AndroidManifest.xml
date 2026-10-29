@@ -11,7 +11,7 @@
     <uses-feature android:name="android.hardware.location" android:required="false" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
-    <!-- the phone apps Tally hands off to: dialer, messages, maps, browser, camera, file picker -->
+    <!-- the phone apps MoveCrew hands off to: dialer, messages, maps, browser, camera, file picker -->
     <queries>
         <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="tel" /></intent>
         <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="sms" /></intent>
@@ -24,9 +24,9 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="Tally"
+        android:label="MoveCrew"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Tally">
+        android:theme="@style/Theme.MoveCrew">
 
         <activity
             android:name=".MainActivity"

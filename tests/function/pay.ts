@@ -759,7 +759,7 @@ ok(r.body.ok && lastCall("/v1/checkout/sessions").p["payment_intent_data[metadat
 r = await app("tok-marcus", { action: "pay_forget", org: ORG, vaultId: CARD_OK2 });
 ok(r.status === 403, "a crew lead can't remove cards on file");
 r = await app("tok-owner", { action: "pay_forget", org: ORG, vaultId: CARD_OK2 });
-ok(r.body.ok && ST.detached.indexOf("pm_ok2") >= 0 && ST.detached.indexOf("pm_ok") >= 0 && DB.pay_cards.filter((x) => x.fingerprint === "fpA").every((x) => !x.pm_id) && !doc("vault/" + CARD_OK2), "the office removes it: taken off the customer in Stripe and off Tally's list");
+ok(r.body.ok && ST.detached.indexOf("pm_ok2") >= 0 && ST.detached.indexOf("pm_ok") >= 0 && DB.pay_cards.filter((x) => x.fingerprint === "fpA").every((x) => !x.pm_id) && !doc("vault/" + CARD_OK2), "the office removes it: taken off the customer in Stripe and off MoveCrew's list");
 r = await app("tok-owner", { action: "pay_saved", org: ORG, jobId: "j10", vaultId: CARD_OK2, amount: 10 });
 ok(!r.body.ok && /can't be charged here/.test(r.body.message), "and it can't be charged again");
 PMS.pm_ok2.customer = PRIYA();   // even if Stripe still had it attached

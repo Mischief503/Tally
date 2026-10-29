@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make the Tally website: the app your customers open on their phones (and anyone can use in a browser).
+"""Make the MoveCrew website: the app your customers open on their phones (and anyone can use in a browser).
 
 - Copies web/ (the app, its web manifest, the offline helper and the icons) into _site/.
 - Puts your Supabase details in: the repository variables TALLY_SUPABASE_URL and TALLY_SUPABASE_ANON_KEY when set

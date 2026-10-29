@@ -1,31 +1,31 @@
 # The call center
 
-A service Tally sells to moving companies: Tally's own call center team answers for them, quotes
+A service MoveCrew sells to moving companies: MoveCrew's own call center team answers for them, quotes
 their customers and books jobs onto their schedules. Richie's words (Oct 22, 2026): "Call center is a
 service that the moving companys will be able to purchase to help get bookings . So call center will
 only be able to see companys that pay for that service ."
 
-- The team is **Tally's own people**, not a company's employees. A company can also have **its own call
+- The team is **MoveCrew's own people**, not a company's employees. A company can also have **its own call
   center people** (since Oct 28): the Call center switch on an employee's profile (below).
-- **Tally admin switches the service on** for each company that buys it. Richie bills the companies
+- **MoveCrew admin switches the service on** for each company that buys it. Richie bills the companies
   himself; nothing in the app charges for it.
 - The team sees **only the companies switched on**, and of those only what quoting and booking need.
-- Phone calls to a company's Tally line are left as they are for now (companies send their calls to
+- Phone calls to a company's MoveCrew line are left as they are for now (companies send their calls to
   the call center themselves).
 
 ## Setting it up (hosted app)
 
 1. Run `supabase/sql/supabase-callcenter.sql` once in the Supabase SQL editor (after
-   `supabase-schema-v2.sql` and `supabase-payments.sql`; it's safe to run again). Until then, Tally
+   `supabase-schema-v2.sql` and `supabase-payments.sql`; it's safe to run again). Until then, MoveCrew
    admin's Call center team section says so. (Since Oct 25 its rate card copy also counts each
    company's movers and carries each truck's day, for the day plan; a database that ran it before
    then runs it again. Without that, the call center's day plan goes by the trucks alone.)
-2. **Tally admin › Call center team**: add each person with their name, the email they sign in
+2. **MoveCrew admin › Call center team**: add each person with their name, the email they sign in
    with, and their phone. The phone is what a company's line rings when they press **Call** on a
    quote, before it connects them to the customer.
-3. **Tally admin › a company › Change › Call center service**: switch it on for each company that
+3. **MoveCrew admin › a company › Change › Call center service**: switch it on for each company that
    buys the service. Switched off, the team stops seeing that company at once.
-4. The person signs in to Tally with that email. They don't join any company; their app opens on
+4. The person signs in to MoveCrew with that email. They don't join any company; their app opens on
    **Companies**.
 
 A company's owner sees what the call center sees with **More › See it their way › Call center**.
@@ -146,11 +146,11 @@ part so we are winging it and then when i present it to my company we will reall
   **Field view** (Off, Crew or Lead), **Dispatch** and **Call center**, with a line saying what they'll
   see ("Tanya sees: the jobs they’re on (running them and billing out) and the time clock; the
   schedule, Quotes and New quote, with no money or discounts. All in one app."). With every side off,
-  it won't save unless "Can use Tally" is off too.
+  it won't save unless "Can use MoveCrew" is off too.
 - **More than one side: one app, all their tabs together.** A crew lead with the call center sees Jobs
   (theirs, first), Schedule, Quotes, Chat and the round + for a new quote. Dispatch takes in the field
   (dispatch can already run a job), so dispatch with Field view is the office's tabs, with them on the
-  crew list. The call center alone: Schedule, Quotes, Chat and the + (no Companies: that's Tally's
+  crew list. The call center alone: Schedule, Quotes, Chat and the + (no Companies: that's MoveCrew's
   team, for many companies).
 - **Their quotes are the call center's**: no discount, the move put in a slot before booking, no truck
   put on ("Created as Booked by Tanya (call center)"); dispatch picks the truck and crew.
@@ -161,11 +161,11 @@ part so we are winging it and then when i present it to my company we will reall
   crew (someone with the call center side only is crew with no jobs).
 - **Kept by the database** (in supabase-callcenter.sql): `cc_member(company)`: a crew member or lead
   whose name is in the settings' `ccStaff` (which only the owner writes). The call center rules
-  (`cc_in`) take them in with Tally's team: they read the open quotes, the schedule's copy and the rate
+  (`cc_in`) take them in with MoveCrew's team: they read the open quotes, the schedule's copy and the rate
   card, and save quotes and bookings only through `cc_save`, with no discount and no payment. The jobs
   they're on, they change as crew or a lead as before. The office named there is still the office.
 - See it their way: each person, from any row, opens with their own sides; Call center lists the
-  company's own people and **Tally’s team**.
+  company's own people and **MoveCrew’s team**.
 - **The Edge Function** knows them too (a crew member or lead named in `ccStaff`): they call
   customers on open quotes and scheduled jobs through the company's line (it rings their phone from
   the company's contacts first), and they look up a quote's miles.
@@ -177,7 +177,7 @@ From `supabase-callcenter.sql` (the same blocks are in `supabase-schema-v2.sql` 
 
 - **The team:** `tally_cc_team` (email, name, phone; linked to a sign-in by `claim_cc_team()` once
   the email is confirmed) and `cc_orgs` (the companies with the service). Nobody in the app reads or
-  changes either; Tally admin does it through the Edge Function.
+  changes either; MoveCrew admin does it through the Edge Function.
 - **Who counts as the call center for a company** (`cc_in`): on the team, the company switched on,
   and not one of the company's own people (a company's crew member who is also on the team is still
   just crew there).
@@ -200,7 +200,7 @@ From `supabase-callcenter.sql` (the same blocks are in `supabase-schema-v2.sql` 
 
 ## Not built yet
 
-- Ringing the call center when a customer calls a company's Tally line (Richie: leave calls alone
+- Ringing the call center when a customer calls a company's MoveCrew line (Richie: leave calls alone
   for now).
 - Billing for the service in the app (Richie bills the companies himself).
 - Taking a deposit when booking (the office takes payments, or sends a pay link).

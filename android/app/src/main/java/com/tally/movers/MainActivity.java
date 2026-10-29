@@ -48,7 +48,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Tally for Android: the Tally web app, packaged inside the APK and shown full screen.
+ * MoveCrew for Android: the MoveCrew web app, packaged inside the APK and shown full screen.
  *
  * The page is served from https://appassets.androidplatform.net/assets/ so it runs on a
  * secure address (sign-in, location and storage all need one) without needing a website.
@@ -77,7 +77,7 @@ public class MainActivity extends Activity {
         root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
 
-        // Android 15 draws apps edge to edge. Keep Tally clear of the status bar, the
+        // Android 15 draws apps edge to edge. Keep MoveCrew clear of the status bar, the
         // navigation bar, any camera cutout, and the keyboard.
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
@@ -356,7 +356,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    /* Back closes whatever is open in Tally (a job, the signing screen, a menu) before leaving. */
+    /* Back closes whatever is open in MoveCrew (a job, the signing screen, a menu) before leaving. */
     @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {

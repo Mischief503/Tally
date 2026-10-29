@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Every Tally check, from the repo root: bash tests/run-all.sh
+# Every MoveCrew check, from the repo root: bash tests/run-all.sh
 set -uo pipefail
 cd "$(dirname "$0")/.."
 python3 scripts/build.py

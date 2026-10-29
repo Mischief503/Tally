@@ -1,4 +1,4 @@
-// Loads a Tally edition in jsdom. For the hosted edition it injects an in-memory Supabase
+// Loads a MoveCrew edition in jsdom. For the hosted edition it injects an in-memory Supabase
 // (rows deep-frozen, like the real shared store) and a fake Edge Function endpoint.
 const { JSDOM, VirtualConsole } = require('jsdom');
 const fs = require('fs');
@@ -176,7 +176,7 @@ function makeSupabase(db, me, calls) {
         rows.push(nr); setTimeout(() => fire('docs', nr), 5); syncSched(db, nr, fire);
         return Promise.resolve({ data: 'ok', error: null });
       }
-      // Tally's call center team (db.__ccTeam: {uid: name}) and the companies with the service (db.__ccOrgs: [{id, name}])
+      // MoveCrew's call center team (db.__ccTeam: {uid: name}) and the companies with the service (db.__ccOrgs: [{id, name}])
       const agent = db.__ccTeam && me && db.__ccTeam[me.uid];
       if (name === 'claim_cc_team') return Promise.resolve({ data: !!agent });
       if (name === 'cc_me') return Promise.resolve({ data: agent || null });

@@ -1,21 +1,21 @@
-# Tally on Android: from the folder to an installed app
+# MoveCrew on Android: from the folder to an installed app
 
 > **Since Oct 2026 you don't need this.** The crew's Android app is built by GitHub on every change
 > (`GET-THE-APP.md`), and the website your customers use is put up by GitHub too, at
 > https://mischief503.github.io/Tally/ (`CUSTOMERS.md`). The steps below are the older way, by hand.
 
-No terminal. About 30 minutes the first time. You'll use three websites: Netlify (puts Tally
+No terminal. About 30 minutes the first time. You'll use three websites: Netlify (puts MoveCrew
 online), PWABuilder (turns it into an Android app), and your phone.
 
-**How the app works:** the Android app opens your Tally website, full screen, with its own icon.
-So when Tally changes, you replace the website files and every phone gets the new version the
+**How the app works:** the Android app opens your MoveCrew website, full screen, with its own icon.
+So when MoveCrew changes, you replace the website files and every phone gets the new version the
 next time the app opens. You only build a new APK if you change the app's name or icon.
 
 ---
 
 ## 1. Put your Supabase details in (one time)
 
-Skip this to try Tally on a single phone with sample data. Nothing syncs and no texts go out.
+Skip this to try MoveCrew on a single phone with sample data. Nothing syncs and no texts go out.
 
 1. Unzip `tally-app.zip`. You get a folder called `tally-app`.
 2. Open `tally-app/index.html` in a plain text editor: Notepad on Windows, or TextEdit on a Mac
@@ -39,7 +39,7 @@ in texts point here.
 ## 3. Build the Android app (PWABuilder)
 
 1. Go to **pwabuilder.com**, paste your Netlify address, press **Start**.
-2. It checks the site. Tally ships with everything it looks for (app name, icons, offline
+2. It checks the site. MoveCrew ships with everything it looks for (app name, icons, offline
    support), so you can go straight to **Package for stores**.
 3. Under **Android**, press **Generate package**. The defaults are fine. Package ID: something
    like `com.acemoving.tally`. Signing key: **New**. Press **Download**.
@@ -54,7 +54,7 @@ in texts point here.
 
 1. Get the .apk onto the phone: email it to yourself, put it in Google Drive, or plug in a cable.
 2. Tap it. Android asks to allow installs from that app (Chrome, Gmail, Files). Allow it once.
-3. Tap **Install**. Tally shows up with its own icon.
+3. Tap **Install**. MoveCrew shows up with its own icon.
 
 Do the same on each employee's phone, or put it on the Play Store later using the .aab.
 
@@ -73,7 +73,7 @@ Until this step, the app shows a thin bar with your web address at the top. To r
 If you later publish through Google Play, Play re-signs the app. You then update `assetlinks.json`
 with the fingerprint from Play Console › App signing, as PWABuilder explains.
 
-## 6. Updating Tally later
+## 6. Updating MoveCrew later
 
 When I send a new `tally-app.zip`:
 1. Unzip it and put your two Supabase values back into `index.html` (step 1).
@@ -94,7 +94,7 @@ Phones pick up the new version next time the app opens. No new APK needed.
 | Distance filled in on quotes | Map link | Map link | Map link | ✓ |
 
 **Back button:** in the app, the phone's Back button closes whatever is open (a job, the signing
-screen, a menu) before it leaves Tally.
+screen, a menu) before it leaves MoveCrew.
 
 **Quicker test without an APK:** open your Netlify address in Chrome on the phone, tap **⋮ ›
 Add to Home screen › Install**. You get the same app, minus the APK file.

@@ -1,6 +1,6 @@
 // The call center on the hosted app (Richie, Oct 22: "Call center is a service that the moving companys will be able
 // to purchase to help get bookings . So call center will only be able to see companys that pay for that service ."):
-// Jess is on Tally's call center team (not one of the company's people), and Tally admin has switched the service on
+// Jess is on MoveCrew's call center team (not one of the company's people), and MoveCrew admin has switched the service on
 // for Ace Moving and Bluebonnet Moving. The database lets her read their rate card copies, open quotes and schedule
 // copies, nothing else (stood in for here: db.__visible, db.__sched), and she saves only through cc_save.
 const { load, ok, sleep, summary, schedOf, ratecardOf } = require('./lib');
@@ -41,7 +41,7 @@ function seed() {
   put(ORG, 'locs/marcus', { name: 'Marcus', lat: 30.27, lng: -97.74, ts: Date.now() });
   return { docs, access_requests: [], comm_log: [], comm_lines: [], __sched: true, __orgNames: { [ORG]: 'Ace Moving' },
     __ccTeam: { 'u-jess': 'Jess' }, __ccOrgs: [{ id: ORG, name: 'Ace Moving' }, { id: ORG2, name: 'Bluebonnet Moving' }],
-    // the row rules, for Jess (Tally's team, both companies switched on): the rate cards, the open quotes and
+    // the row rules, for Jess (MoveCrew's team, both companies switched on): the rate cards, the open quotes and
     // leads, the schedule copies and the start mark; never the settings themselves, the booked jobs, the people or
     // the team's own things
     __visible: (r) => ['meta', 'ratecard', 'sched'].indexOf(r.collection) >= 0 || (r.collection === 'jobs' && open(r.data)),
@@ -66,7 +66,7 @@ const net = async (url) => {
   const toast = () => ($('#toast') && !$('#toast').hidden ? $('#toast').textContent : '');
   const ccWrites = () => A.calls.writes.filter((x) => x.op === 'cc_save');
   const change = (sel, v) => { const e = $(sel); e.value = v; e.dispatchEvent(new w.Event('input', { bubbles: true })); e.dispatchEvent(new w.Event('change', { bubbles: true })); };
-  ok(A.calls.rpc.some((c) => c.name === 'claim_cc_team') && T.sync.identity.role === 'callcenter' && T.sync.identity.staff === 'Jess', 'Jess signs in: linked to Tally’s call center team, the call center in Ace Moving, under her name');
+  ok(A.calls.rpc.some((c) => c.name === 'claim_cc_team') && T.sync.identity.role === 'callcenter' && T.sync.identity.staff === 'Jess', 'Jess signs in: linked to MoveCrew’s call center team, the call center in Ace Moving, under her name');
   ok(T.state().ui.role === 'callcenter' && T.ui.tab === 'desk' && $$('#tabs button').map((b) => b.textContent).filter(Boolean).join('|') === 'Companies|Schedule|Quotes|More' && !$('#fab').hidden, 'her app: Companies first, then Schedule and Quotes, and the round button for a new quote');
   const S = T.state().settings;
   ok(S.company === 'Ace Moving' && S.rates.r2 === 140 && S.crew.length === 0 && !Object.keys(S.contacts).length && S.crewCost === 0 && (S.office || []).length === 0, 'her settings are the rate card: the prices, and none of the company’s crew, phones, costs or office (not even the sample ones)');
@@ -193,6 +193,6 @@ const net = async (url) => {
   const C = await load(FILE, { db: db3, me: { uid: 'u-jess', email: 'j@x' }, net });
   await sleep(300);
   const pk = C.$('#login') ? C.$('#login').textContent : '';
-  ok(/You’re on Tally’s call center team\. No company has the call center switched on yet/.test(pk) && !C.$('#pkNew') && !C.$('#pkJoin') && !!C.$('#pkOut'), 'on the team with no company switched on: it says so, with nothing to start or join');
+  ok(/You’re on MoveCrew’s call center team\. No company has the call center switched on yet/.test(pk) && !C.$('#pkNew') && !C.$('#pkJoin') && !!C.$('#pkOut'), 'on the team with no company switched on: it says so, with nothing to start or join');
   process.exit(summary('callcenter-hosted') ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

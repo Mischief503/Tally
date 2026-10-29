@@ -1,6 +1,6 @@
 name: Website
 
-# The Tally website (GitHub Pages): the app customers open on their phones to see their move and pay, and add to
+# The MoveCrew website (GitHub Pages): the app customers open on their phones to see their move and pay, and add to
 # their home screen. Every push to main puts the new version up, once GitHub Pages is on for this repository
 # (Settings › Pages › Build and deployment › Source: GitHub Actions). Until then this only says so, and stays green.
 
@@ -50,7 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Put Tally on the website
+      - name: Put MoveCrew on the website
         env:
           TALLY_SUPABASE_URL: ${{ vars.TALLY_SUPABASE_URL }}
           TALLY_SUPABASE_ANON_KEY: ${{ vars.TALLY_SUPABASE_ANON_KEY }}

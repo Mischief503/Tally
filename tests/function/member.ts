@@ -1,4 +1,4 @@
-// The membership each company pays Tally, and Tally admin, in the Edge Function. A fake Stripe with
+// The membership each company pays MoveCrew, and MoveCrew admin, in the Edge Function. A fake Stripe with
 // customers, products, prices, coupons, subscription checkout pages, subscriptions and the billing page,
 // that answers like the 2026-09-30.endive API (current_period_end on the subscription item, invoices
 // naming their subscription under parent.subscription_details, no top-level coupon parameter).
@@ -178,7 +178,7 @@ const EMAILS: Record<string, string> = { "aaaaaaaa-0000-4000-8000-000000000001":
   throw new Error("unexpected fetch " + input);
 };
 
-/* ---------- Richie (a Tally admin, with his test company) and Blue Moving (a customer) ---------- */
+/* ---------- Richie (a MoveCrew admin, with his test company) and Blue Moving (a customer) ---------- */
 const TEST = "11111111-1111-4111-8111-111111111111", BLUE = "33333333-3333-4333-8333-333333333333";
 const day = 86400e3;
 DB.orgs.push({ id: TEST, name: "Live company trst", created_at: new Date(Date.now() - 4 * day).toISOString(), trial_ends: new Date(Date.now() + 26 * day).toISOString() },
@@ -216,7 +216,7 @@ ok(Math.round((Date.parse(r.body.trial_ends) - Date.now()) / day) === 13, "with 
 r = await app("tok-dot", BLUE, { action: "member_status" });
 ok(r.body.ok && r.body.test === false && r.body.admin === false && r.body.state === undefined && r.body.price_cents === undefined, "dispatch is told only whether it's a test company: no prices");
 r = await app("tok-richie", TEST, { action: "member_status" });
-ok(r.body.ok && r.body.admin === true && r.body.test === true && r.body.state === "test", "Richie: a Tally admin, in his test company");
+ok(r.body.ok && r.body.admin === true && r.body.test === true && r.body.state === "test", "Richie: a MoveCrew admin, in his test company");
 r = await app("tok-gus", BLUE, { action: "member_status" });
 ok(r.status === 401, "someone who isn't in the company gets nothing");
 
@@ -226,17 +226,17 @@ ok(r.status === 403 && /Only the owner/.test(r.body.message), "dispatch can't st
 r = await app("tok-ana", BLUE, { action: "member_start" });
 ok(r.body.ok && /^https:\/\/checkout\.stripe\.com\//.test(r.body.url), "the owner gets Stripe's checkout page: " + r.body.url);
 const cs1 = last("/v1/checkout/sessions");
-ok(cs1.p.mode === "subscription" && cs1.p["line_items[0][quantity]"] === "1" && cs1.acct === "" && cs1.ver === fn.STRIPE_VERSION, "a subscription, on Tally's own Stripe account");
+ok(cs1.p.mode === "subscription" && cs1.p["line_items[0][quantity]"] === "1" && cs1.acct === "" && cs1.ver === fn.STRIPE_VERSION, "a subscription, on MoveCrew's own Stripe account");
 const price1 = ST.prices[cs1.p["line_items[0][price]"]];
 ok(price1 && price1.unit_amount === 14900 && price1.currency === "usd" && price1.recurring.interval === "month", "at $149 a month");
 ok(Math.abs(+cs1.p["subscription_data[trial_end]"] - Date.parse(DB.orgs[1].trial_ends) / 1000) < 2, "what's left of the free trial carries over: nothing is charged until it ends");
 ok(cs1.p["metadata[tally_member]"] === BLUE && cs1.p["subscription_data[metadata][tally_member]"] === BLUE && cs1.p.client_reference_id === BLUE, "labelled with the company");
-ok(cs1.p.success_url === BASE + "/member/done" && cs1.p.cancel_url === BASE + "/member/back", "and comes back to Tally's own pages");
+ok(cs1.p.success_url === BASE + "/member/done" && cs1.p.cancel_url === BASE + "/member/back", "and comes back to MoveCrew's own pages");
 const cus = ST.customers[cs1.p.customer];
 ok(cus && cus.email === "ana@bluemoving.example" && cus.name === "Blue Moving" && cus.metadata.tally_member === BLUE, "the company is a Stripe customer with the owner's email");
 ok(subRow(BLUE).customer_id === cus.id && /^cs_test_/.test(subRow(BLUE).checkout_id) && subRow(BLUE).checkout_url === r.body.url && Date.parse(subRow(BLUE).checkout_expires) > Date.now() + 23 * 3600e3, "the open checkout page is kept, with when it expires");
 const plat = ST.hooks.find((w: any) => !w.connect && w.url === BASE + "/stripe");
-ok(plat && fn.MEMBER_EVENTS.every((e: string) => plat.enabled_events.indexOf(e) >= 0) && plat.enabled_events.indexOf("checkout.session.completed") >= 0, "Tally's webhook listens for memberships too");
+ok(plat && fn.MEMBER_EVENTS.every((e: string) => plat.enabled_events.indexOf(e) >= 0) && plat.enabled_events.indexOf("checkout.session.completed") >= 0, "MoveCrew's webhook listens for memberships too");
 r = await app("tok-ana", BLUE, { action: "member_start" });
 ok(r.body.ok && r.body.url === subRow(BLUE).checkout_url && count("/v1/checkout/sessions") === 1, "pressing it again opens the same checkout page");
 ok(count("/v1/customers") === 1 && count("/v1/prices") === 1 && count("/v1/products") === 1, "one customer, one product, one price");
@@ -267,9 +267,9 @@ ok(count("/v1/billing_portal/configurations") === 1 && count("/v1/billing_portal
 r = await app("tok-richie", TEST, { action: "member_portal" });
 ok(!r.body.ok && /Start the membership first/.test(r.body.message), "a company with no membership has no billing page");
 
-/* ---------- Tally admin ---------- */
+/* ---------- MoveCrew admin ---------- */
 r = await app("tok-ana", BLUE, { action: "admin_list" });
-ok(r.status === 403 && /Tally's admins/.test(r.body.message), "a company owner can't open Tally admin");
+ok(r.status === 403 && /MoveCrew's admins/.test(r.body.message), "a company owner can't open MoveCrew admin");
 r = await app("tok-dot", BLUE, { action: "admin_set", target: BLUE, waived: true });
 ok(r.status === 403 && !DB.member_deals.some((d) => d.org_id === BLUE), "or waive their own fee");
 r = await app("tok-richie", TEST, { action: "admin_list" });
@@ -315,7 +315,7 @@ ok(!r.body.ok && DB.tally_plan[0].trial_days === 30, "so is a trial over a year"
 
 /* ---------- adding a company ---------- */
 r = await app("tok-ana", BLUE, { action: "admin_add", name: "Sneaky Co", email: "ana@bluemoving.example" });
-ok(r.status === 403 && DB.orgs.length === 2, "an owner can't add companies through Tally admin");
+ok(r.status === 403 && DB.orgs.length === 2, "an owner can't add companies through MoveCrew admin");
 r = await app("tok-richie", TEST, { action: "admin_add", name: "Green Movers", email: "Gus@Green.example" });
 const green = DB.orgs.find((o) => o.name === "Green Movers");
 ok(r.body.ok && green && /gus@green\.example signs in/.test(r.body.message), "Richie adds Green Movers for Gus: " + r.body.message);
@@ -323,7 +323,7 @@ ok(DB.member_invites.some((i) => i.org_id === green.id && i.email === "gus@green
 ok(Math.round((Date.parse(green.trial_ends) - Date.now()) / day) === 30 && green.join_code === "JC0001", "with the new 30-day trial and a company code");
 r = await app("tok-richie", TEST, { action: "admin_list" });
 const g2 = r.body.companies.find((c: any) => c.id === green.id);
-ok(g2 && g2.invited.join() === "gus@green.example" && g2.owners.length === 0 && g2.member.state === "trial", "Tally admin shows who it's waiting for");
+ok(g2 && g2.invited.join() === "gus@green.example" && g2.owners.length === 0 && g2.member.state === "trial", "MoveCrew admin shows who it's waiting for");
 r = await app("tok-richie", TEST, { action: "admin_add", name: "Test Two", email: "richie@tally.example", test: true });
 const t2 = DB.orgs.find((o) => o.name === "Test Two");
 ok(r.body.ok && r.body.mine && DB.members.some((m) => m.org_id === t2.id && m.user_id === "aaaaaaaa-0000-4000-8000-000000000001" && m.role === "owner"), "a company with his own email: he's its owner right away");
@@ -333,7 +333,7 @@ ok(!r.body.ok && /name/.test(r.body.message), "a company needs a name");
 r = await app("tok-richie", TEST, { action: "admin_add", name: "Nope", email: "not an email" });
 ok(!r.body.ok && /email/.test(r.body.message), "and its owner's email");
 
-/* ---------- the call center service (Oct 22): Tally's own team, switched on for each company that buys it ---------- */
+/* ---------- the call center service (Oct 22): MoveCrew's own team, switched on for each company that buys it ---------- */
 r = await app("tok-richie", TEST, { action: "admin_list" });
 ok(r.body.ok && r.body.team === null && r.body.companies.every((c: any) => c.cc === false), "before supabase-callcenter.sql: no team list, and no company has the service");
 r = await app("tok-richie", TEST, { action: "admin_cc_add", name: "Jess", email: "jess@calls.example" });
@@ -342,7 +342,7 @@ r = await app("tok-richie", TEST, { action: "admin_set", target: BLUE, cc: true 
 ok(!r.body.ok && /supabase-callcenter\.sql/.test(r.body.message), "and so does the switch");
 DB.tally_cc_team = []; DB.cc_orgs = []; KEYS.tally_cc_team = ["email"]; KEYS.cc_orgs = ["org_id"];
 r = await app("tok-ana", BLUE, { action: "admin_cc_add", name: "Ana", email: "ana@x.example" });
-ok(r.status === 403 && DB.tally_cc_team.length === 0, "a company owner can't add to Tally's call center team");
+ok(r.status === 403 && DB.tally_cc_team.length === 0, "a company owner can't add to MoveCrew's call center team");
 r = await app("tok-richie", TEST, { action: "admin_cc_add", name: "  Jess  Rivera ", email: "Jess@Calls.example", phone: "512-555-0107" });
 ok(r.body.ok && DB.tally_cc_team.length === 1 && DB.tally_cc_team[0].email === "jess@calls.example" && DB.tally_cc_team[0].name === "Jess Rivera" && DB.tally_cc_team[0].phone === "512-555-0107" && /jess@calls\.example/.test(r.body.message), "Richie adds Jess to the team: " + r.body.message);
 ok(r.body.team.length === 1 && r.body.team[0].signedIn === false && r.body.team[0].phone === "512-555-0107", "the list has her phone, and says she hasn't signed in yet");
@@ -363,7 +363,7 @@ ok(JSON.stringify(DB.member_deals) === deals0 && count("/v1/subscriptions/" + su
 r = await app("tok-richie", TEST, { action: "admin_set", target: BLUE, cc: true });
 ok(r.body.ok && DB.cc_orgs.length === 1, "switching it on twice is still once");
 r = await app("tok-richie", TEST, { action: "admin_list" });
-ok(r.body.team.length === 1 && r.body.companies.find((c: any) => c.id === BLUE).cc === true && r.body.companies.find((c: any) => c.id === TEST).cc === false, "Tally admin lists the team, and which companies have the service");
+ok(r.body.team.length === 1 && r.body.companies.find((c: any) => c.id === BLUE).cc === true && r.body.companies.find((c: any) => c.id === TEST).cc === false, "MoveCrew admin lists the team, and which companies have the service");
 r = await app("tok-richie", TEST, { action: "admin_set", target: BLUE, cc: false });
 ok(r.body.ok && r.body.company.cc === false && DB.cc_orgs.length === 0, "and switches it off");
 r = await app("tok-ana", BLUE, { action: "admin_cc_remove", email: "jess@calls.example" });
@@ -430,7 +430,7 @@ r = await app("tok-ana", BLUE, { action: "member_start" });
 const cs4 = ST.sessions[subRow(BLUE).checkout_id];
 const sub4 = completeSession(cs4);
 r = await app("tok-ana", BLUE, { action: "member_status", refresh: true });
-ok(r.body.state === "active" && subRow(BLUE).subscription_id === sub4.id, "back from Stripe's page before the webhook: Tally asks Stripe and shows it set up");
+ok(r.body.state === "active" && subRow(BLUE).subscription_id === sub4.id, "back from Stripe's page before the webhook: MoveCrew asks Stripe and shows it set up");
 
 /* ---------- live keys: a test membership doesn't count ---------- */
 Deno.env.set("STRIPE_SECRET_KEY", "sk_live_platform");

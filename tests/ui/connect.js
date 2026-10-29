@@ -1,6 +1,6 @@
-// Stripe Connect in the app (hosted edition): a company that isn't on Tally's own Stripe account connects
+// Stripe Connect in the app (hosted edition): a company that isn't on MoveCrew's own Stripe account connects
 // its own from Setup › Payments. The owner presses Connect with Stripe, Stripe's sign-up page opens outside
-// Tally, and coming back asks the server how the account stands. Once Stripe says yes, the card box works on
+// MoveCrew, and coming back asks the server how the account stands. Once Stripe says yes, the card box works on
 // the company's own account. The Edge Function and Stripe.js are fakes that record what they were asked.
 const { load, ok, sleep, summary, clone } = require('./lib');
 const FILE = __dirname + '/../../build/tally-supabase.html';
@@ -75,7 +75,7 @@ const fnCalls = (A, act) => A.calls.fn.filter((c) => c.body.action === act);
 const say = (el) => (el ? el.textContent.replace(/\s+/g, ' ') : '');
 async function setup(A) { await A.go('settings', 'pay'); await sleep(20); }
 const payCard = (A) => A.$$('#view details.acc.card').find((d) => /^Payments/.test(say(d.querySelector('summary')).trim())) || A.$$('#view section.card').find((s) => /Payments/.test(say(s.querySelector('h2'))));
-async function back(A) {   // the owner comes back to Tally from Stripe's page
+async function back(A) {   // the owner comes back to MoveCrew from Stripe's page
   Object.defineProperty(A.w.document, 'hidden', { value: true, configurable: true });
   A.w.document.dispatchEvent(new A.w.Event('visibilitychange'));
   await sleep(10);
@@ -99,14 +99,14 @@ async function payScreen(A) {
   A.click('#flow [data-act="flow:close"]'); await sleep(10); A.click('[data-act="sheet:close"]'); await sleep(10);
   await setup(A);
   let card = say(payCard(A));
-  ok(/Take card payments with your company’s own Stripe account \(test mode\)/.test(card) && /Tally takes no cut/.test(card) && /Tally never sees those details/.test(card), 'Setup › Payments offers to connect the company’s own Stripe account, and says what that means: ' + card.slice(0, 160));
+  ok(/Take card payments with your company’s own Stripe account \(test mode\)/.test(card) && /MoveCrew takes no cut/.test(card) && /MoveCrew never sees those details/.test(card), 'Setup › Payments offers to connect the company’s own Stripe account, and says what that means: ' + card.slice(0, 160));
   ok(A.$('#view [data-act="pay:connect"]') && /Connect with Stripe/.test(A.$('#view [data-act="pay:connect"]').textContent), 'with a Connect with Stripe button');
   ok(/Test mode: Stripe’s page offers test details/.test(card), 'in test mode it says the sign-up can be filled in with test details');
 
   // the owner presses it
   const asked = fnCalls(A, 'pay_config').length;
   A.click('#view [data-act="pay:connect"]');
-  ok(rec.opened.length === 1 && rec.opened[0][0] === '' && rec.opened[0][1] === '_blank' && rec.tabs[0].opener === null, 'a new tab opens on the tap itself (so the browser does not block it), cut off from Tally');
+  ok(rec.opened.length === 1 && rec.opened[0][0] === '' && rec.opened[0][1] === '_blank' && rec.tabs[0].opener === null, 'a new tab opens on the tap itself (so the browser does not block it), cut off from MoveCrew');
   ok(/Opening Stripe/.test(A.$('#view [data-act="pay:connect"]').textContent) && A.$('#view [data-act="pay:connect"]').disabled, 'the button says it is opening Stripe and can’t be pressed twice');
   await sleep(60);
   ok(fnCalls(A, 'pay_connect').length === 1, 'the server is asked for the company’s Stripe sign-up');
@@ -117,7 +117,7 @@ async function payScreen(A) {
   ctl.cfg = CFG.started;
   await back(A);
   const ref = fnCalls(A, 'pay_config').slice(asked).pop();
-  ok(ref && ref.body.refresh === true, 'coming back to Tally asks the server to check with Stripe');
+  ok(ref && ref.body.refresh === true, 'coming back to MoveCrew asks the server to check with Stripe');
   card = say(payCard(A));
   ok(/Stripe needs a few more details before cards can be taken/.test(card) && /The bank account Stripe pays out to/.test(card) && /Your own details \(name, date of birth, home address, SSN\)/.test(card) && /What the business does/.test(card) && /Accepting Stripe’s terms/.test(card), 'what Stripe still needs, in plain words: ' + card.slice(0, 260));
   ok(A.$$('#view .duelist li').length === 4, 'one line per thing, not per Stripe field (' + A.$$('#view .duelist li').length + ')');
@@ -174,7 +174,7 @@ async function payScreen(A) {
   // already done on Stripe's side
   ctlB.connect = { ok: true, done: true, message: 'Your Stripe account is connected. Manage it at dashboard.stripe.com.' }; ctlB.cfg = CFG.ready;
   B.click('#view [data-act="pay:connect"]'); await sleep(80);
-  ok(/Your Stripe account is connected/.test(B.$('#toast').textContent) && /Card payments go to your own Stripe account/.test(say(payCard(B))), 'nothing left to do on Stripe: Tally says so and shows it connected');
+  ok(/Your Stripe account is connected/.test(B.$('#toast').textContent) && /Card payments go to your own Stripe account/.test(say(payCard(B))), 'nothing left to do on Stripe: MoveCrew says so and shows it connected');
   ok(B.errors.length === 0, 'no errors (' + B.errors.slice(0, 3).join(' | ') + ')');
 
   /* ---------------- a pre-opened tab is closed when there is nothing to open ---------------- */
@@ -195,9 +195,9 @@ async function payScreen(A) {
   /* ---------------- disconnected, turned down ---------------- */
   const E = await load(FILE, { db: seed(), org: ORG, me: { uid: 'u-ana', email: 'ana@x.com' }, fnReply: fnReplies({ cfg: CFG.off }), setup: browser(rec0()) });
   await setup(E);
-  ok(/Your Stripe account was disconnected from Tally, so cards can’t be taken/.test(say(payCard(E))) && /Connect again/.test(E.$('#view [data-act="pay:connect"]').textContent), 'disconnected in Stripe: Setup says so, with Connect again');
+  ok(/Your Stripe account was disconnected from MoveCrew, so cards can’t be taken/.test(say(payCard(E))) && /Connect again/.test(E.$('#view [data-act="pay:connect"]').textContent), 'disconnected in Stripe: Setup says so, with Connect again');
   flow = await payScreen(E);
-  ok(/disconnected from Tally, so cards can’t be taken\. The owner connects it again in Setup › Payments/.test(flow), 'and the payment screen says why');
+  ok(/disconnected from MoveCrew, so cards can’t be taken\. The owner connects it again in Setup › Payments/.test(flow), 'and the payment screen says why');
   const F = await load(FILE, { db: seed(), org: ORG, me: { uid: 'u-ana', email: 'ana@x.com' }, fnReply: fnReplies({ cfg: CFG.rejected }), setup: browser(rec0()) });
   await setup(F);
   ok(/Stripe turned this account down/.test(say(payCard(F))) && !F.$('#view [data-act="pay:connect"]'), 'turned down by Stripe: says so, and to ask Stripe');
@@ -213,14 +213,14 @@ async function payScreen(A) {
   ok(/The owner connects Stripe in Setup › Payments/.test(say(H.$('#flow'))), 'the lead on the job is told the owner turns cards on');
   ok(G.errors.length === 0 && H.errors.length === 0 && E.errors.length === 0 && F.errors.length === 0, 'no errors (' + G.errors.concat(H.errors, E.errors, F.errors).slice(0, 3).join(' | ') + ')');
 
-  /* ---------------- Tally's own company: on the platform's account, as before ---------------- */
+  /* ---------------- MoveCrew's own company: on the platform's account, as before ---------------- */
   const recP = rec0();
   const P = await load(FILE, { db: seed(), org: ORG, me: { uid: 'u-ana', email: 'ana@x.com' }, fnReply: fnReplies({ cfg: CFG.platform }), setup: browser(recP) });
   await setup(P);
   ok(/Stripe is connected \(test mode\)/.test(say(payCard(P))) && !P.$('#view [data-act="pay:connect"]'), 'Setup › Payments is as before');
   await payScreen(P);
   P.click('#flow [data-act="flow:method"][data-m="card"]'); await sleep(80);
-  ok(recP.stripe.length === 1 && recP.stripe[0][0] === 'pk_test_platform' && recP.stripe[0][1] === null, 'the card box works on Tally’s own account (no connected account)');
+  ok(recP.stripe.length === 1 && recP.stripe[0][0] === 'pk_test_platform' && recP.stripe[0][1] === null, 'the card box works on MoveCrew’s own account (no connected account)');
   ok(P.errors.length === 0, 'no errors (' + P.errors.slice(0, 3).join(' | ') + ')');
 
   process.exit(summary('connect') ? 1 : 0);

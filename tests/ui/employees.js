@@ -84,7 +84,7 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
   ok(T.state().settings.crew.includes('Mike') && T.state().settings.contacts.Mike === '503-555-0100', 'Mike joins the crew list with his phone, for scheduling and Call buttons');
   ok(/Waiting for their first sign-in with mike@x\.com/.test(empText(A)), 'the profile says it is waiting for Mike to sign in');
   const sms = $('#emp a[href^="sms:"]');
-  ok(sms && /5035550100/.test(sms.getAttribute('href')) && /mike%40x\.com/.test(sms.getAttribute('href')) && /Tally\.apk/.test(sms.getAttribute('href')), 'Text Mike the app: an sms link with the download link and his sign-in email');
+  ok(sms && /5035550100/.test(sms.getAttribute('href')) && /mike%40x\.com/.test(sms.getAttribute('href')) && /MoveCrew\.apk/.test(sms.getAttribute('href')), 'Text Mike the app: an sms link with the download link and his sign-in email');
   ok($('[data-ek="name"]').readOnly, 'after saving, the name is fixed');
 
   // documents
@@ -191,7 +191,7 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
   A = await load(HOSTED, { db, me: { uid: 'u-marcus', email: 'marcus@x.com' } });
   await sleep(50);
   ok(A.w.localStorage.getItem('tally.org') === ORG, 'a profile linked at sign-in takes Marcus straight into his company, no code or picker');
-  ok(A.calls.rpc.map((x) => x.name).slice(0, 4).join() === 'claim_invites,claim_company_invites,claim_cc_team,my_orgs', 'claim first (profiles, companies Tally added for this email, a place on Tally’s call center team), then the company list');
+  ok(A.calls.rpc.map((x) => x.name).slice(0, 4).join() === 'claim_invites,claim_company_invites,claim_cc_team,my_orgs', 'claim first (profiles, companies MoveCrew added for this email, a place on MoveCrew’s call center team), then the company list');
 
   /* ================= on-device copy (claude.ai artifact) ================= */
   const B = await load(ARTIFACT, {});
@@ -206,7 +206,7 @@ const empText = (A) => (A.$('#emp') ? A.$('#emp').textContent.replace(/\s+/g, ' 
   const saved = JSON.parse(B.w.localStorage.getItem('tally.employees.local') || '[]');
   ok(saved.length === 1 && saved[0].name === 'Pat' && saved[0].role === 'dispatch' && saved[0].info.phone === '503-555-0111' && JSON.stringify(saved[0].info.access) === JSON.stringify({ owner: false, field: 'off', dispatch: true, cc: false }), 'saved on this device only, with her switches');
   ok(B.T.state().settings.office.some((o) => o.name === 'Pat' && o.kind === 'dispatch'), 'Pat joins the office list as dispatch');
-  ok(/Document uploads work in the Tally app/.test(empText(B)) && !B.$('#empDocFile'), 'no uploads in this copy, and it says why');
+  ok(/Document uploads work in the MoveCrew app/.test(empText(B)) && !B.$('#empDocFile'), 'no uploads in this copy, and it says why');
   ok(!/Text Pat the app/.test(empText(B)), 'no invite text without sign-in');
   ok(B.errors.length === 0, 'on-device: no errors (' + B.errors.slice(0, 3).join(' | ') + ')');
 

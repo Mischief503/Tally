@@ -1,7 +1,7 @@
 {
   "name": "tally-ui-tests",
   "private": true,
-  "description": "jsdom and Chromium checks for the Tally web app",
+  "description": "jsdom and Chromium checks for the MoveCrew web app",
   "dependencies": {
     "axe-core": "4.10.2",
     "jsdom": "^24.1.0",

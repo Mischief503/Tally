@@ -1,6 +1,6 @@
 // The membership in the app (hosted edition): Setup › Membership for the owner (trial, start it on
 // Stripe's checkout page, manage it on Stripe's billing page), the reminder on Today, the TEST label for
-// a test company, and Tally admin for Tally's own admins (every company, waive, discount, test, the
+// a test company, and MoveCrew admin for MoveCrew's own admins (every company, waive, discount, test, the
 // price and trial, adding a company). The Edge Function and the browser's tabs are fakes.
 const { load, ok, sleep, summary, clone } = require('./lib');
 const FILE = __dirname + '/../../build/tally-supabase.html';
@@ -44,7 +44,7 @@ function fnReplies(ctl) {
     if (b.action === 'member_start') return ctl.start ? clone(ctl.start) : { ok: true, url: CHECKOUT };
     if (b.action === 'member_portal') return ctl.portal ? clone(ctl.portal) : { ok: true, url: PORTAL };
     if (b.action === 'admin_list') return { ok: true, plan: ctl.plan || { monthly_cents: 14900, trial_days: 14 }, payments: 'test', companies: ctl.companies || COMPANIES(), team: ctl.team === undefined ? null : clone(ctl.team) };
-    if (b.action === 'admin_cc_add') { ctl.team = (ctl.team || []).filter((t) => t.email !== b.email.toLowerCase()).concat([{ email: b.email.toLowerCase(), name: b.name, phone: b.phone, signedIn: false }]); return { ok: true, message: b.name + ' is on the call center team. They sign in to Tally with ' + b.email.toLowerCase() + '.', team: clone(ctl.team) }; }
+    if (b.action === 'admin_cc_add') { ctl.team = (ctl.team || []).filter((t) => t.email !== b.email.toLowerCase()).concat([{ email: b.email.toLowerCase(), name: b.name, phone: b.phone, signedIn: false }]); return { ok: true, message: b.name + ' is on the call center team. They sign in to MoveCrew with ' + b.email.toLowerCase() + '.', team: clone(ctl.team) }; }
     if (b.action === 'admin_cc_remove') { ctl.team = (ctl.team || []).filter((t) => t.email !== b.email); return { ok: true, message: 'Taken off the call center team. They see no company’s work from now on.', team: clone(ctl.team) }; }
     if (b.action === 'admin_set') {
       const c = (ctl.companies || COMPANIES()).find((x) => x.id === b.target);
@@ -54,7 +54,7 @@ function fnReplies(ctl) {
       return { ok: true, message: 'Saved.', company: nc };
     }
     if (b.action === 'admin_plan') return { ok: true, message: 'Saved. New memberships use it; running ones keep their price.', plan: { monthly_cents: Math.round(b.monthly * 100), trial_days: b.trialDays } };
-    if (b.action === 'admin_add') return { ok: true, org: 'org-new', mine: false, message: b.name + ' is ready. When ' + b.email.toLowerCase() + ' signs in to Tally with that email, they go straight in as its owner.' };
+    if (b.action === 'admin_add') return { ok: true, org: 'org-new', mine: false, message: b.name + ' is ready. When ' + b.email.toLowerCase() + ' signs in to MoveCrew with that email, they go straight in as its owner.' };
     if (b.action === 'pay_config') return { ok: true, ready: false, test: true, publishableKey: '', reason: 'connect', connect: { state: 'none', due: [] } };
     return { ok: true, sent: 0 };
   };
@@ -92,7 +92,7 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   ok(/Free trial until .* \(13 days left\)/.test(c) && /After that, \$149\/month/.test(c) && /card isn’t charged until the trial ends/.test(c), 'Setup › Membership: the trial, the price after it, nothing charged yet: ' + c.slice(0, 200));
   ok(A.$('#view [data-act="mem:start"]') && /Start membership/.test(A.$('#view [data-act="mem:start"]').textContent), 'with Start membership');
   A.click('#view [data-act="mem:start"]');
-  ok(rec.opened.length === 1 && rec.opened[0][0] === '' && rec.tabs[0].opener === null, 'a tab opens on the tap, cut off from Tally');
+  ok(rec.opened.length === 1 && rec.opened[0][0] === '' && rec.tabs[0].opener === null, 'a tab opens on the tap, cut off from MoveCrew');
   await sleep(60);
   ok(fnCalls(A, 'member_start').length === 1 && rec.tabs[0].location.href === CHECKOUT, 'Stripe’s checkout page loads in it');
   ok(/Done on Stripe’s page\? Come back here/.test(say(card(A))), 'Setup says to come back when done');
@@ -108,7 +108,7 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   A.click('#view [data-act="mem:portal"]'); await sleep(60);
   ok(rec.tabs[2].closed && /Stripe did not give a page to open/.test(say(card(A))), 'an address that isn’t Stripe’s is never opened');
   ctl.portal = null;
-  ok(!A.$$('[data-act="more:go"]').some((b) => b.dataset.tab === 'admin') && !A.$$('#tabs [data-tab="admin"]').length, 'a company owner has no Tally admin');
+  ok(!A.$$('[data-act="more:go"]').some((b) => b.dataset.tab === 'admin') && !A.$$('#tabs [data-tab="admin"]').length, 'a company owner has no MoveCrew admin');
   ok(A.errors.length === 0, 'no errors (' + A.errors.slice(0, 3).join(' | ') + ')');
 
   /* ---------------- the reminder on Today ---------------- */
@@ -119,7 +119,7 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   ok(B.T.ui.setSec === 'member' && /Membership/.test(say(B.$('#view section.card h2'))) && !!B.$('#view [data-act="set:back"]'), 'Open Membership goes to Setup › Membership');
   const C = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies({ status: ST.ended() }), setup: browser(rec0()) });
   await sleep(30);
-  ok(/Your free trial has ended\. Start the membership to keep using Tally/.test(say(C.$('#view .member-nudge'))) && C.$('#view .pulse'), 'trial over: reminded, and Today still works (nobody is locked out)');
+  ok(/Your free trial has ended\. Start the membership to keep using MoveCrew/.test(say(C.$('#view .member-nudge'))) && C.$('#view .pulse'), 'trial over: reminded, and Today still works (nobody is locked out)');
   await setup(C);
   ok(/Your free trial ended on/.test(say(card(C))) && C.$('#view [data-act="mem:start"]'), 'Setup offers to start the membership');
   const D = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies({ status: ST.past_due() }), setup: browser(rec0()) });
@@ -131,13 +131,13 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   /* ---------------- paying, waived, test, no keys ---------------- */
   const E = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies({ status: ST.active() }), setup: browser(rec0()) });
   await setup(E);
-  ok(/Membership active: \$111\.75\/month \(25% off \$149, from Tally\)/.test(say(card(E))) && /Renews/.test(say(card(E))), 'paying with a discount: the price and when it renews');
+  ok(/Membership active: \$111\.75\/month \(25% off \$149, from MoveCrew\)/.test(say(card(E))) && /Renews/.test(say(card(E))), 'paying with a discount: the price and when it renews');
   const E2 = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies({ status: ST.active({ cancel_at_period_end: true }) }), setup: browser(rec0()) });
   await setup(E2);
   ok(/It ends on/.test(say(card(E2))), 'cancelled at the end of the month: says when it ends');
   const F = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies({ status: ST.waived() }), setup: browser(rec0()) });
   await setup(F);
-  ok(/Tally waived your membership/.test(say(card(F))) && !F.$('#view [data-act="mem:start"]') && !F.$('#view [data-act="mem:portal"]'), 'fee waived: nothing to pay, no buttons');
+  ok(/MoveCrew waived your membership/.test(say(card(F))) && !F.$('#view [data-act="mem:start"]') && !F.$('#view [data-act="mem:portal"]'), 'fee waived: nothing to pay, no buttons');
   const G = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies({ status: ST.test() }), setup: browser(rec0()) });
   await sleep(20);
   ok(/ TEST$/.test(say(G.$('#brandCo'))) && G.$('#brandCo .testtag'), 'a test company is labelled TEST at the top');
@@ -154,11 +154,11 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   ok(I.$('#brandCo .testtag') && !I.$('#view .member-nudge'), 'dispatch sees the TEST label, and no membership');
   ok([A, B, C, D, E, F, G, H, I].every((X) => X.errors.length === 0), 'no errors');
 
-  /* ---------------- Tally admin ---------------- */
+  /* ---------------- MoveCrew admin ---------------- */
   const actl = { status: ST.test(true) }, J = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies(actl), setup: browser(rec0()) });
   J.click('[data-act="more:open"]'); await sleep(10);
   const adminBtn = J.$('[data-act="more:go"][data-tab="admin"]');
-  ok(adminBtn && /Tally admin/.test(adminBtn.textContent), 'Richie, a Tally admin: More has Tally admin');
+  ok(adminBtn && /MoveCrew admin/.test(adminBtn.textContent), 'Richie, a MoveCrew admin: More has MoveCrew admin');
   J.click(adminBtn); await sleep(60);
   ok(fnCalls(J, 'admin_list').length === 1, 'it asks the server for every company');
   let v = say(J.$('#view'));
@@ -195,14 +195,14 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   J.click('#view [data-act="adm:add"]'); await sleep(80);
   const ac = fnCalls(J, 'admin_add').pop();
   ok(ac && ac.body.name === 'Red Van Movers' && ac.body.email === 'Rita@RedVan.example' && ac.body.test === false, 'Add company sends the name and the owner’s email');
-  ok(/rita@redvan\.example signs in to Tally with that email/.test(say(J.$('#view'))) && fnCalls(J, 'admin_list').length >= 2, 'and says what happens next; the list is fetched again');
+  ok(/rita@redvan\.example signs in to MoveCrew with that email/.test(say(J.$('#view'))) && fnCalls(J, 'admin_list').length >= 2, 'and says what happens next; the list is fetched again');
   J.$('#admName').value = 'No Email Co'; J.$('#admEmail').value = 'nope';
   J.click('#view [data-act="adm:add"]'); await sleep(30);
   ok(fnCalls(J, 'admin_add').length === 1 && /owner’s email/.test(J.$('#toast').textContent), 'a company without a proper email isn’t sent');
-  ok(J.errors.length === 0, 'no errors in Tally admin (' + J.errors.slice(0, 3).join(' | ') + ')');
+  ok(J.errors.length === 0, 'no errors in MoveCrew admin (' + J.errors.slice(0, 3).join(' | ') + ')');
   ok(/Call center team.*The database isn’t set up for it yet\. Run supabase-callcenter\.sql/.test(say(J.$('#view'))) && !J.$('[id^="admC_"]'), 'before supabase-callcenter.sql: the call center team says to run it first, and Change has no call center switch');
 
-  /* ---------------- Tally admin: the call center team and the switch ---------------- */
+  /* ---------------- MoveCrew admin: the call center team and the switch ---------------- */
   const cos = COMPANIES(); cos[0].cc = true;
   const cctl = { status: ST.test(true), team: [{ email: 'jess@calls.example', name: 'Jess', phone: '512-555-0107', signedIn: true }], companies: cos };
   const M = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies(cctl), setup: browser(rec0()) });
@@ -226,7 +226,7 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   const ca = fnCalls(M, 'admin_cc_add').pop();
   ok(ca && ca.body.name === 'Bo Diaz' && ca.body.email === 'Bo@Calls.example' && ca.body.phone === '512-555-0111', 'Add to the team sends the name, email and phone');
   v = say(M.$('#view'));
-  ok(/Bo Diaz is on the call center team\. They sign in to Tally with bo@calls\.example\./.test(v) && /Bo Diaz.*bo@calls\.example · 512-555-0111.*Hasn’t signed in yet/.test(v), 'and Bo is on the list, not signed in yet');
+  ok(/Bo Diaz is on the call center team\. They sign in to MoveCrew with bo@calls\.example\./.test(v) && /Bo Diaz.*bo@calls\.example · 512-555-0111.*Hasn’t signed in yet/.test(v), 'and Bo is on the list, not signed in yet');
   M.$('#admCcName').value = 'No Email'; M.$('#admCcEmail').value = 'nope';
   M.click('#view [data-act="adm:ccadd"]'); await sleep(30);
   ok(fnCalls(M, 'admin_cc_add').length === 1 && /email they sign in with/.test(M.$('#toast').textContent), 'someone without a proper email isn’t sent');
@@ -239,12 +239,12 @@ const asOwner = { uid: 'u-ana', email: 'ana@x.com' }, asDispatch = { uid: 'u-dot
   // not an admin: the screen says so even if reached
   const K = await load(FILE, { db: seed(), org: ORG, me: asOwner, fnReply: fnReplies({ status: ST.trial(13) }), setup: browser(rec0()) });
   K.click('[data-act="more:open"]'); await sleep(10);
-  ok(!K.$('[data-act="more:go"][data-tab="admin"]'), 'an owner who isn’t a Tally admin has no Tally admin in More');
+  ok(!K.$('[data-act="more:go"][data-tab="admin"]'), 'an owner who isn’t a MoveCrew admin has no MoveCrew admin in More');
 
   /* ---------------- the artifact edition ---------------- */
   const L = await load(ART, {});
   L.click('[data-act="more:open"]'); await sleep(10);
-  ok(!L.w.tallyMember && !L.$('[data-act="more:go"][data-tab="admin"]'), 'the artifact edition has no membership and no Tally admin');
+  ok(!L.w.tallyMember && !L.$('[data-act="more:go"][data-tab="admin"]'), 'the artifact edition has no membership and no MoveCrew admin');
   L.click('[data-act="more:close"]'); await sleep(5); await L.go('settings');
   ok(!!L.$('[data-act="set:open"][data-sec="company"]') && !L.$('[data-act="set:open"][data-sec="member"]'), 'and no Membership in Setup');
   ok(L.errors.length === 0, 'no errors in the artifact (' + L.errors.slice(0, 3).join(' | ') + ')');

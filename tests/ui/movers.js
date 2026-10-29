@@ -199,7 +199,7 @@ const money = (n) => { n = Math.round(n * 100) / 100; const neg = n < 0; n = Mat
   ok(/^c5:.*\|n:2\|c:\["Dee","Kim","Marcus"\]\|m:\[\[\d+,1,"Dee"\]\]\/140,195,250$/.test(N.clockSig), L('the bill’s signature has the quote’s crew, who’s on the crew and the changes (c5, so the versions before leave it alone): ' + N.clockSig.slice(-70)));
 
   /* ---------------- a bill from the version before (the crew changes on lines of their own) ---------------- */
-  // on this phone's own copy, it's worked out again by the movers on the bill when Tally opens
+  // on this phone's own copy, it's worked out again by the movers on the bill when MoveCrew opens
   N.extras = [{ id: 'clock', label: 'By the clock: 5h 0m on the job, billed 5 h (quoted 3 h), held to the not-to-exceed price', amt: 80, ts: now },
     { id: 'crew:0', label: '3 movers from ' + clock(t0 + 2 * H) + ', 3h 0m at $195/hr instead of $140/hr', amt: 165, ts: now }];
   N.clockSig = 'c1:' + N.clockSig.slice(3).replace(/\|n:2\|m:/, '|m:');
