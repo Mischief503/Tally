@@ -561,6 +561,59 @@ nav.tabs.has-fab button.spacer{visibility:hidden;pointer-events:none}
 .seg label span{display:block;padding:8px 13px;font-size:14px;min-width:44px;text-align:center}.seg label+label span{border-left:var(--bw) solid var(--line)}
 .seg input:checked+span{background:var(--focus);color:var(--card);font-weight:var(--w-mid)}.seg input:focus-visible+span{outline:2px solid var(--focus);outline-offset:-2px}
 .seg input:disabled+span{opacity:.55;cursor:default}.sidesnote{margin:6px 2px 0}
+/* the customer side */
+.cm-card .cm-top{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.cm-when{font:700 26px/1.08 var(--display);letter-spacing:var(--hls);margin:0}
+.cm-sub{color:var(--muted);font-size:14px;margin:3px 0 0}
+.cm-route{display:grid;gap:8px;margin:12px 0 4px;padding:10px 12px;border-radius:var(--r2);background:var(--bg);border:var(--bw) solid var(--line2)}
+.cm-route small{display:block;color:var(--muted);font-size:12px;letter-spacing:.2px}
+.cm-route b{display:block;font-weight:var(--w-mid);font-size:15px;overflow-wrap:anywhere}
+.cm-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:10px 0 0}
+.cm-price b{font:700 34px/1 var(--display);font-variant-numeric:tabular-nums}
+.cm-price span{color:var(--muted);font-size:13px}
+.cm-steps{list-style:none;margin:2px 0 0;padding:0}
+.cm-steps li{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line2)}
+.cm-steps li:first-child{border-top:0;padding-top:4px}
+.cm-dot{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:700;line-height:1;margin-top:1px;background:var(--card)}
+.cm-steps li.done .cm-dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.cm-steps li.now .cm-dot{border-color:var(--tape-edge);background:var(--tape);box-shadow:0 0 0 4px color-mix(in srgb,var(--tape) 25%,transparent)}
+.cm-steps .tx{flex:1;min-width:0}
+.cm-steps .tx b{display:block;font-weight:var(--w-mid);font-size:15px;overflow-wrap:anywhere}
+.cm-steps .tx small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.cm-steps .tx .btn{margin-top:9px}
+.cm-steps li.later .tx b{color:var(--muted);font-weight:500}
+.cm-det>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;list-style:none;font:700 17px var(--display);min-height:30px}
+.cm-det>summary::-webkit-details-marker{display:none}
+.cm-det>summary b{font-variant-numeric:tabular-nums}
+.cm-det>summary span::after{content:" ›";color:var(--muted)}
+.cm-det[open]>summary{margin-bottom:8px}
+.cm-det h4{margin:12px 0 2px;font-size:14px}
+.cm-h3{margin:14px 2px 6px;font-size:16px}
+.cm-center{text-align:center}
+.cm-moves .navrow[aria-current="true"]{background:var(--bg)}
+.cm-moves .navrow .tx{flex:1;min-width:0}
+.cm-moves .navrow .tx b{display:block;font-weight:var(--w-mid)}
+.cm-moves .navrow .tx small{display:block;color:var(--muted);font-size:12.5px;overflow-wrap:anywhere}
+.cm-email{margin-top:10px}.cm-email small{display:block;color:var(--muted);font-size:12px}.cm-email b{font-weight:var(--w-mid);overflow-wrap:anywhere}
+.cm-sum{display:flex;flex-direction:column;gap:2px;margin:2px 0 4px}.cm-sum b{font:700 22px/1.1 var(--display)}.cm-sum span{color:var(--muted);font-size:14px}
+.cm-tips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:4px 0 8px}
+.cm-tips .chip{min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:var(--r2);padding:4px 2px;font-weight:var(--w-mid)}
+.cm-tips .chip small{font-size:11.5px;font-weight:400}
+.cm-total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-top:1px solid var(--line);margin-top:12px;padding-top:10px;font-weight:var(--w-mid)}
+.cm-total.cm-first{border-top:0;margin-top:0;padding-top:0}
+.cm-total b{font:700 28px/1 var(--display);font-variant-numeric:tabular-nums}
+.cm-thanks{text-align:center;padding:18px 4px 8px}
+.cm-thanks .big{font:700 34px/1.05 var(--display);margin:0 0 6px}
+.cm-ask{margin:18px 0 0;font-size:16px}
+.cm-count{font:700 52px/1 var(--display);margin:12px 0 2px;font-variant-numeric:tabular-nums}
+#cust[hidden]{display:none}
+#cust{position:fixed;inset:0;z-index:46}
+#cust .scrim{position:absolute;inset:0;background:var(--scrim)}
+#cust .panel{position:absolute;left:0;right:0;bottom:0;max-height:94vh;background:var(--bg);border-radius:calc(var(--r) + 6px) calc(var(--r) + 6px) 0 0;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+#cust .panel::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0;flex:none}
+#cust .panel:focus{outline:none}
+@media (min-width:900px){ #cust .panel{left:auto;top:0;width:520px;max-height:none;border-radius:0} #cust .panel::before{display:none} }
+@media (max-width:380px){ .cm-tips{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .empro{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:14px;margin:6px 0 10px}
 .empro dt{color:var(--muted)}
 .empro dd{margin:0;overflow-wrap:anywhere}
@@ -1063,6 +1116,8 @@ function css(){
   '#login button{width:100%;min-height:48px;margin-top:10px;border-radius:10px;border:1px solid #D9A000;background:#F5B700;color:#241A00;font-weight:700;font-size:16px;cursor:pointer}'+
   '#login button.link{background:none;border:0;color:inherit;opacity:.7;font-weight:500;font-size:14px;min-height:36px;text-decoration:underline}'+
   '#login button.org{display:block;text-align:left;background:transparent;color:inherit;border:1px solid #E7EAF0;font-weight:600;margin-top:8px;padding:10px 12px}#login button.org small{display:block;font-weight:400;opacity:.7;font-size:13px}'+
+  '#login button.google{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1F1F1F;border:1px solid #747775;font-weight:600;margin:4px 0 0}#login button.google svg{width:18px;height:18px;flex:none}'+
+  '#login .or{display:flex;align-items:center;gap:10px;margin:14px 0 10px;font-size:13px;opacity:.6}#login .or::before,#login .or::after{content:"";flex:1;border-top:1px solid #E7EAF0}#login .note2{font-size:13px;opacity:.75;margin:12px 0 0}'+
   // the message line is a plain line here (the app's .msg is a chat bubble)
   '#login .msg{max-width:none;align-self:auto;background:none;border:0;border-radius:0;padding:0;margin-top:10px;font-size:13.5px;min-height:18px}#login .msg.bad{color:#C62026}#login .msg.ok{color:#0A7A3D}'+
   // a phone set to dark: last, so it wins over the light rules above (the box was white with light text)
@@ -1074,17 +1129,22 @@ function render(){
   css();
   if(!el){el=document.createElement('div');el.id='login';document.body.appendChild(el)}
   var b=state.busy;
+  if(state.step==='email')oauthAsk();
+  var g=!!oauth&&oauth.google&&!window.TALLY_STANDALONE;   // Google won't sign in inside the Android app's own window
   el.innerHTML='<div class="box"><h1>Tally</h1>'+(state.step==='email'
-    ? '<p>Sign in with your work email. We will send you a 6-digit code.</p>'+
-      '<label for="lgEmail">Work email</label><input id="lgEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" value="'+(state.email||'')+'">'+
-      '<button id="lgSend"'+(b?' disabled':'')+'>'+(b?'Sending…':'Send my code')+'</button>'
+    ? '<p>Sign in to see your move, or to get to work.</p>'+
+      (g?'<button id="lgGoogle" class="google"'+(b?' disabled':'')+'>'+GLOGO+'Continue with Google</button><div class="or">or with a code by email</div>':'')+
+      '<label for="lgEmail">Email</label><input id="lgEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" value="'+(state.email||'')+'">'+
+      '<button id="lgSend"'+(b?' disabled':'')+'>'+(b?'Sending…':'Send my code')+'</button>'+
+      '<p class="note2">Moving with a company that uses Tally? Use the email they have for your move.</p>'
     : '<p>We sent a code to <b>'+state.email.replace(/[<>&]/g,'')+'</b>. It is good for a few minutes.</p>'+
       '<label for="lgCode">Code from the email</label><input id="lgCode" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10">'+
       '<button id="lgVerify"'+(b?' disabled':'')+'>'+(b?'Checking…':'Sign in')+'</button>'+
       '<button class="link" id="lgBack">Use a different email</button>')+
     '<div class="msg '+(state.msgKind||'')+'">'+(state.msg||'')+'</div></div>';
   var f=el.querySelector('#lgEmail')||el.querySelector('#lgCode');if(f)setTimeout(function(){try{f.focus()}catch(e){}},30);
-  var send=el.querySelector('#lgSend'),ver=el.querySelector('#lgVerify'),back=el.querySelector('#lgBack');
+  var send=el.querySelector('#lgSend'),ver=el.querySelector('#lgVerify'),back=el.querySelector('#lgBack'),gb=el.querySelector('#lgGoogle');
+  if(gb)gb.onclick=googleIn;
   if(send)send.onclick=sendCode;
   if(ver)ver.onclick=verify;
   if(back)back.onclick=function(){state.step='email';state.msg='';render()};
@@ -1108,6 +1168,20 @@ function verify(){
     if(r.error)return msg('That code did not work. Check it, or send a new one.','bad');
   }).catch(function(){msg('Could not sign you in. Try again.','bad')});
 }
+// Sign in with Google: only when Supabase has Google switched on (Authentication › Providers), so the button never
+// leads to an error page. Google sends them back here, signed in.
+var oauth={google:false,asked:false};
+var GLOGO='<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
+// asked once, the first time the sign-in screen shows (not at every start, and never in the Android app)
+function oauthAsk(){
+  if(!oauth||oauth.asked||window.TALLY_STANDALONE)return;oauth.asked=true;
+  try{fetch(CFG.url.replace(/\/+$/,'')+'/auth/v1/settings',{headers:{apikey:CFG.anonKey}}).then(function(r){return r.json()}).then(function(j){oauth.google=!!(j&&j.external&&j.external.google);if(oauth.google&&el&&state.step==='email'&&!state.busy&&document.getElementById('lgEmail'))render()}).catch(function(){})}catch(e){}
+}
+function googleIn(){
+  state.busy=true;state.msg='';render();
+  try{sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}}).then(function(r){if(r&&r.error)msg(r.error.message||'Google sign-in is not available. Use the email code.','bad')}).catch(function(){msg('Could not reach Google. Use the email code.','bad')})}
+  catch(e){msg('Google sign-in is not available. Use the email code.','bad')}
+}
 function hideLoginOnly(){if(el){el.remove();el=null}}
 function hideLogin(){if(el){el.remove();el=null}document.documentElement.classList.remove('pre-auth')}
 function showLogin(){document.documentElement.classList.add('pre-auth');state.step='email';state.busy=false;state.msg='';render()}
@@ -1130,7 +1204,7 @@ function renderPicker(){
     // someone on Tally's call center team with no company switched on yet: nothing to start or join
     if(pick.agent&&!pick.orgs.length)body='<h1>Tally</h1><p>You’re on Tally’s call center team. No company has the call center switched on yet; Tally admin turns it on for each company that buys it.</p>'+
       '<button class="link" id="pkOut">Sign out ('+esc(me.email)+')</button>';
-    else body='<h1>Tally</h1><p>'+(pick.orgs.length?'Pick a company to work in.':'You are not part of a company yet.')+'</p>'+rows+
+    else body='<h1>Tally</h1>'+(pick.noMove&&!pick.orgs.length?'<p><b>No move here yet for '+esc(me.email)+'.</b> If you’re moving with a company that uses Tally, ask them to put this email on your move, then sign in again.</p><p>Run a moving company?</p>':'<p>'+(pick.orgs.length?'Pick a company to work in.':'You are not part of a company yet.')+'</p>')+rows+
       '<button id="pkNew">Start a new company</button><button class="link" id="pkJoin">Join a company with a code</button>'+
       '<button class="link" id="pkOut">Sign out ('+esc(me.email)+')</button>';
   }else if(pick.mode==='new'){
@@ -1179,15 +1253,47 @@ function onSession(session){
   // and a company Tally's admin added for this email becomes theirs
   sb.rpc('claim_invites').then(function(){},function(){}).then(function(){return sb.rpc('claim_company_invites')}).then(function(){},function(){}).then(function(){return sb.rpc('claim_cc_team')}).then(function(r){pick.agent=!!(r&&r.data===true)},function(){}).then(function(){return sb.rpc('my_orgs')}).then(function(r){
     var list=r.data||[],hit=list.filter(function(o){return o.id===ORG})[0],ready=list.filter(function(o){return !o.pending});
+    // a customer (no company of their own), or someone who asked for their own moves: the customer side
+    var wantCust=false;try{wantCust=sessionStorage.getItem('tally.cust')==='1'}catch(e){}
+    if(!hit&&!pick.agent&&(wantCust||!list.length))return custStart(list).then(function(ok){
+      if(ok)return;
+      try{sessionStorage.removeItem('tally.cust')}catch(e){}
+      if(!ORG&&ready.length===1){useOrg(ready[0].id);return}
+      pick.orgs=list;pick.mode='list';pick.msg='';pick.noMove=!list.length;hideLoginOnly();renderPicker();
+    });
     if(!hit&&!ORG&&ready.length===1){useOrg(ready[0].id);return}
     // the call center team: any of its companies opens the Companies screen, where they pick the one on the call
     if(!hit&&ready.length&&ready.every(function(o){return o.role==='callcenter'})){useOrg(ready[0].id);return}
     if(!hit){pick.orgs=list;pick.mode='list';pick.msg='';hideLoginOnly();renderPicker();return}
     window.tallyOrg={id:hit.id,name:hit.name,role:hit.role,join_code:hit.join_code,pending:hit.pending,plan:hit.plan};
     hideLogin();
-    return Promise.all([refreshMe(),commsApi.refresh()]).then(function(){window.__tallyBooted=true;readyGo()});
+    return Promise.all([refreshMe(),commsApi.refresh()]).then(function(){window.__tallyBooted=true;readyGo();custPeek()});
   }).catch(function(){hideLoginOnly();renderPicker()});
 }
+/* ---------- the customer side (Oct 28): a customer's moves, through the Edge Function (they are none of a company's
+   people, so the database's rules give them nothing directly). The app's customer screens read window.tallyCust. ---------- */
+window.tallyCust={on:false,email:'',name:'',phone:'',moves:[],orgs:[],has:false,
+  refresh:function(){return commsPost({action:'cust_list'}).then(function(r){var C=window.tallyCust;if(r&&r.ok){C.moves=r.moves||[];C.name=r.name||C.name;C.phone=r.phone||C.phone}return r})},
+  act:function(kind,org,id,extra){return commsPost(Object.assign({action:'cust_'+kind,org:org,jobId:id,back:location.origin+location.pathname},extra||{}))},
+  saveProfile:function(p){
+    var up=sb.auth.updateUser?sb.auth.updateUser({data:{name:p.name,phone:p.phone}}).catch(function(){}):Promise.resolve();
+    return up.then(function(){return commsPost({action:'cust_profile',name:p.name,phone:p.phone})}).then(function(r){if(r&&r.ok){window.tallyCust.name=p.name;window.tallyCust.phone=p.phone}return r});
+  },
+  // someone who works for a company and has a move of their own: their moves, then back to work
+  mine:function(){try{sessionStorage.setItem('tally.cust','1');localStorage.removeItem(ORG_KEY)}catch(e){}reload()},
+  work:function(){try{sessionStorage.removeItem('tally.cust')}catch(e){}reload()}
+};
+function custStart(list){
+  return commsPost({action:'cust_list'}).then(function(r){
+    if(!r||!r.ok||!(r.moves||[]).length)return false;
+    var C=window.tallyCust;C.on=true;C.email=me.email;C.name=r.name||'';C.phone=r.phone||'';C.moves=r.moves;C.orgs=(list||[]).filter(function(o){return !o.pending});
+    window.tallyOrg=null;hideLogin();window.__tallyBooted=true;readyGo();
+    if(window.tallyCustGo)window.tallyCustGo();
+    return true;
+  }).catch(function(){return false});
+}
+// at work: are there moves of their own too (More › My moves)
+function custPeek(){commsPost({action:'cust_list'}).then(function(r){if(r&&r.ok&&(r.moves||[]).length){window.tallyCust.has=true;if(window.tallyMoreRedraw)window.tallyMoreRedraw()}}).catch(function(){})}
 /* ---------- the call center's Companies screen: every company with the service, from the database ----------
    companies(): [{id,name,here,card}] (card: the rate card copy); sched(ids): {org: [schedule copies]};
    open(id,pre): that company, with the quote (or its schedule) to open once it's loaded. */
@@ -1238,6 +1344,7 @@ var commsApi={
   short:function(id){return commsPost({action:'short',jobId:id})},
   eta:function(id,m){return commsPost({action:'eta',jobId:id,minutes:m})},
   remind:function(id){return commsPost({action:'remind',jobId:id})},
+  custInvite:function(id,url){return commsPost({action:'invite_app',jobId:id,url:url})},
   call:function(id){return commsPost({action:'call',jobId:id})},
   sos:function(id,kind){return commsPost({action:'sos',msgId:id,kind:kind,now:Date.now()})},
   log:function(id){
@@ -1300,7 +1407,7 @@ window.tallyAdmin={
 var readyGo,ready=new Promise(function(r){readyGo=r});   // the app waits here until we know who is signed in
 window.claude={use:function(what){
   if(what!=='db'&&what!=='user')return Promise.resolve(null);
-  return ready.then(function(){return what==='db'?db:user});
+  return ready.then(function(){return window.tallyCust.on?null:what==='db'?db:user});   // a customer: no company's data
 }};
 window.tallySignOut=function(){sb.auth.signOut().then(function(){try{localStorage.removeItem(ORG_KEY)}catch(e){}reload()})};
 
@@ -1358,6 +1465,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <div id="start" hidden></div>
 <div id="mover" hidden></div>
 <div id="emp" hidden></div>
+<div id="cust" hidden></div>
 <button id="sosBar" data-act="sos:open" hidden></button>
 <div id="sos" role="alertdialog" aria-modal="true" aria-label="Truck down" tabindex="-1" hidden></div>
 <button id="fab" class="fab" data-act="fab:quote" aria-label="New quote" hidden>+</button>
@@ -1473,7 +1581,7 @@ var RANK={active:0,booked:1,quoted:2,lead:3,done:4,paid:5,lost:6};
    the app as it was. A few are older settings with their own place (p). A number a switch needs
    (the deposit %, the radius) shows under it while it is on. A switch that changes the price only
    changes quotes made or saved after it. */
-var OPT_GROUPS=[['field','Crew and field'],['bill','Billing out'],['clock','Time clock'],['price','Quotes and pricing'],['forms','Paperwork'],['pay','Payments'],['texts','Texts'],['office','Office']];
+var OPT_GROUPS=[['field','Crew and field'],['bill','Billing out'],['clock','Time clock'],['price','Quotes and pricing'],['forms','Paperwork'],['pay','Payments'],['cust','Customer app'],['texts','Texts'],['office','Office']];
 var OPTS=[
   {g:'field',k:'eta',t:'Arrival text at Start job',h:'Crew leads can text the customer how long until the crew arrives.'},
   {g:'field',k:'confirm',t:'Crew confirm their jobs',h:'Everyone booked on a job taps “Confirm I’ll be there”, and the office sees who hasn’t.'},
@@ -1508,6 +1616,8 @@ var OPTS=[
   {g:'pay',k:'payCard',t:'Typing a card in',h:'The lead types the customer’s card in.'},
   {g:'pay',k:'payVault',t:'Cards on file',h:'Keep a customer’s card to charge later.'},
   {g:'pay',k:'payCash',t:'Cash, checks and Zelle',h:'Record payments taken outside the app. With every other way off, this stays on.'},
+  {g:'cust',k:'custBook',t:'Customers book their own quote',h:'In the customer app they accept the quote and book it. It shows in Needs scheduling for dispatch to add the truck and crew.'},
+  {g:'cust',k:'custTips',t:'Tips for the crew',h:'Customers can add a tip when they pay the bill in the customer app. It goes to the movers on the job, split evenly, apart from the bill.'},
   {g:'texts',p:'comms.alerts.assigned',t:'Text crew when they’re put on a job',h:'And when they’re taken off one.'},
   {g:'texts',p:'comms.alerts.moved',t:'Text the crew when a job moves',h:'To a new day or time.'},
   {g:'texts',p:'comms.alerts.tomorrow',t:'Texts the evening before',h:'Everyone gets their jobs for tomorrow, and the office gets who hasn’t confirmed.'},
@@ -2047,7 +2157,7 @@ function demoJobs(S){
   var D={sofa3:1,bedq:1,dresser:1,tv:1,boxm:8,boxs:6};
   var E={piano:1,sofa3:1,bedq:1,dresser:1,boxm:10};
   function mk(o){
-    var d=Object.assign(blankDraft(),{name:o.name,phone:o.phone||'',source:o.src||'Google',moveDate:o.off==null?'':addDays(t,o.off),time:o.time||'08:00',from:o.from||'',to:o.to||'',miles:o.miles||'',flights:o.fl||'',items:o.items||{},pack:!!o.pack,notes:o.notes||''});
+    var d=Object.assign(blankDraft(),{name:o.name,phone:o.phone||'',email:o.email||'',source:o.src||'Google',moveDate:o.off==null?'':addDays(t,o.off),time:o.time||'08:00',from:o.from||'',to:o.to||'',miles:o.miles||'',flights:o.fl||'',items:o.items||{},pack:!!o.pack,notes:o.notes||''});
     var j=newJob(d,S,o.status);j.createdAt=Date.now()-(o.age||4)*864e5;
     j.assign={truckId:o.truck||'',crew:o.crew||[],drivers:{}};
     if(o.truck&&o.drive!==false){var dv=o.drive||(o.crew||[]).filter(function(n){return !(S.drivers||[]).length||S.drivers.indexOf(n)>=0})[0];if(dv)j.assign.drivers[o.truck]=dv}
@@ -2059,14 +2169,14 @@ function demoJobs(S){
     if(o.cn)j.crewNotes=o.cn.map(function(c){return {id:uid(),who:c[0],ts:Date.now()-c[1]*36e5,text:c[2]}});
     j.log.push({ts:j.createdAt,ev:'Sample job'});out.push(j);
   }
-  mk({name:'Priya Nair',mat:[['m_boxm',12],['m_tape',4]],phone:'512-555-0142',status:'booked',off:0,time:'08:00',items:B,from:'418 Oak St, Austin',to:'77 Ridge Rd, Round Rock',miles:22,truck:'t26',crew:['Marcus','Dee','Luis'],pay:[[0.25,-4]],src:'Referral',cn:[['Marcus',20,'Elevator at pickup is reserved for 8 AM. Front desk confirmed.']]});
-  mk({name:'Hollis & Reed Law',phone:'512-555-0177',status:'booked',off:1,time:'10:00',items:C,from:'900 Congress Ave, Austin',to:'2200 S Lamar, Austin',miles:8,truck:'t20',crew:['Tanya','Andre'],pay:[[0.25,-2]],src:'Google'});
-  mk({name:'Nadia Farouk',phone:'512-555-0110',status:'booked',off:1,time:'11:00',items:D,from:'1502 E 6th, Austin',to:'34 Barton Hills Dr, Austin',miles:5,truck:'t20',crew:['Marcus','Kim'],drive:false,fl:2,src:'Yelp',notes:'Studio, third floor walk-up.'});
-  mk({name:'Ortega family',phone:'512-555-0189',status:'quoted',off:5,time:'09:00',items:A,from:'88 Elm Ct, Pflugerville',to:'12 Lakeview Dr, Cedar Park',miles:19,pack:true,src:'Facebook'});
-  mk({name:'Marcus Tull',mat:[['m_boxm',10],['m_stretch',2]],cost:[['Dump run at the county site','Dump fee',65]],phone:'512-555-0163',status:'done',off:-2,time:'09:00',items:E,from:'9 Pecan Row, Austin',to:'610 Hill Country Ln, Dripping Springs',miles:27,truck:'t26',crew:['Marcus','Luis'],mult:1.2,pay:[[0.25,-9]],src:'Repeat customer',notes:'Piano on ground floor, ramp needed.'});
-  mk({name:'Lena Wu',mat:[['m_boxs',8],['m_boxm',14],['m_tape',3]],status:'paid',off:-9,items:A,from:'71 Maple Way, Austin',to:'5 Cedar St, Austin',miles:6,truck:'t20',crew:['Marcus','Kim','Tanya'],mult:1.1,pay:[[0.25,-14],[0.75,-9]],src:'Google'});
+  mk({name:'Priya Nair',email:'priya.nair@example.com',mat:[['m_boxm',12],['m_tape',4]],phone:'512-555-0142',status:'booked',off:0,time:'08:00',items:B,from:'418 Oak St, Austin',to:'77 Ridge Rd, Round Rock',miles:22,truck:'t26',crew:['Marcus','Dee','Luis'],pay:[[0.25,-4]],src:'Referral',cn:[['Marcus',20,'Elevator at pickup is reserved for 8 AM. Front desk confirmed.']]});
+  mk({name:'Hollis & Reed Law',email:'office@hollisreed.example.com',phone:'512-555-0177',status:'booked',off:1,time:'10:00',items:C,from:'900 Congress Ave, Austin',to:'2200 S Lamar, Austin',miles:8,truck:'t20',crew:['Tanya','Andre'],pay:[[0.25,-2]],src:'Google'});
+  mk({name:'Nadia Farouk',email:'nadia.farouk@example.com',phone:'512-555-0110',status:'booked',off:1,time:'11:00',items:D,from:'1502 E 6th, Austin',to:'34 Barton Hills Dr, Austin',miles:5,truck:'t20',crew:['Marcus','Kim'],drive:false,fl:2,src:'Yelp',notes:'Studio, third floor walk-up.'});
+  mk({name:'Ortega family',email:'ortega.family@example.com',phone:'512-555-0189',status:'quoted',off:5,time:'09:00',items:A,from:'88 Elm Ct, Pflugerville',to:'12 Lakeview Dr, Cedar Park',miles:19,pack:true,src:'Facebook'});
+  mk({name:'Marcus Tull',email:'marcus.tull@example.com',mat:[['m_boxm',10],['m_stretch',2]],cost:[['Dump run at the county site','Dump fee',65]],phone:'512-555-0163',status:'done',off:-2,time:'09:00',items:E,from:'9 Pecan Row, Austin',to:'610 Hill Country Ln, Dripping Springs',miles:27,truck:'t26',crew:['Marcus','Luis'],mult:1.2,pay:[[0.25,-9]],src:'Repeat customer',notes:'Piano on ground floor, ramp needed.'});
+  mk({name:'Lena Wu',email:'lena.wu@example.com',mat:[['m_boxs',8],['m_boxm',14],['m_tape',3]],status:'paid',off:-9,items:A,from:'71 Maple Way, Austin',to:'5 Cedar St, Austin',miles:6,truck:'t20',crew:['Marcus','Kim','Tanya'],mult:1.1,pay:[[0.25,-14],[0.75,-9]],src:'Google'});
   mk({name:'Devon Reyes',mat:[['m_boxl',14],['m_boxw',4],['m_paper',20]],cost:[['Fuel for the 26 footer','Fuel',58.4]],status:'paid',off:-21,items:B,from:'320 Bluff Rd, Austin',to:'18 Oakmont, Georgetown',miles:31,truck:'t26',crew:['Marcus','Dee','Luis','Andre'],mult:0.95,pay:[[0.25,-27],[0.75,-21]],src:'Referral'});
-  mk({name:'Sam Kowalski',status:'lead',off:null,src:'Google',phone:'512-555-0120',from:'Austin',to:'San Antonio',notes:'Asked for a call back about a 2BR.'});
+  mk({name:'Sam Kowalski',email:'sam.kowalski@example.com',status:'lead',off:null,src:'Google',phone:'512-555-0120',from:'Austin',to:'San Antonio',notes:'Asked for a call back about a 2BR.'});
   mk({name:'Grace Pham',status:'lost',off:null,items:A,from:'Austin',to:'Dallas',miles:195,src:'Yelp',age:20});
   mk({name:'Ibrahim Sayed',mat:[['m_boxm',20],['m_boxl',10]],cost:[['Parking permit downtown','Parking',30]],status:'paid',off:-38,items:C,from:'400 W 2nd, Austin',to:'1800 Guadalupe, Austin',miles:4,truck:'t20',crew:['Tanya','Andre','Kim'],mult:1.25,pay:[[1,-38]],src:'Google'});
   mk({name:'Chloe Martin',status:'paid',off:-50,items:D,from:'22 Rio Grande, Austin',to:'9 Hyde Park Ave, Austin',miles:3,truck:'t16',crew:['Tanya','Luis'],mult:1.3,pay:[[1,-50]],src:'Facebook'});
@@ -2106,6 +2216,9 @@ function demoShifts(){
 
 /* ---------- icons ---------- */
 var ICON={
+  mymove:'<svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8.5l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8.5"/><path d="M8 6l8 4"/></svg>',
+  mypay:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 14.5h4"/></svg>',
+  myprofile:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20.5c0-4 3.4-6.8 7.5-6.8s7.5 2.8 7.5 6.8"/></svg>',
   today:'<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
   board:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 5v14"/></svg>',
   more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>',
@@ -2123,13 +2236,13 @@ var ICON={
   admin:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
   history:'<svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.7h3.7"/><path d="M12 8v4.3l2.8 1.7"/></svg>'
 };
-var TABS=[{id:'desk',label:'Companies'},{id:'sched',label:'Schedule'},{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'quotes',label:'Quotes'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'}];
-var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['crew','chat'],crew:['crew','chat'],callcenter:['desk','sched','quotes']};
+var TABS=[{id:'desk',label:'Companies'},{id:'sched',label:'Schedule'},{id:'today',label:'Today'},{id:'quote',label:'Quote'},{id:'quotes',label:'Quotes'},{id:'jobs',label:'Jobs'},{id:'dispatch',label:'Board'},{id:'crew',label:'Field'},{id:'history',label:'Job history'},{id:'chat',label:'Chat'},{id:'reports',label:'Reports'},{id:'settings',label:'Setup'},{id:'admin',label:'Tally admin'},{id:'mymove',label:'My move'},{id:'mypay',label:'Pay'},{id:'myprofile',label:'Profile'}];
+var NAV={owner:['today','jobs','dispatch','chat'],dispatch:['today','jobs','dispatch','chat'],lead:['crew','chat'],crew:['crew','chat'],callcenter:['desk','sched','quotes'],customer:['mymove','mypay','myprofile']};
 function navTabs(){var r=state.ui.role,ids=ccToo()?['crew','sched','quotes','chat']:r==='callcenter'&&ccHouse()?['sched','quotes','chat']:(NAV[r]||NAV.owner);return ids.map(function(id){return TABS.filter(function(t){return t.id===id})[0]})}
 function allowedTabs(role){
-  var ids=role==='crew'||role==='lead'?['crew','chat'].concat(ccToo()?['sched','quote','quotes']:[]):role==='callcenter'?(ccHouse()?['sched','quote','quotes','chat']:['desk','sched','quote','quotes']):role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
+  var ids=role==='customer'?['mymove','mypay','myprofile']:role==='crew'||role==='lead'?['crew','chat'].concat(ccToo()?['sched','quote','quotes']:[]):role==='callcenter'?(ccHouse()?['sched','quote','quotes','chat']:['desk','sched','quote','quotes']):role==='dispatch'?['today','quote','jobs','dispatch','crew','history','chat'].concat(opt('dispatchMoney')?['reports']:[]):
     ['today','quote','jobs','dispatch','crew','history','chat','reports','settings'];
-  if(typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // Tally's own admins, in any company
+  if(role!=='customer'&&typeof isTallyAdmin==='function'&&isTallyAdmin())ids=ids.concat(['admin']);   // Tally's own admins, in any company
   var out=TABS.filter(function(t){return ids.indexOf(t.id)>=0});
   if(ccToo())out.sort(function(a,b){return (b.id==='crew')-(a.id==='crew')});   // their jobs first, then the call center's
   return out;
@@ -2186,6 +2299,435 @@ function viewerName(){
 function ccHouse(){var n=viewerName();return ccStaffHas(n)&&!isOfficeName(n)}
 // in the field and the call center both: their jobs, and the call center's Schedule, Quotes and New quote
 function ccToo(){var r=state.ui.role;return (r==='crew'||r==='lead')&&ccHouse()}
+/* ---------- the customer side (Richie, Oct 28: "I want there to be a customer side as well . Where they have a profile .
+   Then they can have the app on there phone if they would like and pay with google pay"; asked how they get in: "They
+   open the app and sign in with their gmail . Their move will already be link to their gmail"; and what they do: accept
+   their quote, follow move day, sign forms ahead, tip the crew, and "They should also be auto took to the review page for
+   the company they book through after the move is complete").
+   A customer signs in with the email the office put on their move. Their side has three tabs: My move (the quote to
+   book, what's next, move day as it happens, the bill), Pay (the company's Stripe page: Google Pay, Apple Pay or a card,
+   with a tip for the crew on the bill) and Profile. What they see is a customer's copy of each move (custMoveOf; the
+   server makes the same copy for the phone app): never the crew's pay, the costs, the notes or the activity. The owner
+   sees it with More › See it their way › Customer, where what they do changes the job just as the customer would. ---------- */
+var CUST_ST=['lead','quoted','booked','active','done','paid'];
+// an email the way it signs in: a Gmail address is the same mailbox with or without dots or a +tag
+function emailKey(e){
+  e=String(e||'').trim().toLowerCase();var at=e.lastIndexOf('@');if(at<1||at>=e.length-1||/\s/.test(e))return '';
+  var u=e.slice(0,at),h=e.slice(at+1);
+  if(h==='gmail.com'||h==='googlemail.com'){u=u.split('+')[0].replace(/\./g,'');h='gmail.com'}
+  return u?u+'@'+h:'';
+}
+function isCust(){return state.ui.role==='customer'}
+// signed in as a customer in the phone app (window.tallyCust), not the owner seeing it their way
+function custLive(){return !!(window.tallyCust&&window.tallyCust.on)&&!previewing()}
+// a move belongs to the customer by its email; seen their way, a move with no email yet goes by its phone or name
+function custJobKey(j){var k=emailKey(j&&j.d&&j.d.email);return k||'k:'+custKey(j)}
+function custWho(){return custLive()?emailKey(window.tallyCust.email):(previewing()&&ui.preview.role==='customer'?String(ui.preview.staff||''):'')}
+function custOwns(j,k){return !!k&&!!j&&!!j.d&&custJobKey(j)===k}
+// the customers the owner can see it as, newest move first
+function custPeople(){
+  var seen={},out=[];
+  state.jobs.slice().sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0)}).forEach(function(j){
+    if(!j.d||CUST_ST.indexOf(j.status)<0)return;var k=custJobKey(j);if(k==='k:'||seen[k])return;seen[k]=1;
+    out.push({key:k,name:String(j.d.name||'').trim()||String(j.d.email||'').trim()||'Customer',email:String(j.d.email||'').trim()});
+  });
+  return out.sort(function(a,b){return (a.email?0:1)-(b.email?0:1)});
+}
+function custPvName(){var k=ui.preview&&ui.preview.staff,p=custPeople().filter(function(x){return x.key===k})[0];return p?p.name:'Customer'}
+function custPhone(S){var line=window.tallyComms&&window.tallyComms.number&&window.tallyComms.number();if(line)return line;var ow=(S.office||[]).filter(function(o){return o.kind==='owner'})[0];return String((ow&&S.contacts&&S.contacts[ow.name])||'')}
+function custReviewUrl(S){var u=String((S&&S.reviewUrl)||'').trim();return /^https:\/\/[^\s<>"']+$/.test(u)?u:''}
+// the customer's copy of a move: what they may see of it, nothing of the company's own
+function custMoveOf(j,S){
+  var d=j.d||{},q=j.quote||{},c=j.cust||{},crew=(j.assign&&j.assign.crew)||[],ld=crew.length?leadOf(j):'';
+  var signed=function(fid){var x=(j.signed||[]).filter(function(s){return s.formId===fid&&!s.waived})[0];return x?{name:String(x.name||''),ts:x.ts||0,ahead:!!x.ahead}:null};
+  return {id:j.id,org:'',company:String(S.company||''),phone:custPhone(S),status:j.status,test:!!j.test,
+    d:{name:d.name||'',phone:d.phone||'',email:d.email||'',moveDate:d.moveDate||'',time:d.time||'',from:d.from||'',to:d.to||''},
+    quote:{lines:(q.lines||[]).map(function(l){return {label:String(l.label||''),amt:num(l.amt)}}),total:num(q.total),nte:!q.flat&&q.capNte!==false?num(q.nte):0,deposit:num(q.deposit),crew:num(q.crew),hours:num(q.hours),trucks:num(q.nTrucks)||1,flat:!!q.flat},
+    items:(j.items||[]).map(function(it){return {name:String(it.name||''),qty:num(it.qty)}}),
+    bill:{total:totalOf(j),paid:paidOf(j),due:balOf(j),deposit:depositDue(j)},
+    pays:(j.payments||[]).filter(function(p){return payCounts(p)||num(p.tip)>0}).map(function(p){return {amt:payCounts(p)?num(p.amt):0,tip:num(p.tip),method:String(p.method||''),date:p.date||'',ts:p.ts||0}}),
+    forms:(opt('forms',S)?(S.forms||[]).filter(function(f){return f.required}):[]).map(function(f){return {id:f.id,title:String(f.title||''),kind:f.kind==='text'?'text':'pages',text:f.kind==='text'?String(f.text||''):'',pages:f.kind==='text'?[]:(f.pages||[]).slice(),ahead:!!f.ahead,signed:signed(f.id)}}),
+    day:{startedAt:j.startedAt||0,eta:j.eta&&j.eta.at?j.eta.at:0,phases:Object.assign({},j.phases||{}),finishedAt:j.finishedAt||0},
+    crew:{lead:String(ld).split(' ')[0],n:crew.length},
+    tips:opt('custTips',S),book:opt('custBook',S),review:custReviewUrl(S),reviewed:!!c.reviewAt,bookedBy:c.bookedAt?'customer':''};
+}
+function custKeyOf(m){return (m.org?m.org+'/':'')+m.id}
+function custMoves(){
+  if(custLive())return (window.tallyCust.moves||[]).filter(function(m){return m&&CUST_ST.indexOf(m.status)>=0});
+  var k=custWho(),S=state.settings;if(!k)return [];
+  return state.jobs.filter(function(j){return CUST_ST.indexOf(j.status)>=0&&custOwns(j,k)}).map(function(j){return custMoveOf(j,S)});
+}
+function custStage(m){return m.status==='lead'||m.status==='quoted'?'quote':m.status==='booked'?'booked':m.status==='active'?'today':m.status==='done'&&m.bill.due>0?'due':'done'}
+// the move their screens open on: today's, a bill to pay, the next booked one, an open quote, else the latest
+function custSorted(){
+  var rank={today:0,due:1,booked:2,quote:3,done:4};
+  return custMoves().sort(function(a,b){
+    var ra=rank[custStage(a)],rb=rank[custStage(b)];if(ra!==rb)return ra-rb;
+    var x=a.d.moveDate||'9999-99-99',y=b.d.moveDate||'9999-99-99';
+    return ra===4?(x<y?1:x>y?-1:0):(x<y?-1:x>y?1:0);
+  });
+}
+function custFind(key){return custMoves().filter(function(m){return custKeyOf(m)===key})[0]||null}
+function custCur(){var L=custSorted();return (ui.csMove&&L.filter(function(m){return custKeyOf(m)===ui.csMove})[0])||L[0]||null}
+// "Hi Priya"; a company or a family name gets "Hello"
+function custHi(n){n=String(n||'').trim();if(!n||/&|\b(and|family|inc|llc|law|co|company|corp|group)\b/i.test(n))return 'Hello';return 'Hi '+n.split(/\s+/)[0]}
+function custSelf(){   // their name, phone and email: their profile in the phone app, else their latest move's
+  var L=custSorted(),m=L[0],T=custLive()?window.tallyCust:null;
+  return {name:(T&&T.name)||(m&&m.d.name)||'',phone:(T&&T.phone)||(m&&m.d.phone)||'',email:T?String(T.email||''):((m&&m.d.email)||'')};
+}
+function custLong(day){return day?parseISO(day).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):''}
+function custIn(day){if(!day)return '';var n=Math.round((parseISO(day)-parseISO(todayISO()))/864e5);return n===0?'Today':n===1?'Tomorrow':n>1?'In '+n+' days':''}
+// what they can pay now: the deposit that holds a booked date, or the bill once the move is done
+function custDueNow(m){var s=custStage(m);return s==='booked'&&m.bill.deposit>0?{amt:m.bill.deposit,kind:'deposit'}:s==='due'?{amt:m.bill.due,kind:'bill'}:{amt:0,kind:''}}
+function custTipOk(m){return !!m.tips&&(m.status==='done'||m.status==='paid')&&m.crew.n>0}
+function custTipped(m){return (m.pays||[]).some(function(p){return p.tip>0})}
+function custAhead(m){return (m.forms||[]).filter(function(f){return f.ahead&&!f.signed})}
+function custTipWho(m){var n=m.crew.n;return n>1?'It goes to the '+n+' movers on your move'+(m.crew.lead?' ('+m.crew.lead+'’s crew)':'')+', split evenly.':m.crew.lead?'It goes to '+m.crew.lead+', who moved you.':'It goes to your crew.'}
+function custSizeWords(m){var q=m.quote,w=[];if(q.crew)w.push(q.crew+' movers');if(q.trucks)w.push(q.trucks+' truck'+(q.trucks===1?'':'s'));if(q.hours)w.push('about '+q.hours+' hours');return w.join(' · ')}
+function custRouteHtml(m){return '<div class="cm-route"><div><small>From</small><b>'+esc(m.d.from||'Not set yet')+'</b></div><div><small>To</small><b>'+esc(m.d.to||'Not set yet')+'</b></div></div>'}
+function custLinesHtml(m,fin){
+  var q=m.quote,rows=q.lines.map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('');
+  return '<table class="lines">'+rows+(fin?'<tr class="sub"><td>Quote</td><td>'+money(q.total)+'</td></tr><tr class="total"><td>Your bill</td><td>'+money(m.bill.total)+'</td></tr>':'<tr class="total"><td>'+(q.flat?'Price':'Estimate')+'</td><td>'+money(q.total)+'</td></tr>')+'</table>'+
+    (q.flat||fin?'':'<p class="hint">Billed by the hour from your crew’s times'+(q.nte?', with an estimated top price of '+money(q.nte):'')+'.</p>');
+}
+var CUST_PILL={quote:['Quote','quoted'],booked:['Booked','booked'],today:['Moving today','active'],due:['Moved · bill due','done'],done:['Done','paid']};
+function custBtn(m,act,label,pri){return '<button class="btn'+(pri?' primary':'')+'" data-act="'+act+'" data-k="'+esc(custKeyOf(m))+'">'+label+'</button>'}
+function custCardHtml(m){
+  var s=custStage(m),pl=CUST_PILL[s],q=m.quote,day=m.d.moveDate;
+  var when=day?'<h2 class="cm-when">'+esc(custLong(day))+'</h2><p class="cm-sub">'+(m.d.time?'Your crew arrives at '+esc(fmtTime(m.d.time)):'Arrival time to be set')+((s==='booked'||s==='quote')&&custIn(day)?' · '+custIn(day):'')+'</p>'
+    :'<h2 class="cm-when">Day not set yet</h2><p class="cm-sub">Call or text us to pick a day.</p>';
+  var price=s==='quote'?'<div class="cm-price"><b>'+money(q.total)+'</b><span>'+(q.flat?'Flat price':'Estimate, billed by the hour'+(q.nte?' · top price about '+money(q.nte):''))+'</span></div>':'';
+  var crew=(s==='booked'||s==='today')&&m.crew.lead?'<p class="cm-sub">'+esc(m.crew.lead)+' leads your crew'+(m.crew.n>1?' of '+m.crew.n:'')+'.</p>':'';
+  return '<section class="card cm-card"><div class="cm-top"><span class="pill" data-s="'+pl[1]+'">'+pl[0]+'</span>'+(m.test?'<span class="pill">Test</span>':'')+'</div>'+when+custRouteHtml(m)+(custSizeWords(m)?'<p class="cm-sub">'+esc(custSizeWords(m))+'</p>':'')+price+crew+'</section>';
+}
+function custStepHtml(st,title,sub,btn){return '<li class="'+st+'"><span class="cm-dot" aria-hidden="true">'+(st==='done'?'✓':'')+'</span><span class="tx"><b>'+title+'</b>'+(sub?'<small>'+sub+'</small>':'')+(btn||'')+'</span></li>'}
+// what's next, in order: book, sign ahead, the deposit, move day, the bill (and a tip), the review
+function custNextHtml(m){
+  var s=custStage(m),A=custAhead(m),due=custDueNow(m),out=[],add=function(st,t,sub,b){out.push(custStepHtml(st,t,sub,b))};
+  var past=!!m.d.moveDate&&m.d.moveDate<todayISO(),aheadAll=(m.forms||[]).filter(function(f){return f.ahead});
+  if(s==='quote')add('now','Book your move',!m.d.moveDate?'Call or text us to pick a day first.':past?'That day has passed. Call or text us to pick a new one.':m.book?'Check the details and book it here.':'Call or text us to book it.',m.book&&m.d.moveDate&&!past?custBtn(m,'cs:book','Book my move',1):'');
+  else add('done','Booked',m.bookedBy==='customer'?'You booked it here.':'');
+  if(aheadAll.length&&(s==='quote'||s==='booked'))add(A.length?(s==='booked'?'now':'later'):'done',A.length?(A.length===1?'Sign a form before move day':'Sign '+A.length+' forms before move day'):'Forms signed',A.length?esc(A.map(function(f){return f.title}).join(', ')):'',A.length&&s==='booked'?custBtn(m,'cs:sign','Sign now',!due.amt):'');
+  if(m.quote.deposit>0&&(s==='quote'||s==='booked'))add(s==='booked'?(due.amt>0?'now':'done'):'later',s==='booked'?(due.amt>0?'Pay your deposit: '+money(due.amt):'Deposit paid'):'Deposit to book: '+money(m.quote.deposit),s==='booked'&&due.amt>0?'It holds your date.':'',s==='booked'&&due.amt>0?custBtn(m,'cs:pay','Pay '+money(due.amt),1):'');
+  if(s==='quote'||s==='booked')add('later','Move day','We’ll show you here when your crew is on the way, and how the move is going.');
+  else if(s==='today')add('now','Move day','Happening now.');
+  else add('done','Moved',m.d.moveDate?esc(fmtDate(m.d.moveDate)):'');
+  if(s==='due')add('now','Pay your bill: '+money(m.bill.due),custTipOk(m)?'And tip your crew if you like.':'',custBtn(m,'cs:pay','Pay '+money(m.bill.due),1));
+  else if(s==='done')add('done','Paid',custTipOk(m)?(custTipped(m)?'Thank you, and thank you for the tip.':'You can still tip your crew.'):'Thank you!',custTipOk(m)&&!custTipped(m)?custBtn(m,'cs:pay','Tip your crew'):'');
+  else add('later','Pay the bill',m.tips?'After the move, right here, with a tip for your crew if you like.':'After the move, right here.');
+  if(m.review)add(s==='done'?(m.reviewed?'done':'now'):'later','Tell others about '+esc(m.company||'us'),s==='done'?'':'After the move.',s==='done'?'<a class="btn" href="'+esc(m.review)+'" target="_blank" rel="noopener" data-act="cs:revlink" data-k="'+esc(custKeyOf(m))+'">Leave a review</a>':'');
+  return '<section class="card"><h3>'+(s==='done'?'All done':'What’s next')+'</h3><ol class="cm-steps">'+out.join('')+'</ol></section>';
+}
+// move day as it happens: on the way (the arrival text's time), loading, on the road, unloading, done
+function custDayHtml(m){
+  var p=m.day.phases||{},st=m.day.startedAt,eta=m.day.eta,now=Date.now();
+  var L=[
+    {t:'Your crew is on the way',sub:p.loadStart?'Arrived':st?(eta?(eta>now?'Arriving about '+fmtClock(eta):'Arriving any minute'):'On the way since '+fmtClock(st)):'',done:!!p.loadStart,on:!!st},
+    {t:'Loading at '+(m.d.from||'your place'),sub:p.loadStart?(p.loadEnd?'Done at '+fmtClock(p.loadEnd):'Started at '+fmtClock(p.loadStart)):'',done:!!p.loadEnd,on:!!p.loadStart},
+    {t:'On the road to '+(m.d.to||'your new place'),sub:p.loadEnd&&!p.unloadStart?'Left at '+fmtClock(p.loadEnd):'',done:!!p.unloadStart,on:!!p.loadEnd},
+    {t:'Unloading',sub:p.unloadStart?(p.unloadEnd?'Done at '+fmtClock(p.unloadEnd):'Started at '+fmtClock(p.unloadStart)):'',done:!!p.unloadEnd,on:!!p.unloadStart},
+    {t:'Finishing up',sub:p.unloadEnd?'Your crew goes over the forms and the bill with you.':'',done:false,on:!!p.unloadEnd}];
+  var cur=-1;L.forEach(function(x,i){if(x.on&&!x.done)cur=i});
+  return '<section class="card"><h3>Move day</h3><ol class="cm-steps">'+L.map(function(x,i){return custStepHtml(x.done?'done':i===cur?'now':'later',esc(x.t),esc(x.sub))}).join('')+'</ol><p class="hint">This follows your crew as they go.</p></section>';
+}
+function custDetailsHtml(m){
+  var s=custStage(m),fin=s==='due'||s==='done',items=m.items.map(function(i){return esc(i.name)+(i.qty>1?' × '+i.qty:'')}).join(', ');
+  return '<details class="card cm-det"><summary><span>'+(fin?'Your bill':'Your quote')+'</span><b>'+money(fin?m.bill.total:m.quote.total)+'</b></summary>'+custLinesHtml(m,fin)+(items?'<h4>What’s moving</h4><p class="hint">'+items+'</p>':'')+'</details>';
+}
+function custHelpHtml(m){
+  var ph=String(m.phone||''),dig=ph.replace(/[^0-9+]/g,'');
+  return '<section class="card cm-help"><h3>Questions?</h3><p class="hint" style="margin:0 0 8px">'+(ph?'Call or text '+esc(m.company||'us')+' at <b>'+esc(fmtPhone(ph))+'</b>.':'Reply to the texts from '+esc(m.company||'your moving company')+'.')+'</p>'+
+    (dig?'<div class="row"><a class="btn" href="tel:'+esc(dig)+'">Call</a><a class="btn" href="sms:'+esc(dig)+'">Text</a></div>':'')+'</section>';
+}
+function custMovesHtml(L,cur){
+  return '<div class="navlist cm-moves">'+L.map(function(m){var k=custKeyOf(m),pl=CUST_PILL[custStage(m)];
+    return '<button class="navrow" data-act="cs:move" data-k="'+esc(k)+'"'+(cur&&k===custKeyOf(cur)?' aria-current="true"':'')+'><span class="tx"><b>'+esc(m.d.moveDate?fmtDate(m.d.moveDate):'Day not set')+(m.company?' · '+esc(m.company):'')+'</b><small>'+esc((m.d.from||'?')+' → '+(m.d.to||'?'))+'</small></span><span class="pill" data-s="'+pl[1]+'">'+pl[0]+'</span></button>'}).join('')+'</div>';
+}
+function renderMyMove(){
+  var v=$('#view'),L=custSorted(),m=custCur(),me=custSelf();
+  if(!m){v.innerHTML='<div class="hero-day"><h1>'+esc(custHi(me.name))+'</h1></div><section class="card empty"><h3>No move here yet</h3><p>When your moving company puts '+(me.email?esc(me.email):'your email')+' on your move, it shows up here.</p></section>';return}
+  var s=custStage(m),noEmail=!custLive()&&!emailKey(m.d.email);
+  v.innerHTML=(noEmail?'<div class="note">This customer has no email on their move yet, so they can’t sign in to see this. Put it on the quote or the job.</div>':'')+
+    '<div class="hero-day"><h1>'+esc(custHi(m.d.name))+'</h1><p class="sub">Your move with '+esc(m.company||'your moving company')+'</p></div>'+
+    custCardHtml(m)+(s==='today'?custDayHtml(m):'')+custNextHtml(m)+custDetailsHtml(m)+custHelpHtml(m)+
+    (L.length>1?'<h3 class="cm-h3">Your moves</h3>'+custMovesHtml(L,m):'');
+  custAutoThanks(m);
+}
+function renderMyPay(){
+  var v=$('#view'),m=custCur();
+  if(!m){v.innerHTML='<div class="hero-day"><h1>Pay</h1></div><section class="card empty"><h3>Nothing to pay</h3><p>Your moves and bills show up here.</p></section>';return}
+  var s=custStage(m),due=custDueNow(m),before=s==='quote'||s==='booked';
+  var tiles=kpiRow([[before?m.quote.total:m.bill.total,before?(m.quote.flat?'Price':'Estimate'):'Bill',''],[m.bill.paid,'Paid',m.bill.paid>0?'paid':''],[due.amt>0?due.amt:m.bill.due,due.kind==='deposit'?'Deposit due':before?'After the move':'Due now',due.amt>0?'due':'']]);
+  var act=due.amt>0?custBtn(m,'cs:pay','Pay '+money(due.amt),1).replace('class="btn primary"','class="btn primary bigbtn"')+'<p class="hint cm-center">Google Pay, Apple Pay or a card'+(due.kind==='bill'&&custTipOk(m)?', with a tip for your crew if you like':'')+'.</p>'
+    :custTipOk(m)?custBtn(m,'cs:pay','Tip your crew',1).replace('class="btn primary"','class="btn primary bigbtn"')+'<p class="hint cm-center">'+esc(custTipWho(m))+'</p>'
+    :'<p class="hint" style="margin:0">'+(s==='quote'?'Nothing to pay yet. Book your move first.':s==='booked'?(m.quote.deposit>0?'Your deposit is paid. ':'')+'The bill is due after the move.':s==='today'?'Your bill is ready when the move is done.':'Nothing to pay. Thank you!')+'</p>';
+  var rows=(m.pays||[]).slice().sort(function(a,b){return (b.ts||0)-(a.ts||0)}).map(function(p){return '<tr><td>'+esc(p.method||'Payment')+'<br><small>'+esc(p.date?fmtDate(p.date):'')+'</small></td><td>'+(p.amt?money(p.amt):'')+(p.tip?(p.amt?'<br>':'')+'<small>'+money(p.tip)+' tip</small>':'')+'</td></tr>'}).join('');
+  v.innerHTML='<div class="hero-day"><h1>Pay</h1><p class="sub">'+esc(m.company||'')+(m.d.moveDate?' · '+esc(fmtDate(m.d.moveDate)):'')+'</p></div>'+tiles+'<section class="card">'+act+'</section>'+
+    (rows?'<section class="card"><h3>Receipts</h3><table class="lines">'+rows+'</table></section>':'')+custDetailsHtml(m);
+}
+function custAppHtml(){
+  var standalone=!!window.TALLY_STANDALONE||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
+  if(standalone)return '';
+  var ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(ua),can=!!window.__tallyInstall;
+  return '<section class="card"><h3>Get the app</h3><p class="hint" style="margin:0 0 8px">Keep your move on your home screen, like any app. There’s nothing to download from a store.</p>'+
+    (can?'<button class="btn primary" data-act="cs:install">Add to home screen</button>':ios?'<p class="hint" style="margin:0">In Safari, tap the Share button, then <b>Add to Home Screen</b>.</p>':
+      '<p class="hint" style="margin:0">On Android, open Chrome’s menu (⋮) and tap <b>Add to Home screen</b> or <b>Install app</b>. On an iPhone, tap Share in Safari, then <b>Add to Home Screen</b>.</p>')+'</section>';
+}
+function renderMyProfile(){
+  var v=$('#view'),me=custSelf(),L=custSorted(),live=custLive();
+  v.innerHTML='<div class="hero-day"><h1>Profile</h1></div><section class="card"><div class="grid2 stack">'+
+      fld('Name','<input id="cpName" autocomplete="name" value="'+esc(me.name)+'">','span2')+
+      fld('Phone','<input id="cpPhone" type="tel" inputmode="tel" autocomplete="tel" value="'+esc(me.phone)+'">','span2')+'</div>'+
+    '<div class="cm-email"><small>Email</small><b>'+esc(me.email||'No email yet')+'</b></div><p class="hint">You sign in with this email. Your moving company links your moves to it.</p>'+
+    '<button class="btn primary" style="margin-top:10px" data-act="cs:prof">Save</button></section>'+
+    (L.length?'<h3 class="cm-h3">Your moves</h3>'+custMovesHtml(L,custCur()):'')+custAppHtml()+
+    (live&&window.tallyCust.orgs&&window.tallyCust.orgs.length?'<section class="card"><p class="hint" style="margin:0 0 8px">You work for '+esc(window.tallyCust.orgs.map(function(o){return o.name}).join(', '))+' too.</p><button class="btn" data-act="cust:work">Back to work</button></section>':'')+
+    (live&&window.tallySignOut?'<section class="card"><button class="btn" data-act="cs:signout">Sign out</button></section>':'');
+}
+/* the sheets: book, sign ahead, pay (and tip), and the thank you that takes them to the review page */
+var csTimer=null;
+function csOpen(kind,m,extra){clearInterval(csTimer);csTimer=null;ui.cs=Object.assign({kind:kind,key:custKeyOf(m),tip:null,other:'',n:0,busy:false},extra||{});renderCs()}
+function csClose(){clearInterval(csTimer);csTimer=null;ui.cs=null;renderCs()}
+function csFail(t){var e=$('#csErr');if(e){e.textContent=t;e.style.color='var(--bad)'}}
+function csTipAmt(m,c){if(!custTipOk(m)||!c)return 0;if(c.tip==='other')return Math.max(0,round2(num(String(c.other||'').replace(/[^0-9.]/g,''))));var p=num(c.tip);return p>0?Math.round(m.bill.total*p)/100:0}
+function csTitle(m,c){var due=custDueNow(m);return {book:'Book your move',sign:'Sign before move day',pay:due.amt>0?(due.kind==='deposit'?'Pay your deposit':'Pay your bill'):'Tip your crew',thanks:'Your move is done'}[c.kind]||''}
+function renderCs(){
+  var el=$('#cust');if(!el)return;
+  var c=ui.cs,m=c&&isCust()?custFind(c.key):null;
+  if(!c||!m){if(c){clearInterval(csTimer);csTimer=null;ui.cs=null}el.hidden=true;el.innerHTML='';syncLock();return}
+  var T=csTitle(m,c),body=c.kind==='book'?csBookHtml(m):c.kind==='sign'?csSignHtml(m):c.kind==='pay'?csPayHtml(m,c):csThanksHtml(m,c);
+  var prev=$('.sheet-body',el),keep=prev&&c.kind!=='sign'?prev.scrollTop:0;
+  el.innerHTML='<div class="scrim" data-act="cs:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="'+esc(T)+'"><div class="sheet-head"><div><h2>'+esc(T)+'</h2><small>'+esc(m.company||'')+'</small></div><button class="btn sm" data-act="cs:close">Close</button></div><div class="sheet-body">'+body+'</div></div>';
+  el.hidden=false;syncLock();
+  var nb=$('.sheet-body',el);if(nb&&keep)nb.scrollTop=keep;
+  if(c.kind==='sign'&&$('#sigPad'))initSig();
+}
+function csBookHtml(m){
+  var q=m.quote,dep=Math.max(0,round2(q.deposit-m.bill.paid));
+  return '<div class="cm-sum"><b>'+esc(custLong(m.d.moveDate))+'</b><span>'+(m.d.time?'Your crew arrives at '+esc(fmtTime(m.d.time)):'')+'</span></div>'+custRouteHtml(m)+
+    (custSizeWords(m)?'<p class="cm-sub" style="margin:0 0 8px">'+esc(custSizeWords(m))+'</p>':'')+custLinesHtml(m,false)+
+    (dep>0?'<div class="note" style="margin-top:10px">A '+money(dep)+' deposit holds your date. You pay it next, with Google Pay, Apple Pay or a card.</div>':'')+
+    '<label class="check" style="margin-top:6px"><input type="checkbox" id="csAgree"> I accept this quote.</label>'+
+    '<button class="btn primary bigbtn" data-act="cs:bookgo" data-k="'+esc(custKeyOf(m))+'">'+(dep>0?'Book and pay the deposit':'Book my move')+'</button><p class="hint" id="csErr" role="alert"></p>';
+}
+function csSignHtml(m){
+  var A=custAhead(m),all=(m.forms||[]).filter(function(f){return f.ahead}),f=A[0];
+  if(!f)return '<div class="cm-thanks"><p class="big">All signed</p><p class="hint">Thank you. Your crew has '+(all.length===1?'it':'them')+'.</p><button class="btn primary bigbtn" data-act="cs:close">Done</button></div>';
+  var content=f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+esc(pg)+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join('');
+  return (all.length>1?'<p class="hint" style="margin:0 0 4px">Form '+(all.length-A.length+1)+' of '+all.length+'</p>':'')+'<h3>'+esc(f.title)+'</h3><div class="formbox">'+content+'</div>'+
+    fld('Your name','<input id="csSigName" autocomplete="name" value="'+esc(m.d.name)+'">')+
+    '<label class="check"><input type="checkbox" id="csSigAgree"> I have read this form and I agree.</label>'+
+    '<div class="f"><span>Sign here with your finger</span></div><canvas id="sigPad" class="sigpad" aria-label="Signature pad"></canvas>'+
+    '<div class="row"><button class="btn" data-act="cs:clearsig">Clear</button><button class="btn primary grow" data-act="cs:signgo" data-k="'+esc(custKeyOf(m))+'" data-fid="'+esc(f.id)+'">Sign</button></div><p class="hint" id="csErr" role="alert"></p>';
+}
+var CS_TIPS=[[0,'No tip'],[10,'10%'],[15,'15%'],[20,'20%'],['other','Other']];
+function csPayHtml(m,c){
+  var due=custDueNow(m),tipOk=custTipOk(m),tip=csTipAmt(m,c),total=round2(due.amt+tip);
+  var head=due.amt>0?'<div class="cm-total cm-first"><span>'+(due.kind==='deposit'?'Deposit for '+esc(fmtDate(m.d.moveDate)):'Your bill'+(m.bill.paid>0?', after '+money(m.bill.paid)+' paid':''))+'</span><b>'+money(due.amt)+'</b></div>'+(due.kind==='deposit'?'<p class="hint" style="margin:0 0 8px">It holds your date. The rest is due after the move.</p>':''):'';
+  var tips=tipOk?'<h3 class="cm-h3">Tip your crew</h3><p class="hint" style="margin:0 0 6px">'+esc(custTipWho(m))+'</p><div class="cm-tips">'+CS_TIPS.map(function(o){
+      var on=o[0]==='other'?c.tip==='other':c.tip!=null&&c.tip!=='other'&&num(c.tip)===o[0],amt=o[0]>0?money(Math.round(m.bill.total*o[0])/100):'';
+      return '<button class="chip'+(on?' on':'')+'" data-act="cs:tip" data-t="'+o[0]+'" aria-pressed="'+on+'">'+o[1]+(amt?'<small>'+amt+'</small>':'')+'</button>'}).join('')+'</div>'+
+    (c.tip==='other'?fld('Tip ($)','<input id="csTipOther" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" value="'+esc(c.other||'')+'">'):''):'';
+  return head+tips+'<div class="cm-total"><span>'+(tip>0?'Total with your tip':'Total')+'</span><b id="csTotal">'+money(total)+'</b></div>'+
+    '<button class="btn primary bigbtn" id="csPayBtn" data-act="cs:paygo" data-k="'+esc(custKeyOf(m))+'"'+(total>0&&!c.busy?'':' disabled')+'>'+(c.busy?'Opening…':total>0?'Pay '+money(total):'Pick a tip')+'</button>'+
+    '<p class="hint cm-center">Next: Google Pay, Apple Pay or a card, on Stripe’s secure page. '+esc(m.company||'Your mover')+' never sees your card number.</p>'+
+    (custLive()?'':'<div class="note" style="margin-top:10px">Sample: nothing is charged here. In the customer’s app, Pay opens Stripe’s page, with Google Pay on Android phones and Apple Pay on iPhones.</div>')+
+    '<p class="hint" id="csErr" role="alert"></p>';
+}
+function csThanksHtml(m,c){
+  var url=m.review,first=String(m.d.name||'').trim().split(/\s+/)[0],named=custHi(m.d.name)!=='Hello'&&first;
+  return '<div class="cm-thanks"><p class="big">Thank you'+(named?', '+esc(first):'')+'!</p><p class="hint">Your move with '+esc(m.company||'us')+' is done'+(m.bill.due>0?'':' and paid')+'.</p>'+
+    (url?'<p class="cm-ask">Would you tell others how it went?</p>'+(c.n>0?'<p class="cm-count" id="csCount" aria-live="polite">'+c.n+'</p><p class="hint">Taking you to leave a review…</p>':'<p class="hint">'+(custLive()?'Opening the review page…':'In the customer’s app, the review page opens now.')+'</p>')+
+      '<a class="btn primary bigbtn" href="'+esc(url)+'" target="_blank" rel="noopener" data-act="cs:revlink" data-k="'+esc(custKeyOf(m))+'">Leave a review</a><button class="btn ghost bigbtn" data-act="cs:norev" data-k="'+esc(custKeyOf(m))+'">Not now</button>'
+     :'<button class="btn primary bigbtn" data-act="cs:close">Done</button>')+'</div>';
+}
+// the count down to the review page, once per move
+function csCount(){
+  clearInterval(csTimer);
+  csTimer=setInterval(function(){
+    var c=ui.cs;if(!c||c.kind!=='thanks'){clearInterval(csTimer);csTimer=null;return}
+    c.n--;if(c.n>0){var e=$('#csCount');if(e)e.textContent=c.n;return}
+    clearInterval(csTimer);csTimer=null;var m=custFind(c.key);if(m)custGoReview(m);
+  },1000);
+}
+function custThanks(m){if(!m||!m.review){toast('Paid. Thank you!');return}csOpen('thanks',m,{n:5});csCount()}
+// after the move is done and paid, opening the app takes them to the review page (once)
+function custAutoThanks(m){
+  if(!m||custStage(m)!=='done'||!m.review||m.reviewed||ui.cs)return;
+  ui.csAuto=ui.csAuto||{};var k=custKeyOf(m);if(ui.csAuto[k])return;ui.csAuto[k]=1;
+  setTimeout(function(){if(isCust()&&!ui.cs&&ui.tab==='mymove'){var m2=custFind(k);if(m2&&!m2.reviewed)custThanks(m2)}},400);
+}
+function custReviewed(m,how){
+  if(custLive()){window.tallyCust.act('reviewed',m.org,m.id,{how:how||'went'});return}
+  var j=byId(m.id);if(!j||(j.cust&&j.cust.reviewAt))return;
+  j.cust=Object.assign({},j.cust||{},{reviewAt:Date.now()});logEv(j,how==='not now'?'The customer app asked for a review (they said not now)':'The customer app took them to the review page');save();
+}
+function custGoReview(m){
+  custReviewed(m,'went');
+  if(custLive()){custGo(m.review);return}
+  renderCs();   // here the page can't leave: the sheet says what the customer's app does
+}
+// can the customer book this quote: a day that hasn't passed, and still room on the trucks then
+function custBookWhy(j){
+  if(['lead','quoted'].indexOf(j.status)<0)return 'This quote was already booked or closed.';
+  if(!j.d.moveDate)return 'Call or text us to pick a day first.';
+  if(j.d.moveDate<todayISO())return 'That day has passed. Call or text us to pick a new one.';
+  if(j.d.time&&j.quote&&j.quote.cf){
+    var X=dayPlanOf(Object.assign({},j.d,{editId:j.id}),j.quote,state.settings);
+    if(X&&X.P&&X.P.trucks&&X.P.trucks.length&&!(X.slots.length?X.f&&X.f.ok:X.any&&X.any.ok))return 'That time just filled up. Call or text us to pick another time.';
+  }
+  return '';
+}
+function custAct(kind,m,extra){return window.tallyCust.act(kind,m.org,m.id,extra||{}).catch(function(){return {ok:false,message:'Could not reach the server. Check your connection.'}})}
+function custAfter(key,fn){return window.tallyCust.refresh().then(function(){render();var m=custFind(key);fn(m)})}
+function csBookGo(m){
+  if(!$('#csAgree')||!$('#csAgree').checked)return csFail('Tick the box to accept the quote.');
+  var key=custKeyOf(m),done=function(after){
+    if(after&&custDueNow(after).amt>0){csOpen('pay',after);toast('Booked! Now the deposit holds your date.')}
+    else{csClose();toast('Booked! See you '+fmtDate(m.d.moveDate)+'.')}
+  };
+  if(custLive()){
+    var b=$('[data-act="cs:bookgo"]');if(b){b.disabled=true;b.textContent='Booking…'}
+    custAct('book',m).then(function(r){if(!r||!r.ok){if(b){b.disabled=false;b.textContent='Try again'}csFail((r&&r.message)||'Could not book it. Try again.');return}custAfter(key,done)});
+    return;
+  }
+  var j=byId(m.id);if(!j)return;
+  var why=custBookWhy(j);if(why)return csFail(why);
+  setStatus(j,'booked');j.cust=Object.assign({},j.cust||{},{bookedAt:Date.now()});logEv(j,'Booked by the customer in the customer app');save();
+  render();done(custFind(key));
+}
+function csSignGo(m,fid){
+  var f=custAhead(m).filter(function(x){return x.id===fid})[0];if(!f){renderCs();return}
+  var nm=String(($('#csSigName')||{}).value||'').trim();
+  if(!nm)return csFail('Type your name.');
+  if(!$('#csSigAgree')||!$('#csSigAgree').checked)return csFail('Tick the box to show you have read it and agree.');
+  if(!sigDirty)return csFail('Sign in the box with your finger.');
+  var sig=exportSig(),key=custKeyOf(m);
+  if(custLive()){
+    var b=$('[data-act="cs:signgo"]');if(b){b.disabled=true;b.textContent='Saving…'}
+    custAct('sign',m,{formId:f.id,name:nm,sig:sig}).then(function(r){if(!r||!r.ok){if(b){b.disabled=false;b.textContent='Sign'}csFail((r&&r.message)||'Could not save it. Try again.');return}sigDirty=false;toast('Signed: '+f.title+'.');custAfter(key,function(){renderCs()})});
+    return;
+  }
+  var j=byId(m.id);if(!j)return;
+  j.signed=j.signed||[];j.signed.push({id:uid(),formId:f.id,title:f.title,name:nm,sig:sig,ts:Date.now(),by:'customer',ahead:true});
+  logEv(j,'Signed ahead in the customer app: '+f.title+' ('+nm+')');save();sigDirty=false;
+  toast('Signed: '+f.title+'.');render();renderCs();
+}
+// a payment the customer made here: the bill's part, and the tip apart from it (it's the crew's, not the company's)
+function custPaidHere(j,amt,tip,method){
+  var p={id:uid(),amt:round2(amt),method:method,date:todayISO(),ts:Date.now(),by:'customer'};if(tip>0)p.tip=round2(tip);
+  j.payments.push(p);
+  logEv(j,(amt>0?'Payment '+money(amt)+(tip>0?' and a '+money(tip)+' tip for the crew':''):'A '+money(tip)+' tip for the crew')+' ('+method+', the customer in the customer app)');
+  if(j.status==='done'&&balOf(j)<=0)setStatus(j,'paid');
+}
+function csPayGo(m,c){
+  var due=custDueNow(m),tip=csTipAmt(m,c),total=round2(due.amt+tip),key=custKeyOf(m);
+  if(!(total>0)||c.busy)return;
+  if(c.tip==='other'&&tip>Math.max(500,m.bill.total))return csFail('That tip looks too big. Check the amount.');
+  if(custLive()){
+    c.busy=true;renderCs();
+    custAct('pay',m,{kind:due.kind,amount:Math.round(due.amt*100),tip:Math.round(tip*100)}).then(function(r){
+      if(r&&r.ok&&/^https:\/\//.test(String(r.url||''))){custGo(r.url);return}
+      c.busy=false;
+      if(r&&r.changed){window.tallyCust.refresh().then(function(){render();renderCs();csFail(r.message||'What’s owed changed. Check it and pay again.')});return}
+      renderCs();csFail((r&&r.message)||'Could not open the payment page. Try again.');
+    });
+    return;
+  }
+  var j=byId(m.id);if(!j)return;
+  custPaidHere(j,due.amt,tip,'Google Pay');save();render();
+  var after=custFind(key);ui.cs=null;renderCs();
+  if(after&&custStage(after)==='done'&&after.review&&!after.reviewed)custThanks(after);
+  else toast(due.kind==='deposit'?'Deposit paid. Your date is held.':tip>0&&!due.amt?'Thank you! Your crew gets every cent.':'Paid. Thank you!');
+}
+function csProfSave(){
+  var nm=String(($('#cpName')||{}).value||'').trim(),ph=String(($('#cpPhone')||{}).value||'').trim();
+  if(!nm){toast('Put in your name.');return}
+  if(ph&&ph.replace(/\D/g,'').length<10){toast('That phone number looks short.');return}
+  if(custLive()){window.tallyCust.saveProfile({name:nm,phone:ph}).then(function(r){toast(r&&r.ok?'Saved. Your moving company has it.':(r&&r.message)||'Could not save. Try again.');if(r&&r.ok)window.tallyCust.refresh().then(render)});return}
+  var k=custWho(),n=0;
+  state.jobs.forEach(function(j){if(!custOwns(j,k)||['lead','quoted','booked','active'].indexOf(j.status)<0)return;var ch=[];
+    if(nm!==j.d.name){j.d.name=nm;ch.push('name')}if(ph&&ph!==j.d.phone){j.d.phone=ph;ch.push('phone')}
+    if(ch.length){logEv(j,'The customer changed their '+ch.join(' and ')+' in the customer app');n++}});
+  if(n)save();render();toast(n?'Saved. Your moving company has it.':'Saved.');
+}
+// where customers open the app: this page when it's the website, else Tally's website (GitHub Pages)
+var TALLY_SITE='https://mischief503.github.io/Tally/';
+function custSite(){try{if(location.protocol==='https:'&&!/androidplatform\.net$/.test(location.hostname)&&window.TALLY_SUPABASE)return location.origin+location.pathname}catch(e){}return TALLY_SITE}
+// the job sheet: text the customer the app (the company line), when the job has their email and phone
+function custInviteHtml(j){
+  if(!window.tallyComms||!j.d.email||!j.d.phone||!emailKey(j.d.email)||['lead','quoted','booked','active','done'].indexOf(j.status)<0)return '';
+  return '<div class="span2"><button class="btn" data-act="cust:invite" data-id="'+j.id+'">Text '+esc(String(j.d.name||'the customer').split(' ')[0])+' the app</button><p class="hint" style="margin:4px 0 0">They sign in with '+esc(j.d.email)+' to see their move, book, sign and pay.</p></div>';
+}
+// leaving the app for Stripe's page or the review page (a test watches instead)
+function custGo(url){if(window.__tallyGo){window.__tallyGo(url);return}try{location.href=url}catch(e){}}
+// signed in as a customer (the hosted back end found their moves): the customer side opens
+window.tallyCustGo=function(){state.ui.role='customer';ui.tab='mymove';ui.preview=null;ui.cs=null;render();custReturn()};
+window.tallyMoreRedraw=function(){if(ui.more)renderMore()};
+// back from Stripe's page (…?paid=<job>): bring the move up to date until the payment shows, then the thank you (and,
+// with the move done and paid, the review page)
+function custReturn(){
+  var mm=/[?&]paid=([A-Za-z0-9_-]{1,40})/.exec(location.search||'');if(!mm||!custLive())return;
+  try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}
+  var mv=custMoves().filter(function(x){return x.id===mm[1]})[0];if(!mv)return;
+  var key=custKeyOf(mv),paid0=mv.bill.paid,tip0=(mv.pays||[]).reduce(function(a,p){return a+p.tip},0),n=0;
+  toast('Thank you! Updating your move…');
+  (function poll(){
+    window.tallyCust.act('check',mv.org,mv.id,{}).then(function(){return window.tallyCust.refresh()}).then(function(){
+      render();var m2=custFind(key),tip2=m2?(m2.pays||[]).reduce(function(a,p){return a+p.tip},0):0;
+      if(m2&&(m2.bill.paid>paid0||tip2>tip0)){if(custStage(m2)==='done'&&m2.review&&!m2.reviewed)custThanks(m2);else toast(m2.bill.due>0&&custStage(m2)==='booked'?'Deposit paid. Your date is held.':'Paid. Thank you!');return}
+      if(++n<6)setTimeout(poll,2500);else toast('Your payment is going through. It shows here in a minute.');
+    });
+  })();
+}
+// the owner's See it their way › Customer row
+function custPvRow(){
+  var P=custPeople().slice(0,14);
+  return '<div class="pvrow"><span class="who-n"><b>Customer</b></span></div><div class="scrollx">'+(P.length?P.map(function(p){return '<button class="chip" data-act="pv:set" data-role="customer" data-staff="'+esc(p.key)+'">'+esc(p.name)+(p.email?'':' <small>(no email)</small>')+'</button>'}).join(''):'<span class="hint">No customers yet.</span>')+'</div>';
+}
+document.addEventListener('click',function(e){
+  var t=e.target.closest&&e.target.closest('[data-act^="cs:"]');if(!t||!isCust())return;
+  var a=t.dataset.act,m=t.dataset.k?custFind(t.dataset.k):(ui.cs?custFind(ui.cs.key):null);
+  switch(a){
+    case 'cs:move':ui.csMove=t.dataset.k||null;ui.tab='mymove';render();window.scrollTo(0,0);break;
+    case 'cs:book':if(m)csOpen('book',m);break;
+    case 'cs:bookgo':if(m)csBookGo(m);break;
+    case 'cs:sign':if(m)csOpen('sign',m);break;
+    case 'cs:clearsig':clearSig();break;
+    case 'cs:signgo':if(m)csSignGo(m,t.dataset.fid);break;
+    case 'cs:pay':if(m)csOpen('pay',m);break;
+    case 'cs:tip':if(ui.cs&&ui.cs.kind==='pay'){var tv=t.dataset.t;ui.cs.tip=tv==='other'?'other':num(tv);renderCs();if(tv==='other'){var oi=$('#csTipOther');if(oi)try{oi.focus()}catch(x){}}}break;
+    case 'cs:paygo':if(m&&ui.cs)csPayGo(m,ui.cs);break;
+    case 'cs:close':csClose();break;
+    case 'cs:norev':if(m)custReviewed(m,'not now');csClose();break;
+    case 'cs:revlink':if(m)custReviewed(m,'went');clearInterval(csTimer);csTimer=null;setTimeout(function(){if(ui.cs&&ui.cs.kind==='thanks')csClose();else render()},300);break;   // the link opens the page itself
+    case 'cs:prof':csProfSave();break;
+    case 'cs:install':{var ip=window.__tallyInstall;if(!ip)break;window.__tallyInstall=null;try{ip.prompt();(ip.userChoice||Promise.resolve()).then(function(){renderTab()},function(){renderTab()})}catch(x){renderTab()}break}
+    case 'cs:signout':if(window.tallySignOut)window.tallySignOut();break;
+  }
+});
+document.addEventListener('click',function(e){
+  var t=e.target.closest&&e.target.closest('[data-act^="cust:"]');if(!t||!window.tallyCust)return;
+  if(t.dataset.act==='cust:mine')window.tallyCust.mine();else if(t.dataset.act==='cust:work')window.tallyCust.work();
+});
+document.addEventListener('click',function(e){
+  var t=e.target.closest&&e.target.closest('[data-act="cust:invite"],[data-act="cust:copysite"]');if(!t)return;
+  if(t.dataset.act==='cust:copysite'){var u=custSite(),sel=function(){var x=$('#custSite');if(x)try{var rg=document.createRange();rg.selectNodeContents(x);var sl=window.getSelection();sl.removeAllRanges();sl.addRange(rg)}catch(y){}toast('Selected. Copy it from here.')};try{navigator.clipboard.writeText(u).then(function(){toast('Copied.')},sel)}catch(y){sel()}return}
+  var j=byId(t.dataset.id);if(!j||!window.tallyComms||!window.tallyComms.custInvite)return;
+  t.disabled=true;window.tallyComms.custInvite(j.id,custSite()).then(function(r){t.disabled=false;toast((r&&r.message)||'The text did not go out.');if(ui.jobId===j.id&&typeof commsLoadLog==='function')commsLoadLog(j.id)});
+});
+document.addEventListener('input',function(e){
+  var t=e.target;if(!t||t.id!=='csTipOther'||!ui.cs)return;
+  ui.cs.other=t.value;var m=custFind(ui.cs.key);if(!m)return;
+  var tot=round2(custDueNow(m).amt+csTipAmt(m,ui.cs)),b=$('#csPayBtn'),o=$('#csTotal');
+  if(o)o.textContent=money(tot);if(b){b.disabled=!(tot>0);b.textContent=tot>0?'Pay '+money(tot):'Pick a tip'}
+});
+// Add to home screen: Chrome offers it once the page qualifies; the Profile tab's button asks for it
+window.addEventListener('beforeinstallprompt',function(e){if(!window.TALLY_SUPABASE)return;try{e.preventDefault()}catch(x){}window.__tallyInstall=e;if(isCust()&&ui.tab==='myprofile')renderTab()});
+var SAMPLE_AGREE='I have checked my quote: what is moving, the addresses, the day and the arrival time.\n\nI understand the bill follows the crew’s time (or the flat price on my quote), plus any charges I agree to on the day, and that my deposit holds my date.\n\nSomeone will be there to let the crew in and to sign at the end of the move.\n\nI will tell the company before move day about anything fragile, valuable or hard to move.';
+// the customer's tips on a job, kept apart from the bill: the crew's, split evenly
+function tipsOf(j){return round2((j.payments||[]).reduce(function(a,p){return a+(num(p.tip)>0&&(!p.stripe||payCounts(p))?num(p.tip):0)},0))}
+function tipLine(j){var t=tipsOf(j);if(!(t>0))return '';var n=((j.assign&&j.assign.crew)||[]).length;return '<p class="hint money-paid" style="margin:6px 0 0">Tip from the customer: '+money(t)+(n>1?', '+money(Math.floor(t*100/n)/100)+' each':'')+'</p>'}
 /* ---------- trucks and drivers on a job ----------
    A job's trucks are assign.truckId (the first one, which older copies of the app read too) and
    assign.more (any others). assign.drivers says who drives each truck, by the truck's id. Who can
@@ -2410,6 +2952,7 @@ function renderMore(){
     canPreview()?row('more:preview','',SICON.eye,'See it their way',previewing()?'Previewing '+(ui.preview.staff||KIND[ui.preview.role]||ui.preview.role):'Owner, dispatch, call center, lead or crew'):'',
     office?look:'',
     window.tallySwitchCompany&&!(state.ui.role==='callcenter'&&!ccHouse())?row('more:company','',SICON.swap,'Switch company',(window.tallyOrg||{}).name||''):'',   // the call center switches from Companies
+    window.tallyCust&&window.tallyCust.has&&!previewing()?row('cust:mine','',SICON.profile,'My moves','Your own moves, as a customer'):'',
     window.tallySignOut?row('more:signout','',SICON.signout,'Sign out',sync.meName||''):''];
   var sosRow=role!=='callcenter'&&(opt('truckDown')||sosActive().length)?'<div class="navlist" style="margin-top:16px">'+row('sos:open','',ICON.sos,'Truck down','Tell the office a truck broke down, and where','sosrow')+'</div>':'';
   el.innerHTML='<div class="scrim" data-act="more:close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="More"><div class="row between"><h2>More</h2><button class="btn sm" data-act="more:close">Done</button></div>'+
@@ -2441,7 +2984,7 @@ function renderQuote(){
      fld('Name','<input data-d="name" autocomplete="off" value="'+dv('name')+'">','span2')+
      fld('Phone','<input data-d="phone" type="tel" value="'+dv('phone')+'">')+
      fld('Lead source','<select data-d="source">'+srcOpts+'</select>')+
-     fld('Email','<input data-d="email" type="email" value="'+dv('email')+'">','span2')+
+     fld('Email (they sign in with it to see their move)','<input data-d="email" type="email" inputmode="email" autocapitalize="off" spellcheck="false" value="'+dv('email')+'">','span2')+
    '</div></section>'+
    '<section class="card"><h2>The move</h2><div class="grid2 stack">'+
      fld('Move date','<input data-d="moveDate" type="date" value="'+dv('moveDate')+'">')+
@@ -2591,8 +3134,8 @@ function closeSheet(){ui.jobId=null;ui.closeAsk=null;renderSheet();renderTab()}
    and so a change arriving from another phone can't wipe what is being typed. The cost form keeps
    what was typed the same way (ui.cfm), on the sheet and the crew card. Materials are added from the
    tap list (Add materials), where each tap is saved at once. */
-var JED_SECS={cust:{keys:['name','phone','from','to'],cf:true,label:'Customer and route'},notes:{keys:['notes'],label:'Job notes'}};
-var JED_NAMES={name:'name',phone:'phone',from:'pickup',to:'delivery',notes:'job notes'};
+var JED_SECS={cust:{keys:['name','phone','email','from','to'],cf:true,label:'Customer and route'},notes:{keys:['notes'],label:'Job notes'}};
+var JED_NAMES={name:'name',phone:'phone',email:'email',from:'pickup',to:'delivery',notes:'job notes'};
 function jedSaved(j,k){return String((k.indexOf('cf:')===0?(j.d.custom||{})[k.slice(3)]:j.d[k])||'')}
 function jv(j,k){var e=ui.jed[j.id];return e&&Object.prototype.hasOwnProperty.call(e,k)?e[k]:jedSaved(j,k)}
 function jedSecOf(k){return k.indexOf('cf:')===0?'cust':JED_SECS.notes.keys.indexOf(k)>=0?'notes':'cust'}
@@ -2758,11 +3301,11 @@ function renderSheet(){
   var bb=billBody(j);
   var lines=q.lines.map(function(l){return '<tr><td>'+esc(l.label)+'</td><td>'+(l.amt<0?'−':'')+money(Math.abs(l.amt))+'</td></tr>'}).join('')+(bb.it?'<tr class="sub"><td>Quote</td><td>'+money(q.total)+'</td></tr>':'')+bb.html+'<tr class="total"><td>'+(bb.it?'Bill':'Total')+'</td><td>'+money(totalOf(j))+'</td></tr>';
   var items=j.items.map(function(i){return esc(i.name)+' × '+i.qty}).join(', ')||'No items yet';
-  var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+' · '+esc(/^\d{4}-\d\d-\d\d$/.test(p.date||'')?fmtDate(p.date):p.date||'')+(p.pending?' · pending':'')+'</td><td>'+money(p.amt)+'</td></tr>'}).join('')||'<tr><td><small>No payments yet.</small></td><td></td></tr>';
+  var pays=j.payments.map(function(p){return '<tr><td>'+esc(p.method)+' · '+esc(/^\d{4}-\d\d-\d\d$/.test(p.date||'')?fmtDate(p.date):p.date||'')+(p.pending?' · pending':'')+'</td><td>'+(p.amt||!(p.tip>0)?money(p.amt):'')+(p.tip>0?(p.amt?'<br>':'')+'<small>'+money(p.tip)+' tip for the crew</small>':'')+'</td></tr>'}).join('')||'<tr><td><small>No payments yet.</small></td><td></td></tr>';
   var photos=j.photos.map(function(p){return '<figure>'+(p.data?'<img src="'+p.data+'" alt="'+esc(p.kind)+' photo">':'<div class="phold">Loading photo</div>')+'<figcaption>'+esc(p.kind)+' · '+fmtStamp(p.ts)+'<br><button class="btn sm ghost" data-act="sh:rmphoto" data-pid="'+p.id+'">Remove</button></figcaption></figure>'}).join('');
   var acts=j.log.slice(-6).reverse().map(function(l){return '<div><small>'+fmtStamp(l.ts)+' · '+esc(l.ev)+'</small></div>'}).join('');
   var pend=formsPending(j);
-  var signedRows=(j.signed||[]).map(function(x){return '<div class="who"><span><b>'+esc(x.title)+'</b><br><small>'+(x.waived?'Waived. '+esc(x.reason||''):'Signed by '+esc(x.name))+' · '+fmtStamp(x.ts)+'</small></span>'+(!x.waived&&x.sig&&x.sig.length>20?'<img alt="Signature" src="'+x.sig+'" style="height:40px;background:#fff;border-radius:4px;border:1px solid var(--line)">':'')+'</div>'}).join('');
+  var signedRows=(j.signed||[]).map(function(x){return '<div class="who"><span><b>'+esc(x.title)+'</b><br><small>'+(x.waived?'Waived. '+esc(x.reason||''):'Signed by '+esc(x.name)+(x.ahead?', ahead in the customer app':''))+' · '+fmtStamp(x.ts)+'</small></span>'+(!x.waived&&x.sig&&x.sig.length>20?'<img alt="Signature" src="'+x.sig+'" style="height:40px;background:#fff;border-radius:4px;border:1px solid var(--line)">':'')+'</div>'}).join('');
   var pendRows=pend.map(function(f){return '<div class="who"><span><b>'+esc(f.title)+'</b><br><small>Waiting for signature</small></span>'+(state.ui.role==='owner'?'<button class="btn sm ghost" data-act="sh:waive" data-fid="'+f.id+'">Waive</button>':'')+'</div>'}).join('');
   var freq=formsRequired(j),fsec='<div class="sec" data-meta="'+(freq.length?(freq.length-pend.length)+' of '+freq.length+' signed':'')+'"><h3>Forms</h3>'+(signedRows+pendRows||'<small>No forms are required. Add them in Setup.</small>')+'</div>';
   // who takes payments follows Options (Dispatch can take payments; the ways to pay)
@@ -2799,6 +3342,7 @@ function renderSheet(){
      fld('Name','<input data-j="name" value="'+esc(jv(j,'name'))+'">')+
      fld('Phone','<input data-j="phone" type="tel" value="'+esc(jv(j,'phone'))+'">')+
      (j.d.phone?'<div class="span2"><button class="btn" data-act="call:cust" data-id="'+j.id+'">Call '+esc(j.d.name||'the customer')+'</button></div>':'')+
+     fld('Email (they sign in with it to see their move)','<input data-j="email" type="email" inputmode="email" autocapitalize="off" spellcheck="false" value="'+esc(jv(j,'email'))+'">','span2')+custInviteHtml(j)+
      fld('Pickup','<input data-j="from" value="'+esc(jv(j,'from'))+'">','span2')+
      fld('Delivery','<input data-j="to" value="'+esc(jv(j,'to'))+'">','span2')+
      (num(j.d.milesOut)||num(j.d.milesBack)?'<p class="hint span2" style="margin:0">Round trip from the shop: <b>'+fmtMi(num(j.d.milesOut)+num(j.d.miles)+num(j.d.milesBack))+' mi</b> ('+fmtMi(num(j.d.milesOut))+' to pickup, '+fmtMi(num(j.d.miles))+' to delivery, '+fmtMi(num(j.d.milesBack))+' back).</p>':'')+
@@ -4267,7 +4811,7 @@ function crewKit(me){
       '<tr class="sub"><td>Bill'+(bb.it?'':' <small>('+(Math.abs(diff)>=0.01?(diff>0?'+':'−')+money(Math.abs(diff))+' on the quote':'the same as the quote')+')</small>')+'</td><td>'+money(totalOf(j))+'</td></tr><tr><td>Paid so far</td><td class="money-paid">'+money(paidOf(j))+'</td></tr><tr class="total"><td>Balance</td><td class="'+(bal>0?'money-due':'money-paid')+'">'+money(bal)+'</td></tr></table>'+bk+charge+
       (req.length?'<p class="hint">Forms signed: '+(req.length-pend.length)+' of '+req.length+'</p>':'')+
       (savedOf(j)?'<p class="hint money-paid saved" style="margin:6px 0 0">The customer saved '+money(savedOf(j))+' off the quote.</p>':bb.it&&diff>=0.01?'<p class="hint" style="margin:6px 0 0">'+money(diff)+' more than the quote.</p>':'')+
-      (bal>0?'<p class="hint money-due" style="margin:6px 0 0">'+money(bal)+' still to collect</p>':'<p class="hint money-paid" style="margin:6px 0 0">Paid in full</p>')+act+'</div>';
+      (bal>0?'<p class="hint money-due" style="margin:6px 0 0">'+money(bal)+' still to collect</p>':'<p class="hint money-paid" style="margin:6px 0 0">Paid in full</p>')+tipLine(j)+act+'</div>';
   }
   // The quote and what made it up, always on a lead's card (Richie, Oct 21: "the lead should always be able
   // to see the quote and what made up the quote. that way he can explain any differences on the bill").
@@ -4560,7 +5104,7 @@ function renderReports(){
    each with a line saying how it is set. A section opens on its own page (‹ Setup, or the phone's
    Back button, goes back). The search box finds a section, or a switch, by what it's called. Each
    section page also shows the switches that belong to it. */
-var SET_GROUPS=[['co','Your company'],['price','Pricing'],['people','People'],['jobs','Jobs and paperwork'],['money','Payments and texts'],['data','Data']];
+var SET_GROUPS=[['co','Your company'],['price','Pricing'],['people','People'],['jobs','Jobs and paperwork'],['cust','Customers'],['money','Payments and texts'],['data','Data']];
 var SICON=(function(){var p={
   options:'<rect x="2.5" y="7" width="19" height="10" rx="5"/><circle cx="16.5" cy="12" r="2.8"/>',
   company:'<path d="M4 20V7l8-3.5L20 7v13"/><path d="M9.5 20v-4.5h5V20"/><path d="M8 9.5h1.5M14.5 9.5H16M8 12.5h1.5M14.5 12.5H16"/>',
@@ -4585,7 +5129,8 @@ var SICON=(function(){var p={
   eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
   theme:'<circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="9.5" r="1.2"/><circle cx="15" cy="9.5" r="1.2"/><circle cx="9.5" cy="15" r="1.2"/><path d="M15 13.5c2 0 3.4 1.2 3.4 2.8"/>',
   swap:'<path d="M5 8h13l-3.5-3.5M19 16H6l3.5 3.5"/>',
-  signout:'<path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/>'
+  signout:'<path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/>',
+  customers:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><circle cx="12" cy="12.8" r="2.2"/><path d="M8.4 20c.6-2.1 1.9-3.2 3.6-3.2s3 1.1 3.6 3.2"/>'
 };var o={};Object.keys(p).forEach(function(k){o[k]='<svg viewBox="0 0 24 24" aria-hidden="true">'+p[k]+'</svg>'});return o})();
 function optHint(x){return typeof x.h==='function'?x.h(state.settings):x.h}
 function optRow(x){
@@ -4622,7 +5167,7 @@ function setupSecs(){
   if(!owner){add('rates','price','Rate card',rateSum,rates);return out}
   var tcols='grid-template-columns:minmax(0,1fr) 88px 84px;align-items:center';
   var trucks=(S.trucks.length?'<div class="grid3 colhead" style="'+tcols+'"><small>Truck</small><small>Cu ft</small><span></span></div>':'')+S.trucks.map(function(t,i){return '<div class="grid3" style="'+tcols+';margin-bottom:8px"><input aria-label="Truck name" data-s="trucks.'+i+'.name" value="'+esc(t.name)+'" '+inp+'><input aria-label="'+esc(t.name)+' cubic feet" type="number" inputmode="numeric" min="1" data-min="1" data-s="trucks.'+i+'.cf" data-t="num" value="'+t.cf+'" '+inp+'><button class="btn sm danger" data-act="st:rmtruck" data-i="'+i+'" aria-label="Remove '+esc(t.name)+'">Remove</button></div>'}).join('');
-  var formsList=(S.forms||[]).map(function(f){return '<details class="grp"><summary>'+esc(f.title)+' <small>'+(f.required?'required':'optional')+'</small></summary><div class="formbox">'+(f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+pg+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join(''))+'</div><div class="row" style="margin:8px 0"><button class="chip'+(f.required?' on':'')+'" data-act="st:reqform" data-id="'+f.id+'" aria-pressed="'+!!f.required+'">Required before payment</button><button class="btn sm danger" data-act="st:rmform" data-id="'+f.id+'">Remove</button></div></details>'}).join('')||'<p class="hint">No forms yet.</p>';
+  var formsList=(S.forms||[]).map(function(f){return '<details class="grp"><summary>'+esc(f.title)+' <small>'+(f.required?'required':'optional')+'</small></summary><div class="formbox">'+(f.kind==='text'?'<div class="formtext">'+esc(f.text)+'</div>':(f.pages||[]).map(function(pg,i){return pg?'<img src="'+pg+'" alt="'+esc(f.title)+' page '+(i+1)+'">':'<p class="hint">Loading page '+(i+1)+'…</p>'}).join(''))+'</div><div class="row" style="margin:8px 0"><button class="chip'+(f.required?' on':'')+'" data-act="st:reqform" data-id="'+f.id+'" aria-pressed="'+!!f.required+'">Required before payment</button><button class="chip'+(f.ahead?' on':'')+'" data-act="st:aheadform" data-id="'+f.id+'" aria-pressed="'+!!f.ahead+'">Customer signs ahead</button><button class="btn sm danger" data-act="st:rmform" data-id="'+f.id+'">Remove</button></div></details>'}).join('')||'<p class="hint">No forms yet.</p>';
   // a card kept for a customer without a phone belongs to the job it was kept on
   var vaultWho=function(x){if(!/^job:/.test(x.cust||'')){var cj=state.jobs.filter(function(j){return custKey(j)===x.cust}).pop();return 'Customer: '+(cj&&cj.d.name?esc(cj.d.name)+' · ':'')+esc(/^\d{10,11}$/.test(x.cust||'')?fmtPhone(x.cust):x.cust)}var kj=byId(x.cust.slice(4));return kj?'Kept on '+esc(kj.d.name||'a job')+'’s job':'Kept on a job that is no longer here'};
   var vaultList=state.vault.map(function(x){return '<div class="who"><span>'+(x.type==='card'?esc(x.brand)+' ending '+esc(x.last4):'Bank ending '+esc(x.last4))+(x.name?' · '+esc(x.name):'')+(x.via==='stripe'?' <small>· Stripe'+(x.live?'':' test')+'</small>':'')+'<br><small>'+vaultWho(x)+'</small></span><button class="btn sm danger" data-act="st:rmvault" data-id="'+x.id+'">Remove</button></div>'}).join('')||'<p class="hint">Nothing saved yet.</p>';
@@ -4674,13 +5219,21 @@ function setupSecs(){
     optGroup('clock','Switches'),'clock in out hours late note location minimum pay work types');
   add('forms','jobs','Forms to sign',(S.forms||[]).length+' form'+((S.forms||[]).length===1?'':'s')+', '+nReq+' required'+(opt('forms')?'':' · signatures off'),
     '<section class="card"><h2>Forms to sign</h2><div style="margin:2px 0 8px">'+optRow(formsOpt)+'</div><p class="sub">When a job is finished, the lead is walked through every required form for the customer to sign, then straight to payment. Payment stays locked until they are signed. Sample wording only: have your attorney review anything you rely on.</p>'+formsList+
-    '<h3 style="margin:14px 0 6px">Add a form</h3><div class="grid2 stack">'+fld('Form name','<input id="nFormTitle" placeholder="Bill of lading">','span2')+fld('Upload a PDF or photos of the form','<input id="nFormFiles" type="file" accept="application/pdf,image/*" multiple>','span2')+fld('Or type the form text','<textarea id="nFormText" placeholder="Paste the wording customers agree to"></textarea>','span2')+'</div><button class="btn primary" style="margin-top:8px" data-act="st:addform">Add form</button><p class="hint">Uploads are stored as page images on this device. Keep forms to a few pages so storage stays roomy.</p></section>','signatures contract release bill of lading');
+    '<h3 style="margin:14px 0 6px">Add a form</h3><div class="grid2 stack">'+fld('Form name','<input id="nFormTitle" placeholder="Bill of lading">','span2')+fld('Upload a PDF or photos of the form','<input id="nFormFiles" type="file" accept="application/pdf,image/*" multiple>','span2')+fld('Or type the form text','<textarea id="nFormText" placeholder="Paste the wording customers agree to"></textarea>','span2')+'</div><button class="btn primary" style="margin-top:8px" data-act="st:addform">Add form</button>'+((S.forms||[]).some(function(f){return f.id==='f_agree'})?'':'<button class="btn" style="margin:8px 0 0 8px" data-act="st:sampleagree">Add the sample moving agreement</button>')+'<p class="hint">Uploads are stored as page images on this device. Keep forms to a few pages so storage stays roomy.</p></section>','signatures contract release bill of lading');
   add('fields','jobs','Custom job fields',S.customFields.length?S.customFields.map(function(f){return f.label}).join(', '):'None yet',
     '<section class="card"><h2>Custom job fields</h2><p class="sub">Add whatever your process needs. They show on quotes, jobs and the crew app.</p>'+cfl+'<div class="grid3" style="grid-template-columns:minmax(0,1fr) 112px 64px;align-items:center"><input id="nCfLabel" placeholder="Field name" aria-label="Field name" '+inp+'><select id="nCfType" aria-label="Field type" '+inp+'><option value="text">Text</option><option value="number">Number</option><option value="yesno">Yes / no</option></select><button class="btn sm" data-act="st:addcf">Add</button></div></section>');
   add('sources','jobs','Lead sources',S.sources.join(', ')||'None yet',
     '<section class="card"><h2>Lead sources</h2>'+chips(S.sources,'st:rmsrc')+'<div class="row"><input id="nSrc" placeholder="Source" aria-label="New lead source" style="flex:1;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--field)"><button class="btn" data-act="st:addsrc">Add</button></div></section>','referral google yelp');
   add('bid','jobs','Bid accuracy','A job counts as accurate within '+num(S.bidTol)+'% of the bid',
     '<section class="card"><h2>Bid accuracy</h2>'+nf('A job counts as accurate when actual hours land within this % of the bid','bidTol','1')+'</section>','estimate');
+  add('customers','cust','Customer app',(custReviewUrl(S)?'Review page set':'No review page yet')+' · tips '+(opt('custTips')?'on':'off'),
+    '<section class="card"><h2>Customer app</h2><p class="sub">Your customers sign in with the email on their move: with Google, or a code we email them. They see their move, book their quote, sign forms ahead, follow move day, pay with Google Pay, Apple Pay or a card, and tip the crew. Try it as one of them: More › See it their way › Customer.</p>'+
+    fld('Review page (the app takes them here after the move)','<input data-s="reviewUrl" data-t="text" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://g.page/r/…/review" value="'+esc(S.reviewUrl||'')+'">')+
+    '<p class="hint">Your Google review link: in your Google Business Profile, tap <b>Ask for reviews</b> and copy the link. Once the move is done and paid, the customer app counts down and opens it, once.'+(String(S.reviewUrl||'').trim()&&!custReviewUrl(S)?' <span class="money-due">That link needs to start with https://.</span>':'')+'</p>'+
+    '<p class="hint">Forms a customer can sign ahead: Setup › Forms to sign, “Customer signs ahead”.</p>'+
+    '<div class="f" style="margin-top:10px"><span>Where customers open the app (they can add it to their home screen)</span><div class="row"><b id="custSite" style="overflow-wrap:anywhere">'+esc(custSite())+'</b><button class="btn sm" data-act="cust:copysite">Copy</button></div></div>'+
+    '<p class="hint">On a job, <b>Text them the app</b> sends it to the customer from your company line.</p></section>'+
+    optGroup('cust','Switches'),'customers customer app review google pay tip tips portal sign in gmail');
   add('pay','money','Payments',payWord,payCardHtml()+optGroup('pay','Ways to pay'),'stripe cards connect pay links cash checks');
   add('vault','money','Saved payment methods',state.vault.length+' saved',
     '<section class="card"><h2>Saved payment methods</h2><p class="sub">Only the last four digits are kept. Customers find their saved cards and bank accounts when they pay.</p>'+vaultList+'</section>','cards on file bank');
@@ -4717,7 +5270,7 @@ function setListHtml(secs){
 
 /* ---------- render core ---------- */
 function renderTab(){
-  var fn={desk:renderDesk,sched:renderSched,quotes:renderQuotes,today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,history:renderHistory,chat:renderChat,reports:renderReports,settings:renderSettings,admin:renderAdmin}[ui.tab];
+  var fn={desk:renderDesk,sched:renderSched,quotes:renderQuotes,today:renderToday,quote:renderQuote,jobs:renderJobs,dispatch:renderDispatch,crew:renderCrew,history:renderHistory,chat:renderChat,reports:renderReports,settings:renderSettings,admin:renderAdmin,mymove:renderMyMove,mypay:renderMyPay,myprofile:renderMyProfile}[ui.tab];
   if(fn)fn();
 }
 function render(){
@@ -4729,7 +5282,7 @@ function render(){
   if((role==='crew'||role==='lead')&&(ui.tab==='history'||ui.tab==='today')){if(ui.tab==='history')ui.crewView='history';ui.tab='crew'}
   if(!tabs.some(function(t){return t.id===ui.tab}))ui.tab=tabs[0].id;
   renderTabs();
-  renderTab();renderSheet();renderFlow();if(!ui.rqo||ui.rqo.step!=='sign')renderRq();renderMore();renderCall();renderStart();renderMover();renderPvBar();renderSos();renderSosBar();
+  renderTab();renderSheet();renderFlow();if(!ui.rqo||ui.rqo.step!=='sign')renderRq();renderMore();renderCall();renderStart();renderMover();renderPvBar();renderSos();renderSosBar();renderCs();
 }
 function renderTabs(){
   var un=unreadTotal(),nav=navTabs(),wide=window.innerWidth>=900,office=canEditJobs();
@@ -4737,7 +5290,7 @@ function renderTabs(){
   // the round button: a new quote, for the office. (The crew clock in and out on the clock card on Today and the crew's Jobs screen.)
   var hasFab=office||state.ui.role==='callcenter'||ccToo();
   var btn=function(t){return '<button data-act="tab" data-tab="'+t.id+'"'+(t.id===ui.tab?' aria-current="page"':'')+'>'+(t.id==='crew'&&!office?ICON.jobs:ICON[t.id])+'<span>'+tabLabel(t)+'</span>'+(t.id==='chat'&&un?'<i class="badge" aria-label="'+un+' unread">'+(un>9?'9+':un)+'</i>':'')+'</button>'};
-  var moreBtn='<button data-act="more:open"'+((!wide&&!list.some(function(t){return t.id===ui.tab})&&!(hasFab&&ui.tab==='quote'))?' aria-current="page"':'')+'>'+ICON.more+'<span>More</span></button>';
+  var moreBtn=state.ui.role==='customer'?'':'<button data-act="more:open"'+((!wide&&!list.some(function(t){return t.id===ui.tab})&&!(hasFab&&ui.tab==='quote'))?' aria-current="page"':'')+'>'+ICON.more+'<span>More</span></button>';
   var html=wide||!hasFab?(list.map(btn).join('')+moreBtn)
     :(list.slice(0,2).map(btn).join('')+'<button class="spacer" tabindex="-1" aria-hidden="true"></button>'+list.slice(2).map(btn).join('')+moreBtn);
   var el=$('#tabs');el.className='tabs'+(wide||!hasFab?'':' has-fab');el.innerHTML=html;
@@ -4794,7 +5347,7 @@ function takePhotos(fileList){
 $('#photoIn').addEventListener('change',function(e){takePhotos(e.target.files);e.target.value=''});
 
 /* ---------- directory, chat, calls, location ---------- */
-var KIND={owner:'Owner',dispatch:'Dispatch',lead:'Crew lead',crew:'Crew',callcenter:'Call center'};
+var KIND={owner:'Owner',dispatch:'Dispatch',lead:'Crew lead',crew:'Crew',callcenter:'Call center',customer:'Customer'};
 var UPDATES=['On my way','Arrived at pickup','Loading done','Arrived at delivery','Running late'];
 function directory(){
   var S=state.settings,out=[],seen={},add=function(n,k){if(seen[n])return;seen[n]=1;out.push({name:n,kind:k,phone:S.contacts[n]||''})};
@@ -5389,7 +5942,7 @@ function jobDoc(j){
   var dd=Object.assign({},j.d);
   dd.items=Object.keys(j.d.items||{}).map(function(k){return {id:k,q:j.d.items[k]}});
   var o={id:j.id,status:j.status,createdAt:j.createdAt,d:dd,quote:j.quote,items:j.items||[],assign:j.assign||{truckId:'',crew:[]},tally:j.tally||{}};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy','createdCC','crewAsk'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy','createdCC','crewAsk','eta','cust'].forEach(function(k){if(j[k]!=null)o[k]=j[k]});
   o.payments=toMap(j.payments,function(x){return x.id});
   o.signed=toMap(j.signed,function(x){return x.id});
   o.extras=toMap(j.extras,function(x){return x.id});
@@ -5415,7 +5968,7 @@ function docToJob(v){
     materials:mapArr(v.materials,'ts'),costs:mapArr(v.costs,'ts'),confirm:(v.confirm&&typeof v.confirm==='object')?v.confirm:{},
     crewOn:(v.crewOn&&typeof v.crewOn==='object')?v.crewOn:undefined,crewAdj:mapArr(v.crewAdj,'ts'),
     log:mapArr(v.log,'ts').slice(-60)};
-  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy','createdCC','crewAsk'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
+  ['startedAt','finishedAt','actualHours','phases','minPaid','test','milesDriven','clockFix','clockAt','clockSig','back','odo','rq','quoteHist','crewRates','createdBy','createdCC','crewAsk','eta','cust'].forEach(function(k){if(v[k]!=null)j[k]=v[k]});
   return j;
 }
 function jobDiff(prev,cur){
@@ -5642,8 +6195,9 @@ function applyIdentityUI(){
   var id=sync.identity,shared=sync.mode==='shared',locked=shared&&id.status==='ok',pv=previewing();
   var rw=$('#roleWrap'),wa=$('#whoami');
   if(rw)rw.style.display='none';
-  if(wa)wa.textContent=pv?('Preview · '+(ui.preview.staff||KIND[ui.preview.role]||ui.preview.role)):(locked?(id.staff+' · '+(KIND[id.role]||id.role)):'');
-  if(pv){state.ui.role=ui.preview.role;if(ui.preview.staff){if(ui.preview.role==='crew'||ui.preview.role==='lead')state.ui.me=ui.preview.staff;else state.ui.who=ui.preview.staff}return}
+  if(custLive()){state.ui.role='customer';if(wa)wa.textContent='';return}   // a customer, signed in (the customer side)
+  if(wa)wa.textContent=pv?('Preview · '+(ui.preview.role==='customer'?custPvName():(ui.preview.staff||KIND[ui.preview.role]||ui.preview.role))):(locked?(id.staff+' · '+(KIND[id.role]||id.role)):'');
+  if(pv){state.ui.role=ui.preview.role;if(ui.preview.staff){if(ui.preview.role==='crew'||ui.preview.role==='lead')state.ui.me=ui.preview.staff;else if(ui.preview.role!=='customer')state.ui.who=ui.preview.staff}return}
   if(locked){var lr=id.role;if((lr==='crew'||lr==='lead')&&ccStaffHas(id.staff)&&state.settings.crew.indexOf(id.staff)<0&&!isOfficeName(id.staff))lr='callcenter';
     state.ui.role=lr;if(lr==='crew'||lr==='lead')state.ui.me=id.staff;else state.ui.who=id.staff;
     if(lr==='callcenter'){var at=allowedTabs(lr);if(at.length&&!at.some(function(t){return t.id===ui.tab}))ui.tab=at[0].id}}   // a side that came with the settings: onto one of its tabs
@@ -6446,16 +7000,17 @@ function previewPeople(role){
 }
 function startPreview(role,staff){
   if(!canPreview())return;
-  if(staff){var pr=primaryRoleOf(staff);if(pr)role=pr}   // a person: their own sides, whichever row they were picked from
+  if(staff&&role!=='customer'){var pr=primaryRoleOf(staff);if(pr)role=pr}   // a person: their own sides, whichever row they were picked from
   if(state.ui.realRole==null)state.ui.realRole=state.ui.role;
   ui.preview={role:role,staff:staff||''};
   state.ui.role=role;
-  if(staff){if(role==='crew'||role==='lead')state.ui.me=staff;else state.ui.who=staff}
+  if(staff&&role!=='customer'){if(role==='crew'||role==='lead')state.ui.me=staff;else state.ui.who=staff}
+  ui.cs=null;ui.csMove=null;ui.csAuto={};
   ui.tab='today';ui.crewView='today';histReset();ui.jobId=null;ui.chatThread=null;save();render();window.scrollTo(0,0);   // everyone starts on their own first screen
 }
 function endPreview(){
   if(!ui.preview)return;
-  ui.preview=null;
+  ui.preview=null;ui.cs=null;ui.csMove=null;
   if(state.ui.realRole!=null){state.ui.role=state.ui.realRole;state.ui.realRole=null}
   else state.ui.role='owner';
   ui.tab='today';ui.crewView='today';histReset();ui.jobId=null;ui.chatThread=null;save();render();window.scrollTo(0,0);
@@ -6464,7 +7019,7 @@ function renderPvBar(){
   var b=$('#pvBar');if(!b)return;
   if(!previewing()){b.hidden=true;b.innerHTML='';document.body.classList.remove('previewing');return}
   var p=ui.preview;
-  b.innerHTML='<span class="grow">Previewing <b>'+esc(p.staff||KIND[p.role]||p.role)+'</b>'+(p.staff?' · '+esc(KIND[p.role]||p.role):'')+'</span><button data-act="pv:end">Back to my view</button>';
+  b.innerHTML='<span class="grow">Previewing <b>'+esc(p.role==='customer'?custPvName():(p.staff||KIND[p.role]||p.role))+'</b>'+(p.staff?' · '+esc(KIND[p.role]||p.role):'')+'</span><button data-act="pv:end">Back to my view</button>';
   b.hidden=false;document.body.classList.add('previewing');
 }
 function previewSheet(){
@@ -6474,7 +7029,7 @@ function previewSheet(){
     var who=people.length?people.map(function(n){return '<button class="chip" data-act="pv:set" data-role="'+r[0]+'" data-staff="'+esc(n)+'">'+esc(n)+'</button>'}).join('')+(r[0]==='callcenter'?'<button class="chip" data-act="pv:set" data-role="callcenter" data-staff="">Tally’s team</button>':'')
       :'<button class="chip" data-act="pv:set" data-role="'+r[0]+'" data-staff="">Anyone</button>';
     return '<div class="pvrow"><span class="who-n"><b>'+r[1]+'</b></span></div><div class="scrollx">'+who+'</div>';
-  }).join('');
+  }).join('')+custPvRow();
   return '<div class="row between"><h2>See it their way</h2><button class="btn sm" data-act="more:close">Done</button></div>'+
     '<p class="hint" style="margin:2px 0 8px">Pick a person and the app shows you exactly what they see. It only changes your screen, and nothing you do here changes their access.</p>'+rows;
 }
@@ -7369,6 +7924,7 @@ function memberApply(){
 }
 function brandLine(){
   var el=$('#brandCo');if(!el)return;
+  if(custLive()){var cm=custCur();el.textContent=cm&&cm.company?cm.company:'Your move';return}
   el.innerHTML=esc((window.tallyOrg&&window.tallyOrg.name)||state.settings.company||'Your Company')+(memberTest()?' <b class="testtag" title="A test company: never charged a membership">TEST</b>':'');
 }
 function shortDay(iso){var d=iso?new Date(iso):null;return d&&!isNaN(d)?d.toLocaleDateString('en-US',{month:'short',day:'numeric'}):''}
@@ -7522,12 +8078,12 @@ function adminAddCompany(){
 }
 
 /* ---------- signing and payment flow ---------- */
-function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||ui.rqo||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.mv||ui.emp||ui.mp||ui.sosOpen||ui.sosStart));navSync()}
+function syncLock(){document.body.classList.toggle('lock',!!(ui.jobId||ui.flow||ui.rqo||sync.gate||ui.pick||ui.more||ui.call||ui.start||ui.mv||ui.emp||ui.cs||ui.mp||ui.sosOpen||ui.sosStart));navSync()}
 /* In the installed app the phone's Back button should close whatever is open, not the app.
    One history entry stands in for "something is open"; Back closes the top screen. */
 var nav={pushed:false};
 function standalone(){try{return !!window.TALLY_STANDALONE||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||String(document.referrer).indexOf('android-app://')===0}catch(e){return false}}
-function topOverlay(){return (ui.sosOpen||ui.sosStart)?'sos':ui.mp?'matpick':ui.mv?'mover':ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.rqo?'rq':ui.emp?'emp':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':(ui.tab==='settings'&&ui.setSec)?'setsec':''}
+function topOverlay(){return (ui.sosOpen||ui.sosStart)?'sos':ui.mp?'matpick':ui.mv?'mover':ui.start?'start':ui.call?'call':ui.pick?'pick':ui.more?'more':ui.rqo?'rq':ui.emp?'emp':ui.cs?'cs':ui.flow?'flow':ui.jobId?'sheet':(ui.tab==='chat'&&ui.chatThread)?'thread':(ui.tab==='settings'&&ui.setSec)?'setsec':''}
 function navSync(){if(!standalone()||nav.pushed||!topOverlay())return;nav.pushed=true;try{history.pushState({tally:1},'')}catch(e){}}
 window.addEventListener('popstate',function(){
   nav.pushed=false;var t=topOverlay();
@@ -7540,6 +8096,7 @@ window.addEventListener('popstate',function(){
   else if(t==='more'){ui.more=false;ui.moreMode='list';renderMore()}
   else if(t==='rq')rqExit();
   else if(t==='emp')closeEmp();
+  else if(t==='cs')csClose();
   else if(t==='flow')closeFlow();
   else if(t==='sheet')leaveSheet(closeSheet);
   else if(t==='thread'){ui.chatThread=null;renderChat()}
@@ -7974,6 +8531,7 @@ document.addEventListener('click',function(e){
       if(!gs.office&&sj.status==='booked'){var cw3=clockWait(sj);if(cw3.length){ui.start=null;renderStart();renderTab();toast('Waiting on '+waitWords(cw3,gs.who)+' to clock in. Everyone on the job clocks in before it starts.');break}}
       var send=!!(sj.d.phone&&gs.text&&opt('eta'))&&!sj.test,viaCo=send&&commsReady(),isLink=t.tagName==='A';
       state.ui.etaMins=gs.mins;
+      if(sj.status==='booked'||sj.status==='quoted')sj.eta={mins:gs.mins,at:Date.now()+gs.mins*60000,ts:Date.now()};   // the customer's move day: about when the crew arrives
       if(sj.quote&&sj.quote.kind==='mileage'&&sj.quote.shopTravel&&!sj.quote.flat&&num(gs.odo)>0){sj.odo={start:Math.round(num(gs.odo)*10)/10,by:gs.who||myName()||'',ts:Date.now()};logEv(sj,'Odometer leaving the shop: '+fmtMi(sj.odo.start)+(gs.who?' ('+gs.who+')':''))}
       if(sj.status==='booked'||sj.status==='quoted'){setStatus(sj,'active');onJobNotice(true)}
       if(!sj.crewAsk)sj.crewAsk=1;   // started on this version: a bigger crew needs the customer's signature (crewForm)
@@ -8243,6 +8801,8 @@ document.addEventListener('click',function(e){
       save();toast('Payment recorded: '+money(pamt)+' · '+plabel);renderFlow();renderTab();
       break}
     case 'sh:waive':{j=byId(ui.jobId);if(!j||state.ui.role!=='owner')break;j.signed=j.signed||[];j.signed.push({id:uid(),formId:t.dataset.fid,title:(/^crew:/.test(t.dataset.fid)?(crewForm(j)||{}).title:((S.forms||[]).find(function(x){return x.id===t.dataset.fid})||{}).title)||'Form',waived:true,reason:'Waived by the owner.',ts:Date.now(),by:'Owner'});logEv(j,/^crew:/.test(t.dataset.fid)?'Waived: the customer’s signature for the bigger crew':'Form waived');save();renderSheet();break}
+    case 'st:aheadform':{var af2=S.forms.find(function(x){return x.id===t.dataset.id});if(af2){af2.ahead=!af2.ahead;save();renderSettings();toast(af2.ahead?'Customers can sign '+af2.title+' ahead in their app.':af2.title+' is signed with the crew.')}break}
+    case 'st:sampleagree':{if(S.forms.some(function(x){return x.id==='f_agree'}))break;S.forms.push({id:'f_agree',title:'Moving agreement',kind:'text',required:true,ahead:true,pages:[],text:SAMPLE_AGREE});save();renderSettings();toast('Added the sample moving agreement. Customers can sign it ahead.');break}
     case 'st:reqform':{var rf2=S.forms.find(function(x){return x.id===t.dataset.id});if(rf2){rf2.required=!rf2.required;save();renderSettings()}break}
     case 'st:rmform':setRemove('forms',S.forms.findIndex(function(x){return x.id===t.dataset.id}));break;
     case 'st:rmvault':{var rv=state.vault.find(function(x){return x.id===t.dataset.id});
@@ -8428,7 +8988,7 @@ else if(location.hash==='#sos')ui.sosWant=true;   // the link in an emergency te
 (function migrate11(){if(window.claude&&typeof window.claude.use==='function')return;var n=0;state.jobs.forEach(function(j){if((crewAdjs(j).length||/^c[34]:/.test(String(j.clockSig||'')))&&clockStale(j)){rebill(j,'worked out again');n++}});if(n)save()})();
 (function migrate9(){var h=state.ui.sosHide||{},n=Date.now();Object.keys(h).forEach(function(k){if(!(n-h[k]<864e5))delete h[k]});state.ui.sosHide=h})();
 applyTheme();chatInit();syncBoot();render();resumeGeo();commsBaseline();
-if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,schedRecs:schedRecs,schedOf:schedOf,dayLoad:dayLoad,dirApply:dirApply,openJob:openJob,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock,mvSummary:mvSummary,billOld:billOld,mvUndo:mvUndo,backTry:backTry,crewForm:crewForm,crewReq:crewReq,crewShort:crewShort,crewShortN:crewShortN,crewPut:crewPut,formsPending:formsPending,planDay:planDay,fitAt:fitAt,fitTimes:fitTimes,needOf:needOf,nextRoom:nextRoom,deskLoad:deskLoad,deskRecs:deskRecs,deskCos:deskCos,dayPlanOf:dayPlanOf,moversOn:moversOn,rateCardOf:rateCardOf,hmMin:hmMin,minHm:minHm,dayLoadIn:dayLoadIn,loadWords:loadWords,availWords:availWords,carryDraft:carryDraft,fitIn:fitIn,slotWords:slotWords,slotNo:slotNo,fitWhy:fitWhy};
+if(window.__TALLY_TEST)window.__tally={state:function(){return state},sync:sync,chat:chat,save:save,syncOut:syncOut,jobDoc:jobDoc,comms:comms,ui:ui,people:people,loadPeople:loadPeople,pay:pay,qrSvg:qrSvg,sos:sos,sosSync:sosSync,sosAll:sosAll,sosRefresh:sosRefresh,calc:calc,moveKind:moveKind,kindLine:kindLine,clockBill:clockBill,clockSig:clockSig,bidActual:bidActual,conflictsFor:conflictsFor,paidToday:paidToday,crewMs:crewMs,shiftMs:shiftMs,render:render,themes:THEMES,varsFor:varsFor,contrastOf:contrastOf,needsSched:needsSched,jobTrucks:jobTrucks,trucksNoDriver:trucksNoDriver,canDrive:canDrive,defaultSettings:defaultSettings,rqBuild:rqBuild,rqKey:rqKey,rqItemsArr:rqItemsArr,docToJob:docToJob,canon:canon,mvAdd:mvAdd,billHours:billHours,clockRows:clockRows,clockStale:clockStale,schedRecs:schedRecs,schedOf:schedOf,dayLoad:dayLoad,dirApply:dirApply,openJob:openJob,billCrewAt:billCrewAt,mvRate:mvRate,applyClock:applyClock,mvSummary:mvSummary,billOld:billOld,mvUndo:mvUndo,backTry:backTry,crewForm:crewForm,crewReq:crewReq,crewShort:crewShort,crewShortN:crewShortN,crewPut:crewPut,formsPending:formsPending,planDay:planDay,fitAt:fitAt,fitTimes:fitTimes,needOf:needOf,nextRoom:nextRoom,deskLoad:deskLoad,deskRecs:deskRecs,deskCos:deskCos,dayPlanOf:dayPlanOf,moversOn:moversOn,rateCardOf:rateCardOf,hmMin:hmMin,minHm:minHm,dayLoadIn:dayLoadIn,loadWords:loadWords,availWords:availWords,carryDraft:carryDraft,fitIn:fitIn,slotWords:slotWords,slotNo:slotNo,fitWhy:fitWhy,custMoveOf:custMoveOf,emailKey:emailKey,custMoves:custMoves,custPeople:custPeople,custStage:custStage,custDueNow:custDueNow,csTipAmt:csTipAmt,tipsOf:tipsOf,custBookWhy:custBookWhy,custCur:custCur};
 })();
 </script>
 </body>

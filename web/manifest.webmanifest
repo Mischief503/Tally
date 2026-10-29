@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Tally",
   "short_name": "Tally",
-  "description": "Quotes, dispatch, crew and payments for a moving company.",
+  "description": "Your move, and everything a moving company runs on: quotes, dispatch, crews and payments.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

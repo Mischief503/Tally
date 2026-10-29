@@ -1,6 +1,6 @@
 # Options: what the owner can switch on and off
 
-**Setup › Options** has 42 switches, in eight groups. They apply to everyone in the company and save
+**Setup › Options** has 44 switches, in nine groups. They apply to everyone in the company and save
 as soon as they're flipped. Each switch also sits in the Setup section it belongs to, so the Rate
 card has the pricing switches, Roles has what crew, leads and dispatch can do, and so on. Only the
 owner can change them.
@@ -63,7 +63,7 @@ the old notes, tallies, photos and settings are still there.
 The number under a switch (radius, %, $) shows only while the switch is on. See
 [PRICING.md](PRICING.md) for how a quote and the final bill are worked out.
 
-## Paperwork, payments, texts, office
+## Paperwork, payments, the customer app, texts, office
 
 | Switch | Off means |
 |---|---|
@@ -72,6 +72,8 @@ The number under a switch (radius, %, $) shows only while the switch is on. See
 | Typing a card in | No card box. |
 | Cards on file | Cards aren't kept or charged later. |
 | Cash, checks and Zelle | Not offered, unless every other way is off: then it stays, so a payment can always be recorded. |
+| Customers book their own quote | The customer app shows the quote but no **Book my move**: "Call or text us to book it." The server refuses a customer's booking too. See [CUSTOMERS.md](CUSTOMERS.md). |
+| Tips for the crew | No tip when the customer pays the bill in their app; the server takes no tip either. |
 | Text crew when they're put on a job | No assignment texts. |
 | Text the crew when a job moves | No texts when a job changes day or time. |
 | Texts the evening before | No evening reminders or office summary. |

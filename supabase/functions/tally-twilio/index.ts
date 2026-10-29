@@ -20,6 +20,7 @@
 //
 // Routes:
 //   POST /app            the Tally app: {action:'job'|'forms'|'short'|'call'|'line'|'pay_…', org, jobId}
+//                        and a customer's own: {action:'cust_list'|'cust_book'|'cust_sign'|'cust_pay'|'cust_check'|'cust_reviewed'|'cust_profile'}
 //                        and {action:'sos', org, msgId, kind:'start'|'end'} for emergency alerts
 //   POST /stripe         Stripe events (payments finishing or failing, pay links used, refunds, disputes,
 //                        memberships)
@@ -1027,7 +1028,10 @@ function paidCents(payments: J): number {
 }
 // In live mode, money from Stripe's test mode doesn't count: test payments made while trying Tally out.
 function counts(live: unknown): boolean { return !liveNow() || live !== false; }
-const netCents = (r: J) => (Number(r.amount_cents) || 0) - (Number(r.refunded_cents) || 0) - (Number(r.disputed_cents) || 0);
+// a customer's tip on the payment (the customer side, Oct 28): kept in the ledger's source as "cust;tip=<cents>"
+export const tipOfRow = (r: J) => { const m = /(?:^|;)tip=(\d{1,9})(?:;|$)/.exec(String((r && r.source) || "")); return m ? Math.min(Number(m[1]), Number(r.amount_cents) || 0) : 0; };
+// what a payment put toward the bill: less its tip, and less any refund or dispute (the bill's part first)
+const netCents = (r: J) => Math.max(0, (Number(r.amount_cents) || 0) - tipOfRow(r) - (Number(r.refunded_cents) || 0) - (Number(r.disputed_cents) || 0));
 // Paid so far: the job's own payments, except that a Stripe payment counts from the ledger (less any
 // refund or dispute), so one that a phone's save happened to overwrite is still counted and can't be
 // charged again.
@@ -1383,7 +1387,7 @@ async function disputeOf(pid: string, acct = ""): Promise<J> {
   return { cents: c, lost };
 }
 function sameEntry(a: J, b: J): boolean {
-  return !!a && Number(a.amt) === Number(b.amt) && !!a.pending === !!b.pending && a.method === b.method;
+  return !!a && Number(a.amt) === Number(b.amt) && !!a.pending === !!b.pending && a.method === b.method && (Number(a.tip) || 0) === (Number(b.tip) || 0);
 }
 // The one place a Stripe payment is written down: the ledger; the job (the payment, and any refund or
 // dispute as its own line taking money off); the card, when the customer agreed to keep it on file.
@@ -1405,15 +1409,19 @@ export async function recordIntent(pi0: J, acct = ""): Promise<J> {
   const pm = pi.payment_method && typeof pi.payment_method === "object" ? pi.payment_method : null;
   const ch = pi.latest_charge && typeof pi.latest_charge === "object" ? pi.latest_charge : null;
   const status = String(pi.status || ""), live = !!pi.livemode, paidNow = status === "succeeded" || status === "processing";
-  const label = methodLabel(pm) + (md.tally_src === "link" ? " (pay link)" : "") + (live ? "" : " · test");
+  const label = methodLabel(pm) + (md.tally_src === "link" ? " (pay link)" : md.tally_src === "cust" ? " (customer app)" : "") + (live ? "" : " · test");
   const amtC = status === "succeeded" ? (Number(pi.amount_received) || Number(pi.amount) || 0) : (Number(pi.amount) || 0);
   const refunded = paidNow && ch ? Math.min(amtC, Number(ch.amount_refunded) || 0) : 0;
   const dispute = paidNow && ch && ch.disputed ? await disputeOf(pi.id, acct) : { cents: 0, lost: false };
   const disputed = Math.min(amtC - refunded, dispute.cents);
+  // a customer's tip for the crew, on the same payment (the customer side): the bill's part is the rest, and a refund
+  // or a dispute comes off the bill's part first, then the tip's
+  const tipC = md.tally_src === "cust" ? Math.max(0, Math.min(amtC, Math.round(Number(md.tally_tip) || 0))) : 0, billC = amtC - tipC;
+  const rfBill = Math.min(refunded, billC), dpBill = Math.min(disputed, billC - rfBill), tipBack = tipC ? Math.min(tipC, refunded + disputed - rfBill - dpBill) : 0;
   const err = pi.last_payment_error ? String(pi.last_payment_error.message || pi.last_payment_error.code || "").slice(0, 300) : null;
   await rest("POST", "pay_log?on_conflict=pi", {
     pi: pi.id, org_id: org, job_id: jobId, amount_cents: amtC, refunded_cents: refunded, disputed_cents: disputed, status,
-    source: String(md.tally_src || ""), method: label, cust_key: String(md.tally_cust || ""), by_staff: String(md.tally_by || ""),
+    source: String(md.tally_src || "") + (tipC ? ";tip=" + tipC : ""), method: label, cust_key: String(md.tally_cust || ""), by_staff: String(md.tally_by || ""),
     livemode: live, error: err, updated_at: nowIso(), account: acct,
   }, "resolution=merge-duplicates");
   const cus = typeof pi.customer === "string" ? pi.customer : pi.customer && pi.customer.id;
@@ -1432,10 +1440,11 @@ export async function recordIntent(pi0: J, acct = ""): Promise<J> {
   const changes: [string, J, string][] = [];
   const pid = "st_" + pi.id, have = pays[pid];
   if (paidNow) {
-    const entry: J = { id: pid, amt: amtC / 100, method: label, date: (have && have.date) || day, ts: (have && have.ts) || now, stripe: pi.id, by: String(md.tally_by || ""), live };
+    const entry: J = { id: pid, amt: billC / 100, method: label, date: (have && have.date) || day, ts: (have && have.ts) || now, stripe: pi.id, by: String(md.tally_by || ""), live };
+    if (tipC) entry.tip = tipC / 100;
     if (status === "processing") entry.pending = true;
     if (!sameEntry(have, entry)) {
-      changes.push([pid, entry, (have && have.pending && !entry.pending ? "Bank payment cleared " : have ? "Payment updated " : "Payment ") + money(amtC) + " (" + label + ")"]);
+      changes.push([pid, entry, (have && have.pending && !entry.pending ? "Bank payment cleared " : have ? "Payment updated " : "Payment ") + money(billC) + (tipC ? " and a " + money(tipC) + " tip for the crew" : "") + " (" + label + ")"]);
     }
   } else if (have && (status === "requires_payment_method" || status === "canceled")) {
     changes.push([pid, null, "Payment of " + money(cents(have.amt)) + " did not go through (" + label + ")"]);
@@ -1448,14 +1457,19 @@ export async function recordIntent(pi0: J, acct = ""): Promise<J> {
       if (!sameEntry(h, e)) changes.push([id, e, added]);
     } else if (h) changes.push([id, null, gone]);
   };
-  const rf = pays["rf_" + pi.id], dp = pays["dp_" + pi.id];
-  side("rf_", refunded, "Refund · " + label,
-    "Refunded " + money(refunded) + " of the " + money(amtC) + " payment (" + label + ")",
+  const rf = pays["rf_" + pi.id], dp = pays["dp_" + pi.id], rt = pays["rt_" + pi.id];
+  side("rf_", rfBill, "Refund · " + label,
+    "Refunded " + money(rfBill) + " of the " + money(amtC) + " payment (" + label + ")",
     "The refund of " + money(Math.abs(cents(rf && rf.amt))) + " did not go through (" + label + ")");
-  side("dp_", disputed, (dispute.lost ? "Dispute lost · " : "Disputed · ") + label,
-    dispute.lost ? "Dispute lost: the bank gave " + money(disputed) + " back to the customer (" + label + ")"
-      : "The customer disputed the " + money(amtC) + " payment (" + label + "). Stripe holds " + money(disputed) + " until the bank decides",
+  side("dp_", dpBill, (dispute.lost ? "Dispute lost · " : "Disputed · ") + label,
+    dispute.lost ? "Dispute lost: the bank gave " + money(dpBill) + " back to the customer (" + label + ")"
+      : "The customer disputed the " + money(amtC) + " payment (" + label + "). Stripe holds " + money(dpBill) + " until the bank decides",
     "Dispute closed: the " + money(Math.abs(cents(dp && dp.amt))) + " Stripe held came back (" + label + ")");
+  // the tip's part of a refund or a dispute: its own line, taking it off the crew's tip (nothing off the bill)
+  if (tipBack > 0) {
+    const e: J = { id: "rt_" + pi.id, amt: 0, tip: -tipBack / 100, method: "Tip back " + money(tipBack) + " · " + label, date: (rt && rt.date) || day, ts: (rt && rt.ts) || now, stripe: pi.id, live };
+    if (!sameEntry(rt, e)) changes.push([e.id, e, money(tipBack) + " of the crew's tip went back to the customer (" + label + ")"]);
+  } else if (rt) changes.push(["rt_" + pi.id, null, "The crew's tip stands again (" + label + ")"]);
   if (!changes.length) {
     if (status === "succeeded") await saveCard(org, md, pi, pm, jobId, acct);
     return { ok: true, org, job: jobId, recorded: false, status, label, amount: amtC / 100, owed: await owedCents(org, jobId, job) };
@@ -1611,7 +1625,7 @@ async function settleJob(org: string, jobId: string, o: { me?: J; reserve?: bool
     const md = pi.metadata || {};
     // a pay link's payment belongs to its Stripe page, which is stopped by closing the page (Stripe
     // doesn't let Checkout's payments be cancelled on their own)
-    if (OPEN_PI.indexOf(pi.status) < 0 || md.tally_src === "link") continue;
+    if (OPEN_PI.indexOf(pi.status) < 0 || md.tally_src === "link" || md.tally_src === "cust") continue;
     const stale = Date.now() - (Number(pi.created) || 0) * 1000 > STALE_MS;
     const mine = !!o.me && (md.tally_uid ? md.tally_uid === o.me.uid : md.tally_by === who(o.me));
     if (stale || md.tally_src === "saved" || pi.last_payment_error || mine) await cancelIntent(pi, acct);
@@ -2148,7 +2162,7 @@ export async function payLink(org: string, me: J, jobId: string, b: J): Promise<
     if (bad) return { ok: false, message: bad };
     const open = (await rest("GET", "pay_links?select=*&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&status=eq.open")) || [];
     // the same request again (a second tap, the screen redrawn) gets the same link back
-    const again = open.find((l: J) => capOf(l) === amt && !!l.save_card === save && Date.parse(l.expires_at) > Date.now() + 3600e3);
+    const again = open.find((l: J) => l.created_by !== CUST_BY && capOf(l) === amt && !!l.save_card === save && Date.parse(l.expires_at) > Date.now() + 3600e3);
     if (again) {
       if (again.amount_cents === amt && Date.parse(pageEnds(again)) > Date.now() + 15 * 60e3 && sessionLive(again.session_id) === liveNow() && pageOn(again, acct)) return { ok: true, link: again };
       const r = await renewPage(again, job, c.S, amt, acct);
@@ -2363,6 +2377,7 @@ async function payRedirect(token: string): Promise<Response> {
   const rows = await rest("GET", "pay_links?select=*&token=eq." + q(token) + "&limit=1");
   const l = rows && rows[0];
   if (!l) return text("This payment link isn't valid. Ask the moving company for a new one.", 404);
+  if (l.created_by === CUST_BY) return text("Open the Tally app to pay. Your move and its bill are there.", 410);   // a customer's own page, from their app
   const S = await getDoc(l.org_id, "org/settings");
   const co = String((S && S.company) || "the moving company");
   if (l.status === "paid") return text("This payment is done. Thank you!");
@@ -2712,6 +2727,7 @@ export async function requote(org: string, me: J, jobId: string, b: J): Promise<
 async function handleApp(req: Request): Promise<Response> {
   let b: J;
   try { b = await req.json(); } catch { return json({ ok: false, message: "Bad request" }, 400); }
+  if (/^cust_/.test(String((b && b.action) || ""))) return handleCust(req, b);   // a customer's own (the customer side)
   const org = String(b.org || ""), jobId = String(b.jobId || "");
   if (!org) return json({ ok: false, message: "Missing company" }, 400);
   const me = await whoIs(req, org);
@@ -2801,6 +2817,10 @@ async function handleApp(req: Request): Promise<Response> {
       if (!office) return json({ ok: false, message: "Only the owner and dispatch schedule crews." }, 403);
       return json(await checkJob(org, jobId, req.headers.get("origin")));
     }
+    if (b.action === "invite_app") {
+      if (!office) return json({ ok: false, message: "Only the owner and dispatch text customers the app." }, 403);
+      return json(await custInvite(org, me, jobId, b.url));
+    }
     if (b.action === "forms") return json(await checkForms(org, jobId));
     if (b.action === "short") return json(await checkShort(org, jobId));
     if (b.action === "call") return json(await startCall(org, me, jobId));
@@ -2813,6 +2833,387 @@ async function handleApp(req: Request): Promise<Response> {
   } catch (e) {
     console.error(e);
     return json({ ok: false, message: "Something went wrong on the server." }, 500);
+  }
+}
+
+/* ---------- the customer side (Oct 28) ----------
+   Richie: "I want there to be a customer side as well . Where they have a profile . Then they can have the app on there
+   phone if they would like and pay with google pay"; "They open the app and sign in with their gmail . Their move will
+   already be link to their gmail".
+   A customer signs in to the Tally app with the email on their move (Google, or a code by email). They are none of a
+   company's people, so nothing of theirs goes through the members table or the docs rules: this is their only way in.
+   Who they are comes from their sign-in (a confirmed email); their moves are the jobs with that email, in any company
+   (custJobs); what they see of each is a customer's copy (custCopy, the same as the app's custMoveOf: never the crew's
+   pay, the costs, the notes or the activity). What they can do: book an open quote (Options › Customers book their own
+   quote), sign the forms marked to sign ahead, pay what's owed now (the deposit, or the bill once the move is done)
+   with a tip for the crew, on the company's Stripe page (Google Pay, Apple Pay or a card), say the app took them to the
+   review page, and keep their name and phone on their moves up to date.
+   A tip rides on the same payment, apart from the bill: the payment says how much (metadata tally_tip), the ledger
+   keeps it in its source ("cust;tip=<cents>"), and the job's entry carries it as `tip`. Refunds and disputes come off
+   the bill's part first, then the tip's (an rt_ line). */
+export const CUST_BY = "customer (app)";
+const CUST_OPEN = ["lead", "quoted", "booked", "active"];
+const CUST_SEEN = ["lead", "quoted", "booked", "active", "done", "paid"];
+const CUST_PAGES_PER_HOUR = 12;
+// an email the way it signs in: a Gmail address is the same mailbox with or without dots or a +tag (the app's emailKey)
+export function emailKey(e: unknown): string {
+  const s = String(e || "").trim().toLowerCase(), at = s.lastIndexOf("@");
+  if (at < 1 || at >= s.length - 1 || /\s/.test(s)) return "";
+  let u = s.slice(0, at), h = s.slice(at + 1);
+  if (h === "gmail.com" || h === "googlemail.com") { u = u.split("+")[0].replace(/\./g, ""); h = "gmail.com"; }
+  return u ? u + "@" + h : "";
+}
+// who is asking: someone signed in with a confirmed email ({uid, email, key, name, phone}), or null
+async function custUser(req: Request): Promise<J> {
+  const auth = req.headers.get("authorization") || "";
+  if (!/^Bearer\s+\S+/.test(auth)) return null;
+  const r = await fetch(env("SUPABASE_URL").replace(/\/+$/, "") + "/auth/v1/user", { headers: { apikey: env("SUPABASE_SERVICE_ROLE_KEY"), Authorization: auth } });
+  if (!r.ok) return null;
+  const u = await r.json().catch(() => null);
+  if (!u || !u.id || !u.email || !(u.email_confirmed_at || u.confirmed_at)) return null;
+  const key = emailKey(u.email);
+  if (!key) return null;
+  const m = u.user_metadata || {};
+  return { uid: String(u.id), email: String(u.email), key, name: String(m.name || m.full_name || "").slice(0, 120), phone: String(m.phone || "").slice(0, 40) };
+}
+// PostgREST's ilike takes * for any run of characters: the email as it is, or for Gmail its letters with anything
+// between them (dots, a +tag); each match is then checked exactly (emailKey)
+export function custPatterns(key: string): string[] {
+  const at = key.lastIndexOf("@"), u = key.slice(0, at), h = key.slice(at + 1), safe = (s: string) => s.replace(/[*,()"\\]/g, "");
+  if (h === "gmail.com") { const loose = u.split("").map(safe).join("*") + "*"; return [loose + "@gmail.com", loose + "@googlemail.com"]; }
+  return [safe(key)];
+}
+// the moves with this customer's email, in every company: [{org, id, job, at}]
+export async function custJobs(key: string): Promise<J[]> {
+  const out: J[] = [], seen = new Set<string>();
+  for (const p of custPatterns(key)) {
+    const rows = (await rest("GET", "docs?select=org_id,doc_id,data,updated_at&collection=eq.jobs&data->d->>email=ilike." + q(p) + "&limit=200")) || [];
+    for (const r of rows) {
+      const j = r.data || {}, k = r.org_id + "/" + r.doc_id;
+      if (seen.has(k) || emailKey(j.d && j.d.email) !== key || CUST_SEEN.indexOf(j.status) < 0) continue;
+      seen.add(k);
+      out.push({ org: r.org_id, id: r.doc_id, job: j, at: r.updated_at });
+    }
+  }
+  return out;
+}
+function custReviewUrl(S: J): string { const u = String((S && S.reviewUrl) || "").trim(); return /^https:\/\/[^\s<>"']+$/.test(u) ? u : ""; }
+function ownerPhone(S: J): string { const ow = ((S && S.office) || []).find((o: J) => o && o.kind === "owner"); return ow ? String(contacts(S)[ow.name] || "") : ""; }
+// a customer's copy of a move (the app's custMoveOf); paidC: what's paid, from the job and the ledger
+export function custCopy(org: string, S: J, job: J, o: { company: string; phone: string; paidC: number; pages?: Record<string, string> }): J {
+  const d = job.d || {}, qt = job.quote || {}, c = job.cust || {}, crew: string[] = (job.assign && job.assign.crew) || [];
+  const totalC = jobTotalCents(job), dueC = Math.max(0, totalC - o.paidC);
+  const depC = job.status === "booked" && !(d.moveDate && String(d.moveDate) < today()) ? Math.max(0, cents(qt.deposit) - o.paidC) : 0;
+  const signed = vals(job.signed).filter((x: J) => x && !x.waived);
+  const forms = optOff(S, "forms") ? [] : ((S && S.forms) || []).filter((f: J) => f && f.required).map((f: J) => {
+    const sg = signed.find((x: J) => x.formId === f.id), text = f.kind === "text";
+    return { id: String(f.id), title: String(f.title || ""), kind: text ? "text" : "pages", text: text ? String(f.text || "") : "",
+      pages: text ? [] : (f.pageIds || []).map((id: string) => (o.pages && o.pages[id]) || ""), ahead: !!f.ahead,
+      signed: sg ? { name: String(sg.name || ""), ts: Number(sg.ts) || 0, ahead: !!sg.ahead } : null };
+  });
+  const pays = vals(job.payments).filter((p: J) => p && (p.stripe ? counts(p.live) : cents(p.amt) > 0 || Number(p.tip) > 0))
+    .map((p: J) => ({ amt: r2(p.amt), tip: r2(p.tip), method: String(p.method || ""), date: String(p.date || ""), ts: Number(p.ts) || 0 }));
+  return {
+    id: String(job.id || ""), org, company: o.company, phone: o.phone, status: job.status, test: !!job.test,
+    d: { name: String(d.name || ""), phone: String(d.phone || ""), email: String(d.email || ""), moveDate: String(d.moveDate || ""), time: String(d.time || ""), from: String(d.from || ""), to: String(d.to || "") },
+    quote: { lines: (Array.isArray(qt.lines) ? qt.lines : []).map((l: J) => ({ label: String((l && l.label) || ""), amt: r2(l && l.amt) })), total: r2(qt.total),
+      nte: !qt.flat && qt.capNte !== false ? r2(qt.nte) : 0, deposit: r2(qt.deposit), crew: Number(qt.crew) || 0, hours: Number(qt.hours) || 0, trucks: Number(qt.nTrucks) || 1, flat: !!qt.flat },
+    items: (Array.isArray(job.items) ? job.items : []).map((it: J) => ({ name: String((it && it.name) || ""), qty: Number(it && it.qty) || 0 })),
+    bill: { total: totalC / 100, paid: o.paidC / 100, due: dueC / 100, deposit: depC / 100 },
+    pays, forms,
+    day: { startedAt: Number(job.startedAt) || 0, eta: (job.eta && Number(job.eta.at)) || 0, phases: job.phases && typeof job.phases === "object" ? job.phases : {}, finishedAt: Number(job.finishedAt) || 0 },
+    crew: { lead: String(leadOf(S, job)).split(" ")[0], n: crew.length },
+    tips: !optOff(S, "custTips"), book: !optOff(S, "custBook"), review: custReviewUrl(S), reviewed: !!c.reviewAt, bookedBy: c.bookedAt ? "customer" : "",
+  };
+}
+const mapOf = (m: J): J => (m && typeof m === "object" && !Array.isArray(m) ? m : {});
+function addLog(job: J, ts: number, ev: string): void { job.log = mapOf(job.log); job.log[logKey(ts, ev)] = { ts, ev }; }
+async function custList(user: J): Promise<J> {
+  const found = await custJobs(user.key), byOrg: Record<string, J[]> = {}, moves: J[] = [];
+  found.forEach((x) => { (byOrg[x.org] = byOrg[x.org] || []).push(x); });
+  for (const org of Object.keys(byOrg)) {
+    const [S0, orgRow, line] = await Promise.all([getDoc(org, "org/settings"), rest("GET", "orgs?select=name&id=eq." + q(org) + "&limit=1"), lineFor(org).catch(() => null)]);
+    const S = S0 || {}, company = String(S.company || (orgRow && orgRow[0] && orgRow[0].name) || "Your mover");
+    const phone = line ? String(line.phone_number || "") : ownerPhone(S);
+    // the pages of forms to sign ahead, for a move that's booked
+    const need = new Set<string>();
+    if (byOrg[org].some((x) => x.job.status === "booked")) {
+      (S.forms || []).forEach((f: J) => { if (f && f.required && f.ahead && f.kind !== "text") (f.pageIds || []).forEach((id: string) => { if (/^[A-Za-z0-9_-]{1,40}$/.test(id)) need.add(id); }); });
+    }
+    const pages: Record<string, string> = {};
+    if (need.size) {
+      const rows = (await rest("GET", "docs?select=doc_id,data&org_id=eq." + q(org) + "&collection=eq.formpages&doc_id=in.(" + Array.from(need).join(",") + ")")) || [];
+      rows.forEach((r: J) => { pages[r.doc_id] = String((r.data && r.data.data) || ""); });
+    }
+    for (const x of byOrg[org]) {
+      const paidC = paidWithLedger(x.job, await ledgerFor(org, x.id));
+      moves.push(custCopy(org, S, { ...x.job, id: x.job.id || x.id }, { company, phone, paidC, pages }));
+    }
+  }
+  return { ok: true, email: user.email, name: user.name, phone: user.phone, moves };
+}
+// the customer's own move: {job, S} or {err, status}
+async function custJob(user: J, org: string, jobId: string): Promise<J> {
+  if (!/^[0-9A-Fa-f-]{36}$/.test(org) || !/^[A-Za-z0-9_-]{1,40}$/.test(jobId)) return { err: "That move isn't here.", status: 400 };
+  const job = await getDoc(org, "jobs/" + jobId);
+  if (!job || emailKey(job.d && job.d.email) !== user.key || CUST_SEEN.indexOf(job.status) < 0) return { err: "That move isn't on your account.", status: 404 };
+  return { job, S: (await getDoc(org, "org/settings")) || {} };
+}
+// a change to the customer's job, written only if nobody saved the job meanwhile (else tried again on a fresh copy).
+// fn returns the job to save, or words for why not.
+async function custWrite(user: J, org: string, jobId: string, fn: (job: J) => J | string): Promise<J> {
+  const path = "jobs/" + jobId;
+  for (let i = 0; i < 4; i++) {
+    const row = ((await rest("GET", "docs?select=data,updated_at&org_id=eq." + q(org) + "&path=eq." + q(path) + "&limit=1")) || [])[0];
+    if (!row || !row.data) return { ok: false, message: "That move isn't here any more." };
+    if (emailKey(row.data.d && row.data.d.email) !== user.key) return { ok: false, message: "That move isn't on your account." };
+    const before = JSON.stringify(row.data), next = fn(JSON.parse(before));
+    if (typeof next === "string") return { ok: false, message: next };
+    if (JSON.stringify(next) === before) return { ok: true, job: next, same: true };
+    const done = await rest("PATCH", "docs?org_id=eq." + q(org) + "&path=eq." + q(path) + "&updated_at=eq." + q(row.updated_at), { data: next, updated_at: nowIso() }, "return=representation");
+    if (done && done.length) return { ok: true, job: next };
+  }
+  return { ok: false, message: "Your moving company was saving this move at the same moment. Try again." };
+}
+const hmOf = (t: unknown) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || "")); return m ? +m[1] * 60 + +m[2] : -1; };
+const trucksOf = (j: J) => Math.max(1, Number(j.quote && j.quote.nTrucks) || 1);
+const minsOf = (j: J) => Math.round(((Number(j.quote && j.quote.hours) || 3) + (j.quote && j.quote.kind === "mileage" ? Number(j.quote.driveH) || 0 : 0)) * 60);
+// Still room on the trucks then? The moves booked that day whose time overlaps this one's (with the time between moves
+// either side) and the trucks each takes, against the fleet; and no more moves in the day than each truck's day
+// allows. (The app's day plan is finer, by truck size and slot; the office sees the booking in Needs scheduling.)
+export async function custFull(org: string, S: J, job: J): Promise<boolean> {
+  const d = job.d || {}, fleet = ((S && S.trucks) || []).length, s0 = hmOf(d.time);
+  if (!fleet || !d.moveDate || s0 < 0) return false;
+  const td = (S && S.truckDay) || {}, gap = Number(td.gap) >= 0 && td.gap !== "" && td.gap != null ? Number(td.gap) : 60, perTruck = Number(td.jobs) > 0 ? Number(td.jobs) : 4;
+  const rows = (await rest("GET", "docs?select=doc_id,data&org_id=eq." + q(org) + "&collection=eq.jobs&data->>status=in.(booked,active)&data->d->>moveDate=eq." + q(String(d.moveDate)))) || [];
+  const e0 = s0 + minsOf(job);
+  let busy = 0, moves = 0;
+  for (const r of rows) {
+    const o = r.data || {};
+    if (r.doc_id === job.id || o.id === job.id) continue;
+    moves += trucksOf(o);
+    const s = hmOf(o.d && o.d.time);
+    if (s < 0) continue;
+    if (s < e0 + gap && s0 < s + minsOf(o) + gap) busy += trucksOf(o);
+  }
+  return busy + trucksOf(job) > fleet || moves + trucksOf(job) > fleet * perTruck;
+}
+async function custBook(user: J, org: string, jobId: string): Promise<J> {
+  const c = await custJob(user, org, jobId);
+  if (c.err) return { ok: false, message: c.err, status: c.status };
+  const S = c.S, co = company(S);
+  if (c.job.status === "booked" && c.job.cust && c.job.cust.bookedAt) return { ok: true };   // a second tap
+  if (optOff(S, "custBook")) return { ok: false, message: "Call or text " + co + " to book it." };
+  if (c.job.status !== "lead" && c.job.status !== "quoted") return { ok: false, message: "This quote was already booked or closed." };
+  if (await custFull(org, S, c.job)) return { ok: false, message: "That time just filled up. Call or text " + co + " to pick another time." };
+  const ts = Date.now();
+  const w = await custWrite(user, org, jobId, (job) => {
+    if (job.status === "booked" && job.cust && job.cust.bookedAt) return job;
+    if (job.status !== "lead" && job.status !== "quoted") return "This quote was already booked or closed.";
+    const d = job.d || {};
+    if (!d.moveDate) return "Call or text " + co + " to pick a day first.";
+    if (String(d.moveDate) < today()) return "That day has passed. Call or text " + co + " to pick a new one.";
+    job.status = "booked";
+    job.cust = { ...mapOf(job.cust), bookedAt: ts };
+    addLog(job, ts, "Status: Booked");
+    addLog(job, ts + 1, "Booked by the customer in the customer app");
+    return job;
+  });
+  if (!w.ok || w.same) return w.ok ? { ok: true } : w;
+  // the office hears it, when the company line is set up: dispatch adds the truck and crew
+  try {
+    const line = await lineFor(org), d = w.job.d || {};
+    if (line && !w.job.test && alertOn(S, "custBook")) {
+      for (const n of ringNames(S)) {
+        await sendText({ org, line, jobId, purpose: "custbook", staff: n, to: contacts(S)[n],
+          body: co + ": " + gsm(d.name || "A customer") + " booked their move for " + when(d) + " in the customer app. Add the truck and crew in Tally." });
+      }
+    }
+  } catch (e) { console.error("custbook text", e); }
+  return { ok: true };
+}
+async function custSign(user: J, org: string, jobId: string, b: J): Promise<J> {
+  const c = await custJob(user, org, jobId);
+  if (c.err) return { ok: false, message: c.err, status: c.status };
+  if (optOff(c.S, "forms")) return { ok: false, message: "There are no forms to sign." };
+  const f = (c.S.forms || []).find((x: J) => x && x.id === b.formId && x.required && x.ahead);
+  if (!f) return { ok: false, message: "That form isn't one to sign ahead." };
+  const name = String(b.name || "").trim().replace(/\s+/g, " ").slice(0, 120), sig = String(b.sig || "");
+  if (!name) return { ok: false, message: "Type your name." };
+  if (!/^data:image\/png;base64,[A-Za-z0-9+/=]{40,}$/.test(sig) || sig.length > 400000) return { ok: false, message: "The signature didn't come through. Sign again." };
+  const ts = Date.now(), id = "c" + randToken(), ev = "Signed ahead in the customer app: " + String(f.title || "a form") + " (" + name + ")";
+  const w = await custWrite(user, org, jobId, (job) => {
+    if (CUST_OPEN.indexOf(job.status) < 0 || job.status === "active") return "Your crew goes over the forms with you now.";
+    const signed = mapOf(job.signed);
+    if (vals(signed).some((x: J) => x && x.formId === f.id && !x.waived)) return job;   // signed already
+    signed[id] = { id, formId: f.id, title: String(f.title || ""), name, sig, ts, by: "customer", ahead: true };
+    job.signed = signed;
+    addLog(job, ts, ev);
+    return job;
+  });
+  return w.ok ? { ok: true } : w;
+}
+async function custReviewedOf(user: J, org: string, jobId: string, b: J): Promise<J> {
+  const c = await custJob(user, org, jobId);
+  if (c.err) return { ok: false, message: c.err, status: c.status };
+  const ts = Date.now(), ev = b.how === "not now" ? "The customer app asked for a review (they said not now)" : "The customer app took them to the review page";
+  const w = await custWrite(user, org, jobId, (job) => {
+    if (job.cust && job.cust.reviewAt) return job;
+    job.cust = { ...mapOf(job.cust), reviewAt: ts };
+    addLog(job, ts, ev);
+    return job;
+  });
+  return w.ok ? { ok: true } : w;
+}
+async function custProfile(user: J, b: J): Promise<J> {
+  const name = String(b.name || "").trim().replace(/\s+/g, " ").slice(0, 120), phone = String(b.phone || "").trim().slice(0, 40);
+  if (!name) return { ok: false, message: "Put in your name." };
+  if (phone && last10(phone).length < 10) return { ok: false, message: "That phone number looks short." };
+  let n = 0;
+  for (const x of await custJobs(user.key)) {
+    if (CUST_OPEN.indexOf(x.job.status) < 0) continue;
+    const w = await custWrite(user, x.org, x.id, (job) => {
+      const d = job.d || {}, ch: string[] = [];
+      if (name !== d.name) { d.name = name; ch.push("name"); }
+      if (phone && phone !== d.phone) { d.phone = phone; ch.push("phone"); }
+      if (!ch.length) return job;
+      job.d = d;
+      addLog(job, Date.now(), "The customer changed their " + ch.join(" and ") + " in the customer app");
+      return job;
+    });
+    if (w.ok && !w.same) n++;
+  }
+  return { ok: true, changed: n };
+}
+// where Stripe's page sends them back: the app they paid from (an https page), else the plain thank-you
+export function custBack(raw: unknown, jobId: string): string {
+  try {
+    const u = new URL(String(raw || ""));
+    if (u.protocol === "https:" && !/androidplatform\.net$/i.test(u.hostname)) return u.origin + u.pathname + "?paid=" + encodeURIComponent(jobId);
+  } catch { /* not a web address */ }
+  return base() + "/pay/done";
+}
+// what the customer can pay now: the deposit holding a booked date, or the bill once the move is done
+function custDueC(job: J, owedC: number, paidC: number): J {
+  const d = job.d || {};
+  if (job.status === "booked") {
+    if (d.moveDate && String(d.moveDate) < today()) return { amt: 0, kind: "" };
+    return { amt: Math.max(0, Math.min(owedC, cents(job.quote && job.quote.deposit) - paidC)), kind: "deposit" };
+  }
+  if (job.status === "done") return { amt: owedC, kind: "bill" };
+  return { amt: 0, kind: "" };
+}
+// The customer pays on a Stripe page: what's owed now (worked out here, never taken from the app) and their tip,
+// each its own line. The page is a pay link of the customer's own (created_by CUST_BY), so the rest of the payment
+// machinery closes it when it would take more than is owed (a cash payment meanwhile), and a newer page replaces it.
+async function custPay(user: J, org: string, jobId: string, b: J): Promise<J> {
+  const c = await custJob(user, org, jobId);
+  if (c.err) return { ok: false, message: c.err, status: c.status };
+  const S = c.S, co = company(S);
+  if (!stripeMode()) return { ok: false, message: "Card payments aren't set up yet. Call or text " + co + "." };
+  const pa = await payAccount(org);
+  if (!pa.on) return { ok: false, message: co + " can't take cards in the app yet. Call or text them." };
+  if (c.job.test && liveNow()) return { ok: false, message: "Test job: no real charges." };
+  if ((c.job.status === "active" || c.job.status === "done") && pendingForms(S, c.job).length) return { ok: false, message: "The forms are signed with your crew first." };
+  const tipOk = !optOff(S, "custTips") && (c.job.status === "done" || c.job.status === "paid") && ((c.job.assign && c.job.assign.crew) || []).length > 0;
+  const tipC = Math.round(Number(b.tip) || 0);
+  if (tipC < 0 || (tipC > 0 && !tipOk)) return { ok: false, message: "A tip goes on the bill after the move." };
+  if (tipC > Math.max(50000, jobTotalCents(c.job))) return { ok: false, message: "That tip looks too big. Check the amount." };
+  const acct = pa.acct, wh = await hookFor(acct);
+  if (!wh.ok) return wh;
+  const res = await withJobLock(org, jobId, async (): Promise<J> => {
+    const meP = { uid: user.uid, staff: "", role: "customer" };
+    const { reserved } = await settleJob(org, jobId, { me: meP });
+    const job = (await getDoc(org, "jobs/" + jobId)) || c.job;
+    if (emailKey(job.d && job.d.email) !== user.key) return { ok: false, message: "That move isn't on your account." };
+    const led = await ledgerFor(org, jobId), paidC = paidWithLedger(job, led), owedC = Math.max(0, jobTotalCents(job) - paidC);
+    const due = custDueC(job, owedC, paidC), amt = due.amt;
+    // the screen was out of date: they see the new amount before paying it
+    if (String(b.kind || "") !== due.kind || Math.round(Number(b.amount) || 0) !== amt) {
+      return { ok: false, changed: true, message: amt > 0 ? "What's owed now is " + money(amt) + ". Check it and pay again." : "Nothing is owed on this move now." + (tipC > 0 ? " You can still tip your crew." : "") };
+    }
+    if (amt + tipC < MIN_CENTS) return { ok: false, message: amt + tipC > 0 ? "Card payments start at " + money(MIN_CENTS) + "." : "Nothing to pay." };
+    if (amt > 0) { const bad = amountTrouble(amt, owedC, reserved); if (bad) return { ok: false, message: bad }; }
+    const since = new Date(Date.now() - 3600e3).toISOString();
+    const lately = (await rest("GET", "pay_links?select=token&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&created_by=eq." + q(CUST_BY) + "&created_at=gte." + q(since) + "&limit=" + (CUST_PAGES_PER_HOUR + 1))) || [];
+    if (lately.length >= CUST_PAGES_PER_HOUR) return { ok: false, message: TOO_MANY };
+    // pages that would take more than will be left close; this customer's own earlier page is replaced
+    const t = await trimSessions(org, jobId, owedC - reserved - amt);
+    if (t.busy) return { ok: false, message: PAYING };
+    const open = (await rest("GET", "pay_links?select=*&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&status=eq.open&created_by=eq." + q(CUST_BY))) || [];
+    for (const l of open) { const r = await retireLink(l); if (r === "open") return { ok: false, message: PAYING }; }
+    if (t.paid || open.length) {
+      const owed2 = await owedCents(org, jobId);
+      if (amt > 0 && amt > owed2) return { ok: false, changed: true, message: "A payment just went through. Check what's owed and pay again." };
+    }
+    const cus = (await jobCustomer(org, jobId, job, acct)).customer;
+    const token = "c" + randToken(), d = job.d || {};
+    const md = { ...payMeta(org, jobId, job, CUST_BY, "cust", user.uid), tally_link: token, tally_tip: String(tipC) };
+    const nowS = Math.floor(Date.now() / 1000), exp = nowS + 3600, back = custBack(b.back, jobId);
+    const lines: J[] = [];
+    if (amt > 0) lines.push({ quantity: 1, price_data: { currency: "usd", unit_amount: amt, product_data: { name: (co + (due.kind === "deposit" ? ": deposit" : ": moving services")).slice(0, 120), description: gsm(d.name || "Moving job").slice(0, 200) } } });
+    if (tipC > 0) lines.push({ quantity: 1, price_data: { currency: "usd", unit_amount: tipC, product_data: { name: "Tip for your crew", description: "Split evenly between the movers on your move" } } });
+    const s = await stripe("POST", "checkout/sessions", {
+      mode: "payment", customer: cus, client_reference_id: jobId, line_items: lines,
+      payment_intent_data: { metadata: md, description: (payWhat(S, job) + (tipC > 0 ? " + tip" : "")).slice(0, 300), receipt_email: validEmail(d.email) || validEmail(user.email) || undefined },
+      metadata: md, success_url: back, cancel_url: back.replace(/\?paid=.*$/, ""), expires_at: exp,
+    }, undefined, acct);
+    await rest("POST", "pay_links", {
+      token, org_id: org, job_id: jobId, session_id: s.id, url: s.url, amount_cents: amt, cap_cents: amt, save_card: false, created_by: CUST_BY,
+      status: "open", expires_at: new Date(exp * 1000).toISOString(), session_expires: new Date((Number(s.expires_at) || exp) * 1000).toISOString(), account: acct,
+    });
+    return { ok: true, url: s.url, amount: amt / 100, tip: tipC / 100 };
+  });
+  return res || { ok: false, message: BUSY };
+}
+// back from Stripe's page: the job brought up to date with Stripe now, in case Stripe's own message is slow
+async function custCheck(user: J, org: string, jobId: string): Promise<J> {
+  const c = await custJob(user, org, jobId);
+  if (c.err) return { ok: false, message: c.err, status: c.status };
+  if (!stripeMode()) return { ok: true };
+  await withJobLock(org, jobId, () => settleJob(org, jobId), 3000);
+  return { ok: true };
+}
+// The office texts a customer the app (the job sheet's Text them the app), from the company line: where to open it,
+// and the email they sign in with. url: the app's web address, from the office's phone (never the Android app's own).
+export async function custInvite(org: string, me: J, jobId: string, url: unknown): Promise<J> {
+  const line = await lineFor(org);
+  if (!line) return { ok: false, message: "The company line is not set up yet." };
+  const [S, job] = await Promise.all([getDoc(org, "org/settings"), getDoc(org, "jobs/" + jobId)]);
+  if (!job) return { ok: false, message: "That job is not available." };
+  if (job.test) return { ok: false, message: "Test job: nothing is texted." };
+  const d = job.d || {};
+  if (!e164(d.phone)) return { ok: false, message: "This job has no customer phone number." };
+  if (!emailKey(d.email)) return { ok: false, message: "Put the customer's email on the job first: it's how they sign in." };
+  let site = "";
+  try { const u = new URL(String(url || "")); if (u.protocol === "https:" && !/androidplatform\.net$/i.test(u.hostname)) site = u.origin + u.pathname; } catch { /* not a web address */ }
+  if (!site) return { ok: false, message: "The app's web address didn't come through." };
+  const since = new Date(Date.now() - 10 * 60e3).toISOString();
+  const recent = await rest("GET", "comm_log?select=id&org_id=eq." + q(org) + "&job_id=eq." + q(jobId) + "&purpose=eq.custapp&created_at=gte." + q(since) + "&status=neq.failed&limit=1");
+  if (recent && recent.length) return { ok: false, message: (d.name || "The customer") + " was texted the app a moment ago." };
+  const r = await sendText({ org, line, jobId, purpose: "custapp", staff: me.staff, party: d.name || "Customer", to: d.phone,
+    body: company(S) + ": " + gsm(etaGreeting(d.name)) + ", your move is in the Tally app: " + site + " Sign in with " + String(d.email).trim() + " to see it, book, sign and pay." });
+  if (r.status === "failed" || r.status === "no-number") return { ok: false, message: "The text did not go out. Check Calls and texts on the job." };
+  return { ok: true, message: "Texted " + (d.name || "the customer") + " the app." };
+}
+async function handleCust(req: Request, b: J): Promise<Response> {
+  const user = await custUser(req);
+  if (!user) return json({ ok: false, message: "Sign in again." }, 401);
+  try {
+    if (b.action === "cust_list") return json(await custList(user));
+    if (b.action === "cust_profile") return json(await custProfile(user, b));
+    const fns: Record<string, (u: J, o: string, j: string, x: J) => Promise<J>> = {
+      cust_book: (u, o, j) => custBook(u, o, j), cust_sign: custSign, cust_pay: custPay, cust_reviewed: custReviewedOf, cust_check: (u, o, j) => custCheck(u, o, j),
+    };
+    const f = fns[String(b.action)];
+    if (!f) return json({ ok: false, message: "Unknown action" }, 400);
+    const out = await f(user, String(b.org || ""), String(b.jobId || ""), b);
+    const st = out.status;
+    delete out.status;
+    return json(out, typeof st === "number" ? st : 200);
+  } catch (e) {
+    console.error(b.action, e);
+    return json({ ok: false, message: b.action === "cust_pay" ? stripeTrouble(e) : "Something went wrong on the server." }, 500);
   }
 }
 

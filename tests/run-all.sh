@@ -22,14 +22,15 @@ run() {
   fi
 }
 for ed in artifact supabase; do
-  for s in regress field confirm minpay pricing history driveback options jobedit clockjob tidy polish drivers finished requote movers crewbill crewsign callcenter dayplan sides; do run node tests/ui/$s.js build/tally-$ed.html $s-$ed; done
+  for s in regress field confirm minpay pricing history driveback options jobedit clockjob tidy polish drivers finished requote movers crewbill crewsign callcenter dayplan sides cust; do run node tests/ui/$s.js build/tally-$ed.html $s-$ed; done
 done
-for s in hosted confirm-hosted employees pay connect member sos pricing-hosted dist shop osm odometer testpack nav layout layout-hosted drivers-hosted requote-hosted movers-hosted crewsign-hosted callcenter-hosted dayplan-drag sides-hosted pwa-check; do run node tests/ui/$s.js; done
+for s in hosted confirm-hosted employees pay connect member sos pricing-hosted dist shop osm odometer testpack nav layout layout-hosted drivers-hosted requote-hosted movers-hosted crewsign-hosted callcenter-hosted dayplan-drag sides-hosted cust-hosted pwa-check; do run node tests/ui/$s.js; done
 run deno run -A tests/function/test.ts
 run deno run -A tests/function/pay.ts
 run deno run -A tests/function/connect.ts
 run deno run -A tests/function/member.ts
 run deno run -A tests/function/requote.ts
+run deno run -A tests/function/cust.ts
 if [ "$(id -u)" = 0 ]; then echo "== sql: skipped as root (initdb refuses root); runs in GitHub"; else run bash tests/sql/run.sh; run bash tests/sql/schema.sh; run bash tests/sql/employees.sh; run bash tests/sql/payments.sh; run bash tests/sql/membership.sh; run bash tests/sql/callcenter.sh; fi
 echo; [ $fail -eq 0 ] && echo "ALL PASSED" || echo "SOMETHING FAILED"
 exit $fail

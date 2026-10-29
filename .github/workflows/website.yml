@@ -1,0 +1,66 @@
+name: Website
+
+# The Tally website (GitHub Pages): the app customers open on their phones to see their move and pay, and add to
+# their home screen. Every push to main puts the new version up, once GitHub Pages is on for this repository
+# (Settings › Pages › Build and deployment › Source: GitHub Actions). Until then this only says so, and stays green.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      on: ${{ steps.pages.outputs.on }}
+    steps:
+      - name: Is GitHub Pages on?
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/pages")
+          if [ "$code" = "200" ]; then
+            echo "on=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "on=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=The website isn't up yet::GitHub Pages is off for this repository. Turn it on in Settings > Pages > Build and deployment > Source: GitHub Actions, then run this workflow again (Actions > Website > Run workflow) or push any change."
+          fi
+
+  site:
+    needs: check
+    if: needs.check.outputs.on == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Put Tally on the website
+        env:
+          TALLY_SUPABASE_URL: ${{ vars.TALLY_SUPABASE_URL }}
+          TALLY_SUPABASE_ANON_KEY: ${{ vars.TALLY_SUPABASE_ANON_KEY }}
+        run: python3 scripts/prepare_site.py
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

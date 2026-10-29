@@ -28,7 +28,7 @@ const L = (m) => label + ': ' + m;
   await tap('[data-act="more:open"]'); await tap('[data-act="more:preview"]');
   const pvRoles = $$('#more .pvrow b').map((b) => b.textContent);
   const ccChip = $$('#more [data-act="pv:set"]').find((b) => b.dataset.role === 'callcenter');
-  ok(pvRoles.join('|') === 'Owner|Dispatch|Call center|Crew lead|Crew' && !!ccChip && ccChip.dataset.staff === '' && ccChip.textContent === 'Anyone', L('See it their way: the call center (anyone on Tally’s team)'));
+  ok(pvRoles.join('|') === 'Owner|Dispatch|Call center|Crew lead|Crew|Customer' && !!ccChip && ccChip.dataset.staff === '' && ccChip.textContent === 'Anyone', L('See it their way: the call center (anyone on Tally’s team)'));
   click(ccChip); await sleep(20);
   const tabs = $$('#tabs button').map((b) => b.textContent).filter(Boolean);
   ok(st().ui.role === 'callcenter' && T.ui.tab === 'desk' && tabs.join('|') === 'Companies|Schedule|Quotes|More' && !$('#fab').hidden, L('the call center: Companies first, then Schedule and Quotes, and the round button for a new quote'));

@@ -116,6 +116,8 @@ function makeSupabase(db, me, calls) {
       getSession: () => Promise.resolve({ data: { session: me ? { user: { id: me.uid, email: me.email }, access_token: 'tok-' + me.uid } : null } }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       signOut: () => Promise.resolve({}), signInWithOtp: () => Promise.resolve({}), verifyOtp: () => Promise.resolve({}),
+      signInWithOAuth: (o) => { calls.oauth = o; return Promise.resolve({ data: {}, error: null }); },
+      updateUser: (o) => { calls.updateUser = o; return Promise.resolve({ data: {}, error: null }); },
     },
     rpc(name, args) {
       calls.rpc.push({ name, args: clone(args || {}) });
