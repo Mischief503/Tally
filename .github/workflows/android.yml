@@ -14,7 +14,9 @@ concurrency:
 
 jobs:
   apk:
-    runs-on: ubuntu-latest
+    # Ubuntu 24.04 on purpose: GitHub has been moving ubuntu-latest to Ubuntu 26 since Oct 19, 2026, and the emulator
+    # check started failing on some runners then (Builds 53 and 54 failed it, a re-run of 53 passed it).
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
