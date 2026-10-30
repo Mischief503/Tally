@@ -2,8 +2,10 @@
 """Build the two editions the tests use, from web/index.html (the one source).
 build/tally-supabase.html  the hosted / Android edition
 build/tally-artifact.html  the claude.ai artifact edition (same app, without the Supabase block)
+build/tally-windows.html   the hosted edition as the Windows app packs it (app_pack.py), for its tests
 build/site/                the website folder (index, manifest, offline helper, icons)"""
 import os, shutil
+import app_pack
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 B = os.path.join(ROOT, 'build')
 shutil.rmtree(B, ignore_errors=True)
@@ -15,4 +17,5 @@ art = src[:a] + src[b:]
 # the artifact can't reach outside services; this tells the app not to try
 art = art.replace('<head>', '<head>\n<script>window.TALLY_ARTIFACT=true;</script>', 1)
 open(os.path.join(B, 'tally-artifact.html'), 'w', encoding='utf-8').write(art)
-print('built build/tally-supabase.html, build/tally-artifact.html, build/site/')
+open(os.path.join(B, 'tally-windows.html'), 'w', encoding='utf-8').write(app_pack.installed(src, app_pack.WINDOWS_FLAGS))
+print('built build/tally-supabase.html, build/tally-artifact.html, build/tally-windows.html, build/site/')

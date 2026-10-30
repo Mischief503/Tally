@@ -378,6 +378,9 @@ table.tbl.cat td{vertical-align:middle;padding-top:4px;padding-bottom:4px}
 .tally-row .row{flex-wrap:nowrap;flex:none;gap:6px}
 .tally-row .btn{min-width:44px}
 .tally-row .btn.on{background:var(--ok);border-color:var(--ok);color:var(--card)}
+.updbar{position:fixed;left:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:125;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;max-width:min(460px,calc(100vw - 32px));background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-lg);font-size:13.5px;line-height:1.35}
+.updbar[hidden],#sos:not([hidden])~.updbar{display:none}
+.updbar .grow{flex:1 1 220px;min-width:0}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom));background:var(--text);color:var(--card);padding:9px 16px;border-radius:99px;font-size:13.5px;z-index:60;max-width:90vw;box-shadow:var(--shadow-lg)}
 .toast[hidden]{display:none}
 .toast .tundo{background:none;border:0;color:inherit;font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:3px;padding:9px 6px;margin:-9px -6px -9px 12px;min-height:40px;cursor:pointer}
@@ -843,6 +846,7 @@ body.sos-on #matpick{top:calc(var(--sosH) + env(safe-area-inset-top))}
   #sheet .panel::before{display:none}
   .sheet-head{padding-top:14px}
   .toast{bottom:24px}
+  .updbar{bottom:16px}
 }
 @keyframes tallyFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @keyframes tallySlide{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
@@ -1105,7 +1109,7 @@ var el=null,state={step:'email',email:'',busy:false,msg:''};
 function css(){
   if(document.getElementById('lgCss'))return;
   var s=document.createElement('style');s.id='lgCss';
-  s.textContent='html.pre-auth body>*:not(#login){display:none!important}'+
+  s.textContent='html.pre-auth body>*:not(#login):not(#updBar){display:none!important}'+
   '#login{position:fixed;inset:0;z-index:120;background:#F5F6F8;color:#141B2D;display:flex;align-items:center;justify-content:center;padding:22px;font:400 16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}'+
   '#login .box{width:100%;max-width:380px;background:#fff;border:1px solid #E7EAF0;border-radius:14px;padding:22px}'+
   '#login h1{font:700 30px/1 "Barlow Condensed","Arial Narrow",Arial,sans-serif;margin:0 0 4px;letter-spacing:.5px}'+
@@ -1130,7 +1134,7 @@ function render(){
   if(!el){el=document.createElement('div');el.id='login';document.body.appendChild(el)}
   var b=state.busy;
   if(state.step==='email')oauthAsk();
-  var g=!!oauth&&oauth.google&&!window.TALLY_STANDALONE;   // Google won't sign in inside the Android app's own window
+  var g=!!oauth&&oauth.google&&!window.TALLY_STANDALONE;   // Google won't sign in inside an installed app's own window (Android, Windows)
   el.innerHTML='<div class="box"><h1>MoveCrew</h1>'+(state.step==='email'
     ? '<p>Sign in to see your move, or to get to work.</p>'+
       (g?'<button id="lgGoogle" class="google"'+(b?' disabled':'')+'>'+GLOGO+'Continue with Google</button><div class="or">or with a code by email</div>':'')+
@@ -1172,7 +1176,7 @@ function verify(){
 // leads to an error page. Google sends them back here, signed in.
 var oauth={google:false,asked:false};
 var GLOGO='<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
-// asked once, the first time the sign-in screen shows (not at every start, and never in the Android app)
+// asked once, the first time the sign-in screen shows (not at every start, and never in the Android or Windows app)
 function oauthAsk(){
   if(!oauth||oauth.asked||window.TALLY_STANDALONE)return;oauth.asked=true;
   try{fetch(CFG.url.replace(/\/+$/,'')+'/auth/v1/settings',{headers:{apikey:CFG.anonKey}}).then(function(r){return r.json()}).then(function(j){oauth.google=!!(j&&j.external&&j.external.google);if(oauth.google&&el&&state.step==='email'&&!state.busy&&document.getElementById('lgEmail'))render()}).catch(function(){})}catch(e){}
@@ -1471,6 +1475,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <button id="fab" class="fab" data-act="fab:quote" aria-label="New quote" hidden>+</button>
 <style id="themeVars"></style>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="updBar" class="updbar" role="status" aria-live="polite" hidden></div>
 <input type="file" id="photoIn" accept="image/*" multiple style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0" tabindex="-1" aria-hidden="true">
 
 <script>
@@ -1504,6 +1509,16 @@ function getPath(o,p){return p.split('.').reduce(function(a,k){return a==null?a:
 function setPath(o,p,v){var k=p.split('.');for(var i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=v}
 var toastT,undoFn=null;
 function toast(msg){var t=$('#toast');undoFn=null;t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2600)}
+// The Windows app downloads a new version in the background (windows/main.js); this bar offers to
+// restart into it. Later hides it, and the new version goes in the next time MoveCrew is closed.
+var desk={upd:'',later:''};
+function deskUpdBar(){
+  var b=$('#updBar');if(!b)return;
+  var show=!!desk.upd&&desk.later!==desk.upd;
+  b.innerHTML=show?'<span class="grow"><b>A new version of MoveCrew is ready.</b> Restart to use it, or it goes in the next time MoveCrew is closed.</span><button class="btn sm primary" data-act="app:restart">Restart now</button><button class="btn sm" data-act="app:later">Later</button>':'';
+  b.hidden=!show;
+}
+if(window.tallyDesktop&&typeof window.tallyDesktop.onUpdate==='function'){try{window.tallyDesktop.onUpdate(function(u){desk.upd=String((u&&u.version)||'new');deskUpdBar()})}catch(e){}}
 // a toast with an Undo button, for things taken out by mistake; it stays up a little longer
 function toastUndo(msg,fn){var t=$('#toast');undoFn=fn;t.innerHTML='<span>'+esc(msg)+'</span><button class="tundo" data-act="toast:undo">Undo</button>';t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true;undoFn=null},6000)}
 // take an entry out of a Setup list, with Undo putting it back where it was
@@ -5732,6 +5747,13 @@ function sosAlarm(on){
   sos.ringT=setInterval(ring,6000);ring();
 }
 document.addEventListener('pointerdown',function(){if(sos.ctx&&sos.ctx.state==='suspended'){try{sos.ctx.resume()}catch(e){}}},true);
+// the Windows app: MoveCrew flashes on the taskbar, and a Windows notice pops up when it isn't in front
+function sosDesk(a){
+  var D=window.tallyDesktop;if(!D||typeof D.attention!=='function')return;
+  if(!a){if(sos.desk){sos.desk=false;try{D.attention(null)}catch(e){}}return}
+  sos.desk=true;
+  try{D.attention({title:'Truck down: '+sosTruck(a),body:String(a.from||'')+(a.text?': '+String(a.text).slice(0,140):'')})}catch(e){}
+}
 // keeps the sender's screen on, so the location keeps going out
 function sosWake(on){
   if(!on){if(sos.lock){try{sos.lock.release()}catch(e){}sos.lock=null}return}
@@ -5931,7 +5953,7 @@ function sosSync(){
   if(isNew){ui.sosOpen=true;ui.sosStart=null;ui.sosArm=''}
   if(ui.sosWant&&act.length){ui.sosWant=false;ui.sosOpen=true}
   if(ui.sosOpen)act.forEach(function(a){ui.sosShown[a.id]=1});
-  if(isNew)sosAlarm(true);else if(!fresh.length)sosAlarm(false);
+  if(isNew){sosAlarm(true);sosDesk(fresh[0])}else if(!fresh.length){sosAlarm(false);sosDesk(null)}
   sosTitle(fresh);
   // Today, the crew's jobs and the board show the alerts too: drawn again when the set changes
   var sig=act.map(function(a){return a.id+(a.truckId?':'+a.truckId:'')}).join(',');
@@ -6198,7 +6220,7 @@ function stopData(){
   sync.unsubs.forEach(function(u){try{u()}catch(e){}});sync.unsubs=[];
   sync.started=false;sync.got={settings:false,jobs:false,shifts:false,vault:false};sync.settingsSeen=false;
   sync.lastJobs={};sync.lastShifts={};sync.lastVault={};sync.lastSettings='';chat.db=null;chat.mode='local';chat.sos=[];pay.cfg=null;member.st=null;member.wait=false;adm.data=null;state.sched=[];
-  if(sos.id)sosGeoStop();sosWake(false);sosAlarm(false);
+  if(sos.id)sosGeoStop();sosWake(false);sosAlarm(false);sosDesk(null);
 }
 function startData(){
   if(sync.started)return;
@@ -6328,6 +6350,8 @@ var EMP_SECS=[
 ];
 var DOC_TYPES=[['i9','I-9'],['w4','W-4'],['license',"Driver's license"],['dot','DOT medical card'],['background','Background check'],['handbook','Signed handbook'],['other','Other']];
 var DEFAULT_APP_LINK='https://github.com/Mischief503/Tally/releases/latest/download/MoveCrew.apk';
+// MoveCrew for Windows, for the office, dispatch and the call center (windows/, built by GitHub)
+var DEFAULT_WIN_LINK='https://github.com/Mischief503/Tally/releases/download/windows/MoveCrew-Setup.exe';
 var people={list:[],loaded:false,loading:false,err:'',mine:null,mineState:'',docs:{},docsLoading:{}};
 function peopleHosted(){return !!window.tallyPeople}
 function canMyProfile(){return peopleHosted()&&sync.mode==='shared'&&sync.identity.status==='ok'&&!sync.isOwner}
@@ -6381,7 +6405,9 @@ function employeesCard(){
   return '<section class="card"><h2>Employees</h2><p class="sub">'+(host?'Everyone who works for you. Add the email each person signs in with: when they sign in, MoveCrew connects them to their profile and role, with no code to share. Hiring details are visible only to you and that person.':'Everyone who works for you, with their hiring details. In this copy, profiles stay on this device. In the MoveCrew app they are private to you and each employee, and signing in connects people to their profile.')+'</p>'+
     (people.err?'<div class="note">'+esc(people.err)+'</div>':'')+(host&&people.loading&&!people.list.length?'<p class="hint">Loading profiles…</p>':'')+
     '<button class="btn primary" data-act="emp:new" style="margin:2px 0 12px">Add employee</button>'+(rows||'<p class="hint">No one yet.</p>')+
-    (host?'<div style="margin-top:10px">'+fld('Link to download the app (used in invite texts)','<input data-s="appLink" data-t="text" inputmode="url" autocomplete="off" placeholder="'+esc(DEFAULT_APP_LINK)+'" value="'+esc(S.appLink||'')+'">')+'</div>':'')+'</section>';
+    (host?'<div style="margin-top:10px">'+fld('Link to download the app (used in invite texts)','<input data-s="appLink" data-t="text" inputmode="url" autocomplete="off" placeholder="'+esc(DEFAULT_APP_LINK)+'" value="'+esc(S.appLink||'')+'">')+
+      fld('Link to the Windows app (in invite texts for people who work only in the office)','<input data-s="winLink" data-t="text" inputmode="url" autocomplete="off" placeholder="'+esc(DEFAULT_WIN_LINK)+'" value="'+esc(S.winLink||'')+'">')+
+      '<p class="hint" style="margin:8px 0 0">For office computers: <a href="'+esc(/^https:\/\/\S+$/i.test(S.winLink||'')?S.winLink:DEFAULT_WIN_LINK)+'" target="_blank" rel="noopener">MoveCrew for Windows</a>, for the office, dispatch and the call center. Install it once; it keeps itself up to date.</p></div>':'')+'</section>';
 }
 function openEmp(o){
   var rec=o.id?empById(o.id):(o.name?empByName(o.name):null);
@@ -6425,8 +6451,11 @@ function empField(k,label,type,opts,val,attr){
 }
 function inviteHtml(rec){
   if(!peopleHosted()||!rec||rec.user_id||!rec.email||rec.active===false)return '';
-  var first=rec.name.split(' ')[0],ph=(rec.info&&rec.info.phone)||'',link=state.settings.appLink||DEFAULT_APP_LINK,co=String((window.tallyOrg&&window.tallyOrg.name)||state.settings.company||'work').trim().replace(/[.!]+$/,'');
-  var msg='Hi '+first+', it\'s '+co+'. Get the MoveCrew app here: '+link+' and sign in with '+rec.email+'. You\'ll go straight to your jobs.';
+  var first=rec.name.split(' ')[0],ph=(rec.info&&rec.info.phone)||'',co=String((window.tallyOrg&&window.tallyOrg.name)||state.settings.company||'work').trim().replace(/[.!]+$/,'');
+  // someone who works only in the office gets the Windows app; anyone in the field, the phone app
+  var office=sidesOf(rec.name,rec).field==='off',link=office?(state.settings.winLink||DEFAULT_WIN_LINK):(state.settings.appLink||DEFAULT_APP_LINK);
+  var msg=office?'Hi '+first+', it\'s '+co+'. Get MoveCrew for your Windows computer here: '+link+' and sign in with '+rec.email+'.'
+    :'Hi '+first+', it\'s '+co+'. Get the MoveCrew app here: '+link+' and sign in with '+rec.email+'. You\'ll go straight to your jobs.';
   return '<div class="note">'+esc(first)+' hasn\'t signed in yet.'+(ph?' <a class="btn sm" href="'+esc(smsHref(ph,msg))+'">Text '+esc(first)+' the app</a>':' Add a phone number to text them the app link.')+'</div>';
 }
 function empEditBody(){
@@ -6591,10 +6620,15 @@ function docUpload(){
   window.tallyPeople.upload(id,f,docName(tp,f.name)).then(function(){E.uploading=false;toast('Uploaded.');delete people.docs[id];renderEmp();loadDocs(id)},
     function(){E.uploading=false;renderEmp();toast('Could not upload that file. Check your connection.')});
 }
+// The installed apps (Android, Windows) open what leaves MoveCrew in the device's own apps: the
+// phone's viewer and browser, or the computer's browser. The Windows app takes it straight
+// (window.tallyDesktop, windows/preload.js); the Android app catches the page leaving.
+function inApp(){return /TallyAndroid\/|MoveCrewWindows\//.test(navigator.userAgent||'')||!!window.tallyDesktop}
+function handOff(u){var D=window.tallyDesktop;if(D&&typeof D.open==='function'){try{D.open(u);return}catch(e){}}location.href=u}
 function docView(path){
   var E=ui.emp;if(!E)return;
   window.tallyPeople.url(path).then(function(u){
-    if(/TallyAndroid\//.test(navigator.userAgent||'')){location.href=u;return}   // the app hands it to the phone's viewer
+    if(inApp()){handOff(u);return}   // the installed app hands it to the phone's viewer, or the computer's browser
     var w=null;try{w=window.open(u,'_blank')}catch(e){}
     if(w){try{w.opener=null}catch(e){}}else{E.openUrl={path:path,url:u};renderEmp()}
   },function(){toast('Could not open that document.')});
@@ -7888,11 +7922,11 @@ function payCardHtml(){
 }
 // Opens a Stripe page the server hands back (Connect sign-up, membership checkout, billing page). In a
 // browser a tab is opened on the tap itself (so it isn't blocked) and the page loads into it; the Android
-// app hands it to the phone's browser. st keeps {busy,url,msg,wait}: url is a link to tap when the browser
+// and Windows apps hand it to the phone's or the computer's browser. st keeps {busy,url,msg,wait}: url is a link to tap when the browser
 // blocked the tab anyway, wait means "back from Stripe? this updates". Only https Stripe pages open.
 function stripeOpen(call,st,draw){
-  var android=/TallyAndroid\//.test(navigator.userAgent||''),tab=null;
-  if(!android){try{tab=window.open('','_blank')}catch(e){}
+  var app=inApp(),tab=null;
+  if(!app){try{tab=window.open('','_blank')}catch(e){}
     if(tab){try{tab.opener=null;tab.document.title='Opening Stripe…';tab.document.body.innerHTML='<p style="font:16px system-ui,sans-serif;padding:24px">Opening Stripe…</p>'}catch(e){}}}
   st.busy=true;st.url='';st.msg='';draw(true);
   return Promise.resolve(call()).then(null,function(){return null}).then(function(r){
@@ -7903,7 +7937,7 @@ function stripeOpen(call,st,draw){
     if(!r||!r.ok){st.msg=(r&&r.message)||'Could not reach Stripe. Try again.';draw();return r}
     if(r.done){draw();return r}
     st.wait=true;
-    if(android){draw();location.href=u;return r}   // the app opens it in the phone's browser
+    if(app){draw();handOff(u);return r}   // the app opens it in the phone's or the computer's browser
     var opened=false;
     if(tab&&!tab.closed){try{tab.location.href=u;opened=true}catch(e){}}
     if(!opened){var w=null;try{w=window.open(u,'_blank')}catch(e){}if(w){try{w.opener=null}catch(e){}opened=true}}
@@ -7922,16 +7956,20 @@ function payConnect(){
   });
 }
 // back in MoveCrew from Stripe's page (or after a while away): ask Stripe how the account stands
-document.addEventListener('visibilitychange',function(){
+function payBack(){
   if(document.hidden||!window.tallyPay||!pay.cfg)return;
   var c=pay.cfg,waiting=pay.conn.wait||(!c.ready&&/^connect/.test(c.reason||''))||(c.connect&&(c.connect.due||[]).length);
   if(waiting&&Date.now()-(pay.cfgAt||0)>4e3)payLoad(true,true);
-});
-document.addEventListener('visibilitychange',function(){
+}
+function memberBack(){
   if(document.hidden||!window.tallyMember||!member.st||state.ui.role!=='owner')return;
   var w=member.wait||/^(trial|ended|past_due)$/.test(member.st.state||'');
   if(w&&Date.now()-(member.at||0)>4e3)memberLoad(true,true);
-});
+}
+document.addEventListener('visibilitychange',payBack);
+document.addEventListener('visibilitychange',memberBack);
+// the Windows app: Stripe's page opens in the browser, and coming back is the window coming to the front
+if(window.tallyDesktop)window.addEventListener('focus',function(){payBack();memberBack()});
 
 /* ---------- the membership each company pays MoveCrew (hosted edition) ----------
    The server says where the company stands (member_status): a free trial, a membership on Stripe, the
@@ -8496,6 +8534,9 @@ document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
   var a=t.dataset.act,S=state.settings,d=state.draft,j;
   switch(a){
+    case 'app:restart':{var DR=window.tallyDesktop;if(!DR||typeof DR.restart!=='function')break;t.disabled=true;t.textContent='Restarting…';
+      Promise.resolve(DR.restart()).then(function(ok){if(ok)return;t.disabled=false;t.textContent='Restart now';toast('The new version goes in the next time MoveCrew is closed.')},function(){t.disabled=false;t.textContent='Restart now'});break}
+    case 'app:later':{desk.later=desk.upd;deskUpdBar();break}
     case 'toast:undo':{var uf=undoFn;undoFn=null;clearTimeout(toastT);$('#toast').hidden=true;if(uf)uf();break}
     case 'hist:go':histReset(t.dataset.q||'');ui.tab='history';ui.armed='';render();window.scrollTo(0,0);break;
     case 'hist:f':ui.hf=t.dataset.f;ui.hShow=50;histFill();break;

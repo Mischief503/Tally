@@ -10,3 +10,9 @@ android/app/src/main/assets/
 *.apk
 *.aab
 _site/
+
+# the Windows app: packed web app, installer output
+windows/app/
+windows/dist/
+windows/check/
+__pycache__/

@@ -1,0 +1,125 @@
+name: Windows app
+
+# MoveCrew for Windows, for the office, dispatch and the call center (windows/). On every change GitHub
+# builds the installer on a Windows computer, checks the app there, installs it like a new office
+# computer would, opens it and checks it again, and only then publishes it: the "windows" release,
+# MoveCrew-Setup.exe. Installed copies update themselves from that release (windows/main.js).
+# It never becomes the release marked Latest, which is the phone app's (android.yml).
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exe:
+    runs-on: windows-2025
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: windows/package-lock.json
+
+      - name: Put MoveCrew into the app
+        env:
+          TALLY_SUPABASE_URL: ${{ vars.TALLY_SUPABASE_URL }}
+          TALLY_SUPABASE_ANON_KEY: ${{ vars.TALLY_SUPABASE_ANON_KEY }}
+        run: python scripts/prepare_windows.py
+
+      - name: Get the build tools
+        working-directory: windows
+        run: npm ci
+
+      # Logs aren't readable from where MoveCrew is worked on, so each failure also becomes a note on the run page.
+      - name: Check which links and files the app opens
+        shell: bash
+        run: |
+          out=$(node tests/windows/rules.js 2>&1); code=$?; echo "$out"
+          if [ $code -ne 0 ]; then echo "$out" | grep -E '^FAIL|Error' | head -n 8 | while IFS= read -r l; do echo "::error title=Windows rules::${l:0:400}"; done; exit 1; fi
+
+      - name: Check the app on Windows (links, alerts, updates, keys)
+        shell: bash
+        working-directory: windows
+        run: |
+          npm install --no-save --no-audit --no-fund playwright-core@1.56.0
+          out=$(node ../tests/windows/electron.js 2>&1); code=$?; echo "$out"
+          if [ $code -ne 0 ]; then echo "$out" | grep -E '^FAIL|Error' | head -n 8 | while IFS= read -r l; do echo "::error title=Windows app check::${l:0:400}"; done; exit 1; fi
+
+      - name: Build the installer
+        shell: bash
+        working-directory: windows
+        run: |
+          npx electron-builder --win nsis --x64 --publish never "-c.extraMetadata.version=1.0.${{ github.run_number }}" > build.log 2>&1; code=$?; cat build.log
+          if [ $code -ne 0 ]; then tail -n 12 build.log | while IFS= read -r l; do echo "::error title=Installer build::${l:0:300}"; done; exit 1; fi
+          ls -la dist
+
+      - name: Install it and open MoveCrew, like a new office computer
+        shell: pwsh
+        run: |
+          $setup = (Resolve-Path windows/dist/MoveCrew-Setup.exe).Path
+          Write-Host ("Installer: {0:N1} MB" -f ((Get-Item $setup).Length / 1MB))
+          $p = Start-Process -FilePath $setup -ArgumentList '/S' -PassThru
+          if (-not $p.WaitForExit(300000)) { Write-Host '::error title=Windows check::The installer did not finish in 5 minutes.'; exit 1 }
+          $found = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Filter MoveCrew.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $found) { Write-Host "::error title=Windows check::The installer did not put MoveCrew.exe under $env:LOCALAPPDATA\Programs"; exit 1 }
+          $app = $found.FullName
+          Write-Host "Installed: $app"
+          $lnk = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\MoveCrew.lnk'
+          if (-not (Test-Path $lnk)) { Write-Host "::warning title=Windows check::No Start menu shortcut at $lnk" }
+          Start-Sleep -Seconds 3
+          Get-Process MoveCrew -ErrorAction SilentlyContinue | Stop-Process -Force
+          $smoke = Join-Path $PWD 'smoke'
+          New-Item -ItemType Directory -Force $smoke | Out-Null
+          $run = Start-Process -FilePath $app -ArgumentList "--smoke=$smoke" -PassThru
+          if (-not $run.WaitForExit(200000)) { Stop-Process -Id $run.Id -Force; Write-Host '::error title=Windows check::MoveCrew did not finish its check in 200 seconds.'; exit 1 }
+          $file = Join-Path $smoke 'result.json'
+          if (-not (Test-Path $file)) {
+            Write-Host '::error title=Windows check::MoveCrew closed without writing its check.'
+            Get-Content (Join-Path $smoke 'profile\movecrew.log') -Tail 8 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "::error title=MoveCrew log::$_" }
+            exit 1
+          }
+          Get-Content $file
+          $r = Get-Content $file -Raw | ConvertFrom-Json
+          if (-not $r.ok) { Write-Host "::error title=Windows check::$($r.why): title=$($r.title) signIn=$($r.signIn) supabase=$($r.supabase) desktop=$($r.desktop) handOff=$($r.handOff)"; exit 1 }
+          Write-Host "::notice title=Windows check::MoveCrew $($r.version) installed and opened on Windows in $($r.readySecs) s: the sign-in screen showing, Supabase answering ($($r.supabase))."
+          if ($r.stripe -eq 'ready') { Write-Host "::notice title=Stripe card box::Stripe's card box loads in the Windows app." }
+          else { Write-Host "::warning title=Stripe card box::Stripe's card box did not load in the Windows app: $($r.stripe)" }
+
+      - name: Keep the installer and the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: movecrew-windows-${{ github.run_number }}
+          path: |
+            windows/dist/MoveCrew-Setup.exe
+            windows/dist/latest.yml
+            smoke/*.png
+            smoke/result.json
+            windows/check/
+          if-no-files-found: ignore
+
+      - name: Publish MoveCrew-Setup.exe for office computers
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd windows/dist
+          cp ../../smoke/screenshot.png windows-screenshot.png 2>/dev/null || true
+          gh release delete windows --repo "${{ github.repository }}" --yes --cleanup-tag || true
+          gh release create windows MoveCrew-Setup.exe latest.yml $( [ -s windows-screenshot.png ] && echo windows-screenshot.png ) \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" \
+            --title "MoveCrew for Windows (latest build)" \
+            --notes "Build ${{ github.run_number }} (version 1.0.${{ github.run_number }}). For office computers: download MoveCrew-Setup.exe and open it. If Windows says it protected your PC, press More info, then Run anyway. Installed copies update themselves. It passed the check on a Windows computer before it was published." \
+            --latest=false

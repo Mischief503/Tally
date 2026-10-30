@@ -1,0 +1,64 @@
+{
+  "name": "movecrew-windows",
+  "productName": "MoveCrew",
+  "version": "1.0.0",
+  "description": "MoveCrew for the office, dispatch and the call center",
+  "author": "MoveCrew",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64 --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.10"
+  },
+  "devDependencies": {
+    "electron": "44.7.2",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "com.movecrew.desktop",
+    "productName": "MoveCrew",
+    "copyright": "MoveCrew",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "rules.js",
+      "app/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "MoveCrew-Setup.exe",
+      "shortcutName": "MoveCrew",
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "differentialPackage": false
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://github.com/Mischief503/Tally/releases/download/windows"
+      }
+    ]
+  }
+}
