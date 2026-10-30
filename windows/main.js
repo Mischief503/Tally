@@ -157,7 +157,8 @@ function updates() {
   try { au = require('electron-updater').autoUpdater; } catch (e) { log('updater not available: ' + e.message); return; }
   au.autoDownload = true;
   au.autoInstallOnAppQuit = true;
-  au.disableDifferentialDownload = true;
+  au.disableDifferentialDownload = true;   // one whole installer per version (no .blockmap files)
+  au.disableWebInstaller = true;
   au.logger = { info: (m) => log('update: ' + m), warn: (m) => log('update: ' + m), error: (m) => log('update error: ' + m), debug: () => {} };
   au.on('update-downloaded', (info) => {
     pendingUpdate = String((info && info.version) || 'new');
