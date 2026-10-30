@@ -40,6 +40,10 @@ let win = null;
 let pendingUpdate = '';
 let updater = null;
 
+// a slip in the app's own code goes in the log, never an error box in front of the office
+process.on('uncaughtException', (e) => log('main error: ' + ((e && e.stack) || e)));
+process.on('unhandledRejection', (e) => log('main error: ' + ((e && e.stack) || e)));
+
 /* ---------- a small log in the app's folder, for when something needs looking into ---------- */
 function log(msg) {
   const line = new Date().toISOString() + ' ' + msg + '\n';
@@ -118,7 +122,10 @@ function contextMenu(wc, p) {
   if (link) {
     if (items.length) items.push({ type: 'separator' });
     const what = /^tel:/.test(link) ? 'phone number' : /^sms:/.test(link) ? 'number' : /^mailto:/.test(link) ? 'email address' : 'link';
-    items.push({ label: 'Copy ' + what, click: () => clipboard.writeText(what === 'link' ? link : decodeURIComponent(link.replace(/^[a-z]+:/i, '').replace(/\?.*$/, ''))) });
+    const bare = link.replace(/^[a-z]+:/i, '').replace(/\?.*$/, '');
+    let text = bare;
+    try { text = decodeURIComponent(bare); } catch (e) { /* keep it as written */ }
+    items.push({ label: 'Copy ' + what, click: () => clipboard.writeText(what === 'link' ? link : text) });
   }
   if (items.length) Menu.buildFromTemplate(items).popup({ window: win });
 }
